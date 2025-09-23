@@ -51,6 +51,7 @@ coffee -c -o lib/coffeescript \
   src/repl.coffee             \
   src/rewriter.coffee         \
   src/scope.litcoffee         \
-  src/sourcemap.litcoffee     \
-&& \
-  cake build
+  src/sourcemap.litcoffee
+
+# # attempt to self host / compile our own compiler
+# cake build
