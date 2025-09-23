@@ -71,9 +71,9 @@ class Generator
 
     # Detect grammar mode based on export structure
     if grammar.bnf?
-      @mode = 'cs2'  # CS2 grammar.coffee with string actions
+      @mode = 'jison'  # Jison grammar.coffee with string actions
     else if grammar.grammar?
-      @mode = 'cs3'  # CS3 syntax.coffee with directive objects
+      @mode = 'solar'  # Solar syntax.coffee with directives
     else
       throw new Error "Unknown grammar format: expected 'bnf' or 'grammar' property"
 
@@ -204,10 +204,10 @@ class Generator
       [symbols, null, null]
 
   _processGrammarAction: (action, symbols) ->
-    # Main dispatcher - handles both CS2 and CS3 formats
-    if @mode is 'cs3' and typeof action is 'object' and action?
+    # Main dispatcher - handles both Jison and Solar formats
+    if @mode is 'solar' and typeof action is 'object' and action?
       @_generateDataAction(action, symbols)
-    else if @mode is 'cs2' and typeof action is 'string'
+    else if @mode is 'jison' and typeof action is 'string'
       @_generateClassAction(action, symbols)
     else if action is null or action is undefined
       # Default pass-through: for single-symbol rules, return $1; for ε, null
@@ -216,7 +216,7 @@ class Generator
       throw new Error "Invalid action type for mode #{@mode}: #{typeof action}"
 
   _generateClassAction: (action, symbols) ->
-    # CS2 mode: process string actions like "-> new Value $1"
+    # Jison mode: process string actions like "-> new Value $1"
     # Process named semantic values
     if action.match(/[$@][a-zA-Z][a-zA-Z0-9_]*/)
       count = {}
@@ -247,7 +247,7 @@ class Generator
       .replace(/\$(-?\d+)/g, (_, n) -> "$$[$0" + (parseInt(n, 10) - symbols.length || '') + "]") # Like $1
       .replace( /@(-?\d+)/g, (_, n) -> "_$[$0" +               (n - symbols.length || '') + "]") # Like @1
 
-  # Call reduce function with count then directive
+  # Call reduce function with count then Solar directive
   _generateDataAction: (directive, symbols) ->
     len = symbols.length
     dir = @_objectToJSUnresolved(directive)
@@ -255,7 +255,7 @@ class Generator
 
   _needsQuotes: (key) -> not /^[$_a-zA-Z][$_a-zA-Z0-9]*$/.test(key)
 
-  # Generate directive object with unresolved position references
+  # Generate Solar directive with unresolved position references
   _objectToJSUnresolved: (obj) ->
     return 'null' unless obj?
 
@@ -299,7 +299,7 @@ class Generator
     else if typeof obj is 'boolean'
       JSON.stringify(obj)
     else if Array.isArray(obj)
-      # Array of directives
+      # Array of Solar directives
       items = (if typeof item is 'object' then @_objectToJS(item, symbols) else JSON.stringify(item) for item in obj)
       "[#{items.join(', ')}]"
     else if typeof obj is 'object'
@@ -331,12 +331,12 @@ class Generator
     actions = []
 
     # Add mode-specific setup
-    if @mode is 'cs3'
-      # CS3: Add reduce function (r) - curried with $$, _$ for efficient backend calls
+    if @mode is 'solar'
+      # Solar: Add reduce function (r) - curried with $$, _$ for efficient backend calls
       actions.push @actionInclude or ''
       actions.push 'var r = yy.backend && function(count, directive) { return yy.backend.reduce($$, _$, $$.length - 1, count, directive); };'
     else
-      # CS2: Add comment about this context and $0 variable
+      # Jison: Add comment about this context and $0 variable
       actions.push '/* this == yyval */'
       actions.push @actionInclude or ''
       actions.push 'var $0 = $$.length - 1;'
@@ -345,7 +345,7 @@ class Generator
     for action, labels of actionGroups
       actions.push labels.join(' ')
       actions.push action
-      # Only add break if the action doesn't start with 'return' (all CS3 actions return)
+      # Only add break if the action doesn't start with 'return' (all Solar actions return)
       actions.push 'break;' unless action.trim().startsWith('return')
     actions.push '}'
 

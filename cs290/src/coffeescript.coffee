@@ -7,6 +7,8 @@
 {parser}      = require './parser'
 helpers       = require './helpers'
 SourceMap     = require './sourcemap'
+ES6Backend    = require './es6'
+
 # Require `package.json`, which is two levels above this file, as this file is
 # evaluated from `lib/coffeescript`.
 packageJson   = require '../../package.json'
@@ -85,7 +87,10 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
         options.bare = yes
         break
 
-  nodes = parser.parse tokens
+  # Set up parser and parse the tokens
+  setupParser tokens, options
+  nodes = parser.parse()
+
   # If all that was requested was a POJO representation of the nodes, e.g.
   # the abstract syntax tree (AST), we can stop now and just return that
   # (after fixing the location data for the root/`File`»`Program` node,
@@ -187,8 +192,11 @@ exports.tokens = withPrettyErrors (code, options) ->
 # return the AST. You can then compile it by calling `.compile()` on the root,
 # or traverse it by using `.traverseChildren()` with a callback.
 exports.nodes = withPrettyErrors (source, options) ->
-  source = lexer.tokenize source, options if typeof source is 'string'
-  parser.parse source
+  tokens = if typeof source is 'string' then lexer.tokenize source, options else source
+
+  # Set up parser and parse the tokens
+  setupParser tokens, options
+  nodes = parser.parse()
 
 # This file used to export these methods; leave stubs that throw warnings
 # instead. These methods have been moved into `index.coffee` to provide
@@ -226,13 +234,10 @@ parser.lexer =
 # Make all the AST nodes visible to the parser.
 parser.yy = require './nodes'
 
-# Add minimal CS3 backend stub
-parser.yy.backend = {
-  reduce: (values, positions, stackTop, symbolCount, directive) ->
-    # Minimal stub - just return a basic literal for now
-    console.warn "CS3 Backend stub called with directive:", directive
-    new parser.yy.Literal("/* CS3 stub */")
-}
+# Set up parser to parse new source code
+setupParser = (tokens, options = {}) ->
+  parser.yy.backend = new ES6Backend(options)
+  parser.lexer.setInput tokens
 
 # Override Jison's default error handling function.
 parser.yy.parseError = (message, {token}) ->

@@ -1,5 +1,5 @@
 # ==============================================================================
-# CS3 Syntax - Data-Oriented Grammar for CoffeeScript 3
+# Solar Syntax - Data-Oriented Grammar for CoffeeScript 3
 #
 # Run `bun run build.ts` to regenerate `lib/parser.js`
 # ==============================================================================
@@ -827,10 +827,10 @@ operators = """
 # -----------
 
 # Add return statements to Root rule actions for proper parser behavior
-# (Only for string actions, not CS3 directives)
+# (Only for string actions, not Solar directives)
 for own name, alternatives of grammar
   grammar[name] = for alt in alternatives
-    # Only add 'return' if it's a string action (not a CS3 directive object)
+    # Only add 'return' if it's a string action (not a Solar directive)
     if name is 'Root' and typeof alt[1] is 'string'
       alt[1] = "return #{alt[1]}"
     alt
