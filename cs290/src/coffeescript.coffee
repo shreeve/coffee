@@ -226,6 +226,14 @@ parser.lexer =
 # Make all the AST nodes visible to the parser.
 parser.yy = require './nodes'
 
+# Add minimal CS3 backend stub
+parser.yy.backend = {
+  reduce: (values, positions, stackTop, symbolCount, directive) ->
+    # Minimal stub - just return a basic literal for now
+    console.warn "CS3 Backend stub called with directive:", directive
+    new parser.yy.Literal("/* CS3 stub */")
+}
+
 # Override Jison's default error handling function.
 parser.yy.parseError = (message, {token}) ->
   # Disregard Jison's message, it contains redundant line number information.
