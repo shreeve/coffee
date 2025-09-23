@@ -1,3 +1,4 @@
+#!/bin/bash
 
 # remove all compiled files
 rm -rf \
@@ -19,7 +20,23 @@ rm -rf \
   lib/coffeescript/sourcemap.js    \
   lib/coffeescript/syntax.js       \
 
-# rebuild from source
+# generate parser.js from syntax.coffee
+./solar.coffee -o lib/coffeescript/parser.js src/syntax.coffee
+
+# processGrammar: 2.256ms
+# buildLRAutomaton: 54.61ms
+# processLookaheads: 10.824ms
+# buildParseTable: 118.678ms
+# 💥 Total time: 188.96ms
+#
+# ⏱️ Statistics:
+# • Tokens: 106
+# • Types: 98
+# • Rules: 407
+# • States: 780
+# • Conflicts: 153
+
+# rebuild from source, using global coffee
 coffee -c -o lib/coffeescript \
   src/browser.coffee          \
   src/cake.coffee             \
@@ -34,20 +51,6 @@ coffee -c -o lib/coffeescript \
   src/repl.coffee             \
   src/rewriter.coffee         \
   src/scope.litcoffee         \
-  src/sourcemap.litcoffee
-
-# generate parser.js from syntax.coffee
-solar -o lib/coffeescript/parser.js src/syntax.coffee
-
-  processGrammar: 2.256ms
-  buildLRAutomaton: 54.61ms
-  processLookaheads: 10.824ms
-  buildParseTable: 118.678ms
-  💥 Total time: 188.96ms
-
-  ⏱️ Statistics:
-  • Tokens: 106
-  • Types: 98
-  • Rules: 407
-  • States: 780
-  • Conflicts: 153
+  src/sourcemap.litcoffee     \
+&& \
+  cake build
