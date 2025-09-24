@@ -100,7 +100,7 @@ class ES5Backend
           when 'Value'              then new @ast.Value              $(o.val)
           when 'Assign'
             variable = $(o.variable)
-            value = $(o.value) 
+            value = $(o.value)
             context = $(o.context)
             # Skip if variable or value is null/undefined (from empty {} placeholders)
             return null unless variable? and value?
