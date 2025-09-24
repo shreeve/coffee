@@ -17,10 +17,12 @@
   var ES6Backend;
 
   ES6Backend = class ES6Backend {
-    constructor(options = {}) {
+    constructor(options = {}, ast = {}) {
       var ref, ref1;
       this.options = options;
-      // Future: compilation options, analysis settings, etc.
+      this.ast = ast;
+      // @ast contains AST node class definitions (constructors)
+      // @options contains compilation options, analysis settings, etc.
       this.compileOptions = {
         bare: (ref = this.options.bare) != null ? ref : true,
         header: (ref1 = this.options.header) != null ? ref1 : false
@@ -46,10 +48,8 @@
 
     // Core Solar directive evaluator
     evaluateDirective(directive, frame) {
-      var body, bodyArray, filteredBody, items, nodeType, nodes, ref, ref1, value;
-      // Import nodes on demand to avoid circular dependencies
-      nodes = require('./nodes');
-      // Handle position references (1, 2, 3, ...) 
+      var body, bodyArray, filteredBody, items, nodeType, ref, ref1, value;
+      // Handle position references (1, 2, 3, ...)
       if (typeof directive === 'number') {
         return (ref = frame[directive - 1]) != null ? ref.value : void 0; // 1-based → 0-based
       }
@@ -76,17 +76,17 @@
               filteredBody = bodyArray.filter(function(item) {
                 return item != null;
               });
-              return new nodes.Root(new nodes.Block(filteredBody));
+              return new this.ast.Root(new this.ast.Block(filteredBody));
             case 'IdentifierLiteral':
               value = this.evaluateDirective(directive.value, frame);
-              return new nodes.IdentifierLiteral(value);
+              return new this.ast.IdentifierLiteral(value);
             case 'Literal':
               value = this.evaluateDirective(directive.value, frame);
-              return new nodes.Literal(value);
+              return new this.ast.Literal(value);
             default:
               // Fallback for unimplemented node types
               console.warn("ES6Backend: Unimplemented AST node type:", nodeType);
-              return new nodes.Literal(`/* Unimplemented: ${nodeType} */`);
+              return new this.ast.Literal(`/* Unimplemented: ${nodeType} */`);
           }
         // $ary directive - return array
         } else if (directive.$ary != null) {
@@ -102,15 +102,15 @@
         // $ops directive - operation (array append, etc.)
         } else if (directive.$ops != null) {
           console.warn("ES6Backend: $ops not yet implemented:", directive.$ops);
-          return new nodes.Literal(`/* $ops: ${directive.$ops} */`);
+          return new this.ast.Literal(`/* $ops: ${directive.$ops} */`);
         } else {
           // Unknown directive
           console.warn("ES6Backend: Unknown directive:", directive);
-          return new nodes.Literal("/* Unknown directive */");
+          return new this.ast.Literal("/* Unknown directive */");
         }
       } else {
         // Fallback for unexpected input
-        return new nodes.Literal("/* Unexpected input */");
+        return new this.ast.Literal("/* Unexpected input */");
       }
     }
 
