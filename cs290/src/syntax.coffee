@@ -770,8 +770,8 @@ grammar =
     o 'UNARY Expression'              , $ast: 'Op', args: [{$use: 1, method: 'toString'}, 2, undefined, undefined], originalOperator: {$use: 1, prop: 'original'}
     o 'DO Expression'                 , $ast: 'Op', args: [1, 2]
     o 'UNARY_MATH Expression'         , $ast: 'Op', args: [1, 2]
-    o '- Expression'                  ,{$ast: 'Op', args: ['-', 2]}, prec: 'UNARY_MATH'
-    o '+ Expression'                  ,{$ast: 'Op', args: ['+', 2]}, prec: 'UNARY_MATH'
+    o '- Expression'                  ,{$ast: 'Op', args: [1, 2]}, prec: 'UNARY_MATH'
+    o '+ Expression'                  ,{$ast: 'Op', args: [1, 2]}, prec: 'UNARY_MATH'
 
     o 'AWAIT Expression'              , $ast: 'Op', args: [1, 2]
     o 'AWAIT INDENT Object OUTDENT'   , $ast: 'Op', args: [1, 3]
@@ -783,8 +783,8 @@ grammar =
 
     o 'Expression ?'                  , $ast: 'Existence', expression: 1
 
-    o 'Expression +  Expression'      , $ast: 'Op', args: ['+', 1, 3]
-    o 'Expression -  Expression'      , $ast: 'Op', args: ['-', 1, 3]
+    o 'Expression +  Expression'      , $ast: 'Op', args: [2, 1, 3]
+    o 'Expression -  Expression'      , $ast: 'Op', args: [2, 1, 3]
 
     o 'Expression MATH     Expression', $ast: 'Op', args: [2, 1, 3]
     o 'Expression **       Expression', $ast: 'Op', args: [2, 1, 3]
