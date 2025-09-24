@@ -455,51 +455,17 @@ grammar =
     o 'THIS', $ast: 'Value', value: {$ast: 'ThisLiteral'}
   ]
 
-  # A reference to a property on *this*.
+  # A reference to a property on *this*
   ThisProperty: [
-    # NEW: fused token path -> @ident
-    o 'THIS_PROPERTY',
-      $ast: 'Value',
-      val:         {$ast: 'ThisLiteral'},
-      properties:  [ { $ast: 'Access',
-                       name: { $ast: 'PropertyName', value: 1 } } ],
-      bareLiteral: {$ast: 'ThisLiteral'}
+    # First entry is the new fused token path -> @ident
+    o 'THIS_PROPERTY'       , $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: { $ast: 'PropertyName', value: 1 } } ], bareLiteral: {$ast: 'ThisLiteral'}
 
-    # Support the older split forms explicitly:
-
-    # @ <name>   (if your lexer still ever produces PROPERTY after '@')
-    o '@ BarePropertyName',
-      $ast: 'Value',
-      val:         {$ast: 'ThisLiteral'},
-      properties:  [ { $ast: 'Access', name: 2 } ],
-      bareLiteral: {$ast: 'ThisLiteral'}
-
-    # @ . <name>   (fixes the regression with @.toString)
-    o '@ . BarePropertyName',
-      $ast: 'Value',
-      val:         {$ast: 'ThisLiteral'},
-      properties:  [ { $ast: 'Access', name: 3 } ],
-      bareLiteral: {$ast: 'ThisLiteral'}
-
-    # @ [ expr ]   (computed)
-    o '@ [ Expression ]',
-      $ast: 'Value',
-      val:         {$ast: 'ThisLiteral'},
-      properties:  [ { $ast: 'Index', index: 3 } ],
-      bareLiteral: {$ast: 'ThisLiteral'}
-
-    # @@  -> this.constructor
-    o 'THIS_CONSTRUCTOR',
-      $ast: 'Value',
-      val:         {$ast: 'ThisLiteral'},
-      properties:  [ { $ast: 'Access',
-                       name: { $ast: 'PropertyName', value: 'constructor' } } ],
-      bareLiteral: {$ast: 'ThisLiteral'}
-
-    # Fallback: bare @  (must be last)
-    o '@',
-      $ast: 'Value',
-      value: {$ast: 'ThisLiteral'}
+    # Support the old split forms explicitly:
+    o '@ BarePropertyName'  , $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 2 } ], bareLiteral: {$ast: 'ThisLiteral'} # @   <name>   (if your lexer still ever produces PROPERTY after '@')
+    o '@ . BarePropertyName', $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 3 } ], bareLiteral: {$ast: 'ThisLiteral'} # @ . <name>   (fixes the regression with @.toString)
+    o '@ [ Expression ]'    , $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Index', index: 3 } ], bareLiteral: {$ast: 'ThisLiteral'} # @  [ expr ]  (computed)
+    o 'THIS_CONSTRUCTOR'    , $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: { $ast: 'PropertyName', value: 'constructor' } } ], bareLiteral: {$ast: 'ThisLiteral'} # @@  -> this.constructor
+    o '@'                   , $ast: 'Value', val: {$ast: 'ThisLiteral'} # Fallback: bare @  (must be last)
   ]
 
   # The array literal.
