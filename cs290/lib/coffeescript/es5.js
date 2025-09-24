@@ -57,7 +57,7 @@
     }
 
     resolve(value, lookup = value) {
-      var $, accessor, item, items, name, nodeType, o, ref, ref1, ref2, ref3, resolvedValue, target, useLookup;
+      var $, accessor, i, item, items, len, name, nodeType, o, ref, ref1, ref2, ref3, ref4, resolved, resolvedValue, result, target, useLookup;
       if (typeof value === 'number' && (lookup != null)) {
         return lookup(value - 1);
       }
@@ -113,6 +113,8 @@
               return new this.ast.Call($(o.variable), $(o.args));
             case 'Obj':
               return new this.ast.Obj($(o.properties), $(o.generated));
+            case 'Arr':
+              return new this.ast.Arr($(o.objects));
             case 'Literal':
               return new this.ast.Literal($(o.value));
             default:
@@ -152,7 +154,7 @@
               }
               break;
             case 'array':
-              // Array operations
+              // Array operations  
               if (o.append != null) {
                 target = $(o.append[0]);
                 items = (function() {
@@ -171,8 +173,24 @@
                   target = [];
                 }
                 return target.concat(items);
+              } else if (o.gather != null) {
+                result = [];
+                ref4 = o.gather;
+                for (i = 0, len = ref4.length; i < len; i++) {
+                  item = ref4[i];
+                  if (!(item != null)) {
+                    continue;
+                  }
+                  resolved = $(item);
+                  if (Array.isArray(resolved)) {
+                    result = result.concat(resolved);
+                  } else {
+                    result.push(resolved);
+                  }
+                }
+                return result;
               } else {
-                console.warn("ES5Backend: $ops array without append:", o);
+                console.warn("ES5Backend: $ops array without append/gather:", o);
                 return new this.ast.Literal("/* $ops: array */");
               }
               break;

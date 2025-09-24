@@ -62,6 +62,7 @@ class ES5Backend
           when 'Access'            then new @ast.Access            $(o.name), soak: o.soak
           when 'Call'              then new @ast.Call              $(o.variable), $(o.args)
           when 'Obj'               then new @ast.Obj               $(o.properties), $(o.generated)
+          when 'Arr'               then new @ast.Arr               $(o.objects)
           when 'Literal'           then new @ast.Literal           $(o.value)
           else
             console.warn "ES5Backend: Unimplemented AST node type:", nodeType
@@ -90,14 +91,20 @@ class ES5Backend
               console.warn "ES5Backend: $ops value without add:", o
               new @ast.Literal "/* $ops: value */"
           when 'array'
-            # Array operations
+            # Array operations  
             if o.append?
               target = $(o.append[0])
               items = ($(item) for item in o.append[1..] when item?)
               target = [] unless Array.isArray target
               target.concat items
+            else if o.gather?
+              result = []
+              for item in o.gather when item?
+                resolved = $(item)
+                if Array.isArray resolved then result = result.concat resolved else result.push resolved
+              result
             else
-              console.warn "ES5Backend: $ops array without append:", o
+              console.warn "ES5Backend: $ops array without append/gather:", o
               new @ast.Literal "/* $ops: array */"
           else
             console.warn "ES5Backend: $ops not yet implemented:", o.$ops
