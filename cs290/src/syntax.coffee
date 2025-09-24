@@ -776,10 +776,10 @@ grammar =
     o 'AWAIT Expression'              , $ast: 'Op', args: [1, 2]
     o 'AWAIT INDENT Object OUTDENT'   , $ast: 'Op', args: [1, 3]
 
-    o '-- SimpleAssignable'           , $ast: 'Op', args: ['--', 2]
-    o '++ SimpleAssignable'           , $ast: 'Op', args: ['++', 2]
-    o 'SimpleAssignable --'           , $ast: 'Op', args: ['--', 1, null, true]
-    o 'SimpleAssignable ++'           , $ast: 'Op', args: ['++', 1, null, true]
+    o '-- SimpleAssignable'           , $ast: 'Op', args: [1, 2]
+    o '++ SimpleAssignable'           , $ast: 'Op', args: [1, 2]
+    o 'SimpleAssignable --'           , $ast: 'Op', args: [2, 1, null, true]
+    o 'SimpleAssignable ++'           , $ast: 'Op', args: [2, 1, null, true]
 
     o 'Expression ?'                  , $ast: 'Existence', expression: 1
 

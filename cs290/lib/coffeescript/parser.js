@@ -26,7 +26,7 @@ case 13:
 return r(1, {$ast: "StatementLiteral", value: 1});
 case 31:
 return r(1, {$ast: "Op", args: [1, {"$ast":"Value"}]});
-case 32: case 381: case 382: case 383: case 385: case 386: case 389: case 412:
+case 32: case 381: case 382: case 383: case 385: case 386: case 389: case 391: case 392: case 412:
 return r(2, {$ast: "Op", args: [1, 2]});
 case 33: case 390:
 return r(4, {$ast: "Op", args: [1, 3]});
@@ -432,14 +432,8 @@ case 387:
 return r(2, {$ast: "Op", args: ["-", 2]});
 case 388:
 return r(2, {$ast: "Op", args: ["+", 2]});
-case 391:
-return r(2, {$ast: "Op", args: ["--", 2]});
-case 392:
-return r(2, {$ast: "Op", args: ["++", 2]});
-case 393:
-return r(2, {$ast: "Op", args: ["--", 1, null, true]});
-case 394:
-return r(2, {$ast: "Op", args: ["++", 1, null, true]});
+case 393: case 394:
+return r(2, {$ast: "Op", args: [2, 1, null, true]});
 case 395:
 return r(2, {$ast: "Existence", expression: 1});
 case 396:

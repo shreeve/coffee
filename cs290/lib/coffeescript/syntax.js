@@ -2843,19 +2843,19 @@
       o('-- SimpleAssignable',
       {
         $ast: 'Op',
-        args: ['--',
+        args: [1,
       2]
       }),
       o('++ SimpleAssignable',
       {
         $ast: 'Op',
-        args: ['++',
+        args: [1,
       2]
       }),
       o('SimpleAssignable --',
       {
         $ast: 'Op',
-        args: ['--',
+        args: [2,
       1,
       null,
       true]
@@ -2863,7 +2863,7 @@
       o('SimpleAssignable ++',
       {
         $ast: 'Op',
-        args: ['++',
+        args: [2,
       1,
       null,
       true]
