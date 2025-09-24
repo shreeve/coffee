@@ -29,7 +29,13 @@ global.test = (name, fnOrExpected) ->
       fnOrExpected()
     else
       # Ultra-simple: test "code", expected
-      result = eval(CoffeeScript.compile(name.trim()))
+      compiled = CoffeeScript.compile(name.trim())
+      # Extract expression from return statement to make it eval-able
+      match = compiled.match(/return\s+(.*);/)
+      if match
+        result = eval(match[1])
+      else
+        result = eval("(#{compiled})()")
       eq result, fnOrExpected
     passed++
     console.log "#{green}✓#{reset} #{name}"

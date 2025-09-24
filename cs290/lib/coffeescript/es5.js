@@ -28,6 +28,18 @@
       };
     }
 
+    // Helper methods
+    _stripQuotes(value) {
+      if (!((value != null ? value.length : void 0) >= 2 && typeof value === 'string')) {
+        return value;
+      }
+      if ((value[0] === '"' && value[value.length - 1] === '"') || (value[0] === "'" && value[value.length - 1] === "'")) {
+        return value.slice(1, -1);
+      } else {
+        return value;
+      }
+    }
+
     reduce(values, positions, stackTop, symbolCount, directive) {
       var o, prop, value;
       o = function(index) {
@@ -81,6 +93,8 @@
               return new this.ast.IdentifierLiteral($(o.value));
             case 'NumberLiteral':
               return new this.ast.NumberLiteral($(o.value));
+            case 'StringLiteral':
+              return new this.ast.StringLiteral(this._stripQuotes($(o.value)));
             case 'Value':
               return new this.ast.Value($(o.val));
             case 'Assign':

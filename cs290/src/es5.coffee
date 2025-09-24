@@ -19,6 +19,14 @@ class ES5Backend
       bare: @options.bare ? true
       header: @options.header ? false
 
+  # Helper methods
+  _stripQuotes: (value) ->
+    return value unless value?.length >= 2 and typeof value is 'string'
+    if (value[0] is '"' and value[value.length-1] is '"') or (value[0] is "'" and value[value.length-1] is "'")
+      value.slice(1, -1)
+    else
+      value
+
   reduce: (values, positions, stackTop, symbolCount, directive) ->
     o = (index) -> values[stackTop - symbolCount + 1 + index]
     for own prop, value of directive
@@ -45,6 +53,7 @@ class ES5Backend
           when 'Root'              then new @ast.Root ((b) -> b.makeReturn(); b)(new @ast.Block $(o.body))
           when 'IdentifierLiteral' then new @ast.IdentifierLiteral $(o.value)
           when 'NumberLiteral'     then new @ast.NumberLiteral     $(o.value)
+          when 'StringLiteral'     then new @ast.StringLiteral     @_stripQuotes($(o.value))
           when 'Value'             then new @ast.Value             $(o.val)
           when 'Assign'            then new @ast.Assign            $(o.variable), $(o.value)
           when 'Op'                then new @ast.Op                $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
