@@ -124,6 +124,9 @@ class ES5Backend
           when 'SwitchWhen'         then new @ast.SwitchWhen         $(o.conditions), $(o.block)
           when 'Elision'            then new @ast.Elision
           when 'Expansion'          then new @ast.Expansion
+          when 'ThisProperty'       then new @ast.Value new @ast.ThisLiteral($(o.token)), [new @ast.Access($(o.property))]
+          when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
+          when 'DefaultLiteral'     then new @ast.DefaultLiteral     $(o.value)
           when 'Try'                then new @ast.Try (if (a = $(o.attempt)) instanceof @ast.Block or not a? then a else new @ast.Block [a]), $(o.recovery), $(o.ensure)
           when 'Class'              then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
           when 'FuncGlyph'          then new @ast.FuncGlyph          $(o.glyph)
@@ -165,6 +168,12 @@ class ES5Backend
           when 'Catch'              then new @ast.Catch              $(o.body), $(o.errorVariable)
           when 'Throw'              then new @ast.Throw              $(o.expression)
           when 'Literal'            then new @ast.Literal            $(o.value)
+          when 'DefaultLiteral'     then new @ast.DefaultLiteral     $(o.value)
+          when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
+          when 'ThisProperty'       then new @ast.Value new @ast.ThisLiteral($(o.token)), [new @ast.Access($(o.property))]
+          when 'SwitchWhen'         then new @ast.SwitchWhen         $(o.conditions), $(o.block)
+          when 'Elision'            then new @ast.Elision
+          when 'Expansion'          then new @ast.Expansion
           else
             console.warn "ES5Backend: Unimplemented AST node type:", nodeType
             new @ast.Literal "/* Unimplemented: #{nodeType} */"
@@ -248,6 +257,16 @@ class ES5Backend
             else
               console.warn "ES5Backend: $ops loop without addSource/addBody:", o
               new @ast.Literal "/* $ops: loop */"
+          when 'prop'
+            # Property operations
+            if o.addProp?
+              target = $(o.addProp[0])
+              property = $(o.addProp[1])
+              target.add [property] if target instanceof @ast.Value
+              target
+            else
+              console.warn "ES5Backend: $ops prop without addProp:", o
+              new @ast.Literal "/* $ops: prop */"
           else
             console.warn "ES5Backend: $ops not yet implemented:", o.$ops
             new @ast.Literal "/* $ops: #{o.$ops} */"

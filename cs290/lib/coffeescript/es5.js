@@ -92,7 +92,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, a, accessor, b, body, bodyNode, context, e, elseBody, expr, i, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, name, nodeType, obj, p, prop, ref, ref1, ref2, ref3, resolved, resolvedValue, result, sourceInfo, subItem, target, type, value, variable, wrappedBody;
+      var $, a, accessor, b, body, bodyNode, context, e, elseBody, expr, i, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, name, nodeType, obj, p, prop, property, ref, ref1, ref2, ref3, resolved, resolvedValue, result, sourceInfo, subItem, target, type, value, variable, wrappedBody;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -236,6 +236,12 @@
               return new this.ast.Elision();
             case 'Expansion':
               return new this.ast.Expansion();
+            case 'ThisProperty':
+              return new this.ast.Value(new this.ast.ThisLiteral($(o.token)), [new this.ast.Access($(o.property))]);
+            case 'ComputedPropertyName':
+              return new this.ast.ComputedPropertyName($(o.value));
+            case 'DefaultLiteral':
+              return new this.ast.DefaultLiteral($(o.value));
             case 'Try':
               return new this.ast.Try(((a = $(o.attempt)) instanceof this.ast.Block || (a == null) ? a : new this.ast.Block([a])), $(o.recovery), $(o.ensure));
             case 'Class':
@@ -325,6 +331,18 @@
               return new this.ast.Throw($(o.expression));
             case 'Literal':
               return new this.ast.Literal($(o.value));
+            case 'DefaultLiteral':
+              return new this.ast.DefaultLiteral($(o.value));
+            case 'ComputedPropertyName':
+              return new this.ast.ComputedPropertyName($(o.value));
+            case 'ThisProperty':
+              return new this.ast.Value(new this.ast.ThisLiteral($(o.token)), [new this.ast.Access($(o.property))]);
+            case 'SwitchWhen':
+              return new this.ast.SwitchWhen($(o.conditions), $(o.block));
+            case 'Elision':
+              return new this.ast.Elision();
+            case 'Expansion':
+              return new this.ast.Expansion();
             default:
               console.warn("ES5Backend: Unimplemented AST node type:", nodeType);
               return new this.ast.Literal(`/* Unimplemented: ${nodeType} */`);
@@ -446,6 +464,20 @@
               } else {
                 console.warn("ES5Backend: $ops loop without addSource/addBody:", o);
                 return new this.ast.Literal("/* $ops: loop */");
+              }
+              break;
+            case 'prop':
+              // Property operations
+              if (o.addProp != null) {
+                target = $(o.addProp[0]);
+                property = $(o.addProp[1]);
+                if (target instanceof this.ast.Value) {
+                  target.add([property]);
+                }
+                return target;
+              } else {
+                console.warn("ES5Backend: $ops prop without addProp:", o);
+                return new this.ast.Literal("/* $ops: prop */");
               }
               break;
             default:
