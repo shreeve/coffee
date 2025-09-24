@@ -223,7 +223,6 @@
             case 'NaNLiteral':
               return new this.ast.NaNLiteral();
             case 'Value':
-              
               // Tolerant pattern: accept either o.value OR o.val+o.properties
               base = $(o.value) || $(o.val);
               properties = $(o.properties) || [];
@@ -295,7 +294,7 @@
               variable = $(o.variable) || $(o.val) || $(o.base);
               index = $(o.index) || $(o.object);
               soak = $(o.soak);
-              // Smart-append: if LHS is already a Value, append to its properties  
+              // Smart-append: if LHS is already a Value, append to its properties
               if (variable instanceof this.ast.Value) {
                 indexNode = new this.ast.Index(index, {soak});
                 variable.properties.push(indexNode);
