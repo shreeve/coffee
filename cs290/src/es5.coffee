@@ -182,18 +182,12 @@ class ES5Backend
               variable  # return the same Value (now with extra segment)
             else
               new @ast.Access name, {soak}
-          when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
-          when 'Obj'                then new @ast.Obj $(o.properties), $(o.generated)
-          when 'Arr'                then new @ast.Arr $(o.objects)
-          when 'Range'
-            from = $(o.from)
-            to = $(o.to)
-            exclusive = $(o.exclusive)
-            # Range constructor expects string 'exclusive' as tag for exclusive ranges
-            tag = if exclusive then 'exclusive' else null
-            new @ast.Range from, to, tag
-          when 'Block'              then new @ast.Block $(o.expressions)
-          when 'Return'             then new @ast.Return             $(o.expression)
+          when 'Call'               then new @ast.Call   $(o.variable), $(o.args)
+          when 'Obj'                then new @ast.Obj    $(o.properties), $(o.generated)
+          when 'Arr'                then new @ast.Arr    $(o.objects)
+          when 'Range'              then new @ast.Range  $(o.from), $(o.to), (if $(o.exclusive) then 'exclusive' else null)
+          when 'Block'              then new @ast.Block  $(o.expressions)
+          when 'Return'             then new @ast.Return $(o.expression)
           when 'Parens'             then new @ast.Parens (@_toBlock($(o.body)) ? new @ast.Block [new @ast.Literal ''])
           when 'Index'
             variable = $(o.variable) || $(o.val) || $(o.base)
@@ -211,19 +205,13 @@ class ES5Backend
             condition = $(o.condition)
             body = @_toBlock($(o.body))
             elseBody = @_toBlock($(o.elseBody))
-            # Extract the type token to determine if/unless
-            typeToken = $(o.type)
-            type = if typeToken?.toString?() is 'unless' then 'unless' else 'if'
+            type = if $(o.type)?.toString?() is 'unless' then 'unless' else 'if'
             ifNode = new @ast.If condition, body, {type}
-            # Add else body if present
             ifNode.addElse elseBody if elseBody?.expressions?.length > 0
             ifNode
           when 'While'
-            condition = $(o.condition)
-            body = $(o.body)
-            opts = {guard: $(o.guard), isLoop: $(o.isLoop), invert: $(o.invert)}
-            whileNode = new @ast.While condition, opts
-            whileNode.body = @_toBlock(body)
+            whileNode = new @ast.While $(o.condition), {guard: $(o.guard), isLoop: $(o.isLoop), invert: $(o.invert)}
+            whileNode.body = @_toBlock($(o.body))
             whileNode
           when 'For'                  then new @ast.For                $(o.body), $(o.source)
           when 'Switch'               then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
@@ -272,24 +260,15 @@ class ES5Backend
             else
               new @ast.Block []
             new @ast.StringWithInterpolations bodyNode, {quote}
-          when 'Catch'
-            # The parser uses either 'recovery' or 'body' for the catch block
-            body = $(o.recovery) || $(o.body)
-            # The parser uses 'variable' or 'errorVariable' for the error parameter
-            error = $(o.variable) || $(o.errorVariable)
-            # Ensure body is a proper Block
-            bodyNode = @_toBlock(body)
-            # Catch constructor expects (recovery, errorVariable)
-            new @ast.Catch bodyNode, error
-          when 'Throw'              then new @ast.Throw              $(o.expression)
-          when 'Literal'            then new @ast.Literal            $(o.value)
+          when 'Catch'                then new @ast.Catch              @_toBlock($(o.recovery) || $(o.body)), $(o.variable) || $(o.errorVariable)
+          when 'Throw'                then new @ast.Throw              $(o.expression)
+          when 'Literal'              then new @ast.Literal            $(o.value)
           when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
-          when 'DefaultLiteral'     then new @ast.DefaultLiteral     $(o.value)
-          when 'SwitchWhen'         then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
-          when 'Elision'            then new @ast.Elision
-          when 'Expansion'          then new @ast.Expansion
-          else
-            @_unimplemented nodeType, "AST node type"
+          when 'DefaultLiteral'       then new @ast.DefaultLiteral     $(o.value)
+          when 'SwitchWhen'           then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
+          when 'Elision'              then new @ast.Elision
+          when 'Expansion'            then new @ast.Expansion
+          else @_unimplemented nodeType, "AST node type"
 
       else if o.$ary?
         items = $(o.$ary)

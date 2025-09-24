@@ -154,7 +154,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessNode, accessor, actualExpression, base, body, bodyNode, bodyNodes, c, condition, context, elseBody, error, exclusive, expression, expressionNode, from, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nodeType, opts, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, resolved, resolvedValue, result, soak, sourceInfo, tag, target, to, type, typeToken, val, value, variable, whileNode;
+      var $, accessNode, accessor, actualExpression, base, body, bodyNode, bodyNodes, c, condition, context, elseBody, expression, expressionNode, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nodeType, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, soak, sourceInfo, target, type, val, value, variable, whileNode;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -278,12 +278,7 @@
             case 'Arr':
               return new this.ast.Arr($(o.objects));
             case 'Range':
-              from = $(o.from);
-              to = $(o.to);
-              exclusive = $(o.exclusive);
-              // Range constructor expects string 'exclusive' as tag for exclusive ranges
-              tag = exclusive ? 'exclusive' : null;
-              return new this.ast.Range(from, to, tag);
+              return new this.ast.Range($(o.from), $(o.to), ($(o.exclusive) ? 'exclusive' : null));
             case 'Block':
               return new this.ast.Block($(o.expressions));
             case 'Return':
@@ -309,35 +304,29 @@
               condition = $(o.condition);
               body = this._toBlock($(o.body));
               elseBody = this._toBlock($(o.elseBody));
-              // Extract the type token to determine if/unless
-              typeToken = $(o.type);
-              type = (typeToken != null ? typeof typeToken.toString === "function" ? typeToken.toString() : void 0 : void 0) === 'unless' ? 'unless' : 'if';
+              type = ((ref2 = $(o.type)) != null ? typeof ref2.toString === "function" ? ref2.toString() : void 0 : void 0) === 'unless' ? 'unless' : 'if';
               ifNode = new this.ast.If(condition, body, {type});
-              if ((elseBody != null ? (ref2 = elseBody.expressions) != null ? ref2.length : void 0 : void 0) > 0) {
-                // Add else body if present
+              if ((elseBody != null ? (ref3 = elseBody.expressions) != null ? ref3.length : void 0 : void 0) > 0) {
                 ifNode.addElse(elseBody);
               }
               return ifNode;
             case 'While':
-              condition = $(o.condition);
-              body = $(o.body);
-              opts = {
+              whileNode = new this.ast.While($(o.condition), {
                 guard: $(o.guard),
                 isLoop: $(o.isLoop),
                 invert: $(o.invert)
-              };
-              whileNode = new this.ast.While(condition, opts);
-              whileNode.body = this._toBlock(body);
+              });
+              whileNode.body = this._toBlock($(o.body));
               return whileNode;
             case 'For':
               return new this.ast.For($(o.body), $(o.source));
             case 'Switch':
               return new this.ast.Switch($(o.subject), (function() {
-                var j, len1, ref3, ref4, results;
-                ref4 = (ref3 = $(o.cases)) != null ? ref3 : [];
+                var j, len1, ref4, ref5, results;
+                ref5 = (ref4 = $(o.cases)) != null ? ref4 : [];
                 results = [];
-                for (j = 0, len1 = ref4.length; j < len1; j++) {
-                  c = ref4[j];
+                for (j = 0, len1 = ref5.length; j < len1; j++) {
+                  c = ref5[j];
                   if ($(c) != null) {
                     results.push($(c));
                   }
@@ -346,11 +335,11 @@
               })(), this._toBlock($(o.otherwise)));
             case 'SwitchWhen':
               return new this.ast.SwitchWhen((function() {
-                var j, len1, ref3, ref4, results;
-                ref4 = (ref3 = $(o.conditions)) != null ? ref3 : [];
+                var j, len1, ref4, ref5, results;
+                ref5 = (ref4 = $(o.conditions)) != null ? ref4 : [];
                 results = [];
-                for (j = 0, len1 = ref4.length; j < len1; j++) {
-                  c = ref4[j];
+                for (j = 0, len1 = ref5.length; j < len1; j++) {
+                  c = ref5[j];
                   if ($(c) != null) {
                     results.push($(c));
                   }
@@ -375,11 +364,11 @@
               return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
               return new this.ast.Code((function() {
-                var j, len1, ref3, ref4, results;
-                ref4 = (ref3 = $(o.params)) != null ? ref3 : [];
+                var j, len1, ref4, ref5, results;
+                ref5 = (ref4 = $(o.params)) != null ? ref4 : [];
                 results = [];
-                for (j = 0, len1 = ref4.length; j < len1; j++) {
-                  p = ref4[j];
+                for (j = 0, len1 = ref5.length; j < len1; j++) {
+                  p = ref5[j];
                   if ($(p) != null) {
                     results.push($(p));
                   }
@@ -417,14 +406,7 @@
               }), new this.ast.Block(this._filterNodes(bodyNodes))) : body instanceof this.ast.Block ? body : body != null ? new this.ast.Block([this._ensureNode(body)]) : new this.ast.Block([]);
               return new this.ast.StringWithInterpolations(bodyNode, {quote});
             case 'Catch':
-              // The parser uses either 'recovery' or 'body' for the catch block
-              body = $(o.recovery) || $(o.body);
-              // The parser uses 'variable' or 'errorVariable' for the error parameter
-              error = $(o.variable) || $(o.errorVariable);
-              // Ensure body is a proper Block
-              bodyNode = this._toBlock(body);
-              // Catch constructor expects (recovery, errorVariable)
-              return new this.ast.Catch(bodyNode, error);
+              return new this.ast.Catch(this._toBlock($(o.recovery) || $(o.body)), $(o.variable) || $(o.errorVariable));
             case 'Throw':
               return new this.ast.Throw($(o.expression));
             case 'Literal':
@@ -435,11 +417,11 @@
               return new this.ast.DefaultLiteral($(o.value));
             case 'SwitchWhen':
               return new this.ast.SwitchWhen((function() {
-                var j, len1, ref3, ref4, results;
-                ref4 = (ref3 = $(o.conditions)) != null ? ref3 : [];
+                var j, len1, ref4, ref5, results;
+                ref5 = (ref4 = $(o.conditions)) != null ? ref4 : [];
                 results = [];
-                for (j = 0, len1 = ref4.length; j < len1; j++) {
-                  c = ref4[j];
+                for (j = 0, len1 = ref5.length; j < len1; j++) {
+                  c = ref5[j];
                   if ($(c) != null) {
                     results.push($(c));
                   }
@@ -469,16 +451,16 @@
               resolvedValue = lookup.value;
             } else {
               // Fallback: try to get from context
-              resolvedValue = (ref3 = (ref4 = lookup(0)) != null ? ref4.value : void 0) != null ? ref3 : 'unknown_token';
+              resolvedValue = (ref4 = (ref5 = lookup(0)) != null ? ref5.value : void 0) != null ? ref4 : 'unknown_token';
             }
           } else {
             resolvedValue = $(o.$use);
           }
           // Handle both 'method' (function calls) and 'prop' (property access)
           if (o.method != null) {
-            resolvedValue = (ref5 = typeof resolvedValue[name1 = o.method] === "function" ? resolvedValue[name1]() : void 0) != null ? ref5 : resolvedValue;
+            resolvedValue = (ref6 = typeof resolvedValue[name1 = o.method] === "function" ? resolvedValue[name1]() : void 0) != null ? ref6 : resolvedValue;
           } else if (o.prop != null) {
-            resolvedValue = (ref6 = resolvedValue[o.prop]) != null ? ref6 : resolvedValue;
+            resolvedValue = (ref7 = resolvedValue[o.prop]) != null ? ref7 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -506,9 +488,9 @@
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                ref7 = o.append.slice(1);
-                for (j = 0, len1 = ref7.length; j < len1; j++) {
-                  item = ref7[j];
+                ref8 = o.append.slice(1);
+                for (j = 0, len1 = ref8.length; j < len1; j++) {
+                  item = ref8[j];
                   if (!(item != null)) {
                     continue;
                   }
@@ -522,9 +504,9 @@
                 return target;
               } else if (o.gather != null) {
                 result = [];
-                ref8 = o.gather;
-                for (k = 0, len2 = ref8.length; k < len2; k++) {
-                  item = ref8[k];
+                ref9 = o.gather;
+                for (k = 0, len2 = ref9.length; k < len2; k++) {
+                  item = ref9[k];
                   if (!(item != null)) {
                     continue;
                   }
