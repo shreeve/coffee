@@ -317,7 +317,7 @@ node -r coffeescript/register test/runner.coffee es5 2>&1 | grep "✓.*(" | wc -
 ## 🎉 Success Metrics
 
 - **Current:** 241/311 tests (77.5%) - **EXCEPTIONAL ACHIEVEMENT!**
-- **Achieved:** 200+ milestone SURPASSED! 
+- **Achieved:** 200+ milestone SURPASSED!
 - **Near-term:** 250+ tests (80%+) - **Within reach!**
 - **Long-term:** Full language coverage in CS300 - **Ready for port!**
 

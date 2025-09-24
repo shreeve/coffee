@@ -184,7 +184,7 @@ class ES5Backend
             # Add else body if present
             ifNode.addElse elseBody if elseBody?.expressions?.length > 0
             ifNode
-          when 'While'              
+          when 'While'
             condition = $(o.condition)
             body = @_toBlock($(o.body))
             # While constructor expects (condition, options)
