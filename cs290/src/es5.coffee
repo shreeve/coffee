@@ -92,7 +92,7 @@ class ES5Backend
           when 'NumberLiteral'      then new @ast.NumberLiteral      $(o.value)
           when 'StringLiteral'      then new @ast.StringLiteral      @_stripQuotes($(o.value))
           when 'BooleanLiteral'     then new @ast.BooleanLiteral     $(o.value)
-          when 'ThisLiteral'        then new @ast.ThisLiteral
+          when 'ThisLiteral'        then new @ast.Value new @ast.ThisLiteral $(o.value)
           when 'NullLiteral'        then new @ast.NullLiteral
           when 'UndefinedLiteral'   then new @ast.UndefinedLiteral
           when 'InfinityLiteral'    then new @ast.InfinityLiteral

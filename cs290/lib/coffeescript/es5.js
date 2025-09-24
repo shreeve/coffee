@@ -143,7 +143,7 @@
             case 'BooleanLiteral':
               return new this.ast.BooleanLiteral($(o.value));
             case 'ThisLiteral':
-              return new this.ast.ThisLiteral();
+              return new this.ast.Value(new this.ast.ThisLiteral($(o.value)));
             case 'NullLiteral':
               return new this.ast.NullLiteral();
             case 'UndefinedLiteral':
