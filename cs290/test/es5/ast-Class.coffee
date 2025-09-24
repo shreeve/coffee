@@ -10,7 +10,7 @@ test "class B extends A", ->
 test "class C then constructor: -> @x = 1", ->
   eval("class C { constructor() { this.x = 1; } }; C") instanceof Function
 test "class D extends Object", ->
-  eval("class D extends Object { }; D") instanceof Function  
+  eval("class D extends Object { }; D") instanceof Function
 test "class E then method: -> 5", ->
   eval("class E { method() { return 5; } }; E") instanceof Function
 test "class F then @static: 10", ->
