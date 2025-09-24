@@ -24,68 +24,45 @@ class ES5Backend
   # Main entry point called by r() function in generated parser
   # Converts Solar directives to CoffeeScript AST node instances
   reduce: (values, positions, stackTop, symbolCount, directive) ->
-    # Build frame from parser stacks (same pattern as working implementation)
-    frame = []
-    for i in [0...symbolCount]
-      offset = stackTop - symbolCount + i + 1
-      frame.push {
-        value: values[offset]
-        pos: positions[offset]
-      }
 
-    # Evaluate Solar directive and return AST node
-    @evaluateDirective directive, frame
+    # Make o BOTH a function and an object:
+    # o(0), o(1), o(2) - positional access
+    # o.variable, o.value - semantic access
+    $ = o = (index) -> values[stackTop - symbolCount + index]
+    for prop, value of directive
+      o[prop] = if typeof value is 'number' then o(value - 1) else value
 
-  # Core Solar directive evaluator
-  evaluateDirective: (directive, frame) ->
+    # Resolve Solar directive and return AST node
+    @resolve o
 
-    # Handle position references (1, 2, 3, ...)
-    if typeof directive is 'number'
-      return frame[directive - 1]?.value  # 1-based → 0-based
-
-    # Handle primitives
-    return directive if typeof directive in ['string', 'boolean']
-
-    # Handle arrays
-    if Array.isArray directive
-      return directive.map (item) => @evaluateDirective item, frame
+  # Core Solar directive resolver
+  resolve: (o) ->
+    return $(o) if typeof o is 'number'
+    return o if typeof o in ['string', 'boolean']
+    return o.map (item) => @resolve item if Array.isArray o
 
     # Handle Solar directives (objects with special properties)
-    if directive? and typeof directive is 'object'
+    if o? and typeof o is 'object'
 
       # $ast directive - create AST node
-      if directive.$ast?
-        nodeType = directive.$ast
+      if o.$ast?
+        nodeType = o.$ast
 
         switch nodeType
           when 'Root'
-            body = @evaluateDirective directive.body, frame
+            body = @resolve o.body
             bodyArray = if Array.isArray(body) then body else [body]
             filteredBody = bodyArray.filter (item) -> item?
             block = new @ast.Block filteredBody
             block.makeReturn() if filteredBody.length > 0  # Make final expression return
             new @ast.Root block
 
-          when 'IdentifierLiteral'
-            value = @evaluateDirective directive.value, frame
-            new @ast.IdentifierLiteral value
-
-          when 'NumberLiteral'
-            value = @evaluateDirective directive.value, frame
-            new @ast.NumberLiteral value
-
-          when 'Value'
-            val = @evaluateDirective directive.val, frame
-            new @ast.Value val
-
-          when 'Assign'
-            variable = @evaluateDirective directive.variable, frame
-            value = @evaluateDirective directive.value, frame
-            new @ast.Assign variable, value
-
-          when 'Literal'
-            value = @evaluateDirective directive.value, frame
-            new @ast.Literal value
+          when 'IdentifierLiteral' then new @ast.IdentifierLiteral o(0)
+          when 'NumberLiteral'     then new @ast.NumberLiteral     o(0)
+          when 'Value'             then new @ast.Value             o(0)
+          when 'Assign'            then new @ast.Assign            o.variable, o.value
+          when 'Op'                then new @ast.Op                o.operator, o(1), o(2)
+          when 'Literal'           then new @ast.Literal           o(0)
 
           else
             # Fallback for unimplemented node types
@@ -93,22 +70,23 @@ class ES5Backend
             new @ast.Literal "/* Unimplemented: #{nodeType} */"
 
       # $ary directive - return array
-      else if directive.$ary?
-        items = @evaluateDirective directive.$ary, frame
+      else if o.$ary?
+        items = @resolve o.$ary
         if Array.isArray(items) then items else [items]
 
       # $use directive - use existing value
-      else if directive.$use?
-        @evaluateDirective directive.$use, frame
+      # TODO: This isn't enough, see: {$use: 2, method: 'toString'}
+      else if o.$use?
+        @resolve o.$use
 
       # $ops directive - operation (array append, etc.)
-      else if directive.$ops?
-        console.warn "ES5Backend: $ops not yet implemented:", directive.$ops
-        new @ast.Literal "/* $ops: #{directive.$ops} */"
+      else if o.$ops?
+        console.warn "ES5Backend: $ops not yet implemented:", o.$ops
+        new @ast.Literal "/* $ops: #{o.$ops} */"
 
       else
         # Unknown directive
-        console.warn "ES5Backend: Unknown directive:", directive
+        console.warn "ES5Backend: Unknown directive:", o
         new @ast.Literal "/* Unknown directive */"
 
     else
