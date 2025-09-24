@@ -3,7 +3,7 @@
 # Tests property access and method calls
 
 test 'obj = Object.create(null); obj.prop = "value"; obj.prop', "value"
-test 'obj = Object.create(null); obj.method = () => "result"; obj.method()', "result"  
+test 'obj = Object.create(null); obj.method = () => "result"; obj.method()', "result"
 test 'obj = Object.create(null); obj.nested = {deep: "found"}; obj.nested.deep', "found"
 test 'obj = Object.create(null); obj["key"] = "dynamic"; obj["key"]', "dynamic"
 test 'obj = Object.create(null); obj.prop = "safe"; obj?.prop', "safe"
