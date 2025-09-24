@@ -54,12 +54,14 @@ class ES5Backend
           when 'IdentifierLiteral' then new @ast.IdentifierLiteral $(o.value)
           when 'NumberLiteral'     then new @ast.NumberLiteral     $(o.value)
           when 'StringLiteral'     then new @ast.StringLiteral     @_stripQuotes($(o.value))
+          when 'BooleanLiteral'    then new @ast.BooleanLiteral    $(o.value)
           when 'Value'             then new @ast.Value             $(o.val)
           when 'Assign'            then new @ast.Assign            $(o.variable), $(o.value)
           when 'Op'                then new @ast.Op                $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
           when 'PropertyName'      then new @ast.PropertyName      $(o.value)
-          when 'Access'            then new @ast.Access            $(o.name), soak: !!$(o.soak)
+          when 'Access'            then new @ast.Access            $(o.name), soak: o.soak
           when 'Call'              then new @ast.Call              $(o.variable), $(o.args)
+          when 'Obj'               then new @ast.Obj               $(o.properties), $(o.generated)
           when 'Literal'           then new @ast.Literal           $(o.value)
           else
             console.warn "ES5Backend: Unimplemented AST node type:", nodeType
@@ -79,10 +81,10 @@ class ES5Backend
           when 'value'
             # Add accessor/property to Value node
             if o.add?
-              target = $(o.add[0])  # The Value node
-              accessor = $(o.add[1])  # The Access/Index node
+              target = $(o.add[0])
+              accessor = $(o.add[1])
               target = new @ast.Value target unless target instanceof @ast.Value
-              target.add [accessor] if accessor?
+              target.add [accessor] if accessor?.traverseChildren?
               target
             else
               console.warn "ES5Backend: $ops value without add:", o

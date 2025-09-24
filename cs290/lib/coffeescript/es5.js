@@ -95,6 +95,8 @@
               return new this.ast.NumberLiteral($(o.value));
             case 'StringLiteral':
               return new this.ast.StringLiteral(this._stripQuotes($(o.value)));
+            case 'BooleanLiteral':
+              return new this.ast.BooleanLiteral($(o.value));
             case 'Value':
               return new this.ast.Value($(o.val));
             case 'Assign':
@@ -105,10 +107,12 @@
               return new this.ast.PropertyName($(o.value));
             case 'Access':
               return new this.ast.Access($(o.name), {
-                soak: !!$(o.soak)
+                soak: o.soak
               });
             case 'Call':
               return new this.ast.Call($(o.variable), $(o.args));
+            case 'Obj':
+              return new this.ast.Obj($(o.properties), $(o.generated));
             case 'Literal':
               return new this.ast.Literal($(o.value));
             default:
@@ -138,7 +142,7 @@
                 if (!(target instanceof this.ast.Value)) {
                   target = new this.ast.Value(target);
                 }
-                if (accessor != null) {
+                if ((accessor != null ? accessor.traverseChildren : void 0) != null) {
                   target.add([accessor]);
                 }
                 return target;
