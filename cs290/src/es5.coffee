@@ -109,43 +109,23 @@ class ES5Backend
           when 'PropertyName'       then new @ast.PropertyName       $(o.value)
           when 'Access'             then new @ast.Access             $(o.name), soak: o.soak
           when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
-          when 'Obj'
-            properties = $(o.properties)
-            # Empty objects have no properties
-            properties = [] unless properties?
-            # Ensure properties is an array
-            properties = if Array.isArray(properties) then properties else [properties]
-            # Filter out null/undefined items (from empty {} placeholders)
-            validProperties = (prop for prop in properties when prop?)
-            new @ast.Obj validProperties, $(o.generated)
-          when 'Arr'
-            objects = $(o.objects)
-            # Filter out undefined/null objects
-            objects = (obj for obj in objects when obj?) if Array.isArray(objects)
-            new @ast.Arr objects
+          when 'Obj'                then new @ast.Obj ((prop for prop in $(o.properties) ? [] when prop?)), $(o.generated)
+          when 'Arr'                then new @ast.Arr ((obj for obj in $(o.objects) ? [] when obj?))
           when 'Range'              then new @ast.Range              $(o.from), $(o.to), $(o.exclusive)
-          when 'Block'
-            expressions = $(o.expressions)
-            # Filter out undefined/null expressions
-            expressions = (expr for expr in expressions when expr?) if Array.isArray(expressions)
-            new @ast.Block expressions
+          when 'Block'              then new @ast.Block ((expr for expr in $(o.expressions) ? [] when expr?))
           when 'Return'             then new @ast.Return             $(o.expression)
-          when 'Parens'             then new @ast.Parens             $(o.body)
+          when 'Parens'             then new @ast.Parens(if (b = $(o.body)) instanceof @ast.Block then b else new @ast.Block [b])
           when 'Index'              then new @ast.Index              $(o.index)
           when 'Slice'              then new @ast.Slice              $(o.range)
-          when 'If'                 then new @ast.If                 $(o.condition), $(o.body), $(o.elseBody)
-          when 'While'              then new @ast.While              $(o.condition), $(o.body)
+          when 'If'                 then new @ast.If $(o.condition), (if (b = $(o.body)) instanceof @ast.Block or not b? then b else new @ast.Block [b]), (if (e = $(o.elseBody))? and not (e instanceof @ast.Block) then new @ast.Block [e] else e)
+          when 'While'              then new @ast.While $(o.condition), (if (b = $(o.body)) instanceof @ast.Block or not b? then b else new @ast.Block [b])
           when 'For'                then new @ast.For                $(o.body), $(o.source)
           when 'Switch'             then new @ast.Switch             $(o.subject), $(o.cases), $(o.otherwise)
-          when 'Try'                then new @ast.Try                $(o.attempt), $(o.recovery), $(o.ensure)
+          when 'Try'                then new @ast.Try (if (a = $(o.attempt)) instanceof @ast.Block or not a? then a else new @ast.Block [a]), $(o.recovery), $(o.ensure)
           when 'Class'              then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
           when 'FuncGlyph'          then new @ast.FuncGlyph          $(o.glyph)
           when 'Param'              then new @ast.Param              $(o.name), $(o.value), $(o.splat)
-          when 'Code'
-            params = $(o.params)
-            # Filter out undefined/null params
-            params = (param for param in params when param?) if Array.isArray(params)
-            new @ast.Code params, $(o.body), $(o.funcGlyph), $(o.paramStart)
+          when 'Code'               then new @ast.Code ((p for p in $(o.params) ? [] when p?)), (if (b = $(o.body)) instanceof @ast.Block then b else new @ast.Block [b]), $(o.funcGlyph), $(o.paramStart)
           when 'Splat'              then new @ast.Splat              $(o.name)
           when 'Existence'          then new @ast.Existence          $(o.expression)
           when 'RegexLiteral'       then new @ast.RegexLiteral       $(o.value)

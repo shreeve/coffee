@@ -92,7 +92,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessor, body, bodyNode, context, elseBody, expr, expressions, i, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, name, nodeType, obj, objects, param, params, prop, properties, ref, ref1, ref2, ref3, resolved, resolvedValue, result, sourceInfo, subItem, target, type, validProperties, value, variable, wrappedBody;
+      var $, a, accessor, b, body, bodyNode, context, e, elseBody, expr, i, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, name, nodeType, obj, p, prop, ref, ref1, ref2, ref3, resolved, resolvedValue, result, sourceInfo, subItem, target, type, value, variable, wrappedBody;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -174,80 +174,64 @@
             case 'Call':
               return new this.ast.Call($(o.variable), $(o.args));
             case 'Obj':
-              properties = $(o.properties);
-              if (properties == null) {
-                // Empty objects have no properties
-                properties = [];
-              }
-              // Ensure properties is an array
-              properties = Array.isArray(properties) ? properties : [properties];
-              // Filter out null/undefined items (from empty {} placeholders)
-              validProperties = (function() {
-                var i, len, results;
+              return new this.ast.Obj((function() {
+                var i, len, ref1, ref2, results;
+                ref2 = (ref1 = $(o.properties)) != null ? ref1 : [];
                 results = [];
-                for (i = 0, len = properties.length; i < len; i++) {
-                  prop = properties[i];
+                for (i = 0, len = ref2.length; i < len; i++) {
+                  prop = ref2[i];
                   if (prop != null) {
                     results.push(prop);
                   }
                 }
                 return results;
-              })();
-              return new this.ast.Obj(validProperties, $(o.generated));
+              })(), $(o.generated));
             case 'Arr':
-              objects = $(o.objects);
-              if (Array.isArray(objects)) {
-                // Filter out undefined/null objects
-                objects = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = objects.length; i < len; i++) {
-                    obj = objects[i];
-                    if (obj != null) {
-                      results.push(obj);
-                    }
+              return new this.ast.Arr((function() {
+                var i, len, ref1, ref2, results;
+                ref2 = (ref1 = $(o.objects)) != null ? ref1 : [];
+                results = [];
+                for (i = 0, len = ref2.length; i < len; i++) {
+                  obj = ref2[i];
+                  if (obj != null) {
+                    results.push(obj);
                   }
-                  return results;
-                })();
-              }
-              return new this.ast.Arr(objects);
+                }
+                return results;
+              })());
             case 'Range':
               return new this.ast.Range($(o.from), $(o.to), $(o.exclusive));
             case 'Block':
-              expressions = $(o.expressions);
-              if (Array.isArray(expressions)) {
-                // Filter out undefined/null expressions
-                expressions = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = expressions.length; i < len; i++) {
-                    expr = expressions[i];
-                    if (expr != null) {
-                      results.push(expr);
-                    }
+              return new this.ast.Block((function() {
+                var i, len, ref1, ref2, results;
+                ref2 = (ref1 = $(o.expressions)) != null ? ref1 : [];
+                results = [];
+                for (i = 0, len = ref2.length; i < len; i++) {
+                  expr = ref2[i];
+                  if (expr != null) {
+                    results.push(expr);
                   }
-                  return results;
-                })();
-              }
-              return new this.ast.Block(expressions);
+                }
+                return results;
+              })());
             case 'Return':
               return new this.ast.Return($(o.expression));
             case 'Parens':
-              return new this.ast.Parens($(o.body));
+              return new this.ast.Parens((b = $(o.body)) instanceof this.ast.Block ? b : new this.ast.Block([b]));
             case 'Index':
               return new this.ast.Index($(o.index));
             case 'Slice':
               return new this.ast.Slice($(o.range));
             case 'If':
-              return new this.ast.If($(o.condition), $(o.body), $(o.elseBody));
+              return new this.ast.If($(o.condition), ((b = $(o.body)) instanceof this.ast.Block || (b == null) ? b : new this.ast.Block([b])), (((e = $(o.elseBody)) != null) && !(e instanceof this.ast.Block) ? new this.ast.Block([e]) : e));
             case 'While':
-              return new this.ast.While($(o.condition), $(o.body));
+              return new this.ast.While($(o.condition), ((b = $(o.body)) instanceof this.ast.Block || (b == null) ? b : new this.ast.Block([b])));
             case 'For':
               return new this.ast.For($(o.body), $(o.source));
             case 'Switch':
               return new this.ast.Switch($(o.subject), $(o.cases), $(o.otherwise));
             case 'Try':
-              return new this.ast.Try($(o.attempt), $(o.recovery), $(o.ensure));
+              return new this.ast.Try(((a = $(o.attempt)) instanceof this.ast.Block || (a == null) ? a : new this.ast.Block([a])), $(o.recovery), $(o.ensure));
             case 'Class':
               return new this.ast.Class($(o.variable), $(o.parent), $(o.body));
             case 'FuncGlyph':
@@ -255,22 +239,18 @@
             case 'Param':
               return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
-              params = $(o.params);
-              if (Array.isArray(params)) {
-                // Filter out undefined/null params
-                params = (function() {
-                  var i, len, results;
-                  results = [];
-                  for (i = 0, len = params.length; i < len; i++) {
-                    param = params[i];
-                    if (param != null) {
-                      results.push(param);
-                    }
+              return new this.ast.Code((function() {
+                var i, len, ref1, ref2, results;
+                ref2 = (ref1 = $(o.params)) != null ? ref1 : [];
+                results = [];
+                for (i = 0, len = ref2.length; i < len; i++) {
+                  p = ref2[i];
+                  if (p != null) {
+                    results.push(p);
                   }
-                  return results;
-                })();
-              }
-              return new this.ast.Code(params, $(o.body), $(o.funcGlyph), $(o.paramStart));
+                }
+                return results;
+              })(), ((b = $(o.body)) instanceof this.ast.Block ? b : new this.ast.Block([b])), $(o.funcGlyph), $(o.paramStart));
             case 'Splat':
               return new this.ast.Splat($(o.name));
             case 'Existence':
