@@ -98,15 +98,37 @@ class ES5Backend
           when 'InfinityLiteral'    then new @ast.InfinityLiteral
           when 'NaNLiteral'         then new @ast.NaNLiteral
           when 'Value'              then new @ast.Value              $(o.val)
-          when 'Assign'             then new @ast.Assign             $(o.variable), $(o.value), $(o.context)
+          when 'Assign'
+            variable = $(o.variable)
+            value = $(o.value) 
+            context = $(o.context)
+            # Skip if variable or value is null/undefined (from empty {} placeholders)
+            return null unless variable? and value?
+            new @ast.Assign variable, value, context
           when 'Op'                 then new @ast.Op                 $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
           when 'PropertyName'       then new @ast.PropertyName       $(o.value)
           when 'Access'             then new @ast.Access             $(o.name), soak: o.soak
           when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
-          when 'Obj'                then new @ast.Obj                $(o.properties), $(o.generated)
-          when 'Arr'                then new @ast.Arr                $(o.objects)
+          when 'Obj'
+            properties = $(o.properties)
+            # Empty objects have no properties
+            properties = [] unless properties?
+            # Ensure properties is an array
+            properties = if Array.isArray(properties) then properties else [properties]
+            # Filter out null/undefined items (from empty {} placeholders)
+            validProperties = (prop for prop in properties when prop?)
+            new @ast.Obj validProperties, $(o.generated)
+          when 'Arr'
+            objects = $(o.objects)
+            # Filter out undefined/null objects
+            objects = (obj for obj in objects when obj?) if Array.isArray(objects)
+            new @ast.Arr objects
           when 'Range'              then new @ast.Range              $(o.from), $(o.to), $(o.exclusive)
-          when 'Block'              then new @ast.Block              $(o.expressions)
+          when 'Block'
+            expressions = $(o.expressions)
+            # Filter out undefined/null expressions
+            expressions = (expr for expr in expressions when expr?) if Array.isArray(expressions)
+            new @ast.Block expressions
           when 'Return'             then new @ast.Return             $(o.expression)
           when 'Parens'             then new @ast.Parens             $(o.body)
           when 'Index'              then new @ast.Index              $(o.index)
@@ -119,14 +141,44 @@ class ES5Backend
           when 'Class'              then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
           when 'FuncGlyph'          then new @ast.FuncGlyph          $(o.glyph)
           when 'Param'              then new @ast.Param              $(o.name), $(o.value), $(o.splat)
-          when 'Code'               then new @ast.Code               $(o.params), $(o.body), $(o.funcGlyph), $(o.paramStart)
+          when 'Code'
+            params = $(o.params)
+            # Filter out undefined/null params
+            params = (param for param in params when param?) if Array.isArray(params)
+            new @ast.Code params, $(o.body), $(o.funcGlyph), $(o.paramStart)
           when 'Splat'              then new @ast.Splat              $(o.name)
           when 'Existence'          then new @ast.Existence          $(o.expression)
           when 'RegexLiteral'       then new @ast.RegexLiteral       $(o.value)
           when 'StatementLiteral'   then new @ast.StatementLiteral   $(o.value)
           when 'PassthroughLiteral' then new @ast.PassthroughLiteral $(o.value)
           when 'Interpolation'      then new @ast.Interpolation      $(o.expression)
-          when 'StringWithInterpolations' then new @ast.StringWithInterpolations $(o.body), quote: $(o.quote)
+          when 'StringWithInterpolations'
+            # Body should contain Value-wrapped StringLiterals and Interpolation nodes
+            body = $(o.body)
+            # Ensure body is an array
+            body = if Array.isArray(body) then body else [body]
+            # Wrap elements properly
+            wrappedBody = for item in body
+              # Skip undefined/null items
+              continue unless item?
+              # If it's already properly formed, use it
+              if item instanceof @ast.Value or item instanceof @ast.Interpolation
+                item
+              # If it's a StringLiteral, wrap in Value
+              else if item instanceof @ast.StringLiteral
+                new @ast.Value(item)
+              # If it's a plain object with $ast, resolve it
+              else if item.$ast?
+                resolved = $(item)
+                if resolved instanceof @ast.StringLiteral
+                  new @ast.Value(resolved)
+                else
+                  resolved
+              else
+                item
+            # Filter out undefined items from continue statements
+            wrappedBody = (item for item in wrappedBody when item?)
+            new @ast.StringWithInterpolations new @ast.Block(wrappedBody), quote: $(o.quote)
           when 'Catch'              then new @ast.Catch              $(o.body), $(o.errorVariable)
           when 'Throw'              then new @ast.Throw              $(o.expression)
           when 'Literal'            then new @ast.Literal            $(o.value)
@@ -136,8 +188,10 @@ class ES5Backend
 
       else if o.$ary?
         items = $(o.$ary)
-        # Always return as array for consistency
-        if Array.isArray(items) then items else [items]
+        # Ensure we always return an array
+        items = if Array.isArray(items) then items else [items]
+        # Important: filter out undefined/null items (common from optional grammar rules)
+        items.filter (item) -> item?
 
       else if o.$use?
         resolvedValue = $(o.$use)
@@ -158,15 +212,18 @@ class ES5Backend
               console.warn "ES5Backend: $ops value without add:", o
               new @ast.Literal "/* $ops: value */"
           when 'array'
-            # Array operations
+            # Array operations - ensure all items are resolved
             if o.append?
               target = $(o.append[0])
               target = [] unless Array.isArray target
               for item in o.append[1..] when item?
                 resolved = $(item)
+                # Handle arrays properly - flatten if needed
                 if Array.isArray(resolved)
-                  target = target.concat resolved
-                else
+                  for subItem in resolved
+                    # Ensure each subItem is fully resolved
+                    target.push if subItem? then $(subItem) else subItem
+                else if resolved?
                   target.push resolved
               target
             else if o.gather?
@@ -174,7 +231,9 @@ class ES5Backend
               for item in o.gather when item?
                 resolved = $(item)
                 if Array.isArray(resolved)
-                  result = result.concat resolved
+                  for subItem in resolved
+                    # Ensure each subItem is fully resolved
+                    result.push if subItem? then $(subItem) else subItem
                 else if resolved?
                   result.push resolved
               result
@@ -211,9 +270,10 @@ class ES5Backend
             new @ast.Literal "/* $ops: #{o.$ops} */"
 
       else
-        # Suppress warnings for empty objects {} (common for optional values)
-        unless typeof o is 'object' and o.constructor is Object and Object.keys(o).length is 0
-          console.warn "ES5Backend: Unknown directive:", o
+        # Empty objects {} are grammar placeholders - return null to signal "no value"
+        if typeof o is 'object' and o.constructor is Object and Object.keys(o).length is 0
+          return null
+        console.warn "ES5Backend: Unknown directive:", o
         new @ast.Literal "/* Unknown directive */"
 
     else

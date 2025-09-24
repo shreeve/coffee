@@ -92,7 +92,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessor, bodyNode, elseBody, i, ifNode, item, items, j, len, len1, loopNode, name, nodeType, ref, ref1, ref2, ref3, resolved, resolvedValue, result, sourceInfo, target, type;
+      var $, accessor, body, bodyNode, context, elseBody, expr, expressions, i, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, name, nodeType, obj, objects, param, params, prop, properties, ref, ref1, ref2, ref3, resolved, resolvedValue, result, sourceInfo, subItem, target, type, validProperties, value, variable, wrappedBody;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -155,7 +155,14 @@
             case 'Value':
               return new this.ast.Value($(o.val));
             case 'Assign':
-              return new this.ast.Assign($(o.variable), $(o.value), $(o.context));
+              variable = $(o.variable);
+              value = $(o.value);
+              context = $(o.context);
+              if (!((variable != null) && (value != null))) {
+                // Skip if variable or value is null/undefined (from empty {} placeholders)
+                return null;
+              }
+              return new this.ast.Assign(variable, value, context);
             case 'Op':
               return new this.ast.Op($(o.args[0]), $(o.args[1]), (o.args[2] != null ? $(o.args[2]) : void 0));
             case 'PropertyName':
@@ -167,13 +174,62 @@
             case 'Call':
               return new this.ast.Call($(o.variable), $(o.args));
             case 'Obj':
-              return new this.ast.Obj($(o.properties), $(o.generated));
+              properties = $(o.properties);
+              if (properties == null) {
+                // Empty objects have no properties
+                properties = [];
+              }
+              // Ensure properties is an array
+              properties = Array.isArray(properties) ? properties : [properties];
+              // Filter out null/undefined items (from empty {} placeholders)
+              validProperties = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = properties.length; i < len; i++) {
+                  prop = properties[i];
+                  if (prop != null) {
+                    results.push(prop);
+                  }
+                }
+                return results;
+              })();
+              return new this.ast.Obj(validProperties, $(o.generated));
             case 'Arr':
-              return new this.ast.Arr($(o.objects));
+              objects = $(o.objects);
+              if (Array.isArray(objects)) {
+                // Filter out undefined/null objects
+                objects = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = objects.length; i < len; i++) {
+                    obj = objects[i];
+                    if (obj != null) {
+                      results.push(obj);
+                    }
+                  }
+                  return results;
+                })();
+              }
+              return new this.ast.Arr(objects);
             case 'Range':
               return new this.ast.Range($(o.from), $(o.to), $(o.exclusive));
             case 'Block':
-              return new this.ast.Block($(o.expressions));
+              expressions = $(o.expressions);
+              if (Array.isArray(expressions)) {
+                // Filter out undefined/null expressions
+                expressions = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = expressions.length; i < len; i++) {
+                    expr = expressions[i];
+                    if (expr != null) {
+                      results.push(expr);
+                    }
+                  }
+                  return results;
+                })();
+              }
+              return new this.ast.Block(expressions);
             case 'Return':
               return new this.ast.Return($(o.expression));
             case 'Parens':
@@ -199,7 +255,22 @@
             case 'Param':
               return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
-              return new this.ast.Code($(o.params), $(o.body), $(o.funcGlyph), $(o.paramStart));
+              params = $(o.params);
+              if (Array.isArray(params)) {
+                // Filter out undefined/null params
+                params = (function() {
+                  var i, len, results;
+                  results = [];
+                  for (i = 0, len = params.length; i < len; i++) {
+                    param = params[i];
+                    if (param != null) {
+                      results.push(param);
+                    }
+                  }
+                  return results;
+                })();
+              }
+              return new this.ast.Code(params, $(o.body), $(o.funcGlyph), $(o.paramStart));
             case 'Splat':
               return new this.ast.Splat($(o.name));
             case 'Existence':
@@ -213,7 +284,53 @@
             case 'Interpolation':
               return new this.ast.Interpolation($(o.expression));
             case 'StringWithInterpolations':
-              return new this.ast.StringWithInterpolations($(o.body), {
+              // Body should contain Value-wrapped StringLiterals and Interpolation nodes
+              body = $(o.body);
+              // Ensure body is an array
+              body = Array.isArray(body) ? body : [body];
+              // Wrap elements properly
+              wrappedBody = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = body.length; i < len; i++) {
+                  item = body[i];
+                  if (item == null) {
+                    // Skip undefined/null items
+                    continue;
+                  }
+                  // If it's already properly formed, use it
+                  if (item instanceof this.ast.Value || item instanceof this.ast.Interpolation) {
+                    results.push(item);
+                  // If it's a StringLiteral, wrap in Value
+                  } else if (item instanceof this.ast.StringLiteral) {
+                    results.push(new this.ast.Value(item));
+                  // If it's a plain object with $ast, resolve it
+                  } else if (item.$ast != null) {
+                    resolved = $(item);
+                    if (resolved instanceof this.ast.StringLiteral) {
+                      results.push(new this.ast.Value(resolved));
+                    } else {
+                      results.push(resolved);
+                    }
+                  } else {
+                    results.push(item);
+                  }
+                }
+                return results;
+              }).call(this);
+              // Filter out undefined items from continue statements
+              wrappedBody = (function() {
+                var i, len, results;
+                results = [];
+                for (i = 0, len = wrappedBody.length; i < len; i++) {
+                  item = wrappedBody[i];
+                  if (item != null) {
+                    results.push(item);
+                  }
+                }
+                return results;
+              })();
+              return new this.ast.StringWithInterpolations(new this.ast.Block(wrappedBody), {
                 quote: $(o.quote)
               });
             case 'Catch':
@@ -228,12 +345,12 @@
           }
         } else if (o.$ary != null) {
           items = $(o.$ary);
-          // Always return as array for consistency
-          if (Array.isArray(items)) {
-            return items;
-          } else {
-            return [items];
-          }
+          // Ensure we always return an array
+          items = Array.isArray(items) ? items : [items];
+          // Important: filter out undefined/null items (common from optional grammar rules)
+          return items.filter(function(item) {
+            return item != null;
+          });
         } else if (o.$use != null) {
           resolvedValue = $(o.$use);
           if (o.method != null) {
@@ -260,7 +377,7 @@
               }
               break;
             case 'array':
-              // Array operations
+              // Array operations - ensure all items are resolved
               if (o.append != null) {
                 target = $(o.append[0]);
                 if (!Array.isArray(target)) {
@@ -273,9 +390,14 @@
                     continue;
                   }
                   resolved = $(item);
+                  // Handle arrays properly - flatten if needed
                   if (Array.isArray(resolved)) {
-                    target = target.concat(resolved);
-                  } else {
+                    for (j = 0, len1 = resolved.length; j < len1; j++) {
+                      subItem = resolved[j];
+                      // Ensure each subItem is fully resolved
+                      target.push(subItem != null ? $(subItem) : subItem);
+                    }
+                  } else if (resolved != null) {
                     target.push(resolved);
                   }
                 }
@@ -283,14 +405,18 @@
               } else if (o.gather != null) {
                 result = [];
                 ref3 = o.gather;
-                for (j = 0, len1 = ref3.length; j < len1; j++) {
-                  item = ref3[j];
+                for (k = 0, len2 = ref3.length; k < len2; k++) {
+                  item = ref3[k];
                   if (!(item != null)) {
                     continue;
                   }
                   resolved = $(item);
                   if (Array.isArray(resolved)) {
-                    result = result.concat(resolved);
+                    for (l = 0, len3 = resolved.length; l < len3; l++) {
+                      subItem = resolved[l];
+                      // Ensure each subItem is fully resolved
+                      result.push(subItem != null ? $(subItem) : subItem);
+                    }
                   } else if (resolved != null) {
                     result.push(resolved);
                   }
@@ -341,10 +467,11 @@
               return new this.ast.Literal(`/* $ops: ${o.$ops} */`);
           }
         } else {
-          // Suppress warnings for empty objects {} (common for optional values)
-          if (!(typeof o === 'object' && o.constructor === Object && Object.keys(o).length === 0)) {
-            console.warn("ES5Backend: Unknown directive:", o);
+          // Empty objects {} are grammar placeholders - return null to signal "no value"
+          if (typeof o === 'object' && o.constructor === Object && Object.keys(o).length === 0) {
+            return null;
           }
+          console.warn("ES5Backend: Unknown directive:", o);
           return new this.ast.Literal("/* Unknown directive */");
         }
       } else {
