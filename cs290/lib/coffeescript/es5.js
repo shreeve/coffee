@@ -41,16 +41,51 @@
     }
 
     reduce(values, positions, stackTop, symbolCount, directive) {
-      var o, prop, value;
-      o = function(index) {
+      var handler, lookup, o, prop, store, value;
+      lookup = function(index) {
         return values[stackTop - symbolCount + 1 + index];
       };
+      store = Object.create(null);
+      handler = {
+        apply: function(target, thisArg, args) {
+          return target.apply(thisArg, args);
+        },
+        get: function(target, prop, receiver) {
+          if (Object.prototype.hasOwnProperty.call(store, prop)) {
+            return store[prop];
+          }
+          if (prop === 'name' || prop === 'length' || prop === 'prototype' || prop === 'caller' || prop === 'arguments') {
+            return void 0;
+          }
+          return Reflect.get(target, prop, receiver);
+        },
+        set: function(target, prop, value) {
+          store[prop] = value;
+          return true;
+        },
+        has: function(target, prop) {
+          return Object.prototype.hasOwnProperty.call(store, prop) || prop in target;
+        },
+        ownKeys: function(target) {
+          return Reflect.ownKeys(store).concat(Reflect.ownKeys(target));
+        },
+        getOwnPropertyDescriptor: function(target, prop) {
+          if (Object.prototype.hasOwnProperty.call(store, prop)) {
+            return {
+              value: store[prop],
+              configurable: true,
+              enumerable: true,
+              writable: true
+            };
+          } else {
+            return Object.getOwnPropertyDescriptor(target, prop);
+          }
+        }
+      };
+      o = new Proxy(lookup, handler);
       for (prop in directive) {
         if (!hasProp.call(directive, prop)) continue;
         value = directive[prop];
-        if (prop === 'name' || prop === 'length' || prop === 'prototype') {
-          continue;
-        }
         o[prop] = value;
       }
       return this.resolve(o);
@@ -59,10 +94,10 @@
     resolve(o, lookup = o) {
       var $, accessor, i, item, items, len, name, nodeType, ref, ref1, ref2, resolved, resolvedValue, result, target, type;
       if (o == null) {
+        // Null/undefined early return
         return o; // null/undefined early return
       }
       type = typeof o;
-      
       // Numbers: only do 1-based lookup for positive integers
       if (type === 'number') {
         if (Number.isInteger(o) && o > 0 && typeof lookup === 'function') {
@@ -71,6 +106,7 @@
         return o;
       }
       if (type === 'string' || type === 'boolean') {
+        // Strings and booleans return as-is, arrays are resolved recursively
         return o;
       }
       if (Array.isArray(o)) {
@@ -78,11 +114,11 @@
           return this.resolve(val, lookup);
         });
       }
-      
       // Functions without directive markers are terminals (key fix!)
       if (type === 'function' && !((o.$ast != null) || (o.$use != null) || (o.$ary != null) || (o.$ops != null))) {
         return o;
       }
+      // Objects and functions
       if (type === 'object' || type === 'function') {
         if ((o.constructor != null) && ((ref = o.constructor) !== Object && ref !== Function)) {
           return o;

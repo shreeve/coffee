@@ -28,10 +28,33 @@ class ES5Backend
       value
 
   reduce: (values, positions, stackTop, symbolCount, directive) ->
-    o = (index) -> values[stackTop - symbolCount + 1 + index]
-    for own prop, value of directive
-      continue if prop in ['name', 'length', 'prototype']
-      o[prop] = value
+    lookup = (index) -> values[stackTop - symbolCount + 1 + index]
+    store = Object.create null
+
+    handler =
+      apply: (target, thisArg, args) -> target.apply thisArg, args
+      get: (target, prop, receiver) ->
+        return store[prop] if Object.prototype.hasOwnProperty.call(store, prop)
+        return undefined if prop in ['name', 'length', 'prototype', 'caller', 'arguments']
+        Reflect.get target, prop, receiver
+      set: (target, prop, value) ->
+        store[prop] = value
+        true
+      has: (target, prop) -> Object.prototype.hasOwnProperty.call(store, prop) or prop of target
+      ownKeys: (target) -> Reflect.ownKeys(store).concat Reflect.ownKeys(target)
+      getOwnPropertyDescriptor: (target, prop) ->
+        if Object.prototype.hasOwnProperty.call(store, prop)
+          value: store[prop]
+          configurable: true
+          enumerable: true
+          writable: true
+        else
+          Object.getOwnPropertyDescriptor target, prop
+
+    o = new Proxy lookup, handler
+
+    o[prop] = value for own prop, value of directive
+
     @resolve o
 
   resolve: (o, lookup = o) ->
@@ -77,7 +100,8 @@ class ES5Backend
           when 'Value'              then new @ast.Value              $(o.val)
           when 'Assign'             then new @ast.Assign             $(o.variable), $(o.value)
           when 'Op'                 then new @ast.Op                 $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
-          when 'PropertyName'       then new @ast.PropertyName       $(o.value)
+          when 'PropertyName'
+            new @ast.PropertyName $(o.value)
           when 'Access'             then new @ast.Access             $(o.name), soak: o.soak
           when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
           when 'Obj'                then new @ast.Obj                $(o.properties), $(o.generated)
