@@ -87,7 +87,7 @@ return r(3, {$ast: "Assign", value: {$ast: "Value", val: 1, $pos: 1}, expression
 case 68:
 return r(5, {$ast: "Assign", value: {$ast: "Value", val: 1, $pos: 1}, expression: 4, operatorToken: {$ast: "Literal", value: 2, $pos: 2}});
 case 73:
-return r(3, {$ast: "Value", value: {$ast: "ComputedPropertyName", expression: 2}});
+return r(3, {$ast: "Value", val: {$ast: "ComputedPropertyName", expression: 2}});
 case 74:
 return r(4, {$ast: "Value", val: {$ast: "ThisLiteral", value: 1, $pos: 1}, properties: [{"$ast":"ComputedPropertyName","name":3,"$pos":3}], context: "this"});
 case 76:
@@ -291,7 +291,7 @@ return r(2, {$ary: [{}]});
 case 228:
 return r(4, {$ary: 2, implicit: {$use: 1, prop: "generated"}});
 case 229: case 235:
-return r(1, {$ast: "Value", value: {$ast: "ThisLiteral"}});
+return r(1, {$ast: "Value", val: {$ast: "ThisLiteral"}});
 case 230:
 return r(1, {$ast: "Value", val: {$ast: "ThisLiteral"}, properties: [{"$ast":"Access","name":{"$ast":"PropertyName","value":1}}], bareLiteral: {$ast: "ThisLiteral"}});
 case 231:

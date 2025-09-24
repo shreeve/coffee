@@ -161,7 +161,7 @@ grammar =
 
   ObjAssignable: [
     o 'SimpleObjAssignable'
-    o '[ Expression ]'  , $ast: 'Value', value: {$ast: 'ComputedPropertyName', expression: 2}
+    o '[ Expression ]'  , $ast: 'Value', val: {$ast: 'ComputedPropertyName', expression: 2}
     o '@ [ Expression ]', $ast: 'Value', val: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
     o 'AlphaNumeric'
   ]
@@ -452,7 +452,7 @@ grammar =
 
   # A reference to the *this* current object.
   This: [
-    o 'THIS', $ast: 'Value', value: {$ast: 'ThisLiteral'}
+    o 'THIS', $ast: 'Value', val: {$ast: 'ThisLiteral'}
   ]
 
   # A reference to a property on *this*
