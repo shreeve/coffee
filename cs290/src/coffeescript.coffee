@@ -7,7 +7,7 @@
 {parser}      = require './parser'
 helpers       = require './helpers'
 SourceMap     = require './sourcemap'
-ES6Backend    = require './es6'
+ES5Backend    = require './es5'
 
 # Require `package.json`, which is two levels above this file, as this file is
 # evaluated from `lib/coffeescript`.
@@ -87,7 +87,7 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
         options.bare = yes
         break
 
-  parser.yy.backend = new ES6Backend(options, parser.yy) # Inject Solar backend
+  parser.yy.backend = new ES5Backend(options, parser.yy) # Inject Solar backend
   nodes = parser.parse tokens
   # If all that was requested was a POJO representation of the nodes, e.g.
   # the abstract syntax tree (AST), we can stop now and just return that
@@ -191,7 +191,7 @@ exports.tokens = withPrettyErrors (code, options) ->
 # or traverse it by using `.traverseChildren()` with a callback.
 exports.nodes = withPrettyErrors (source, options) ->
   tokens = if typeof source is 'string' then lexer.tokenize source, options else source
-  parser.yy.backend = new ES6Backend(options, parser.yy) # Inject Solar backend
+  parser.yy.backend = new ES5Backend(options, parser.yy) # Inject Solar backend
   parser.parse tokens
 
 # This file used to export these methods; leave stubs that throw warnings

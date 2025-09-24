@@ -1,5 +1,5 @@
 # ==============================================================================
-# ES6 Backend - Solar Directive Processor for CoffeeScript
+# ES5 Backend - Solar Directive Processor for CoffeeScript
 # ==============================================================================
 #
 # Converts Solar directives (pure data) to CoffeeScript AST node instances
@@ -13,7 +13,7 @@
 # The resulting AST nodes use the existing CoffeeScript compiler pipeline.
 # ==============================================================================
 
-class ES6Backend
+class ES5Backend
   constructor: (@options = {}, @ast = {}) ->
     # @ast contains AST node class definitions (constructors)
     # @options contains compilation options, analysis settings, etc.
@@ -74,7 +74,7 @@ class ES6Backend
 
           else
             # Fallback for unimplemented node types
-            console.warn "ES6Backend: Unimplemented AST node type:", nodeType
+            console.warn "ES5Backend: Unimplemented AST node type:", nodeType
             new @ast.Literal "/* Unimplemented: #{nodeType} */"
 
       # $ary directive - return array
@@ -88,16 +88,16 @@ class ES6Backend
 
       # $ops directive - operation (array append, etc.)
       else if directive.$ops?
-        console.warn "ES6Backend: $ops not yet implemented:", directive.$ops
+        console.warn "ES5Backend: $ops not yet implemented:", directive.$ops
         new @ast.Literal "/* $ops: #{directive.$ops} */"
 
       else
         # Unknown directive
-        console.warn "ES6Backend: Unknown directive:", directive
+        console.warn "ES5Backend: Unknown directive:", directive
         new @ast.Literal "/* Unknown directive */"
 
     else
       # Fallback for unexpected input
       new @ast.Literal "/* Unexpected input */"
 
-module.exports = ES6Backend
+module.exports = ES5Backend
