@@ -92,7 +92,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessor, i, item, items, len, name, nodeType, ref, ref1, ref2, resolved, resolvedValue, result, target, type;
+      var $, accessor, ensureBlock, i, item, items, len, name, nodeType, ref, ref1, ref2, resolved, resolvedValue, result, target, type;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -125,6 +125,14 @@
         }
         $ = (val) => {
           return this.resolve(val, lookup); // Local resolver
+        };
+        ensureBlock = (b) => {
+          b = $(b);
+          if (Array.isArray(b)) {
+            return new this.ast.Block(b);
+          } else {
+            return b;
+          }
         };
         if (o.$ast != null) {
           nodeType = o.$ast;
@@ -194,8 +202,12 @@
               return new this.ast.Try($(o.attempt), $(o.recovery), $(o.ensure));
             case 'Class':
               return new this.ast.Class($(o.variable), $(o.parent), $(o.body));
+            case 'FuncGlyph':
+              return new this.ast.FuncGlyph($(o.glyph));
+            case 'Param':
+              return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
-              return new this.ast.Code($(o.params), $(o.body));
+              return new this.ast.Code($(o.params), ensureBlock(o.body), $(o.funcGlyph), $(o.paramStart));
             case 'Splat':
               return new this.ast.Splat($(o.name));
             case 'Existence':
