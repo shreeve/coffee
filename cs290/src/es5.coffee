@@ -148,7 +148,7 @@ class ES5Backend
             # Tolerant pattern: accept either o.value OR o.val+o.properties
             base = $(o.value) || $(o.val)
             properties = $(o.properties) || []
-            # Ensure properties is an array
+            # Ensure properties is an array and filter properly
             properties = if Array.isArray(properties) then properties else []
             # Value can have both base and properties (accessors)
             if properties.length > 0
@@ -236,7 +236,6 @@ class ES5Backend
           when 'SwitchWhen'         then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
           when 'Elision'            then new @ast.Elision
           when 'Expansion'          then new @ast.Expansion
-          when 'ThisProperty'       then new @ast.Value new @ast.ThisLiteral($(o.token)), [new @ast.Access($(o.property))]
           when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
           when 'DefaultLiteral'     then new @ast.DefaultLiteral     $(o.value)
           when 'Try'
@@ -296,7 +295,6 @@ class ES5Backend
             new @ast.Catch bodyNode, error
           when 'Throw'              then new @ast.Throw              $(o.expression)
           when 'Literal'            then new @ast.Literal            $(o.value)
-          when 'ThisProperty'       then new @ast.Value new @ast.ThisLiteral($(o.token)), [new @ast.Access($(o.property))]
           when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
           when 'DefaultLiteral'     then new @ast.DefaultLiteral     $(o.value)
           when 'SwitchWhen'         then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))

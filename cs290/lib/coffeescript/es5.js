@@ -226,7 +226,7 @@
               // Tolerant pattern: accept either o.value OR o.val+o.properties
               base = $(o.value) || $(o.val);
               properties = $(o.properties) || [];
-              // Ensure properties is an array
+              // Ensure properties is an array and filter properly
               properties = Array.isArray(properties) ? properties : [];
               // Value can have both base and properties (accessors)
               if (properties.length > 0) {
@@ -294,7 +294,7 @@
               variable = $(o.variable) || $(o.val) || $(o.base);
               index = $(o.index) || $(o.object);
               soak = $(o.soak);
-              // Smart-append: if LHS is already a Value, append to its properties
+              // Smart-append: if LHS is already a Value, append to its properties  
               if (variable instanceof this.ast.Value) {
                 indexNode = new this.ast.Index(index, {soak});
                 variable.properties.push(indexNode);
@@ -369,8 +369,6 @@
               return new this.ast.Elision();
             case 'Expansion':
               return new this.ast.Expansion();
-            case 'ThisProperty':
-              return new this.ast.Value(new this.ast.ThisLiteral($(o.token)), [new this.ast.Access($(o.property))]);
             case 'ComputedPropertyName':
               return new this.ast.ComputedPropertyName($(o.value));
             case 'DefaultLiteral':
@@ -444,8 +442,6 @@
               return new this.ast.Throw($(o.expression));
             case 'Literal':
               return new this.ast.Literal($(o.value));
-            case 'ThisProperty':
-              return new this.ast.Value(new this.ast.ThisLiteral($(o.token)), [new this.ast.Access($(o.property))]);
             case 'ComputedPropertyName':
               return new this.ast.ComputedPropertyName($(o.value));
             case 'DefaultLiteral':
