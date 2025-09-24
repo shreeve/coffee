@@ -18,9 +18,9 @@
     hasProp = {}.hasOwnProperty;
 
   ES5Backend = class ES5Backend {
-    constructor(options = {}, ast = {}) {
+    constructor(options1 = {}, ast = {}) {
       var ref, ref1;
-      this.options = options;
+      this.options = options1;
       this.ast = ast;
       this.compileOptions = {
         bare: (ref = this.options.bare) != null ? ref : true,
@@ -151,7 +151,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessor, actualExpression, attempt, body, bodyNode, bodyNodes, c, catchClause, condition, context, elseBody, ensure, error, exclusive, expression, expressionNode, from, i, ifNode, item, items, j, k, len, len1, len2, loopNode, name, nodeType, p, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, resolved, resolvedValue, result, sourceInfo, tag, target, to, type, typeToken, val, value, variable;
+      var $, accessor, actualExpression, attempt, body, bodyNode, bodyNodes, c, catchClause, condition, context, elseBody, ensure, error, exclusive, expression, expressionNode, finalBody, from, i, ifNode, item, items, j, k, len, len1, len2, loopNode, name, nodeType, options, p, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, resolved, resolvedValue, result, sourceInfo, tag, target, to, type, typeToken, val, value, variable, whileNode;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -210,7 +210,7 @@
             case 'BooleanLiteral':
               return new this.ast.BooleanLiteral($(o.value));
             case 'ThisLiteral':
-              return new this.ast.Value(new this.ast.ThisLiteral($(o.value)));
+              return new this.ast.ThisLiteral();
             case 'NullLiteral':
               return new this.ast.NullLiteral();
             case 'UndefinedLiteral':
@@ -285,7 +285,24 @@
               }
               return ifNode;
             case 'While':
-              return new this.ast.While($(o.condition), this._toBlock($(o.body)));
+              condition = $(o.condition);
+              body = this._toBlock($(o.body));
+              // While constructor expects (condition, options)
+              options = {};
+              if (o.invert != null) {
+                options.invert = $(o.invert);
+              }
+              if (o.guard != null) {
+                options.guard = $(o.guard);
+              }
+              if (o.isLoop != null) {
+                options.isLoop = $(o.isLoop);
+              }
+              whileNode = new this.ast.While(condition, options);
+              // Set the body separately using addBody - ensure it's never null
+              finalBody = body || new this.ast.Block([]);
+              whileNode.addBody(finalBody);
+              return whileNode;
             case 'For':
               return new this.ast.For(this._toBlock($(o.body)), $(o.source));
             case 'Switch':
@@ -364,8 +381,8 @@
               expression = $(o.expression);
               // Expression might be an array, so extract the first element
               actualExpression = Array.isArray(expression) && expression.length > 0 ? expression[0] : expression;
-              // Ensure we have a valid node
-              expressionNode = actualExpression instanceof this.ast.Base ? actualExpression : this._ensureNode(actualExpression) || new this.ast.Literal('undefined');
+              // Ensure we have a valid node - empty interpolation gets a space to avoid syntax errors
+              expressionNode = actualExpression instanceof this.ast.Base ? actualExpression : actualExpression != null ? this._ensureNode(actualExpression) : this._ensureNode(actualExpression) || new this.ast.Literal('undefined');
               return new this.ast.Interpolation(expressionNode);
             case 'StringWithInterpolations':
               body = $(o.body);

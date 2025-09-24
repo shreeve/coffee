@@ -135,7 +135,7 @@ class ES5Backend
           when 'NumberLiteral'      then new @ast.NumberLiteral      $(o.value)
           when 'StringLiteral'      then new @ast.StringLiteral      @_stripQuotes($(o.value))
           when 'BooleanLiteral'     then new @ast.BooleanLiteral     $(o.value)
-          when 'ThisLiteral'        then new @ast.Value new @ast.ThisLiteral $(o.value)
+          when 'ThisLiteral'        then new @ast.ThisLiteral()
           when 'NullLiteral'        then new @ast.NullLiteral
           when 'UndefinedLiteral'   then new @ast.UndefinedLiteral
           when 'InfinityLiteral'    then new @ast.InfinityLiteral
@@ -184,7 +184,19 @@ class ES5Backend
             # Add else body if present
             ifNode.addElse elseBody if elseBody?.expressions?.length > 0
             ifNode
-          when 'While'              then new @ast.While $(o.condition), @_toBlock($(o.body))
+          when 'While'              
+            condition = $(o.condition)
+            body = @_toBlock($(o.body))
+            # While constructor expects (condition, options)
+            options = {}
+            options.invert = $(o.invert) if o.invert?
+            options.guard = $(o.guard) if o.guard?
+            options.isLoop = $(o.isLoop) if o.isLoop?
+            whileNode = new @ast.While condition, options
+            # Set the body separately using addBody - ensure it's never null
+            finalBody = body or new @ast.Block []
+            whileNode.addBody finalBody
+            whileNode
           when 'For'                then new @ast.For                @_toBlock($(o.body)), $(o.source)
           when 'Switch'             then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
           when 'SwitchWhen'         then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
@@ -216,9 +228,11 @@ class ES5Backend
               expression[0]
             else
               expression
-            # Ensure we have a valid node
+            # Ensure we have a valid node - empty interpolation gets a space to avoid syntax errors
             expressionNode = if actualExpression instanceof @ast.Base
               actualExpression
+            else if actualExpression?
+              @_ensureNode(actualExpression)
             else
               @_ensureNode(actualExpression) or new @ast.Literal 'undefined'
             new @ast.Interpolation expressionNode

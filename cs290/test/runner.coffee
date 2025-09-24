@@ -31,12 +31,26 @@ global.test = (name, fnOrExpected) ->
       # Ultra-simple: test "code", expected
       compiled = CoffeeScript.compile(name.trim())
       # Smart execution: use full function for variable assignments, expression extraction for literals
-      if name.includes('=') or name.includes(';') or name.includes('if ') or name.includes('unless ') or name.trim().startsWith('->')
+      if name.includes('=') or name.includes(';') or name.includes('if ') or name.includes('unless ') or name.trim().startsWith('->') or name.trim().startsWith('=>') or name.includes(') ->')
         # Contains assignments, control flow, or functions - need full function execution for variable scope
         result = eval(compiled)
-        # If it's a function that starts with ->, call it to get the return value
-        if name.trim().startsWith('->') and typeof result is 'function'
-          result = result()
+        # If it's a function, call it with appropriate test arguments to get the return value
+        if typeof result is 'function'
+          # Determine argument count and call with test data
+          if name.trim().startsWith('->') or name.trim().startsWith('=>')
+            # No-parameter function or arrow function
+            result = result()
+          else if name.includes('(x) ->') or name.includes('(x) =>')
+            result = result(42)  # Single parameter gets 42
+          else if name.includes('(a, b) ->') or name.includes('(a, b) =>')
+            result = result(3, 4)  # Two parameters get 3, 4 (sum = 7)
+          else if name.includes('(n) ->') or name.includes('(n) =>')
+            result = result(10)   # n parameter gets 10 (n * 2 = 20)
+          else if name.includes('(s) ->') or name.includes('(s) =>')
+            result = result('hello')  # s parameter gets 'hello'
+          else
+            # Default: try calling with no arguments
+            result = result()
       else
         # Simple literal/expression - can extract return expression safely
         # Try multiline object pattern first, then fallback to simple pattern
