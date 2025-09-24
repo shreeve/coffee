@@ -56,7 +56,7 @@ buildParser = ->
   language =
     grammar: syntax.grammar
     operators: syntax.operators
-  {Generator} = require './solar.coffee'
+  {Generator} = require '../solar-es5.coffee'
   parser = Generator(language).generate(compress: !true)
   fs.writeFileSync 'lib/coffeescript/parser.js', parser
 
