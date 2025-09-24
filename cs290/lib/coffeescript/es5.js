@@ -144,7 +144,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessor, bodyNode, context, elseBody, i, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, name, nodeType, property, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, sourceInfo, subItem, target, type, value, variable;
+      var $, accessor, bodyNode, c, context, elseBody, i, ifNode, item, items, j, k, len, len1, len2, loopNode, name, nodeType, p, property, ref, ref1, ref2, ref3, ref4, resolved, resolvedValue, result, sourceInfo, target, type, val, value, variable;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -158,13 +158,22 @@
         return o;
       }
       if (type === 'string' || type === 'boolean') {
-        // Strings and booleans return as-is, arrays are resolved recursively
+        // Strings and booleans return as-is
         return o;
       }
+      
+      // Arrays: expand along the way - only include resolved items!
       if (Array.isArray(o)) {
-        return o.map((val) => {
-          return this.resolve(val, lookup);
-        });
+        result = [];
+        for (i = 0, len = o.length; i < len; i++) {
+          val = o[i];
+          resolved = this.resolve(val, lookup);
+          if (resolved != null) {
+            // Expand along the way: skip nulls at source instead of filtering later
+            result.push(resolved);
+          }
+        }
+        return result;
       }
       // Functions without directive markers are terminals (key fix!)
       if (type === 'function' && !((o.$ast != null) || (o.$use != null) || (o.$ary != null) || (o.$ops != null))) {
@@ -236,17 +245,17 @@
             case 'Call':
               return new this.ast.Call($(o.variable), $(o.args));
             case 'Obj':
-              return new this.ast.Obj(this._filterNodes((ref1 = $(o.properties)) != null ? ref1 : []), $(o.generated));
+              return new this.ast.Obj($(o.properties), $(o.generated));
             case 'Arr':
-              return new this.ast.Arr(this._filterNodes((ref2 = $(o.objects)) != null ? ref2 : []));
+              return new this.ast.Arr($(o.objects));
             case 'Range':
               return new this.ast.Range($(o.from), $(o.to), $(o.exclusive));
             case 'Block':
-              return new this.ast.Block(this._filterNodes((ref3 = $(o.expressions)) != null ? ref3 : []));
+              return new this.ast.Block($(o.expressions));
             case 'Return':
               return new this.ast.Return($(o.expression));
             case 'Parens':
-              return new this.ast.Parens((ref4 = this._toBlock($(o.body))) != null ? ref4 : new this.ast.Block([new this.ast.Literal('')]));
+              return new this.ast.Parens((ref1 = this._toBlock($(o.body))) != null ? ref1 : new this.ast.Block([new this.ast.Literal('')]));
             case 'Index':
               return new this.ast.Index($(o.index));
             case 'Slice':
@@ -258,9 +267,31 @@
             case 'For':
               return new this.ast.For(this._toBlock($(o.body)), $(o.source));
             case 'Switch':
-              return new this.ast.Switch($(o.subject), this._filterNodes((ref5 = $(o.cases)) != null ? ref5 : []), this._toBlock($(o.otherwise)));
+              return new this.ast.Switch($(o.subject), (function() {
+                var j, len1, ref2, ref3, results;
+                ref3 = (ref2 = $(o.cases)) != null ? ref2 : [];
+                results = [];
+                for (j = 0, len1 = ref3.length; j < len1; j++) {
+                  c = ref3[j];
+                  if ($(c) != null) {
+                    results.push($(c));
+                  }
+                }
+                return results;
+              })(), this._toBlock($(o.otherwise)));
             case 'SwitchWhen':
-              return new this.ast.SwitchWhen(this._filterNodes((ref6 = $(o.conditions)) != null ? ref6 : []), this._toBlock($(o.block)));
+              return new this.ast.SwitchWhen((function() {
+                var j, len1, ref2, ref3, results;
+                ref3 = (ref2 = $(o.conditions)) != null ? ref2 : [];
+                results = [];
+                for (j = 0, len1 = ref3.length; j < len1; j++) {
+                  c = ref3[j];
+                  if ($(c) != null) {
+                    results.push($(c));
+                  }
+                }
+                return results;
+              })(), this._toBlock($(o.block)));
             case 'Elision':
               return new this.ast.Elision();
             case 'Expansion':
@@ -280,7 +311,18 @@
             case 'Param':
               return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
-              return new this.ast.Code(this._filterNodes((ref7 = $(o.params)) != null ? ref7 : []), this._toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart));
+              return new this.ast.Code((function() {
+                var j, len1, ref2, ref3, results;
+                ref3 = (ref2 = $(o.params)) != null ? ref2 : [];
+                results = [];
+                for (j = 0, len1 = ref3.length; j < len1; j++) {
+                  p = ref3[j];
+                  if ($(p) != null) {
+                    results.push($(p));
+                  }
+                }
+                return results;
+              })(), this._toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart));
             case 'Splat':
               return new this.ast.Splat($(o.name));
             case 'Existence':
@@ -330,7 +372,7 @@
         } else if (o.$use != null) {
           resolvedValue = $(o.$use);
           if (o.method != null) {
-            resolvedValue = (ref8 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref8 : resolvedValue;
+            resolvedValue = (ref2 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref2 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -353,46 +395,37 @@
               }
               break;
             case 'array':
-              // Array operations - ensure all items are resolved
+              // Array operations
               if (o.append != null) {
                 target = $(o.append[0]);
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                ref9 = o.append.slice(1);
-                for (i = 0, len = ref9.length; i < len; i++) {
-                  item = ref9[i];
+                ref3 = o.append.slice(1);
+                for (j = 0, len1 = ref3.length; j < len1; j++) {
+                  item = ref3[j];
                   if (!(item != null)) {
                     continue;
                   }
                   resolved = $(item);
-                  // Handle arrays properly - flatten if needed
                   if (Array.isArray(resolved)) {
-                    for (j = 0, len1 = resolved.length; j < len1; j++) {
-                      subItem = resolved[j];
-                      // Ensure each subItem is fully resolved
-                      target.push(subItem != null ? $(subItem) : subItem);
-                    }
-                  } else if (resolved != null) {
+                    target = target.concat(resolved);
+                  } else {
                     target.push(resolved);
                   }
                 }
                 return target;
               } else if (o.gather != null) {
                 result = [];
-                ref10 = o.gather;
-                for (k = 0, len2 = ref10.length; k < len2; k++) {
-                  item = ref10[k];
+                ref4 = o.gather;
+                for (k = 0, len2 = ref4.length; k < len2; k++) {
+                  item = ref4[k];
                   if (!(item != null)) {
                     continue;
                   }
                   resolved = $(item);
                   if (Array.isArray(resolved)) {
-                    for (l = 0, len3 = resolved.length; l < len3; l++) {
-                      subItem = resolved[l];
-                      // Ensure each subItem is fully resolved
-                      result.push(subItem != null ? $(subItem) : subItem);
-                    }
+                    result = result.concat(resolved);
                   } else if (resolved != null) {
                     result.push(resolved);
                   }

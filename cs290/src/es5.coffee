@@ -103,9 +103,17 @@ class ES5Backend
       return lookup(o - 1) if Number.isInteger(o) and o > 0 and typeof lookup is 'function'
       return o
 
-    # Strings and booleans return as-is, arrays are resolved recursively
+    # Strings and booleans return as-is
     return o if type is 'string' or type is 'boolean'
-    return(o.map (val) => @resolve val, lookup) if Array.isArray o
+    
+    # Arrays: expand along the way - only include resolved items!
+    if Array.isArray o
+      result = []
+      for val in o
+        resolved = @resolve val, lookup
+        # Expand along the way: skip nulls at source instead of filtering later
+        result.push resolved if resolved?
+      return result
 
     # Functions without directive markers are terminals (key fix!)
     if type is 'function' and not (o.$ast? or o.$use? or o.$ary? or o.$ops?)
@@ -150,10 +158,10 @@ class ES5Backend
           when 'PropertyName'       then new @ast.PropertyName       $(o.value)
           when 'Access'             then new @ast.Access             $(o.name), soak: o.soak
           when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
-          when 'Obj'                then new @ast.Obj @_filterNodes($(o.properties) ? []), $(o.generated)
-          when 'Arr'                then new @ast.Arr @_filterNodes($(o.objects) ? [])
+          when 'Obj'                then new @ast.Obj $(o.properties), $(o.generated)
+          when 'Arr'                then new @ast.Arr $(o.objects)
           when 'Range'              then new @ast.Range              $(o.from), $(o.to), $(o.exclusive)
-          when 'Block'              then new @ast.Block @_filterNodes($(o.expressions) ? [])
+          when 'Block'              then new @ast.Block $(o.expressions)
           when 'Return'             then new @ast.Return             $(o.expression)
           when 'Parens'             then new @ast.Parens (@_toBlock($(o.body)) ? new @ast.Block [new @ast.Literal ''])
           when 'Index'              then new @ast.Index              $(o.index)
@@ -161,8 +169,8 @@ class ES5Backend
           when 'If'                 then new @ast.If $(o.condition), @_toBlock($(o.body)), @_toBlock($(o.elseBody))
           when 'While'              then new @ast.While $(o.condition), @_toBlock($(o.body))
           when 'For'                then new @ast.For                @_toBlock($(o.body)), $(o.source)
-          when 'Switch'             then new @ast.Switch             $(o.subject), @_filterNodes($(o.cases) ? []), @_toBlock($(o.otherwise))
-          when 'SwitchWhen'         then new @ast.SwitchWhen         @_filterNodes($(o.conditions) ? []), @_toBlock($(o.block))
+          when 'Switch'             then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
+          when 'SwitchWhen'         then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
           when 'Elision'            then new @ast.Elision
           when 'Expansion'          then new @ast.Expansion
           when 'ThisProperty'       then new @ast.Value new @ast.ThisLiteral($(o.token)), [new @ast.Access($(o.property))]
@@ -172,7 +180,7 @@ class ES5Backend
           when 'Class'              then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
           when 'FuncGlyph'          then new @ast.FuncGlyph          $(o.glyph)
           when 'Param'              then new @ast.Param              $(o.name), $(o.value), $(o.splat)
-          when 'Code'               then new @ast.Code @_filterNodes($(o.params) ? []), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
+          when 'Code'               then new @ast.Code ($(p) for p in $(o.params) ? [] when $(p)?), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
           when 'Splat'              then new @ast.Splat              $(o.name)
           when 'Existence'          then new @ast.Existence          $(o.expression)
           when 'RegexLiteral'       then new @ast.RegexLiteral       $(o.value)
@@ -219,18 +227,15 @@ class ES5Backend
               console.warn "ES5Backend: $ops value without add:", o
               new @ast.Literal "/* $ops: value */"
           when 'array'
-            # Array operations - ensure all items are resolved
+            # Array operations
             if o.append?
               target = $(o.append[0])
               target = [] unless Array.isArray target
               for item in o.append[1..] when item?
                 resolved = $(item)
-                # Handle arrays properly - flatten if needed
                 if Array.isArray(resolved)
-                  for subItem in resolved
-                    # Ensure each subItem is fully resolved
-                    target.push if subItem? then $(subItem) else subItem
-                else if resolved?
+                  target = target.concat resolved
+                else
                   target.push resolved
               target
             else if o.gather?
@@ -238,9 +243,7 @@ class ES5Backend
               for item in o.gather when item?
                 resolved = $(item)
                 if Array.isArray(resolved)
-                  for subItem in resolved
-                    # Ensure each subItem is fully resolved
-                    result.push if subItem? then $(subItem) else subItem
+                  result = result.concat resolved
                 else if resolved?
                   result.push resolved
               result
