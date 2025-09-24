@@ -92,7 +92,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessor, ensureBlock, i, item, items, len, name, nodeType, ref, ref1, ref2, resolved, resolvedValue, result, target, type;
+      var $, accessor, bodyNode, elseBody, i, ifNode, item, items, j, len, len1, loopNode, name, nodeType, ref, ref1, ref2, ref3, resolved, resolvedValue, result, sourceInfo, target, type;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -126,14 +126,6 @@
         $ = (val) => {
           return this.resolve(val, lookup); // Local resolver
         };
-        ensureBlock = (b) => {
-          b = $(b);
-          if (Array.isArray(b)) {
-            return new this.ast.Block(b);
-          } else {
-            return b;
-          }
-        };
         if (o.$ast != null) {
           nodeType = o.$ast;
           switch (nodeType) {
@@ -163,7 +155,7 @@
             case 'Value':
               return new this.ast.Value($(o.val));
             case 'Assign':
-              return new this.ast.Assign($(o.variable), $(o.value));
+              return new this.ast.Assign($(o.variable), $(o.value), $(o.context));
             case 'Op':
               return new this.ast.Op($(o.args[0]), $(o.args[1]), (o.args[2] != null ? $(o.args[2]) : void 0));
             case 'PropertyName':
@@ -207,7 +199,7 @@
             case 'Param':
               return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
-              return new this.ast.Code($(o.params), ensureBlock(o.body), $(o.funcGlyph), $(o.paramStart));
+              return new this.ast.Code($(o.params), $(o.body), $(o.funcGlyph), $(o.paramStart));
             case 'Splat':
               return new this.ast.Splat($(o.name));
             case 'Existence':
@@ -218,6 +210,16 @@
               return new this.ast.StatementLiteral($(o.value));
             case 'PassthroughLiteral':
               return new this.ast.PassthroughLiteral($(o.value));
+            case 'Interpolation':
+              return new this.ast.Interpolation($(o.expression));
+            case 'StringWithInterpolations':
+              return new this.ast.StringWithInterpolations($(o.body), {
+                quote: $(o.quote)
+              });
+            case 'Catch':
+              return new this.ast.Catch($(o.body), $(o.errorVariable));
+            case 'Throw':
+              return new this.ast.Throw($(o.expression));
             case 'Literal':
               return new this.ast.Literal($(o.value));
             default:
@@ -226,6 +228,7 @@
           }
         } else if (o.$ary != null) {
           items = $(o.$ary);
+          // Always return as array for consistency
           if (Array.isArray(items)) {
             return items;
           } else {
@@ -260,25 +263,10 @@
               // Array operations
               if (o.append != null) {
                 target = $(o.append[0]);
-                items = (function() {
-                  var i, len, ref2, results;
-                  ref2 = o.append.slice(1);
-                  results = [];
-                  for (i = 0, len = ref2.length; i < len; i++) {
-                    item = ref2[i];
-                    if (item != null) {
-                      results.push($(item));
-                    }
-                  }
-                  return results;
-                })();
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                return target.concat(items);
-              } else if (o.gather != null) {
-                result = [];
-                ref2 = o.gather;
+                ref2 = o.append.slice(1);
                 for (i = 0, len = ref2.length; i < len; i++) {
                   item = ref2[i];
                   if (!(item != null)) {
@@ -286,8 +274,24 @@
                   }
                   resolved = $(item);
                   if (Array.isArray(resolved)) {
-                    result = result.concat(resolved);
+                    target = target.concat(resolved);
                   } else {
+                    target.push(resolved);
+                  }
+                }
+                return target;
+              } else if (o.gather != null) {
+                result = [];
+                ref3 = o.gather;
+                for (j = 0, len1 = ref3.length; j < len1; j++) {
+                  item = ref3[j];
+                  if (!(item != null)) {
+                    continue;
+                  }
+                  resolved = $(item);
+                  if (Array.isArray(resolved)) {
+                    result = result.concat(resolved);
+                  } else if (resolved != null) {
                     result.push(resolved);
                   }
                 }
@@ -297,12 +301,50 @@
                 return new this.ast.Literal("/* $ops: array */");
               }
               break;
+            case 'if':
+              // If operations for adding else clauses
+              if (o.addElse != null) {
+                ifNode = $(o.addElse[0]);
+                elseBody = $(o.addElse[1]);
+                if (ifNode instanceof this.ast.If) {
+                  ifNode.addElse(elseBody);
+                }
+                return ifNode;
+              } else {
+                console.warn("ES5Backend: $ops if without addElse:", o);
+                return new this.ast.Literal("/* $ops: if */");
+              }
+              break;
+            case 'loop':
+              // Loop operations
+              if (o.addSource != null) {
+                loopNode = $(o.addSource[0]);
+                sourceInfo = $(o.addSource[1]);
+                if (loopNode) {
+                  loopNode.addSource(sourceInfo);
+                }
+                return loopNode;
+              } else if (o.addBody != null) {
+                loopNode = $(o.addBody[0]);
+                bodyNode = $(o.addBody[1]);
+                if (loopNode) {
+                  loopNode.addBody(bodyNode);
+                }
+                return loopNode;
+              } else {
+                console.warn("ES5Backend: $ops loop without addSource/addBody:", o);
+                return new this.ast.Literal("/* $ops: loop */");
+              }
+              break;
             default:
               console.warn("ES5Backend: $ops not yet implemented:", o.$ops);
               return new this.ast.Literal(`/* $ops: ${o.$ops} */`);
           }
         } else {
-          console.warn("ES5Backend: Unknown directive:", o);
+          // Suppress warnings for empty objects {} (common for optional values)
+          if (!(typeof o === 'object' && o.constructor === Object && Object.keys(o).length === 0)) {
+            console.warn("ES5Backend: Unknown directive:", o);
+          }
           return new this.ast.Literal("/* Unknown directive */");
         }
       } else {

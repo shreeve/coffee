@@ -125,6 +125,10 @@ class ES5Backend
           when 'RegexLiteral'       then new @ast.RegexLiteral       $(o.value)
           when 'StatementLiteral'   then new @ast.StatementLiteral   $(o.value)
           when 'PassthroughLiteral' then new @ast.PassthroughLiteral $(o.value)
+          when 'Interpolation'      then new @ast.Interpolation      $(o.expression)
+          when 'StringWithInterpolations' then new @ast.StringWithInterpolations $(o.body), quote: $(o.quote)
+          when 'Catch'              then new @ast.Catch              $(o.body), $(o.errorVariable)
+          when 'Throw'              then new @ast.Throw              $(o.expression)
           when 'Literal'            then new @ast.Literal            $(o.value)
           else
             console.warn "ES5Backend: Unimplemented AST node type:", nodeType
@@ -132,6 +136,7 @@ class ES5Backend
 
       else if o.$ary?
         items = $(o.$ary)
+        # Always return as array for consistency
         if Array.isArray(items) then items else [items]
 
       else if o.$use?
@@ -156,24 +161,59 @@ class ES5Backend
             # Array operations
             if o.append?
               target = $(o.append[0])
-              items = ($(item) for item in o.append[1..] when item?)
               target = [] unless Array.isArray target
-              target.concat items
+              for item in o.append[1..] when item?
+                resolved = $(item)
+                if Array.isArray(resolved)
+                  target = target.concat resolved
+                else
+                  target.push resolved
+              target
             else if o.gather?
               result = []
               for item in o.gather when item?
                 resolved = $(item)
-                if Array.isArray resolved then result = result.concat resolved else result.push resolved
+                if Array.isArray(resolved)
+                  result = result.concat resolved
+                else if resolved?
+                  result.push resolved
               result
             else
               console.warn "ES5Backend: $ops array without append/gather:", o
               new @ast.Literal "/* $ops: array */"
+          when 'if'
+            # If operations for adding else clauses
+            if o.addElse?
+              ifNode = $(o.addElse[0])
+              elseBody = $(o.addElse[1])
+              ifNode.addElse elseBody if ifNode instanceof @ast.If
+              ifNode
+            else
+              console.warn "ES5Backend: $ops if without addElse:", o
+              new @ast.Literal "/* $ops: if */"
+          when 'loop'
+            # Loop operations
+            if o.addSource?
+              loopNode = $(o.addSource[0])
+              sourceInfo = $(o.addSource[1])
+              loopNode.addSource sourceInfo if loopNode
+              loopNode
+            else if o.addBody?
+              loopNode = $(o.addBody[0])
+              bodyNode = $(o.addBody[1])
+              loopNode.addBody bodyNode if loopNode
+              loopNode
+            else
+              console.warn "ES5Backend: $ops loop without addSource/addBody:", o
+              new @ast.Literal "/* $ops: loop */"
           else
             console.warn "ES5Backend: $ops not yet implemented:", o.$ops
             new @ast.Literal "/* $ops: #{o.$ops} */"
 
       else
-        console.warn "ES5Backend: Unknown directive:", o
+        # Suppress warnings for empty objects {} (common for optional values)
+        unless typeof o is 'object' and o.constructor is Object and Object.keys(o).length is 0
+          console.warn "ES5Backend: Unknown directive:", o
         new @ast.Literal "/* Unknown directive */"
 
     else
