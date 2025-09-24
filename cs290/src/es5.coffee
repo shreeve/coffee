@@ -231,39 +231,23 @@ class ES5Backend
             # Our resolver + _toBlock handles body conversion automatically
             whileNode.body = @_toBlock(body)
             whileNode
-          when 'For'                then new @ast.For                @_toBlock($(o.body)), $(o.source)
-          when 'Switch'             then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
-          when 'SwitchWhen'         then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
-          when 'Elision'            then new @ast.Elision
-          when 'Expansion'          then new @ast.Expansion
+          when 'For'                  then new @ast.For                $(o.body), $(o.source)
+          when 'Switch'               then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
+          when 'SwitchWhen'           then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
+          when 'Elision'              then new @ast.Elision
+          when 'Expansion'            then new @ast.Expansion
           when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
-          when 'DefaultLiteral'     then new @ast.DefaultLiteral     $(o.value)
-          when 'Try'
-            attempt = @_toBlock($(o.attempt))
-            # The parser uses 'catch' not 'recovery' for the catch clause
-            catchClause = $(o.catch)
-            ensure = @_toBlock($(o.ensure))
-            # Try expects (attempt, recovery, ensure) where recovery and ensure are optional
-            new @ast.Try attempt, catchClause, ensure
-          when 'Class'              then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
-          when 'FuncGlyph'          then new @ast.FuncGlyph          $(o.glyph)
-          when 'Param'              then new @ast.Param              $(o.name), $(o.value), $(o.splat)
-          when 'Code'               then new @ast.Code ($(p) for p in $(o.params) ? [] when $(p)?), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
-          when 'Splat'
-            # ES6-enhanced Splat handling
-            # Check for 'name' or 'body' field (@ directive uses 'body')
-            nameDirective = o.name || o.body
-            name = $(nameDirective)
-            # Splat requires a valid expression, not undefined
-            if name
-              new @ast.Splat name
-            else
-              # Create a placeholder if name is missing
-              new @ast.Splat new @ast.Literal 'undefined'
-          when 'Existence'          then new @ast.Existence          $(o.expression)
-          when 'RegexLiteral'       then new @ast.RegexLiteral       $(o.value)
-          when 'StatementLiteral'   then new @ast.StatementLiteral   $(o.value)
-          when 'PassthroughLiteral' then new @ast.PassthroughLiteral $(o.value)
+          when 'DefaultLiteral'       then new @ast.DefaultLiteral     $(o.value)
+          when 'Try'                  then new @ast.Try                @_toBlock($(o.attempt)), $(o.catch), @_toBlock($(o.ensure))
+          when 'Class'                then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
+          when 'FuncGlyph'            then new @ast.FuncGlyph          $(o.glyph)
+          when 'Param'                then new @ast.Param              $(o.name), $(o.value), $(o.splat)
+          when 'Code'                 then new @ast.Code ($(p) for p in $(o.params) ? [] when $(p)?), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
+          when 'Splat'                then new @ast.Splat              $(o.name)
+          when 'Existence'            then new @ast.Existence          $(o.expression)
+          when 'RegexLiteral'         then new @ast.RegexLiteral       $(o.value)
+          when 'StatementLiteral'     then new @ast.StatementLiteral   $(o.value)
+          when 'PassthroughLiteral'   then new @ast.PassthroughLiteral $(o.value)
           when 'Interpolation'
             expression = $(o.expression)
             # Expression might be an array, so extract the first element

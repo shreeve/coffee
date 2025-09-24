@@ -154,7 +154,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessNode, accessor, actualExpression, attempt, base, body, bodyNode, bodyNodes, c, catchClause, condition, context, elseBody, ensure, error, exclusive, expression, expressionNode, from, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nameDirective, nodeType, opts, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, resolved, resolvedValue, result, soak, sourceInfo, tag, target, to, type, typeToken, val, value, variable, whileNode;
+      var $, accessNode, accessor, actualExpression, base, body, bodyNode, bodyNodes, c, condition, context, elseBody, error, exclusive, expression, expressionNode, from, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nodeType, opts, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, resolved, resolvedValue, result, soak, sourceInfo, tag, target, to, type, typeToken, val, value, variable, whileNode;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -338,8 +338,7 @@
               whileNode.body = this._toBlock(body);
               return whileNode;
             case 'For':
-              // Trust our enhanced resolver - much cleaner than manual ES6 conversion
-              return new this.ast.For(this._toBlock($(o.body)), $(o.source));
+              return new this.ast.For($(o.body), $(o.source));
             case 'Switch':
               return new this.ast.Switch($(o.subject), (function() {
                 var j, len1, ref3, ref4, results;
@@ -375,12 +374,7 @@
             case 'DefaultLiteral':
               return new this.ast.DefaultLiteral($(o.value));
             case 'Try':
-              attempt = this._toBlock($(o.attempt));
-              // The parser uses 'catch' not 'recovery' for the catch clause
-              catchClause = $(o.catch);
-              ensure = this._toBlock($(o.ensure));
-              // Try expects (attempt, recovery, ensure) where recovery and ensure are optional
-              return new this.ast.Try(attempt, catchClause, ensure);
+              return new this.ast.Try(this._toBlock($(o.attempt)), $(o.catch), this._toBlock($(o.ensure)));
             case 'Class':
               return new this.ast.Class($(o.variable), $(o.parent), $(o.body));
             case 'FuncGlyph':
@@ -401,18 +395,7 @@
                 return results;
               })(), this._toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart));
             case 'Splat':
-              // ES6-enhanced Splat handling
-              // Check for 'name' or 'body' field (@ directive uses 'body')
-              nameDirective = o.name || o.body;
-              name = $(nameDirective);
-              // Splat requires a valid expression, not undefined
-              if (name) {
-                return new this.ast.Splat(name);
-              } else {
-                // Create a placeholder if name is missing
-                return new this.ast.Splat(new this.ast.Literal('undefined'));
-              }
-              break;
+              return new this.ast.Splat($(o.name));
             case 'Existence':
               return new this.ast.Existence($(o.expression));
             case 'RegexLiteral':
