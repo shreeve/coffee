@@ -47,7 +47,7 @@ class ES5Backend
           when 'NumberLiteral'     then new @ast.NumberLiteral     $(o.value)
           when 'Value'             then new @ast.Value             $(o.val)
           when 'Assign'            then new @ast.Assign            $(o.variable), $(o.value)
-          when 'Op'                then new @ast.Op                $(o.operator), $(o.first), $(o.second)
+          when 'Op'                then new @ast.Op                $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
           when 'Literal'           then new @ast.Literal           $(o.value)
           else
             console.warn "ES5Backend: Unimplemented AST node type:", nodeType

@@ -86,7 +86,7 @@
             case 'Assign':
               return new this.ast.Assign($(o.variable), $(o.value));
             case 'Op':
-              return new this.ast.Op($(o.operator), $(o.first), $(o.second));
+              return new this.ast.Op($(o.args[0]), $(o.args[1]), (o.args[2] != null ? $(o.args[2]) : void 0));
             case 'Literal':
               return new this.ast.Literal($(o.value));
             default:
