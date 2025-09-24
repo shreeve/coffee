@@ -7,8 +7,9 @@
     "coffeescript",
     "compiler"
   ],
-  "version": "2.9.0",
+  "version": "3.0.0",
   "license": "MIT",
+  "type": "module",
   "engines": {
     "node": ">=6"
   },
