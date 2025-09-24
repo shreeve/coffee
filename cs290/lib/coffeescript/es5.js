@@ -57,7 +57,7 @@
     }
 
     resolve(value, lookup = value) {
-      var $, items, name, nodeType, o, ref, ref1, ref2, ref3, resolvedValue, useLookup;
+      var $, accessor, item, items, name, nodeType, o, ref, ref1, ref2, ref3, resolvedValue, target, useLookup;
       if (typeof value === 'number' && (lookup != null)) {
         return lookup(value - 1);
       }
@@ -101,6 +101,14 @@
               return new this.ast.Assign($(o.variable), $(o.value));
             case 'Op':
               return new this.ast.Op($(o.args[0]), $(o.args[1]), (o.args[2] != null ? $(o.args[2]) : void 0));
+            case 'PropertyName':
+              return new this.ast.PropertyName($(o.value));
+            case 'Access':
+              return new this.ast.Access($(o.name), {
+                soak: !!$(o.soak)
+              });
+            case 'Call':
+              return new this.ast.Call($(o.variable), $(o.args));
             case 'Literal':
               return new this.ast.Literal($(o.value));
             default:
@@ -121,8 +129,53 @@
           }
           return resolvedValue;
         } else if (o.$ops != null) {
-          console.warn("ES5Backend: $ops not yet implemented:", o.$ops);
-          return new this.ast.Literal(`/* $ops: ${o.$ops} */`);
+          switch (o.$ops) {
+            case 'value':
+              // Add accessor/property to Value node
+              if (o.add != null) {
+                target = $(o.add[0]);
+                accessor = $(o.add[1]);
+                if (!(target instanceof this.ast.Value)) {
+                  target = new this.ast.Value(target);
+                }
+                if (accessor != null) {
+                  target.add([accessor]);
+                }
+                return target;
+              } else {
+                console.warn("ES5Backend: $ops value without add:", o);
+                return new this.ast.Literal("/* $ops: value */");
+              }
+              break;
+            case 'array':
+              // Array operations
+              if (o.append != null) {
+                target = $(o.append[0]);
+                items = (function() {
+                  var i, len, ref4, results;
+                  ref4 = o.append.slice(1);
+                  results = [];
+                  for (i = 0, len = ref4.length; i < len; i++) {
+                    item = ref4[i];
+                    if (item != null) {
+                      results.push($(item));
+                    }
+                  }
+                  return results;
+                })();
+                if (!Array.isArray(target)) {
+                  target = [];
+                }
+                return target.concat(items);
+              } else {
+                console.warn("ES5Backend: $ops array without append:", o);
+                return new this.ast.Literal("/* $ops: array */");
+              }
+              break;
+            default:
+              console.warn("ES5Backend: $ops not yet implemented:", o.$ops);
+              return new this.ast.Literal(`/* $ops: ${o.$ops} */`);
+          }
         } else {
           console.warn("ES5Backend: Unknown directive:", o);
           return new this.ast.Literal("/* Unknown directive */");

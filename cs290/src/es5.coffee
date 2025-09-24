@@ -57,6 +57,9 @@ class ES5Backend
           when 'Value'             then new @ast.Value             $(o.val)
           when 'Assign'            then new @ast.Assign            $(o.variable), $(o.value)
           when 'Op'                then new @ast.Op                $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
+          when 'PropertyName'      then new @ast.PropertyName      $(o.value)
+          when 'Access'            then new @ast.Access            $(o.name), soak: !!$(o.soak)
+          when 'Call'              then new @ast.Call              $(o.variable), $(o.args)
           when 'Literal'           then new @ast.Literal           $(o.value)
           else
             console.warn "ES5Backend: Unimplemented AST node type:", nodeType
@@ -72,8 +75,31 @@ class ES5Backend
         resolvedValue
 
       else if o.$ops?
-        console.warn "ES5Backend: $ops not yet implemented:", o.$ops
-        new @ast.Literal "/* $ops: #{o.$ops} */"
+        switch o.$ops
+          when 'value'
+            # Add accessor/property to Value node
+            if o.add?
+              target = $(o.add[0])  # The Value node
+              accessor = $(o.add[1])  # The Access/Index node
+              target = new @ast.Value target unless target instanceof @ast.Value
+              target.add [accessor] if accessor?
+              target
+            else
+              console.warn "ES5Backend: $ops value without add:", o
+              new @ast.Literal "/* $ops: value */"
+          when 'array'
+            # Array operations
+            if o.append?
+              target = $(o.append[0])
+              items = ($(item) for item in o.append[1..] when item?)
+              target = [] unless Array.isArray target
+              target.concat items
+            else
+              console.warn "ES5Backend: $ops array without append:", o
+              new @ast.Literal "/* $ops: array */"
+          else
+            console.warn "ES5Backend: $ops not yet implemented:", o.$ops
+            new @ast.Literal "/* $ops: #{o.$ops} */"
 
       else
         console.warn "ES5Backend: Unknown directive:", o
