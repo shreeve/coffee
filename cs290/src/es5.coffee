@@ -35,25 +35,29 @@ class ES5Backend
     @resolve o
 
   resolve: (o, lookup = o) ->
+
+    # Null/undefined early return
     return o unless o?  # null/undefined early return
-    
+
     type = typeof o
-    
+
     # Numbers: only do 1-based lookup for positive integers
     if type is 'number'
-      if Number.isInteger(o) and o > 0 and typeof lookup is 'function'
-        return lookup(o - 1)
+      return lookup(o - 1) if Number.isInteger(o) and o > 0 and typeof lookup is 'function'
       return o
-      
+
+    # Strings and booleans return as-is, arrays are resolved recursively
     return o if type is 'string' or type is 'boolean'
     return(o.map (val) => @resolve val, lookup) if Array.isArray o
-    
+
     # Functions without directive markers are terminals (key fix!)
     if type is 'function' and not (o.$ast? or o.$use? or o.$ary? or o.$ops?)
       return o
-    
+
+    # Objects and functions
     if type is 'object' or type is 'function'
       return o if o.constructor? and o.constructor not in [Object, Function]
+
       $ = (val) => @resolve val, lookup  # Local resolver
 
       if o.$ast?
