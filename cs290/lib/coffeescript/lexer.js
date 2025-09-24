@@ -309,11 +309,13 @@
       if (this.chunk.charAt(0) !== '@') {
         return 0;
       }
-      // Handle @@ first (if supported)
+      
+      // Handle @@ first (this.constructor)
       if (this.chunk.charAt(1) === '@') {
         this.token('THIS_CONSTRUCTOR', '@@');
         return 2;
       }
+      
       // Check for @identifier pattern using same logic as IDENTIFIER regex
       // Match @ident but extract just the identifier part
       match = /^@((?![\d\s])[$\w\x7f-\uffff]+)/.exec(this.chunk);
@@ -321,6 +323,7 @@
         return 0;
       }
       [fullMatch, identifier] = match;
+      
       // Emit THIS_PROPERTY token with identifier as value (no @ prefix)
       this.token('THIS_PROPERTY', identifier, {
         length: fullMatch.length
@@ -1945,7 +1948,7 @@
   // Tokens which could legitimately be invoked or indexed. An opening
   // parentheses or bracket following these tokens will be recorded as the start
   // of a function invocation or indexing operation.
-  CALLABLE = ['IDENTIFIER', 'PROPERTY', ')', ']', '?', '@', 'THIS', 'THIS_PROPERTY', 'SUPER', 'DYNAMIC_IMPORT'];
+  CALLABLE = ['IDENTIFIER', 'PROPERTY', ')', ']', '?', '@', 'THIS', 'THIS_PROPERTY', 'THIS_CONSTRUCTOR', 'SUPER', 'DYNAMIC_IMPORT'];
 
   INDEXABLE = CALLABLE.concat(['NUMBER', 'INFINITY', 'NAN', 'STRING', 'STRING_END', 'REGEX', 'REGEX_END', 'BOOL', 'NULL', 'UNDEFINED', '}', '::']);
 

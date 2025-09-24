@@ -488,6 +488,14 @@ grammar =
       properties:  [ { $ast: 'Index', index: 3 } ],
       bareLiteral: {$ast: 'ThisLiteral'}
 
+    # @@  -> this.constructor
+    o 'THIS_CONSTRUCTOR',
+      $ast: 'Value',
+      val:         {$ast: 'ThisLiteral'},
+      properties:  [ { $ast: 'Access',
+                       name: { $ast: 'PropertyName', value: 'constructor' } } ],
+      bareLiteral: {$ast: 'ThisLiteral'}
+
     # Fallback: bare @  (must be last)
     o '@',
       $ast: 'Value',

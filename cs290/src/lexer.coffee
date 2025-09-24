@@ -264,19 +264,19 @@ exports.Lexer = class Lexer
   # Must be called before literalToken to handle @ident before bare @
   atPropertyToken: ->
     return 0 unless @chunk.charAt(0) is '@'
-
-    # Handle @@ first (if supported)
+    
+    # Handle @@ first (this.constructor)
     if @chunk.charAt(1) is '@'
       @token 'THIS_CONSTRUCTOR', '@@'
       return 2
-
+    
     # Check for @identifier pattern using same logic as IDENTIFIER regex
     # Match @ident but extract just the identifier part
     match = /^@((?![\d\s])[$\w\x7f-\uffff]+)/.exec @chunk
     return 0 unless match
-
+    
     [fullMatch, identifier] = match
-
+    
     # Emit THIS_PROPERTY token with identifier as value (no @ prefix)
     @token 'THIS_PROPERTY', identifier, length: fullMatch.length
     fullMatch.length
@@ -1471,7 +1471,7 @@ BOOL = ['TRUE', 'FALSE']
 # Tokens which could legitimately be invoked or indexed. An opening
 # parentheses or bracket following these tokens will be recorded as the start
 # of a function invocation or indexing operation.
-CALLABLE  = ['IDENTIFIER', 'PROPERTY', ')', ']', '?', '@', 'THIS', 'THIS_PROPERTY', 'SUPER', 'DYNAMIC_IMPORT']
+CALLABLE  = ['IDENTIFIER', 'PROPERTY', ')', ']', '?', '@', 'THIS', 'THIS_PROPERTY', 'THIS_CONSTRUCTOR', 'SUPER', 'DYNAMIC_IMPORT']
 INDEXABLE = CALLABLE.concat [
   'NUMBER', 'INFINITY', 'NAN', 'STRING', 'STRING_END', 'REGEX', 'REGEX_END'
   'BOOL', 'NULL', 'UNDEFINED', '}', '::'
