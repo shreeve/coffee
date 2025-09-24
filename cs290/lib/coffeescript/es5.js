@@ -154,7 +154,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessNode, accessor, actualExpression, attempt, base, body, bodyNode, bodyNodes, c, catchClause, condition, context, elseBody, ensure, error, exclusive, expression, expressionNode, from, guard, i, ifNode, index, indexNode, isAwait, item, items, j, k, len, len1, len2, loopNode, name, name1, nameDirective, nodeType, object, opts, own, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, resolved, resolvedValue, result, soak, source, sourceInfo, sourceObj, step, tag, target, to, type, typeToken, val, value, variable, whileNode;
+      var $, accessNode, accessor, actualExpression, attempt, base, body, bodyNode, bodyNodes, c, catchClause, condition, context, elseBody, ensure, error, exclusive, expression, expressionNode, from, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nameDirective, nodeType, opts, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, resolved, resolvedValue, result, soak, sourceInfo, tag, target, to, type, typeToken, val, value, variable, whileNode;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -338,52 +338,8 @@
               whileNode.body = this._toBlock(body);
               return whileNode;
             case 'For':
-              // For loops are complex - they're built incrementally via $ops (from ES6 patterns)
-              body = $(o.body);
-              source = $(o.source);
-              guard = $(o.guard);
-              name = $(o.name);
-              index = $(o.index);
-              step = $(o.step);
-              own = $(o.own);
-              object = $(o.object);
-              from = $(o.from);
-              isAwait = $(o.await);
-              // Handle body (from ES6 approach)
-              // Body node with expressions - preserve full list and order
-              bodyNode = (body != null ? body.expressions : void 0) ? new this.ast.Block(this._filterNodes(body.expressions)) : this._toBlock(body);
-              // Build source object for For constructor (ES6 pattern)
-              sourceObj = {};
-              // Ensure source is a proper node
-              if (source) {
-                sourceObj.source = source instanceof this.ast.Base ? source : this._ensureNode(source);
-              }
-              if (name) {
-                sourceObj.name = name instanceof this.ast.Base ? name : this._ensureNode(name);
-              }
-              if ((index != null) && index !== void 0) {
-                sourceObj.index = index instanceof this.ast.Base ? index : this._ensureNode(index);
-              }
-              if (guard) {
-                sourceObj.guard = guard;
-              }
-              if (step) {
-                sourceObj.step = step;
-              }
-              if (own) {
-                sourceObj.own = own;
-              }
-              if (object) {
-                sourceObj.object = object;
-              }
-              if (from) {
-                sourceObj.from = from;
-              }
-              if (isAwait) {
-                sourceObj.await = isAwait;
-              }
-              // Create For node - constructor expects (body, source)
-              return new this.ast.For(bodyNode, sourceObj);
+              // Trust our enhanced resolver - much cleaner than manual ES6 conversion
+              return new this.ast.For(this._toBlock($(o.body)), $(o.source));
             case 'Switch':
               return new this.ast.Switch($(o.subject), (function() {
                 var j, len1, ref3, ref4, results;
@@ -445,7 +401,7 @@
                 return results;
               })(), this._toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart));
             case 'Splat':
-              // ES6-enhanced Splat handling  
+              // ES6-enhanced Splat handling
               // Check for 'name' or 'body' field (@ directive uses 'body')
               nameDirective = o.name || o.body;
               name = $(nameDirective);

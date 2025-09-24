@@ -232,43 +232,8 @@ class ES5Backend
             whileNode.body = @_toBlock(body)
             whileNode
           when 'For'
-            # For loops are complex - they're built incrementally via $ops (from ES6 patterns)
-            body    = $(o.body)
-            source  = $(o.source)
-            guard   = $(o.guard)
-            name    = $(o.name)
-            index   = $(o.index)
-            step    = $(o.step)
-            own     = $(o.own)
-            object  = $(o.object)
-            from    = $(o.from)
-            isAwait = $(o.await)
-
-            # Handle body (from ES6 approach)
-            bodyNode = if body?.expressions
-              # Body node with expressions - preserve full list and order
-              new @ast.Block @_filterNodes(body.expressions)
-            else
-              @_toBlock(body)
-
-            # Build source object for For constructor (ES6 pattern)
-            sourceObj = {}
-            # Ensure source is a proper node
-            if source
-              sourceObj.source = if source instanceof @ast.Base then source else @_ensureNode(source)
-            if name
-              sourceObj.name = if name instanceof @ast.Base then name else @_ensureNode(name)
-            if index? and index isnt undefined
-              sourceObj.index = if index instanceof @ast.Base then index else @_ensureNode(index)
-            sourceObj.guard = guard if guard
-            sourceObj.step = step if step
-            sourceObj.own = own if own
-            sourceObj.object = object if object
-            sourceObj.from = from if from
-            sourceObj.await = isAwait if isAwait
-
-            # Create For node - constructor expects (body, source)
-            new @ast.For bodyNode, sourceObj
+            # Trust our enhanced resolver - much cleaner than manual ES6 conversion
+            new @ast.For @_toBlock($(o.body)), $(o.source)
           when 'Switch'             then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
           when 'SwitchWhen'         then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
           when 'Elision'            then new @ast.Elision
