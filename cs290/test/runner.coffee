@@ -35,8 +35,9 @@ global.test = (name, fnOrExpected) ->
         # Contains assignments - need full function execution for variable scope
         result = eval(compiled)
       else
-        # Simple literal/expression - can extract return expression safely
-        match = compiled.match(/return\s+(.*);/)
+        # Simple literal/expression - can extract return expression safely  
+        # Use non-greedy match and handle multiline properly
+        match = compiled.match(/return\s+(.*?);\s*\n\s*}\)\.call/s)
         if match
           # Wrap in parentheses to ensure object literals are treated as expressions
           result = eval("(" + match[1] + ")")
