@@ -34,17 +34,16 @@ class ES5Backend
       o[prop] = value
     @resolve o
 
-  resolve: (value, lookup = value) ->
-    return lookup(value - 1) if typeof value is 'number' and lookup?
-    return value if typeof value is 'number'
-    return value if typeof value in ['string', 'boolean']
-    return(value.map (item) => @resolve item, lookup) if Array.isArray value
+  resolve: (o, lookup = o) ->
+    type = typeof o
+    return lookup(o - 1) if type is 'number' and typeof lookup is 'function'
+    return o if type is 'number'
+    return o if type is 'string' or type is 'boolean'
+    return(o.map (val) => @resolve val, lookup) if Array.isArray o
 
-    if value? and (typeof value is 'object' or typeof value is 'function')
-      o = value
-      return o if o.constructor?.name and o.constructor.name not in ['Object', 'Function'] # AST nodes
-      useLookup = if typeof value is 'function' then value else lookup
-      $ = (val) => @resolve val, useLookup  # Local resolver
+    if o? and (type is 'object' or type is 'function')
+      return o if o.constructor?.name and o.constructor.name not in ['Object', 'Function']
+      $ = (val) => @resolve val, lookup  # Local resolver
 
       if o.$ast?
         nodeType = o.$ast
