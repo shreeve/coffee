@@ -231,9 +231,7 @@ class ES5Backend
             # Our resolver + _toBlock handles body conversion automatically
             whileNode.body = @_toBlock(body)
             whileNode
-          when 'For'
-            # Trust our enhanced resolver - much cleaner than manual ES6 conversion
-            new @ast.For @_toBlock($(o.body)), $(o.source)
+          when 'For'                then new @ast.For                @_toBlock($(o.body)), $(o.source)
           when 'Switch'             then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
           when 'SwitchWhen'         then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
           when 'Elision'            then new @ast.Elision
