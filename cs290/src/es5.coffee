@@ -24,38 +24,62 @@ class ES5Backend
   # Main entry point called by r() function in generated parser
   # Converts Solar directives to CoffeeScript AST node instances
   reduce: (values, positions, stackTop, symbolCount, directive) ->
+    console.log "🔍 REDUCE:", JSON.stringify(directive), "symbolCount:", symbolCount
 
-    # Make o BOTH a function and an object:
-    # o(0), o(1), o(2) - positional access
-    # o.variable, o.value - semantic access
-    $ = o = (index) -> values[stackTop - symbolCount + index]
-    for prop, value of directive
-      o[prop] = if typeof value is 'number' then o(value - 1) else value
-
-    # Resolve Solar directive and return AST node
-    @resolve o
+    # For $ast directives, build hybrid function-object
+    if directive.$ast?
+      # Make o BOTH a function and an object:
+      console.log "🔍 STACK INFO: stackTop:", stackTop, "symbolCount:", symbolCount, "values.length:", values.length
+      console.log "🔍 VALUES:", values?.slice(Math.max(0, stackTop - 5), stackTop + 2)
+      $ = o = (index) ->
+        pos = stackTop - symbolCount + 1 + index  # ← Add +1 offset
+        console.log "🔍 o(#{index}) → values[#{pos}] =", values[pos]
+        values[pos]
+      for prop, value of directive
+        if typeof value is 'number'
+          resolved = o(value - 1)
+          console.log "🔍 RESOLVING #{prop}:#{value} → o(#{value - 1}) =", resolved
+          o[prop] = resolved
+        else
+          o[prop] = value
+      console.log "🔍 BUILT o:", typeof o, "isFunction:", typeof o is 'function', "o.$ast:", o.$ast
+      @resolve o
+    else
+      # Simple directives: just resolve directly
+      @resolve directive
 
   # Core Solar directive resolver
   resolve: (o) ->
-    return $(o) if typeof o is 'number'
+    console.log "🔍 RESOLVE START:", typeof o, "isFunction:", typeof o is 'function', JSON.stringify(o)?[0..50]
+    return o if typeof o is 'number'
     return o if typeof o in ['string', 'boolean']
-    return o.map (item) => @resolve item if Array.isArray o
+
+    # Handle arrays
+    if Array.isArray o
+      return o.map (item) => @resolve item
 
     # Handle Solar directives (objects with special properties)
-    if o? and typeof o is 'object'
+    if o? and (typeof o is 'object' or typeof o is 'function')
+      console.log "🔍 RESOLVE:", "type:", typeof o, "isFunction:", typeof o is 'function', "hasAst:", !!o.$ast
 
       # $ast directive - create AST node
       if o.$ast?
+        console.log "🔍 $ast directive:", o.$ast
         nodeType = o.$ast
 
         switch nodeType
           when 'Root'
+            console.log "🔍 Root processing, o.body:", o.body
             body = @resolve o.body
+            console.log "🔍 Root body resolved:", body
             bodyArray = if Array.isArray(body) then body else [body]
             filteredBody = bodyArray.filter (item) -> item?
+            console.log "🔍 Root filtered body:", filteredBody
             block = new @ast.Block filteredBody
             block.makeReturn() if filteredBody.length > 0  # Make final expression return
-            new @ast.Root block
+            result = new @ast.Root block
+            console.log "🔍 Root result:", result
+            result
 
           when 'IdentifierLiteral' then new @ast.IdentifierLiteral o(0)
           when 'NumberLiteral'     then new @ast.NumberLiteral     o(0)
@@ -71,21 +95,25 @@ class ES5Backend
 
       # $ary directive - return array
       else if o.$ary?
+        console.log "🔍 $ary directive:", o.$ary
         items = @resolve o.$ary
         if Array.isArray(items) then items else [items]
 
       # $use directive - use existing value
       # TODO: This isn't enough, see: {$use: 2, method: 'toString'}
       else if o.$use?
+        console.log "🔍 $use directive:", o.$use
         @resolve o.$use
 
       # $ops directive - operation (array append, etc.)
       else if o.$ops?
+        console.log "🔍 $ops directive:", o.$ops
         console.warn "ES5Backend: $ops not yet implemented:", o.$ops
         new @ast.Literal "/* $ops: #{o.$ops} */"
 
       else
         # Unknown directive
+        console.log "🔍 Unknown directive:", JSON.stringify(o)
         console.warn "ES5Backend: Unknown directive:", o
         new @ast.Literal "/* Unknown directive */"
 
