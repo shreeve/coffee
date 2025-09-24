@@ -19,13 +19,47 @@ class ES5Backend
       bare: @options.bare ? true
       header: @options.header ? false
 
-  # Helper methods
+  # Helper methods (enhanced with ES6 patterns)
   _stripQuotes: (value) ->
     return value unless value?.length >= 2 and typeof value is 'string'
     if (value[0] is '"' and value[value.length-1] is '"') or (value[0] is "'" and value[value.length-1] is "'")
       value.slice(1, -1)
     else
       value
+
+  # Helper to ensure value is a proper node (from ES6 version)
+  _ensureNode: (value) ->
+    return null unless value?
+    return value if value?.compileToFragments or value instanceof @ast.Base
+    # Handle primitives
+    if typeof value in ['string', 'number', 'boolean']
+      node = new @ast.Literal String(value)
+      return node
+    # Handle objects with .value property
+    if value?.value?
+      node = new @ast.PropertyName value.value
+      return node
+    null
+
+  # Helper to filter and ensure all items are nodes (from ES6 version)
+  _filterNodes: (array) ->
+    return [] unless array?
+    result = []
+    for item in array
+      node = if item instanceof @ast.Base then item else @_ensureNode(item)
+      result.push node if node?
+    result
+
+  # Helper to convert value to a Block node (from ES6 version)
+  _toBlock: (value) ->
+    if Array.isArray(value)
+      new @ast.Block @_filterNodes(value)
+    else if value instanceof @ast.Block
+      value
+    else if value?
+      new @ast.Block [@_ensureNode(value)]
+    else
+      new @ast.Block []
 
   reduce: (values, positions, stackTop, symbolCount, directive) ->
     lookup = (index) -> values[stackTop - symbolCount + 1 + index]
@@ -102,14 +136,13 @@ class ES5Backend
             variable = $(o.variable)
             value = $(o.value)
             context = $(o.context)
-            # Fixed: Grammar stores object key in 'value' and actual value in 'expression'
-            # Fix swapped object property parameters (grammar bug workaround)
-            if context is 'object' and not variable? and value?.base?.constructor?.name is 'PropertyName'
-              # Grammar bug: variable and value swapped for object properties
-              key = value.base  # PropertyName (the key)
-              actualValue = $(o.expression)  # The actual value from expression property
-              variable = new @ast.Value key
-              value = actualValue
+            # Handle object property assignments (learned from ES6 version)
+            if context is 'object' and o.expression?
+              # In object context, 'value' is the property name, 'expression' is the actual value
+              variable = $(o.value)     # Property name/key
+              value = $(o.expression)   # Actual value
+              # Ensure variable is properly wrapped for object context
+              variable = new @ast.Value variable unless variable instanceof @ast.Value
             # Skip if variable or value is null/undefined (from empty {} placeholders)
             return null unless variable? and value?
             new @ast.Assign variable, value, context
@@ -117,62 +150,36 @@ class ES5Backend
           when 'PropertyName'       then new @ast.PropertyName       $(o.value)
           when 'Access'             then new @ast.Access             $(o.name), soak: o.soak
           when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
-          when 'Obj'                then new @ast.Obj ((prop for prop in $(o.properties) ? [] when prop?)), $(o.generated)
-          when 'Arr'                then new @ast.Arr ((obj for obj in $(o.objects) ? [] when obj?))
+          when 'Obj'                then new @ast.Obj @_filterNodes($(o.properties) ? []), $(o.generated)
+          when 'Arr'                then new @ast.Arr @_filterNodes($(o.objects) ? [])
           when 'Range'              then new @ast.Range              $(o.from), $(o.to), $(o.exclusive)
-          when 'Block'              then new @ast.Block ((expr for expr in $(o.expressions) ? [] when expr?))
+          when 'Block'              then new @ast.Block @_filterNodes($(o.expressions) ? [])
           when 'Return'             then new @ast.Return             $(o.expression)
-          when 'Parens'             then new @ast.Parens(if (b = $(o.body)) instanceof @ast.Block then b else new @ast.Block [b])
+          when 'Parens'             then new @ast.Parens (@_toBlock($(o.body)) ? new @ast.Block [new @ast.Literal ''])
           when 'Index'              then new @ast.Index              $(o.index)
           when 'Slice'              then new @ast.Slice              $(o.range)
-          when 'If'                 then new @ast.If $(o.condition), (if (b = $(o.body)) instanceof @ast.Block or not b? then b else new @ast.Block [b]), (if (e = $(o.elseBody))? and not (e instanceof @ast.Block) then new @ast.Block [e] else e)
-          when 'While'              then new @ast.While $(o.condition), (if (b = $(o.body)) instanceof @ast.Block or not b? then b else new @ast.Block [b])
-          when 'For'                then new @ast.For                $(o.body), $(o.source)
-          when 'Switch'             then new @ast.Switch             $(o.subject), $(o.cases), $(o.otherwise)
-          when 'SwitchWhen'         then new @ast.SwitchWhen         $(o.conditions), $(o.block)
+          when 'If'                 then new @ast.If $(o.condition), @_toBlock($(o.body)), @_toBlock($(o.elseBody))
+          when 'While'              then new @ast.While $(o.condition), @_toBlock($(o.body))
+          when 'For'                then new @ast.For                @_toBlock($(o.body)), $(o.source)
+          when 'Switch'             then new @ast.Switch             $(o.subject), @_filterNodes($(o.cases) ? []), @_toBlock($(o.otherwise))
+          when 'SwitchWhen'         then new @ast.SwitchWhen         @_filterNodes($(o.conditions) ? []), @_toBlock($(o.block))
           when 'Elision'            then new @ast.Elision
           when 'Expansion'          then new @ast.Expansion
           when 'ThisProperty'       then new @ast.Value new @ast.ThisLiteral($(o.token)), [new @ast.Access($(o.property))]
           when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
           when 'DefaultLiteral'     then new @ast.DefaultLiteral     $(o.value)
-          when 'Try'                then new @ast.Try (if (a = $(o.attempt)) instanceof @ast.Block or not a? then a else new @ast.Block [a]), $(o.recovery), $(o.ensure)
+          when 'Try'                then new @ast.Try @_toBlock($(o.attempt)), $(o.recovery), @_toBlock($(o.ensure))
           when 'Class'              then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
           when 'FuncGlyph'          then new @ast.FuncGlyph          $(o.glyph)
           when 'Param'              then new @ast.Param              $(o.name), $(o.value), $(o.splat)
-          when 'Code'               then new @ast.Code ((p for p in $(o.params) ? [] when p?)), (if (b = $(o.body)) instanceof @ast.Block then b else new @ast.Block [b]), $(o.funcGlyph), $(o.paramStart)
+          when 'Code'               then new @ast.Code @_filterNodes($(o.params) ? []), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
           when 'Splat'              then new @ast.Splat              $(o.name)
           when 'Existence'          then new @ast.Existence          $(o.expression)
           when 'RegexLiteral'       then new @ast.RegexLiteral       $(o.value)
           when 'StatementLiteral'   then new @ast.StatementLiteral   $(o.value)
           when 'PassthroughLiteral' then new @ast.PassthroughLiteral $(o.value)
           when 'Interpolation'      then new @ast.Interpolation      $(o.expression)
-          when 'StringWithInterpolations'
-            # Body should contain Value-wrapped StringLiterals and Interpolation nodes
-            body = $(o.body)
-            # Ensure body is an array
-            body = if Array.isArray(body) then body else [body]
-            # Wrap elements properly
-            wrappedBody = for item in body
-              # Skip undefined/null items
-              continue unless item?
-              # If it's already properly formed, use it
-              if item instanceof @ast.Value or item instanceof @ast.Interpolation
-                item
-              # If it's a StringLiteral, wrap in Value
-              else if item instanceof @ast.StringLiteral
-                new @ast.Value(item)
-              # If it's a plain object with $ast, resolve it
-              else if item.$ast?
-                resolved = $(item)
-                if resolved instanceof @ast.StringLiteral
-                  new @ast.Value(resolved)
-                else
-                  resolved
-              else
-                item
-            # Filter out undefined items from continue statements
-            wrappedBody = (item for item in wrappedBody when item?)
-            new @ast.StringWithInterpolations new @ast.Block(wrappedBody), quote: $(o.quote)
+          when 'StringWithInterpolations' then new @ast.StringWithInterpolations @_toBlock($(o.body)), quote: $(o.quote)
           when 'Catch'              then new @ast.Catch              $(o.body), $(o.errorVariable)
           when 'Throw'              then new @ast.Throw              $(o.expression)
           when 'Literal'            then new @ast.Literal            $(o.value)

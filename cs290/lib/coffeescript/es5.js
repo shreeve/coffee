@@ -28,7 +28,7 @@
       };
     }
 
-    // Helper methods
+    // Helper methods (enhanced with ES6 patterns)
     _stripQuotes(value) {
       if (!((value != null ? value.length : void 0) >= 2 && typeof value === 'string')) {
         return value;
@@ -37,6 +37,58 @@
         return value.slice(1, -1);
       } else {
         return value;
+      }
+    }
+
+    // Helper to ensure value is a proper node (from ES6 version)
+    _ensureNode(value) {
+      var node, ref;
+      if (value == null) {
+        return null;
+      }
+      if ((value != null ? value.compileToFragments : void 0) || value instanceof this.ast.Base) {
+        return value;
+      }
+      // Handle primitives
+      if ((ref = typeof value) === 'string' || ref === 'number' || ref === 'boolean') {
+        node = new this.ast.Literal(String(value));
+        return node;
+      }
+      // Handle objects with .value property
+      if ((value != null ? value.value : void 0) != null) {
+        node = new this.ast.PropertyName(value.value);
+        return node;
+      }
+      return null;
+    }
+
+    // Helper to filter and ensure all items are nodes (from ES6 version)
+    _filterNodes(array) {
+      var i, item, len, node, result;
+      if (array == null) {
+        return [];
+      }
+      result = [];
+      for (i = 0, len = array.length; i < len; i++) {
+        item = array[i];
+        node = item instanceof this.ast.Base ? item : this._ensureNode(item);
+        if (node != null) {
+          result.push(node);
+        }
+      }
+      return result;
+    }
+
+    // Helper to convert value to a Block node (from ES6 version)
+    _toBlock(value) {
+      if (Array.isArray(value)) {
+        return new this.ast.Block(this._filterNodes(value));
+      } else if (value instanceof this.ast.Block) {
+        return value;
+      } else if (value != null) {
+        return new this.ast.Block([this._ensureNode(value)]);
+      } else {
+        return new this.ast.Block([]);
       }
     }
 
@@ -92,7 +144,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, a, accessor, actualValue, b, body, bodyNode, context, e, elseBody, expr, i, ifNode, item, items, j, k, key, l, len, len1, len2, len3, loopNode, name, nodeType, obj, p, prop, property, ref, ref1, ref2, ref3, ref4, ref5, resolved, resolvedValue, result, sourceInfo, subItem, target, type, value, variable, wrappedBody;
+      var $, accessor, bodyNode, context, elseBody, i, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, name, nodeType, property, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, sourceInfo, subItem, target, type, value, variable;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -158,14 +210,15 @@
               variable = $(o.variable);
               value = $(o.value);
               context = $(o.context);
-              // Fixed: Grammar stores object key in 'value' and actual value in 'expression'
-              // Fix swapped object property parameters (grammar bug workaround)
-              if (context === 'object' && (variable == null) && (value != null ? (ref1 = value.base) != null ? (ref2 = ref1.constructor) != null ? ref2.name : void 0 : void 0 : void 0) === 'PropertyName') {
-                // Grammar bug: variable and value swapped for object properties
-                key = value.base; // PropertyName (the key)
-                actualValue = $(o.expression); // The actual value from expression property
-                variable = new this.ast.Value(key);
-                value = actualValue;
+              // Handle object property assignments (learned from ES6 version)
+              if (context === 'object' && (o.expression != null)) {
+                // In object context, 'value' is the property name, 'expression' is the actual value
+                variable = $(o.value); // Property name/key
+                value = $(o.expression); // Actual value
+                if (!(variable instanceof this.ast.Value)) {
+                  // Ensure variable is properly wrapped for object context
+                  variable = new this.ast.Value(variable);
+                }
               }
               if (!((variable != null) && (value != null))) {
                 // Skip if variable or value is null/undefined (from empty {} placeholders)
@@ -183,64 +236,31 @@
             case 'Call':
               return new this.ast.Call($(o.variable), $(o.args));
             case 'Obj':
-              return new this.ast.Obj((function() {
-                var i, len, ref3, ref4, results;
-                ref4 = (ref3 = $(o.properties)) != null ? ref3 : [];
-                results = [];
-                for (i = 0, len = ref4.length; i < len; i++) {
-                  prop = ref4[i];
-                  if (prop != null) {
-                    results.push(prop);
-                  }
-                }
-                return results;
-              })(), $(o.generated));
+              return new this.ast.Obj(this._filterNodes((ref1 = $(o.properties)) != null ? ref1 : []), $(o.generated));
             case 'Arr':
-              return new this.ast.Arr((function() {
-                var i, len, ref3, ref4, results;
-                ref4 = (ref3 = $(o.objects)) != null ? ref3 : [];
-                results = [];
-                for (i = 0, len = ref4.length; i < len; i++) {
-                  obj = ref4[i];
-                  if (obj != null) {
-                    results.push(obj);
-                  }
-                }
-                return results;
-              })());
+              return new this.ast.Arr(this._filterNodes((ref2 = $(o.objects)) != null ? ref2 : []));
             case 'Range':
               return new this.ast.Range($(o.from), $(o.to), $(o.exclusive));
             case 'Block':
-              return new this.ast.Block((function() {
-                var i, len, ref3, ref4, results;
-                ref4 = (ref3 = $(o.expressions)) != null ? ref3 : [];
-                results = [];
-                for (i = 0, len = ref4.length; i < len; i++) {
-                  expr = ref4[i];
-                  if (expr != null) {
-                    results.push(expr);
-                  }
-                }
-                return results;
-              })());
+              return new this.ast.Block(this._filterNodes((ref3 = $(o.expressions)) != null ? ref3 : []));
             case 'Return':
               return new this.ast.Return($(o.expression));
             case 'Parens':
-              return new this.ast.Parens((b = $(o.body)) instanceof this.ast.Block ? b : new this.ast.Block([b]));
+              return new this.ast.Parens((ref4 = this._toBlock($(o.body))) != null ? ref4 : new this.ast.Block([new this.ast.Literal('')]));
             case 'Index':
               return new this.ast.Index($(o.index));
             case 'Slice':
               return new this.ast.Slice($(o.range));
             case 'If':
-              return new this.ast.If($(o.condition), ((b = $(o.body)) instanceof this.ast.Block || (b == null) ? b : new this.ast.Block([b])), (((e = $(o.elseBody)) != null) && !(e instanceof this.ast.Block) ? new this.ast.Block([e]) : e));
+              return new this.ast.If($(o.condition), this._toBlock($(o.body)), this._toBlock($(o.elseBody)));
             case 'While':
-              return new this.ast.While($(o.condition), ((b = $(o.body)) instanceof this.ast.Block || (b == null) ? b : new this.ast.Block([b])));
+              return new this.ast.While($(o.condition), this._toBlock($(o.body)));
             case 'For':
-              return new this.ast.For($(o.body), $(o.source));
+              return new this.ast.For(this._toBlock($(o.body)), $(o.source));
             case 'Switch':
-              return new this.ast.Switch($(o.subject), $(o.cases), $(o.otherwise));
+              return new this.ast.Switch($(o.subject), this._filterNodes((ref5 = $(o.cases)) != null ? ref5 : []), this._toBlock($(o.otherwise)));
             case 'SwitchWhen':
-              return new this.ast.SwitchWhen($(o.conditions), $(o.block));
+              return new this.ast.SwitchWhen(this._filterNodes((ref6 = $(o.conditions)) != null ? ref6 : []), this._toBlock($(o.block)));
             case 'Elision':
               return new this.ast.Elision();
             case 'Expansion':
@@ -252,7 +272,7 @@
             case 'DefaultLiteral':
               return new this.ast.DefaultLiteral($(o.value));
             case 'Try':
-              return new this.ast.Try(((a = $(o.attempt)) instanceof this.ast.Block || (a == null) ? a : new this.ast.Block([a])), $(o.recovery), $(o.ensure));
+              return new this.ast.Try(this._toBlock($(o.attempt)), $(o.recovery), this._toBlock($(o.ensure)));
             case 'Class':
               return new this.ast.Class($(o.variable), $(o.parent), $(o.body));
             case 'FuncGlyph':
@@ -260,18 +280,7 @@
             case 'Param':
               return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
-              return new this.ast.Code((function() {
-                var i, len, ref3, ref4, results;
-                ref4 = (ref3 = $(o.params)) != null ? ref3 : [];
-                results = [];
-                for (i = 0, len = ref4.length; i < len; i++) {
-                  p = ref4[i];
-                  if (p != null) {
-                    results.push(p);
-                  }
-                }
-                return results;
-              })(), ((b = $(o.body)) instanceof this.ast.Block ? b : new this.ast.Block([b])), $(o.funcGlyph), $(o.paramStart));
+              return new this.ast.Code(this._filterNodes((ref7 = $(o.params)) != null ? ref7 : []), this._toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart));
             case 'Splat':
               return new this.ast.Splat($(o.name));
             case 'Existence':
@@ -285,53 +294,7 @@
             case 'Interpolation':
               return new this.ast.Interpolation($(o.expression));
             case 'StringWithInterpolations':
-              // Body should contain Value-wrapped StringLiterals and Interpolation nodes
-              body = $(o.body);
-              // Ensure body is an array
-              body = Array.isArray(body) ? body : [body];
-              // Wrap elements properly
-              wrappedBody = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = body.length; i < len; i++) {
-                  item = body[i];
-                  if (item == null) {
-                    // Skip undefined/null items
-                    continue;
-                  }
-                  // If it's already properly formed, use it
-                  if (item instanceof this.ast.Value || item instanceof this.ast.Interpolation) {
-                    results.push(item);
-                  // If it's a StringLiteral, wrap in Value
-                  } else if (item instanceof this.ast.StringLiteral) {
-                    results.push(new this.ast.Value(item));
-                  // If it's a plain object with $ast, resolve it
-                  } else if (item.$ast != null) {
-                    resolved = $(item);
-                    if (resolved instanceof this.ast.StringLiteral) {
-                      results.push(new this.ast.Value(resolved));
-                    } else {
-                      results.push(resolved);
-                    }
-                  } else {
-                    results.push(item);
-                  }
-                }
-                return results;
-              }).call(this);
-              // Filter out undefined items from continue statements
-              wrappedBody = (function() {
-                var i, len, results;
-                results = [];
-                for (i = 0, len = wrappedBody.length; i < len; i++) {
-                  item = wrappedBody[i];
-                  if (item != null) {
-                    results.push(item);
-                  }
-                }
-                return results;
-              })();
-              return new this.ast.StringWithInterpolations(new this.ast.Block(wrappedBody), {
+              return new this.ast.StringWithInterpolations(this._toBlock($(o.body)), {
                 quote: $(o.quote)
               });
             case 'Catch':
@@ -367,7 +330,7 @@
         } else if (o.$use != null) {
           resolvedValue = $(o.$use);
           if (o.method != null) {
-            resolvedValue = (ref3 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref3 : resolvedValue;
+            resolvedValue = (ref8 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref8 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -396,9 +359,9 @@
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                ref4 = o.append.slice(1);
-                for (i = 0, len = ref4.length; i < len; i++) {
-                  item = ref4[i];
+                ref9 = o.append.slice(1);
+                for (i = 0, len = ref9.length; i < len; i++) {
+                  item = ref9[i];
                   if (!(item != null)) {
                     continue;
                   }
@@ -417,9 +380,9 @@
                 return target;
               } else if (o.gather != null) {
                 result = [];
-                ref5 = o.gather;
-                for (k = 0, len2 = ref5.length; k < len2; k++) {
-                  item = ref5[k];
+                ref10 = o.gather;
+                for (k = 0, len2 = ref10.length; k < len2; k++) {
+                  item = ref10[k];
                   if (!(item != null)) {
                     continue;
                   }
