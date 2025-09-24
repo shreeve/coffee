@@ -12,7 +12,7 @@ path = require 'path'
 # ANSI colors
 green = '\x1B[0;32m'
 red = '\x1B[0;31m'
-yellow = '\x1B[0;33m' 
+yellow = '\x1B[0;33m'
 bold = '\x1B[0;1m'
 reset = '\x1B[0m'
 
@@ -40,6 +40,11 @@ global.eq = (actual, expected) ->
 global.ok = (value) ->
   throw new Error "Expected truthy value" unless value
 
+# Test helper for clean Solar directive testing
+global.expect = (code) ->
+  result: eval(CoffeeScript.compile(code.trim()))
+  eq: (expected) -> eq @result, expected
+
 # CoffeeScript reference for testing
 global.CoffeeScript = require '../lib/coffeescript/index.js'
 
@@ -59,7 +64,7 @@ console.log "Found #{testFiles.length} test file(s)\n"
 for file in testFiles
   console.log "#{bold}Running: #{path.basename(file)}#{reset}"
   code = fs.readFileSync(file, 'utf8')
-  
+
   try
     # Use global CoffeeScript to compile and run test
     js = require('coffeescript').compile(code, bare: true, filename: file)
