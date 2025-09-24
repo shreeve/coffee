@@ -14,112 +14,106 @@
 
   // The resulting AST nodes use the existing CoffeeScript compiler pipeline.
   // ==============================================================================
-  var ES5Backend;
+  var ES5Backend,
+    hasProp = {}.hasOwnProperty;
 
   ES5Backend = class ES5Backend {
     constructor(options = {}, ast = {}) {
       var ref, ref1;
       this.options = options;
       this.ast = ast;
-      // @ast contains AST node class definitions (constructors)
-      // @options contains compilation options, analysis settings, etc.
       this.compileOptions = {
         bare: (ref = this.options.bare) != null ? ref : true,
         header: (ref1 = this.options.header) != null ? ref1 : false
       };
     }
 
-    // Main entry point called by r() function in generated parser
-    // Converts Solar directives to CoffeeScript AST node instances
     reduce(values, positions, stackTop, symbolCount, directive) {
-      var frame, i, j, offset, ref;
-      // Build frame from parser stacks (same pattern as working implementation)
-      frame = [];
-      for (i = j = 0, ref = symbolCount; (0 <= ref ? j < ref : j > ref); i = 0 <= ref ? ++j : --j) {
-        offset = stackTop - symbolCount + i + 1;
-        frame.push({
-          value: values[offset],
-          pos: positions[offset]
-        });
+      var o, prop, value;
+      o = function(index) {
+        return values[stackTop - symbolCount + 1 + index];
+      };
+      for (prop in directive) {
+        if (!hasProp.call(directive, prop)) continue;
+        value = directive[prop];
+        if (prop === 'name' || prop === 'length' || prop === 'prototype') {
+          continue;
+        }
+        o[prop] = value;
       }
-      // Evaluate Solar directive and return AST node
-      return this.evaluateDirective(directive, frame);
+      return this.resolve(o);
     }
 
-    // Core Solar directive evaluator
-    evaluateDirective(directive, frame) {
-      var block, body, bodyArray, filteredBody, items, nodeType, ref, ref1, val, value;
-      // Handle position references (1, 2, 3, ...)
-      if (typeof directive === 'number') {
-        return (ref = frame[directive - 1]) != null ? ref.value : void 0; // 1-based → 0-based
+    resolve(value, lookup = value) {
+      var $, items, name, nodeType, o, ref, ref1, ref2, ref3, resolvedValue, useLookup;
+      if (typeof value === 'number' && (lookup != null)) {
+        return lookup(value - 1);
       }
-      if ((ref1 = typeof directive) === 'string' || ref1 === 'boolean') {
-        
-        // Handle primitives
-        return directive;
+      if (typeof value === 'number') {
+        return value;
       }
-      // Handle arrays
-      if (Array.isArray(directive)) {
-        return directive.map((item) => {
-          return this.evaluateDirective(item, frame);
+      if ((ref = typeof value) === 'string' || ref === 'boolean') {
+        return value;
+      }
+      if (Array.isArray(value)) {
+        return value.map((item) => {
+          return this.resolve(item, lookup);
         });
       }
-      // Handle Solar directives (objects with special properties)
-      if ((directive != null) && typeof directive === 'object') {
-        // $ast directive - create AST node
-        if (directive.$ast != null) {
-          nodeType = directive.$ast;
+      if ((value != null) && (typeof value === 'object' || typeof value === 'function')) {
+        o = value;
+        if (((ref1 = o.constructor) != null ? ref1.name : void 0) && ((ref2 = o.constructor.name) !== 'Object' && ref2 !== 'Function')) { // AST nodes
+          return o;
+        }
+        useLookup = typeof value === 'function' ? value : lookup;
+        $ = (val) => {
+          return this.resolve(val, useLookup); // Local resolver
+        };
+        if (o.$ast != null) {
+          nodeType = o.$ast;
           switch (nodeType) {
             case 'Root':
-              body = this.evaluateDirective(directive.body, frame);
-              bodyArray = Array.isArray(body) ? body : [body];
-              filteredBody = bodyArray.filter(function(item) {
-                return item != null;
-              });
-              block = new this.ast.Block(filteredBody);
-              if (filteredBody.length > 0) { // Make final expression return
-                block.makeReturn();
-              }
-              return new this.ast.Root(block);
+              return new this.ast.Root((function(b) {
+                b.makeReturn();
+                return b;
+              })(new this.ast.Block($(o.body))));
             case 'IdentifierLiteral':
-              value = this.evaluateDirective(directive.value, frame);
-              return new this.ast.IdentifierLiteral(value);
+              return new this.ast.IdentifierLiteral($(o.value));
             case 'NumberLiteral':
-              value = this.evaluateDirective(directive.value, frame);
-              return new this.ast.NumberLiteral(value);
+              return new this.ast.NumberLiteral($(o.value));
             case 'Value':
-              val = this.evaluateDirective(directive.val, frame);
-              return new this.ast.Value(val);
+              return new this.ast.Value($(o.val));
+            case 'Assign':
+              return new this.ast.Assign($(o.variable), $(o.value));
+            case 'Op':
+              return new this.ast.Op($(o.operator), $(o.first), $(o.second));
             case 'Literal':
-              value = this.evaluateDirective(directive.value, frame);
-              return new this.ast.Literal(value);
+              return new this.ast.Literal($(o.value));
             default:
-              // Fallback for unimplemented node types
               console.warn("ES5Backend: Unimplemented AST node type:", nodeType);
               return new this.ast.Literal(`/* Unimplemented: ${nodeType} */`);
           }
-        // $ary directive - return array
-        } else if (directive.$ary != null) {
-          items = this.evaluateDirective(directive.$ary, frame);
+        } else if (o.$ary != null) {
+          items = $(o.$ary);
           if (Array.isArray(items)) {
             return items;
           } else {
             return [items];
           }
-        // $use directive - use existing value
-        } else if (directive.$use != null) {
-          return this.evaluateDirective(directive.$use, frame);
-        // $ops directive - operation (array append, etc.)
-        } else if (directive.$ops != null) {
-          console.warn("ES5Backend: $ops not yet implemented:", directive.$ops);
-          return new this.ast.Literal(`/* $ops: ${directive.$ops} */`);
+        } else if (o.$use != null) {
+          resolvedValue = $(o.$use);
+          if (o.method != null) {
+            resolvedValue = (ref3 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref3 : resolvedValue;
+          }
+          return resolvedValue;
+        } else if (o.$ops != null) {
+          console.warn("ES5Backend: $ops not yet implemented:", o.$ops);
+          return new this.ast.Literal(`/* $ops: ${o.$ops} */`);
         } else {
-          // Unknown directive
-          console.warn("ES5Backend: Unknown directive:", directive);
+          console.warn("ES5Backend: Unknown directive:", o);
           return new this.ast.Literal("/* Unknown directive */");
         }
       } else {
-        // Fallback for unexpected input
         return new this.ast.Literal("/* Unexpected input */");
       }
     }
