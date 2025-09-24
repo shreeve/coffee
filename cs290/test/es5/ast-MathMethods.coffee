@@ -10,7 +10,7 @@ test "Math.max(1, 5, 3)", 5
 test "Math.min(10, 2, 7)", 2
 test "Math.pow(2, 3)", 8
 test "Math.sqrt(16)", 4
-test "Math.random()", -> 
+test "Math.random()", ->
   result = Math.random()
   ok typeof result is 'number' and result >= 0 and result <= 1
 test "Math.PI", Math.PI
