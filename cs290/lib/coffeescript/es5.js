@@ -230,6 +230,12 @@
               return new this.ast.For($(o.body), $(o.source));
             case 'Switch':
               return new this.ast.Switch($(o.subject), $(o.cases), $(o.otherwise));
+            case 'SwitchWhen':
+              return new this.ast.SwitchWhen($(o.conditions), $(o.block));
+            case 'Elision':
+              return new this.ast.Elision();
+            case 'Expansion':
+              return new this.ast.Expansion();
             case 'Try':
               return new this.ast.Try(((a = $(o.attempt)) instanceof this.ast.Block || (a == null) ? a : new this.ast.Block([a])), $(o.recovery), $(o.ensure));
             case 'Class':

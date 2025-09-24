@@ -46,7 +46,30 @@ global.test = (name, fnOrExpected) ->
 
 # Test helpers
 global.eq = (actual, expected) ->
-  if actual isnt expected
+  # Deep equality check for objects and arrays
+  deepEqual = (a, b) ->
+    return true if a is b
+    return false if a is null or b is null or a is undefined or b is undefined
+    return false if typeof a isnt typeof b
+    
+    if Array.isArray(a) and Array.isArray(b)
+      return false if a.length isnt b.length
+      for i in [0...a.length]
+        return false unless deepEqual(a[i], b[i])
+      return true
+    
+    if typeof a is 'object' and typeof b is 'object'
+      aKeys = Object.keys(a).sort()
+      bKeys = Object.keys(b).sort()
+      return false if aKeys.length isnt bKeys.length
+      for key in aKeys
+        return false if key not in bKeys
+        return false unless deepEqual(a[key], b[key])
+      return true
+    
+    a is b
+  
+  unless deepEqual(actual, expected)
     throw new Error "Expected #{expected}, got #{actual}"
 
 global.ok = (value) ->

@@ -121,6 +121,9 @@ class ES5Backend
           when 'While'              then new @ast.While $(o.condition), (if (b = $(o.body)) instanceof @ast.Block or not b? then b else new @ast.Block [b])
           when 'For'                then new @ast.For                $(o.body), $(o.source)
           when 'Switch'             then new @ast.Switch             $(o.subject), $(o.cases), $(o.otherwise)
+          when 'SwitchWhen'         then new @ast.SwitchWhen         $(o.conditions), $(o.block)
+          when 'Elision'            then new @ast.Elision
+          when 'Expansion'          then new @ast.Expansion
           when 'Try'                then new @ast.Try (if (a = $(o.attempt)) instanceof @ast.Block or not a? then a else new @ast.Block [a]), $(o.recovery), $(o.ensure)
           when 'Class'              then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
           when 'FuncGlyph'          then new @ast.FuncGlyph          $(o.glyph)
