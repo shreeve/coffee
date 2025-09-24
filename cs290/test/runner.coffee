@@ -31,13 +31,16 @@ global.test = (name, fnOrExpected) ->
       # Ultra-simple: test "code", expected
       compiled = CoffeeScript.compile(name.trim())
       # Smart execution: use full function for variable assignments, expression extraction for literals
-      if name.includes('=') or name.includes(';')
-        # Contains assignments - need full function execution for variable scope
+      if name.includes('=') or name.includes(';') or name.includes('if ') or name.includes('unless ') or name.trim().startsWith('->')
+        # Contains assignments, control flow, or functions - need full function execution for variable scope
         result = eval(compiled)
+        # If it's a function that starts with ->, call it to get the return value
+        if name.trim().startsWith('->') and typeof result is 'function'
+          result = result()
       else
-        # Simple literal/expression - can extract return expression safely  
-        # Use non-greedy match and handle multiline properly
-        match = compiled.match(/return\s+(.*?);\s*\n\s*}\)\.call/s)
+        # Simple literal/expression - can extract return expression safely
+        # Try multiline object pattern first, then fallback to simple pattern
+        match = compiled.match(/return\s+(.*?);\s*\n\s*}\)\.call/s) || compiled.match(/return\s+(.*);/)
         if match
           # Wrap in parentheses to ensure object literals are treated as expressions
           result = eval("(" + match[1] + ")")

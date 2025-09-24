@@ -52,14 +52,15 @@ class ES5Backend
 
   # Helper to convert value to a Block node (from ES6 version)
   _toBlock: (value) ->
-    if Array.isArray(value)
-      new @ast.Block @_filterNodes(value)
-    else if value instanceof @ast.Block
-      value
-    else if value?
-      new @ast.Block [@_ensureNode(value)]
-    else
-      new @ast.Block []
+    return new @ast.Block @_filterNodes(value) if Array.isArray(value)
+    return value if value instanceof @ast.Block
+    return new @ast.Block [@_ensureNode(value)] if value?
+    new @ast.Block []
+
+  # Helper for unimplemented features (avoids repeated console.warn + literal creation)
+  _unimplemented: (type, context = "") ->
+    console.warn "ES5Backend: Unimplemented#{if context then " #{context}" else ""}:", type
+    new @ast.Literal "/* Unimplemented: #{type} */"
 
   reduce: (values, positions, stackTop, symbolCount, directive) ->
     lookup = (index) -> values[stackTop - symbolCount + 1 + index]
@@ -160,9 +161,9 @@ class ES5Backend
           when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
           when 'Obj'                then new @ast.Obj $(o.properties), $(o.generated)
           when 'Arr'                then new @ast.Arr $(o.objects)
-          when 'Range'              
+          when 'Range'
             from = $(o.from)
-            to = $(o.to)  
+            to = $(o.to)
             exclusive = $(o.exclusive)
             # Range constructor expects string 'exclusive' as tag for exclusive ranges
             tag = if exclusive then 'exclusive' else null
@@ -170,9 +171,19 @@ class ES5Backend
           when 'Block'              then new @ast.Block $(o.expressions)
           when 'Return'             then new @ast.Return             $(o.expression)
           when 'Parens'             then new @ast.Parens (@_toBlock($(o.body)) ? new @ast.Block [new @ast.Literal ''])
-          when 'Index'              then new @ast.Index              $(o.index)
+          when 'Index'              then new @ast.Index              $(o.object)
           when 'Slice'              then new @ast.Slice              $(o.range)
-          when 'If'                 then new @ast.If $(o.condition), @_toBlock($(o.body)), @_toBlock($(o.elseBody))
+          when 'If'
+            condition = $(o.condition)
+            body = @_toBlock($(o.body))
+            elseBody = @_toBlock($(o.elseBody))
+            # Extract the type token to determine if/unless
+            typeToken = $(o.type)
+            type = if typeToken?.toString?() is 'unless' then 'unless' else 'if'
+            ifNode = new @ast.If condition, body, {type}
+            # Add else body if present
+            ifNode.addElse elseBody if elseBody?.expressions?.length > 0
+            ifNode
           when 'While'              then new @ast.While $(o.condition), @_toBlock($(o.body))
           when 'For'                then new @ast.For                @_toBlock($(o.body)), $(o.source)
           when 'Switch'             then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
@@ -182,7 +193,13 @@ class ES5Backend
           when 'ThisProperty'       then new @ast.Value new @ast.ThisLiteral($(o.token)), [new @ast.Access($(o.property))]
           when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
           when 'DefaultLiteral'     then new @ast.DefaultLiteral     $(o.value)
-          when 'Try'                then new @ast.Try @_toBlock($(o.attempt)), $(o.recovery), @_toBlock($(o.ensure))
+          when 'Try'
+            attempt = @_toBlock($(o.attempt))
+            # The parser uses 'catch' not 'recovery' for the catch clause
+            catchClause = $(o.catch)
+            ensure = @_toBlock($(o.ensure))
+            # Try expects (attempt, recovery, ensure) where recovery and ensure are optional
+            new @ast.Try attempt, catchClause, ensure
           when 'Class'              then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
           when 'FuncGlyph'          then new @ast.FuncGlyph          $(o.glyph)
           when 'Param'              then new @ast.Param              $(o.name), $(o.value), $(o.splat)
@@ -192,20 +209,46 @@ class ES5Backend
           when 'RegexLiteral'       then new @ast.RegexLiteral       $(o.value)
           when 'StatementLiteral'   then new @ast.StatementLiteral   $(o.value)
           when 'PassthroughLiteral' then new @ast.PassthroughLiteral $(o.value)
-          when 'Interpolation'      then new @ast.Interpolation      $(o.expression)
-          when 'StringWithInterpolations' then new @ast.StringWithInterpolations @_toBlock($(o.body)), quote: $(o.quote)
-          when 'Catch'              then new @ast.Catch              $(o.body), $(o.errorVariable)
+          when 'Interpolation'
+            expression = $(o.expression)
+            # Expression might be an array, so extract the first element
+            actualExpression = if Array.isArray(expression) and expression.length > 0
+              expression[0]
+            else
+              expression
+            # Ensure we have a valid node
+            expressionNode = if actualExpression instanceof @ast.Base
+              actualExpression
+            else
+              @_ensureNode(actualExpression) or new @ast.Literal 'undefined'
+            new @ast.Interpolation expressionNode
+          when 'StringWithInterpolations'
+            body = $(o.body)
+            quote = $(o.quote)
+            # Convert body to proper nodes - StringWithInterpolations expects a Block
+            bodyNode = if Array.isArray(body)
+              bodyNodes = body.map (b) => if b instanceof @ast.Base then b else @_ensureNode(b)
+              new @ast.Block @_filterNodes(bodyNodes)
+            else if body instanceof @ast.Block
+              body
+            else if body?
+              new @ast.Block [@_ensureNode(body)]
+            else
+              new @ast.Block []
+            new @ast.StringWithInterpolations bodyNode, {quote}
+          when 'Catch'
+            # The parser uses either 'recovery' or 'body' for the catch block
+            body = $(o.recovery) || $(o.body)
+            # The parser uses 'variable' or 'errorVariable' for the error parameter
+            error = $(o.variable) || $(o.errorVariable)
+            # Ensure body is a proper Block
+            bodyNode = @_toBlock(body)
+            # Catch constructor expects (recovery, errorVariable)
+            new @ast.Catch bodyNode, error
           when 'Throw'              then new @ast.Throw              $(o.expression)
           when 'Literal'            then new @ast.Literal            $(o.value)
-          when 'DefaultLiteral'     then new @ast.DefaultLiteral     $(o.value)
-          when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
-          when 'ThisProperty'       then new @ast.Value new @ast.ThisLiteral($(o.token)), [new @ast.Access($(o.property))]
-          when 'SwitchWhen'         then new @ast.SwitchWhen         $(o.conditions), $(o.block)
-          when 'Elision'            then new @ast.Elision
-          when 'Expansion'          then new @ast.Expansion
           else
-            console.warn "ES5Backend: Unimplemented AST node type:", nodeType
-            new @ast.Literal "/* Unimplemented: #{nodeType} */"
+            @_unimplemented nodeType, "AST node type"
 
       else if o.$ary?
         items = $(o.$ary)
@@ -234,8 +277,7 @@ class ES5Backend
               target.add [accessor] if accessor?.traverseChildren?
               target
             else
-              console.warn "ES5Backend: $ops value without add:", o
-              new @ast.Literal "/* $ops: value */"
+              @_unimplemented "$ops value without add", "$ops"
           when 'array'
             # Array operations
             if o.append?
@@ -258,8 +300,7 @@ class ES5Backend
                   result.push resolved
               result
             else
-              console.warn "ES5Backend: $ops array without append/gather:", o
-              new @ast.Literal "/* $ops: array */"
+              @_unimplemented "$ops array without append/gather", "$ops"
           when 'if'
             # If operations for adding else clauses
             if o.addElse?
@@ -268,8 +309,7 @@ class ES5Backend
               ifNode.addElse elseBody if ifNode instanceof @ast.If
               ifNode
             else
-              console.warn "ES5Backend: $ops if without addElse:", o
-              new @ast.Literal "/* $ops: if */"
+              @_unimplemented "$ops if without addElse", "$ops"
           when 'loop'
             # Loop operations
             if o.addSource?
@@ -283,8 +323,7 @@ class ES5Backend
               loopNode.addBody bodyNode if loopNode
               loopNode
             else
-              console.warn "ES5Backend: $ops loop without addSource/addBody:", o
-              new @ast.Literal "/* $ops: loop */"
+              @_unimplemented "$ops loop without addSource/addBody", "$ops"
           when 'prop'
             # Property operations
             if o.addProp?
@@ -293,18 +332,15 @@ class ES5Backend
               target.add [property] if target instanceof @ast.Value
               target
             else
-              console.warn "ES5Backend: $ops prop without addProp:", o
-              new @ast.Literal "/* $ops: prop */"
+              @_unimplemented "$ops prop without addProp", "$ops"
           else
-            console.warn "ES5Backend: $ops not yet implemented:", o.$ops
-            new @ast.Literal "/* $ops: #{o.$ops} */"
+            @_unimplemented o.$ops, "$ops type"
 
       else
         # Empty objects {} are grammar placeholders - return null to signal "no value"
         if typeof o is 'object' and o.constructor is Object and Object.keys(o).length is 0
           return null
-        console.warn "ES5Backend: Unknown directive:", o
-        new @ast.Literal "/* Unknown directive */"
+        @_unimplemented o, "directive"
 
     else
       new @ast.Literal "/* Unexpected input */"

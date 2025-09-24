@@ -16,6 +16,8 @@ test "{x: 1}.toString()", "[object Object]"
 test "{}.valueOf()", {}
 test "Object.getPrototypeOf({})", Object.prototype
 test "Object.getOwnPropertyNames({a: 1})", ['a']
-test "Object.defineProperty({}, 'x', {value: 5})", {x: 5}
+test "Object.defineProperty({}, 'x', {value: 5})", ->
+  obj = Object.defineProperty({}, 'x', {value: 5})
+  obj.x is 5 and Object.keys(obj).length is 0
 test "Object.is(1, 1)", true
 test "Object.is(1, 2)", false

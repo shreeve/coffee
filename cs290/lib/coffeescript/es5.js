@@ -83,13 +83,20 @@
     _toBlock(value) {
       if (Array.isArray(value)) {
         return new this.ast.Block(this._filterNodes(value));
-      } else if (value instanceof this.ast.Block) {
-        return value;
-      } else if (value != null) {
-        return new this.ast.Block([this._ensureNode(value)]);
-      } else {
-        return new this.ast.Block([]);
       }
+      if (value instanceof this.ast.Block) {
+        return value;
+      }
+      if (value != null) {
+        return new this.ast.Block([this._ensureNode(value)]);
+      }
+      return new this.ast.Block([]);
+    }
+
+    // Helper for unimplemented features (avoids repeated console.warn + literal creation)
+    _unimplemented(type, context = "") {
+      console.warn(`ES5Backend: Unimplemented${context ? ` ${context}` : ""}:`, type);
+      return new this.ast.Literal(`/* Unimplemented: ${type} */`);
     }
 
     reduce(values, positions, stackTop, symbolCount, directive) {
@@ -144,7 +151,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessor, bodyNode, c, context, elseBody, exclusive, from, i, ifNode, item, items, j, k, len, len1, len2, loopNode, name, nodeType, p, property, ref, ref1, ref2, ref3, ref4, ref5, resolved, resolvedValue, result, sourceInfo, tag, target, to, type, val, value, variable;
+      var $, accessor, actualExpression, attempt, body, bodyNode, bodyNodes, c, catchClause, condition, context, elseBody, ensure, error, exclusive, expression, expressionNode, from, i, ifNode, item, items, j, k, len, len1, len2, loopNode, name, nodeType, p, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, resolved, resolvedValue, result, sourceInfo, tag, target, to, type, typeToken, val, value, variable;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -261,22 +268,33 @@
             case 'Parens':
               return new this.ast.Parens((ref1 = this._toBlock($(o.body))) != null ? ref1 : new this.ast.Block([new this.ast.Literal('')]));
             case 'Index':
-              return new this.ast.Index($(o.index));
+              return new this.ast.Index($(o.object));
             case 'Slice':
               return new this.ast.Slice($(o.range));
             case 'If':
-              return new this.ast.If($(o.condition), this._toBlock($(o.body)), this._toBlock($(o.elseBody)));
+              condition = $(o.condition);
+              body = this._toBlock($(o.body));
+              elseBody = this._toBlock($(o.elseBody));
+              // Extract the type token to determine if/unless
+              typeToken = $(o.type);
+              type = (typeToken != null ? typeof typeToken.toString === "function" ? typeToken.toString() : void 0 : void 0) === 'unless' ? 'unless' : 'if';
+              ifNode = new this.ast.If(condition, body, {type});
+              if ((elseBody != null ? (ref2 = elseBody.expressions) != null ? ref2.length : void 0 : void 0) > 0) {
+                // Add else body if present
+                ifNode.addElse(elseBody);
+              }
+              return ifNode;
             case 'While':
               return new this.ast.While($(o.condition), this._toBlock($(o.body)));
             case 'For':
               return new this.ast.For(this._toBlock($(o.body)), $(o.source));
             case 'Switch':
               return new this.ast.Switch($(o.subject), (function() {
-                var j, len1, ref2, ref3, results;
-                ref3 = (ref2 = $(o.cases)) != null ? ref2 : [];
+                var j, len1, ref3, ref4, results;
+                ref4 = (ref3 = $(o.cases)) != null ? ref3 : [];
                 results = [];
-                for (j = 0, len1 = ref3.length; j < len1; j++) {
-                  c = ref3[j];
+                for (j = 0, len1 = ref4.length; j < len1; j++) {
+                  c = ref4[j];
                   if ($(c) != null) {
                     results.push($(c));
                   }
@@ -285,11 +303,11 @@
               })(), this._toBlock($(o.otherwise)));
             case 'SwitchWhen':
               return new this.ast.SwitchWhen((function() {
-                var j, len1, ref2, ref3, results;
-                ref3 = (ref2 = $(o.conditions)) != null ? ref2 : [];
+                var j, len1, ref3, ref4, results;
+                ref4 = (ref3 = $(o.conditions)) != null ? ref3 : [];
                 results = [];
-                for (j = 0, len1 = ref3.length; j < len1; j++) {
-                  c = ref3[j];
+                for (j = 0, len1 = ref4.length; j < len1; j++) {
+                  c = ref4[j];
                   if ($(c) != null) {
                     results.push($(c));
                   }
@@ -307,7 +325,12 @@
             case 'DefaultLiteral':
               return new this.ast.DefaultLiteral($(o.value));
             case 'Try':
-              return new this.ast.Try(this._toBlock($(o.attempt)), $(o.recovery), this._toBlock($(o.ensure)));
+              attempt = this._toBlock($(o.attempt));
+              // The parser uses 'catch' not 'recovery' for the catch clause
+              catchClause = $(o.catch);
+              ensure = this._toBlock($(o.ensure));
+              // Try expects (attempt, recovery, ensure) where recovery and ensure are optional
+              return new this.ast.Try(attempt, catchClause, ensure);
             case 'Class':
               return new this.ast.Class($(o.variable), $(o.parent), $(o.body));
             case 'FuncGlyph':
@@ -316,11 +339,11 @@
               return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
               return new this.ast.Code((function() {
-                var j, len1, ref2, ref3, results;
-                ref3 = (ref2 = $(o.params)) != null ? ref2 : [];
+                var j, len1, ref3, ref4, results;
+                ref4 = (ref3 = $(o.params)) != null ? ref3 : [];
                 results = [];
-                for (j = 0, len1 = ref3.length; j < len1; j++) {
-                  p = ref3[j];
+                for (j = 0, len1 = ref4.length; j < len1; j++) {
+                  p = ref4[j];
                   if ($(p) != null) {
                     results.push($(p));
                   }
@@ -338,32 +361,39 @@
             case 'PassthroughLiteral':
               return new this.ast.PassthroughLiteral($(o.value));
             case 'Interpolation':
-              return new this.ast.Interpolation($(o.expression));
+              expression = $(o.expression);
+              // Expression might be an array, so extract the first element
+              actualExpression = Array.isArray(expression) && expression.length > 0 ? expression[0] : expression;
+              // Ensure we have a valid node
+              expressionNode = actualExpression instanceof this.ast.Base ? actualExpression : this._ensureNode(actualExpression) || new this.ast.Literal('undefined');
+              return new this.ast.Interpolation(expressionNode);
             case 'StringWithInterpolations':
-              return new this.ast.StringWithInterpolations(this._toBlock($(o.body)), {
-                quote: $(o.quote)
-              });
+              body = $(o.body);
+              quote = $(o.quote);
+              // Convert body to proper nodes - StringWithInterpolations expects a Block
+              bodyNode = Array.isArray(body) ? (bodyNodes = body.map((b) => {
+                if (b instanceof this.ast.Base) {
+                  return b;
+                } else {
+                  return this._ensureNode(b);
+                }
+              }), new this.ast.Block(this._filterNodes(bodyNodes))) : body instanceof this.ast.Block ? body : body != null ? new this.ast.Block([this._ensureNode(body)]) : new this.ast.Block([]);
+              return new this.ast.StringWithInterpolations(bodyNode, {quote});
             case 'Catch':
-              return new this.ast.Catch($(o.body), $(o.errorVariable));
+              // The parser uses either 'recovery' or 'body' for the catch block
+              body = $(o.recovery) || $(o.body);
+              // The parser uses 'variable' or 'errorVariable' for the error parameter
+              error = $(o.variable) || $(o.errorVariable);
+              // Ensure body is a proper Block
+              bodyNode = this._toBlock(body);
+              // Catch constructor expects (recovery, errorVariable)
+              return new this.ast.Catch(bodyNode, error);
             case 'Throw':
               return new this.ast.Throw($(o.expression));
             case 'Literal':
               return new this.ast.Literal($(o.value));
-            case 'DefaultLiteral':
-              return new this.ast.DefaultLiteral($(o.value));
-            case 'ComputedPropertyName':
-              return new this.ast.ComputedPropertyName($(o.value));
-            case 'ThisProperty':
-              return new this.ast.Value(new this.ast.ThisLiteral($(o.token)), [new this.ast.Access($(o.property))]);
-            case 'SwitchWhen':
-              return new this.ast.SwitchWhen($(o.conditions), $(o.block));
-            case 'Elision':
-              return new this.ast.Elision();
-            case 'Expansion':
-              return new this.ast.Expansion();
             default:
-              console.warn("ES5Backend: Unimplemented AST node type:", nodeType);
-              return new this.ast.Literal(`/* Unimplemented: ${nodeType} */`);
+              return this._unimplemented(nodeType, "AST node type");
           }
         } else if (o.$ary != null) {
           items = $(o.$ary);
@@ -377,9 +407,9 @@
           resolvedValue = $(o.$use);
           // Handle both 'method' (function calls) and 'prop' (property access)
           if (o.method != null) {
-            resolvedValue = (ref2 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref2 : resolvedValue;
+            resolvedValue = (ref3 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref3 : resolvedValue;
           } else if (o.prop != null) {
-            resolvedValue = (ref3 = resolvedValue[o.prop]) != null ? ref3 : resolvedValue;
+            resolvedValue = (ref4 = resolvedValue[o.prop]) != null ? ref4 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -397,8 +427,7 @@
                 }
                 return target;
               } else {
-                console.warn("ES5Backend: $ops value without add:", o);
-                return new this.ast.Literal("/* $ops: value */");
+                return this._unimplemented("$ops value without add", "$ops");
               }
               break;
             case 'array':
@@ -408,9 +437,9 @@
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                ref4 = o.append.slice(1);
-                for (j = 0, len1 = ref4.length; j < len1; j++) {
-                  item = ref4[j];
+                ref5 = o.append.slice(1);
+                for (j = 0, len1 = ref5.length; j < len1; j++) {
+                  item = ref5[j];
                   if (!(item != null)) {
                     continue;
                   }
@@ -424,9 +453,9 @@
                 return target;
               } else if (o.gather != null) {
                 result = [];
-                ref5 = o.gather;
-                for (k = 0, len2 = ref5.length; k < len2; k++) {
-                  item = ref5[k];
+                ref6 = o.gather;
+                for (k = 0, len2 = ref6.length; k < len2; k++) {
+                  item = ref6[k];
                   if (!(item != null)) {
                     continue;
                   }
@@ -439,8 +468,7 @@
                 }
                 return result;
               } else {
-                console.warn("ES5Backend: $ops array without append/gather:", o);
-                return new this.ast.Literal("/* $ops: array */");
+                return this._unimplemented("$ops array without append/gather", "$ops");
               }
               break;
             case 'if':
@@ -453,8 +481,7 @@
                 }
                 return ifNode;
               } else {
-                console.warn("ES5Backend: $ops if without addElse:", o);
-                return new this.ast.Literal("/* $ops: if */");
+                return this._unimplemented("$ops if without addElse", "$ops");
               }
               break;
             case 'loop':
@@ -474,8 +501,7 @@
                 }
                 return loopNode;
               } else {
-                console.warn("ES5Backend: $ops loop without addSource/addBody:", o);
-                return new this.ast.Literal("/* $ops: loop */");
+                return this._unimplemented("$ops loop without addSource/addBody", "$ops");
               }
               break;
             case 'prop':
@@ -488,21 +514,18 @@
                 }
                 return target;
               } else {
-                console.warn("ES5Backend: $ops prop without addProp:", o);
-                return new this.ast.Literal("/* $ops: prop */");
+                return this._unimplemented("$ops prop without addProp", "$ops");
               }
               break;
             default:
-              console.warn("ES5Backend: $ops not yet implemented:", o.$ops);
-              return new this.ast.Literal(`/* $ops: ${o.$ops} */`);
+              return this._unimplemented(o.$ops, "$ops type");
           }
         } else {
           // Empty objects {} are grammar placeholders - return null to signal "no value"
           if (typeof o === 'object' && o.constructor === Object && Object.keys(o).length === 0) {
             return null;
           }
-          console.warn("ES5Backend: Unknown directive:", o);
-          return new this.ast.Literal("/* Unknown directive */");
+          return this._unimplemented(o, "directive");
         }
       } else {
         return new this.ast.Literal("/* Unexpected input */");
