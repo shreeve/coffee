@@ -346,14 +346,19 @@ class ES5Backend
             else
               @_unimplemented "$ops loop without addSource/addBody", "$ops"
           when 'prop'
-            # Property operations
-            if o.addProp?
+            # Property operations (like setting soak on Index)
+            if o.set?
+              target = $(o.set.target)
+              if o.set.property? and target?
+                target[o.set.property] = $(o.set.value)
+              target
+            else if o.addProp?
               target = $(o.addProp[0])
               property = $(o.addProp[1])
               target.add [property] if target instanceof @ast.Value
               target
             else
-              @_unimplemented "$ops prop without addProp", "$ops"
+              @_unimplemented "$ops prop without set/addProp", "$ops"
           else
             @_unimplemented o.$ops, "$ops type"
 

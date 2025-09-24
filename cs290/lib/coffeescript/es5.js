@@ -546,8 +546,14 @@
               }
               break;
             case 'prop':
-              // Property operations
-              if (o.addProp != null) {
+              // Property operations (like setting soak on Index)
+              if (o.set != null) {
+                target = $(o.set.target);
+                if ((o.set.property != null) && (target != null)) {
+                  target[o.set.property] = $(o.set.value);
+                }
+                return target;
+              } else if (o.addProp != null) {
                 target = $(o.addProp[0]);
                 property = $(o.addProp[1]);
                 if (target instanceof this.ast.Value) {
@@ -555,7 +561,7 @@
                 }
                 return target;
               } else {
-                return this._unimplemented("$ops prop without addProp", "$ops");
+                return this._unimplemented("$ops prop without set/addProp", "$ops");
               }
               break;
             default:
