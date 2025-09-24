@@ -15,110 +15,83 @@
 
 class ES5Backend
   constructor: (@options = {}, @ast = {}) ->
-    # @ast contains AST node class definitions (constructors)
-    # @options contains compilation options, analysis settings, etc.
     @compileOptions =
       bare: @options.bare ? true
       header: @options.header ? false
 
-  # Main entry point called by r() function in generated parser
-  # Converts Solar directives to CoffeeScript AST node instances
   reduce: (values, positions, stackTop, symbolCount, directive) ->
-    console.log "🔍 REDUCE:", JSON.stringify(directive), "symbolCount:", symbolCount
+    $ = o = (index) -> values[stackTop - symbolCount + 1 + index]
+    for own prop, value of directive
+      continue if prop in ['name', 'length', 'prototype']
+      o[prop] = value
+    @resolve o
 
-    # For $ast directives, build hybrid function-object
-    if directive.$ast?
-      # Make o BOTH a function and an object:
-      console.log "🔍 STACK INFO: stackTop:", stackTop, "symbolCount:", symbolCount, "values.length:", values.length
-      console.log "🔍 VALUES:", values?.slice(Math.max(0, stackTop - 5), stackTop + 2)
-      $ = o = (index) ->
-        pos = stackTop - symbolCount + 1 + index  # ← Add +1 offset
-        console.log "🔍 o(#{index}) → values[#{pos}] =", values[pos]
-        values[pos]
-      for prop, value of directive
-        if typeof value is 'number'
-          resolved = o(value - 1)
-          console.log "🔍 RESOLVING #{prop}:#{value} → o(#{value - 1}) =", resolved
-          o[prop] = resolved
-        else
-          o[prop] = value
-      console.log "🔍 BUILT o:", typeof o, "isFunction:", typeof o is 'function', "o.$ast:", o.$ast
-      @resolve o
-    else
-      # Simple directives: just resolve directly
-      @resolve directive
+  resolve: (value, lookup = value) ->
+    return lookup(value - 1) if typeof value is 'number' and lookup?
+    return value if typeof value is 'number'
+    return value if typeof value in ['string', 'boolean']
+    if Array.isArray value
+      return value.map (item) => @resolve item, lookup
 
-  # Core Solar directive resolver
-  resolve: (o) ->
-    console.log "🔍 RESOLVE START:", typeof o, "isFunction:", typeof o is 'function', JSON.stringify(o)?[0..50]
-    return o if typeof o is 'number'
-    return o if typeof o in ['string', 'boolean']
+    if value? and (typeof value is 'object' or typeof value is 'function')
+      o = value
+      return o if o.constructor?.name and o.constructor.name not in ['Object', 'Function'] # AST nodes
+      useLookup = if typeof value is 'function' then value else lookup
 
-    # Handle arrays
-    if Array.isArray o
-      return o.map (item) => @resolve item
-
-    # Handle Solar directives (objects with special properties)
-    if o? and (typeof o is 'object' or typeof o is 'function')
-      console.log "🔍 RESOLVE:", "type:", typeof o, "isFunction:", typeof o is 'function', "hasAst:", !!o.$ast
-
-      # $ast directive - create AST node
       if o.$ast?
-        console.log "🔍 $ast directive:", o.$ast
         nodeType = o.$ast
 
         switch nodeType
           when 'Root'
-            console.log "🔍 Root processing, o.body:", o.body
-            body = @resolve o.body
-            console.log "🔍 Root body resolved:", body
+            body = @resolve o.body, useLookup
             bodyArray = if Array.isArray(body) then body else [body]
             filteredBody = bodyArray.filter (item) -> item?
-            console.log "🔍 Root filtered body:", filteredBody
             block = new @ast.Block filteredBody
             block.makeReturn() if filteredBody.length > 0  # Make final expression return
-            result = new @ast.Root block
-            console.log "🔍 Root result:", result
-            result
-
-          when 'IdentifierLiteral' then new @ast.IdentifierLiteral o(0)
-          when 'NumberLiteral'     then new @ast.NumberLiteral     o(0)
-          when 'Value'             then new @ast.Value             o(0)
-          when 'Assign'            then new @ast.Assign            o.variable, o.value
-          when 'Op'                then new @ast.Op                o.operator, o(1), o(2)
-          when 'Literal'           then new @ast.Literal           o(0)
-
+            new @ast.Root block
+          when 'IdentifierLiteral'
+            resolvedValue = @resolve o.value, useLookup
+            new @ast.IdentifierLiteral resolvedValue
+          when 'NumberLiteral'
+            resolvedValue = @resolve o.value, useLookup
+            new @ast.NumberLiteral resolvedValue
+          when 'Value'
+            val = @resolve o.val, useLookup
+            new @ast.Value val
+          when 'Assign'
+            variable = @resolve o.variable, useLookup
+            resolvedValue = @resolve o.value, useLookup
+            new @ast.Assign variable, resolvedValue
+          when 'Op'
+            operator = @resolve o.operator, useLookup
+            first = @resolve o.first, useLookup
+            second = @resolve o.second, useLookup
+            new @ast.Op operator, first, second
+          when 'Literal'
+            resolvedValue = @resolve o.value, useLookup
+            new @ast.Literal resolvedValue
           else
-            # Fallback for unimplemented node types
             console.warn "ES5Backend: Unimplemented AST node type:", nodeType
             new @ast.Literal "/* Unimplemented: #{nodeType} */"
 
-      # $ary directive - return array
       else if o.$ary?
-        console.log "🔍 $ary directive:", o.$ary
-        items = @resolve o.$ary
+        items = @resolve o.$ary, useLookup
         if Array.isArray(items) then items else [items]
 
-      # $use directive - use existing value
-      # TODO: This isn't enough, see: {$use: 2, method: 'toString'}
       else if o.$use?
-        console.log "🔍 $use directive:", o.$use
-        @resolve o.$use
+        resolvedValue = @resolve o.$use, useLookup
+        resolvedValue = resolvedValue[o.method]?() ? resolvedValue if o.method?
+        resolvedValue
 
-      # $ops directive - operation (array append, etc.)
       else if o.$ops?
-        console.log "🔍 $ops directive:", o.$ops
         console.warn "ES5Backend: $ops not yet implemented:", o.$ops
         new @ast.Literal "/* $ops: #{o.$ops} */"
 
       else
-        # Unknown directive
-        console.log "🔍 Unknown directive:", JSON.stringify(o)
         console.warn "ES5Backend: Unknown directive:", o
         new @ast.Literal "/* Unknown directive */"
 
     else
-      # Fallback for unexpected input
       new @ast.Literal "/* Unexpected input */"
 
 module.exports = ES5Backend
