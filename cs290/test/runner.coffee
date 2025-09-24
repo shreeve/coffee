@@ -30,12 +30,17 @@ global.test = (name, fnOrExpected) ->
     else
       # Ultra-simple: test "code", expected
       compiled = CoffeeScript.compile(name.trim())
-      # Extract expression from return statement to make it eval-able
-      match = compiled.match(/return\s+(.*);/)
-      if match
-        result = eval(match[1])
+      # Smart execution: use full function for variable assignments, expression extraction for literals
+      if name.includes('=') or name.includes(';')
+        # Contains assignments - need full function execution for variable scope
+        result = eval(compiled)
       else
-        result = eval("(#{compiled})()")
+        # Simple literal/expression - can extract return expression safely
+        match = compiled.match(/return\s+(.*);/)
+        if match
+          result = eval(match[1])
+        else
+          result = eval("(#{compiled})()")
       eq result, fnOrExpected
     passed++
     console.log "#{green}✓#{reset} #{name}"
