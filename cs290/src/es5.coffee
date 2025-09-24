@@ -219,19 +219,56 @@ class ES5Backend
             ifNode.addElse elseBody if elseBody?.expressions?.length > 0
             ifNode
           when 'While'
+            # Trust our enhanced resolver - much simpler than ES6 manual conversion
             condition = $(o.condition)
-            body = @_toBlock($(o.body))
-            # While constructor expects (condition, options)
-            options = {}
-            options.invert = $(o.invert) if o.invert?
-            options.guard = $(o.guard) if o.guard?
-            options.isLoop = $(o.isLoop) if o.isLoop?
-            whileNode = new @ast.While condition, options
-            # Set the body separately using addBody - ensure it's never null
-            finalBody = body or new @ast.Block []
-            whileNode.addBody finalBody
+            body = $(o.body)
+            # While constructor expects (condition, opts)
+            opts = {}
+            opts.guard = $(o.guard) if o.guard?
+            opts.isLoop = $(o.isLoop) if o.isLoop?
+            opts.invert = $(o.invert) if o.invert?
+            whileNode = new @ast.While condition, opts
+            # Our resolver + _toBlock handles body conversion automatically
+            whileNode.body = @_toBlock(body)
             whileNode
-          when 'For'                then new @ast.For                @_toBlock($(o.body)), $(o.source)
+          when 'For'
+            # For loops are complex - they're built incrementally via $ops (from ES6 patterns)
+            body    = $(o.body)
+            source  = $(o.source)
+            guard   = $(o.guard)
+            name    = $(o.name)
+            index   = $(o.index)
+            step    = $(o.step)
+            own     = $(o.own)
+            object  = $(o.object)
+            from    = $(o.from)
+            isAwait = $(o.await)
+
+            # Handle body (from ES6 approach)
+            bodyNode = if body?.expressions
+              # Body node with expressions - preserve full list and order
+              new @ast.Block @_filterNodes(body.expressions)
+            else
+              @_toBlock(body)
+
+            # Build source object for For constructor (ES6 pattern)
+            sourceObj = {}
+            # Ensure source is a proper node
+            if source
+              sourceObj.source = if source instanceof @ast.Base then source else @_ensureNode(source)
+            if name
+              sourceObj.name = if name instanceof @ast.Base then name else @_ensureNode(name)
+            if index? and index isnt undefined
+              sourceObj.index = if index instanceof @ast.Base then index else @_ensureNode(index)
+            sourceObj.guard = guard if guard
+            sourceObj.step = step if step
+            sourceObj.own = own if own
+            sourceObj.object = object if object
+            sourceObj.from = from if from
+            sourceObj.await = isAwait if isAwait
+
+            # Create For node - constructor expects (body, source)
+            new @ast.For bodyNode, sourceObj
           when 'Switch'             then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
           when 'SwitchWhen'         then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
           when 'Elision'            then new @ast.Elision
@@ -249,7 +286,17 @@ class ES5Backend
           when 'FuncGlyph'          then new @ast.FuncGlyph          $(o.glyph)
           when 'Param'              then new @ast.Param              $(o.name), $(o.value), $(o.splat)
           when 'Code'               then new @ast.Code ($(p) for p in $(o.params) ? [] when $(p)?), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
-          when 'Splat'              then new @ast.Splat              $(o.name)
+          when 'Splat'
+            # ES6-enhanced Splat handling
+            # Check for 'name' or 'body' field (@ directive uses 'body')
+            nameDirective = o.name || o.body
+            name = $(nameDirective)
+            # Splat requires a valid expression, not undefined
+            if name
+              new @ast.Splat name
+            else
+              # Create a placeholder if name is missing
+              new @ast.Splat new @ast.Literal 'undefined'
           when 'Existence'          then new @ast.Existence          $(o.expression)
           when 'RegexLiteral'       then new @ast.RegexLiteral       $(o.value)
           when 'StatementLiteral'   then new @ast.StatementLiteral   $(o.value)

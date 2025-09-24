@@ -18,9 +18,9 @@
     hasProp = {}.hasOwnProperty;
 
   ES5Backend = class ES5Backend {
-    constructor(options1 = {}, ast = {}) {
+    constructor(options = {}, ast = {}) {
       var ref, ref1;
-      this.options = options1;
+      this.options = options;
       this.ast = ast;
       // Use Object.create(null) to avoid prototype pollution in options
       this.compileOptions = Object.create(null);
@@ -154,7 +154,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessNode, accessor, actualExpression, attempt, base, body, bodyNode, bodyNodes, c, catchClause, condition, context, elseBody, ensure, error, exclusive, expression, expressionNode, finalBody, from, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nodeType, options, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, resolved, resolvedValue, result, soak, sourceInfo, tag, target, to, type, typeToken, val, value, variable, whileNode;
+      var $, accessNode, accessor, actualExpression, attempt, base, body, bodyNode, bodyNodes, c, catchClause, condition, context, elseBody, ensure, error, exclusive, expression, expressionNode, from, guard, i, ifNode, index, indexNode, isAwait, item, items, j, k, len, len1, len2, loopNode, name, name1, nameDirective, nodeType, object, opts, own, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, resolved, resolvedValue, result, soak, source, sourceInfo, sourceObj, step, tag, target, to, type, typeToken, val, value, variable, whileNode;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -294,7 +294,7 @@
               variable = $(o.variable) || $(o.val) || $(o.base);
               index = $(o.index) || $(o.object);
               soak = $(o.soak);
-              // Smart-append: if LHS is already a Value, append to its properties  
+              // Smart-append: if LHS is already a Value, append to its properties
               if (variable instanceof this.ast.Value) {
                 indexNode = new this.ast.Index(index, {soak});
                 variable.properties.push(indexNode);
@@ -319,26 +319,71 @@
               }
               return ifNode;
             case 'While':
+              // Trust our enhanced resolver - much simpler than ES6 manual conversion
               condition = $(o.condition);
-              body = this._toBlock($(o.body));
-              // While constructor expects (condition, options)
-              options = {};
-              if (o.invert != null) {
-                options.invert = $(o.invert);
-              }
+              body = $(o.body);
+              // While constructor expects (condition, opts)
+              opts = {};
               if (o.guard != null) {
-                options.guard = $(o.guard);
+                opts.guard = $(o.guard);
               }
               if (o.isLoop != null) {
-                options.isLoop = $(o.isLoop);
+                opts.isLoop = $(o.isLoop);
               }
-              whileNode = new this.ast.While(condition, options);
-              // Set the body separately using addBody - ensure it's never null
-              finalBody = body || new this.ast.Block([]);
-              whileNode.addBody(finalBody);
+              if (o.invert != null) {
+                opts.invert = $(o.invert);
+              }
+              whileNode = new this.ast.While(condition, opts);
+              // Our resolver + _toBlock handles body conversion automatically
+              whileNode.body = this._toBlock(body);
               return whileNode;
             case 'For':
-              return new this.ast.For(this._toBlock($(o.body)), $(o.source));
+              // For loops are complex - they're built incrementally via $ops (from ES6 patterns)
+              body = $(o.body);
+              source = $(o.source);
+              guard = $(o.guard);
+              name = $(o.name);
+              index = $(o.index);
+              step = $(o.step);
+              own = $(o.own);
+              object = $(o.object);
+              from = $(o.from);
+              isAwait = $(o.await);
+              // Handle body (from ES6 approach)
+              // Body node with expressions - preserve full list and order
+              bodyNode = (body != null ? body.expressions : void 0) ? new this.ast.Block(this._filterNodes(body.expressions)) : this._toBlock(body);
+              // Build source object for For constructor (ES6 pattern)
+              sourceObj = {};
+              // Ensure source is a proper node
+              if (source) {
+                sourceObj.source = source instanceof this.ast.Base ? source : this._ensureNode(source);
+              }
+              if (name) {
+                sourceObj.name = name instanceof this.ast.Base ? name : this._ensureNode(name);
+              }
+              if ((index != null) && index !== void 0) {
+                sourceObj.index = index instanceof this.ast.Base ? index : this._ensureNode(index);
+              }
+              if (guard) {
+                sourceObj.guard = guard;
+              }
+              if (step) {
+                sourceObj.step = step;
+              }
+              if (own) {
+                sourceObj.own = own;
+              }
+              if (object) {
+                sourceObj.object = object;
+              }
+              if (from) {
+                sourceObj.from = from;
+              }
+              if (isAwait) {
+                sourceObj.await = isAwait;
+              }
+              // Create For node - constructor expects (body, source)
+              return new this.ast.For(bodyNode, sourceObj);
             case 'Switch':
               return new this.ast.Switch($(o.subject), (function() {
                 var j, len1, ref3, ref4, results;
@@ -400,7 +445,18 @@
                 return results;
               })(), this._toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart));
             case 'Splat':
-              return new this.ast.Splat($(o.name));
+              // ES6-enhanced Splat handling  
+              // Check for 'name' or 'body' field (@ directive uses 'body')
+              nameDirective = o.name || o.body;
+              name = $(nameDirective);
+              // Splat requires a valid expression, not undefined
+              if (name) {
+                return new this.ast.Splat(name);
+              } else {
+                // Create a placeholder if name is missing
+                return new this.ast.Splat(new this.ast.Literal('undefined'));
+              }
+              break;
             case 'Existence':
               return new this.ast.Existence($(o.expression));
             case 'RegexLiteral':
