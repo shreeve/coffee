@@ -62,7 +62,9 @@ class ES5Backend
             body = @evaluateDirective directive.body, frame
             bodyArray = if Array.isArray(body) then body else [body]
             filteredBody = bodyArray.filter (item) -> item?
-            new @ast.Root new @ast.Block filteredBody
+            block = new @ast.Block filteredBody
+            block.makeReturn() if filteredBody.length > 0  # Make final expression return
+            new @ast.Root block
 
           when 'IdentifierLiteral'
             value = @evaluateDirective directive.value, frame
