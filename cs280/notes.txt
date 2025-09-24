@@ -1,0 +1,9 @@
+
+coffee/cs280> solar-es6.coffee -o ../cs300/lib/coffeescript/parser.js ../cs300/src/syntax.coffee
+processGrammar: 2.203ms
+buildLRAutomaton: 55.192ms
+processLookaheads: 10.91ms
+buildParseTable: 102.522ms
+💥 Total time: 173.486ms
+
+Parser generated: ../cs300/lib/coffeescript/parser.js
