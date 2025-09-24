@@ -105,7 +105,7 @@ class ES5Backend
 
     # Strings and booleans return as-is
     return o if type is 'string' or type is 'boolean'
-    
+
     # Arrays: expand along the way - only include resolved items!
     if Array.isArray o
       result = []

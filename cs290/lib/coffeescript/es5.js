@@ -161,7 +161,6 @@
         // Strings and booleans return as-is
         return o;
       }
-      
       // Arrays: expand along the way - only include resolved items!
       if (Array.isArray(o)) {
         result = [];
