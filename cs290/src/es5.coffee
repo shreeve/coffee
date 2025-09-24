@@ -50,43 +50,43 @@ class ES5Backend
         nodeType = o.$ast
 
         switch nodeType
-          when 'Root'              then new @ast.Root ((b) -> b.makeReturn(); b)(new @ast.Block $(o.body))
-          when 'IdentifierLiteral' then new @ast.IdentifierLiteral $(o.value)
-          when 'NumberLiteral'     then new @ast.NumberLiteral     $(o.value)
-          when 'StringLiteral'     then new @ast.StringLiteral     @_stripQuotes($(o.value))
-          when 'BooleanLiteral'    then new @ast.BooleanLiteral    $(o.value)
-          when 'ThisLiteral'       then new @ast.ThisLiteral
-          when 'NullLiteral'       then new @ast.NullLiteral
-          when 'UndefinedLiteral'  then new @ast.UndefinedLiteral
-          when 'InfinityLiteral'   then new @ast.InfinityLiteral
-          when 'NaNLiteral'        then new @ast.NaNLiteral
-          when 'Value'             then new @ast.Value             $(o.val)
-          when 'Assign'            then new @ast.Assign            $(o.variable), $(o.value)
-          when 'Op'                then new @ast.Op                $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
-          when 'PropertyName'      then new @ast.PropertyName      $(o.value)
-          when 'Access'            then new @ast.Access            $(o.name), soak: o.soak
-          when 'Call'              then new @ast.Call              $(o.variable), $(o.args)
-          when 'Obj'               then new @ast.Obj               $(o.properties), $(o.generated)
-          when 'Arr'               then new @ast.Arr               $(o.objects)
-          when 'Range'             then new @ast.Range             $(o.from), $(o.to), $(o.exclusive)
-          when 'Block'             then new @ast.Block             $(o.expressions)
-          when 'Return'            then new @ast.Return            $(o.expression)
-          when 'Parens'            then new @ast.Parens            $(o.body)
-          when 'Index'             then new @ast.Index             $(o.index)
-          when 'Slice'             then new @ast.Slice             $(o.range)
-          when 'If'                then new @ast.If                $(o.condition), $(o.body), $(o.elseBody)
-          when 'While'             then new @ast.While             $(o.condition), $(o.body)
-          when 'For'               then new @ast.For               $(o.body), $(o.source)
-          when 'Switch'            then new @ast.Switch            $(o.subject), $(o.cases), $(o.otherwise)
-          when 'Try'               then new @ast.Try               $(o.attempt), $(o.recovery), $(o.ensure)
-          when 'Class'             then new @ast.Class             $(o.variable), $(o.parent), $(o.body)
-          when 'Code'              then new @ast.Code              $(o.params), $(o.body)
-          when 'Splat'             then new @ast.Splat             $(o.name)
-          when 'Existence'         then new @ast.Existence         $(o.expression)
-          when 'RegexLiteral'      then new @ast.RegexLiteral      $(o.value)
-          when 'StatementLiteral'  then new @ast.StatementLiteral  $(o.value)
+          when 'Root'               then new @ast.Root ((b) -> b.makeReturn(); b)(new @ast.Block $(o.body))
+          when 'IdentifierLiteral'  then new @ast.IdentifierLiteral  $(o.value)
+          when 'NumberLiteral'      then new @ast.NumberLiteral      $(o.value)
+          when 'StringLiteral'      then new @ast.StringLiteral      @_stripQuotes($(o.value))
+          when 'BooleanLiteral'     then new @ast.BooleanLiteral     $(o.value)
+          when 'ThisLiteral'        then new @ast.ThisLiteral
+          when 'NullLiteral'        then new @ast.NullLiteral
+          when 'UndefinedLiteral'   then new @ast.UndefinedLiteral
+          when 'InfinityLiteral'    then new @ast.InfinityLiteral
+          when 'NaNLiteral'         then new @ast.NaNLiteral
+          when 'Value'              then new @ast.Value              $(o.val)
+          when 'Assign'             then new @ast.Assign             $(o.variable), $(o.value)
+          when 'Op'                 then new @ast.Op                 $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
+          when 'PropertyName'       then new @ast.PropertyName       $(o.value)
+          when 'Access'             then new @ast.Access             $(o.name), soak: o.soak
+          when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
+          when 'Obj'                then new @ast.Obj                $(o.properties), $(o.generated)
+          when 'Arr'                then new @ast.Arr                $(o.objects)
+          when 'Range'              then new @ast.Range              $(o.from), $(o.to), $(o.exclusive)
+          when 'Block'              then new @ast.Block              $(o.expressions)
+          when 'Return'             then new @ast.Return             $(o.expression)
+          when 'Parens'             then new @ast.Parens             $(o.body)
+          when 'Index'              then new @ast.Index              $(o.index)
+          when 'Slice'              then new @ast.Slice              $(o.range)
+          when 'If'                 then new @ast.If                 $(o.condition), $(o.body), $(o.elseBody)
+          when 'While'              then new @ast.While              $(o.condition), $(o.body)
+          when 'For'                then new @ast.For                $(o.body), $(o.source)
+          when 'Switch'             then new @ast.Switch             $(o.subject), $(o.cases), $(o.otherwise)
+          when 'Try'                then new @ast.Try                $(o.attempt), $(o.recovery), $(o.ensure)
+          when 'Class'              then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
+          when 'Code'               then new @ast.Code               $(o.params), $(o.body)
+          when 'Splat'              then new @ast.Splat              $(o.name)
+          when 'Existence'          then new @ast.Existence          $(o.expression)
+          when 'RegexLiteral'       then new @ast.RegexLiteral       $(o.value)
+          when 'StatementLiteral'   then new @ast.StatementLiteral   $(o.value)
           when 'PassthroughLiteral' then new @ast.PassthroughLiteral $(o.value)
-          when 'Literal'           then new @ast.Literal           $(o.value)
+          when 'Literal'            then new @ast.Literal            $(o.value)
           else
             console.warn "ES5Backend: Unimplemented AST node type:", nodeType
             new @ast.Literal "/* Unimplemented: #{nodeType} */"
