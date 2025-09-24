@@ -20,7 +20,7 @@ node -r coffeescript/register test/runner.coffee es5
 ### Current Test Breakdown
 **Categories at 100% (16+ total):**
 - NumberLiteral, StringLiteral, BooleanLiteral, NullLiteral
-- RegexLiteral, StringMethods, AdvancedArrays, MathMethods  
+- RegexLiteral, StringMethods, AdvancedArrays, MathMethods
 - Operators, Parentheses, Existence, Assign, Arr, Block, Call
 - And more emerging...
 
@@ -35,7 +35,7 @@ node -r coffeescript/register test/runner.coffee es5
 - Lines: ~303 (concise and elegant)
 
 **2. `cs290/test/runner.coffee` - Enhanced Test Runner**
-- Smart execution: full functions for variables, expression extraction for literals  
+- Smart execution: full functions for variables, expression extraction for literals
 - Deep equality comparison for arrays/objects
 - Per-file and overall result reporting
 
@@ -54,7 +54,7 @@ node -r coffeescript/register test/runner.coffee es5
 # Traditional Grammar (CS270)
 o 'NUMBER', -> new NumberLiteral $1
 
-# Solar Grammar (CS290)  
+# Solar Grammar (CS290)
 o 'NUMBER', $ast: 'NumberLiteral', value: 1
 ```
 
@@ -70,7 +70,7 @@ o = new Proxy lookup, handler
 o[prop] = value for own prop, value of directive
 
 # Usage: both positional and semantic access
-$(o.value)    # Semantic access  
+$(o.value)    # Semantic access
 $(o(1))       # Positional access
 ```
 
@@ -80,7 +80,7 @@ $(o(1))       # Positional access
 if Array.isArray o
   return o.map (val) => @resolve val, lookup
 
-# NEW: Expand at resolution - skip nulls at source  
+# NEW: Expand at resolution - skip nulls at source
 if Array.isArray o
   result = []
   for val in o
@@ -96,7 +96,7 @@ if Array.isArray o
 # Grammar Bug: object properties have swapped parameters
 # 'value' = property name/key, 'expression' = actual value
 if context is 'object' and o.expression?
-  variable = $(o.value)     # Property name  
+  variable = $(o.value)     # Property name
   value = $(o.expression)   # Actual value
 ```
 
@@ -150,22 +150,22 @@ node -r coffeescript/register test/runner.coffee es5/ast-YourTest.coffee
 ## 🎯 Current Blockers & Solutions
 
 ### 1. Array Indexing (`arr[0]`)
-**Issue:** "Cannot read properties of undefined"  
-**Root cause:** Index access compilation issue  
+**Issue:** "Cannot read properties of undefined"
+**Root cause:** Index access compilation issue
 **Approach:** Check Index directive implementation, ensure proper Value wrapping
 
 ### 2. Property Access on Variables (`obj.prop` where obj is undefined)
-**Issue:** "obj is not defined"  
-**Root cause:** Test execution context - variable not in scope  
+**Issue:** "obj is not defined"
+**Root cause:** Test execution context - variable not in scope
 **Solution:** Usually a test context issue, not directive problem
 
 ### 3. This/@ Standalone (`this`, `@`)
-**Issue:** "Cannot read properties of undefined"  
-**Root cause:** ThisLiteral needs Value wrapping for standalone use  
+**Issue:** "Cannot read properties of undefined"
+**Root cause:** ThisLiteral needs Value wrapping for standalone use
 **Status:** `@prop` works, standalone `this` needs investigation
 
 ### 4. Control Flow Syntax (`while`, `switch`)
-**Issue:** Various compilation errors  
+**Issue:** Various compilation errors
 **Root cause:** Complex control flow directives need Block handling
 **Status:** Individual statements work, block structures need work
 
@@ -176,7 +176,7 @@ node -r coffeescript/register test/runner.coffee es5/ast-YourTest.coffee
    - Often just 1-2 simple fixes needed
    - Examples: Return (13/14), Complex (11/14)
 
-2. **Medium categories** (5-8 passing out of 8-12 total)  
+2. **Medium categories** (5-8 passing out of 8-12 total)
    - Usually have specific blockers but solid foundations
    - Examples: Try (5/6), Slicing (6/8)
 
@@ -188,7 +188,7 @@ node -r coffeescript/register test/runner.coffee es5/ast-YourTest.coffee
 Look for tests with unrealistic expectations:
 ```coffee
 # BAD: test "Math.random()", 0.5  (random isn't constant!)
-# GOOD: test "Math.random()", -> 
+# GOOD: test "Math.random()", ->
 #   result = Math.random()
 #   ok typeof result is 'number' and result >= 0 and result <= 1
 ```
@@ -206,7 +206,7 @@ Look for tests with unrealistic expectations:
 # Check current status
 cd cs290 && node -r coffeescript/register test/runner.coffee es5 | tail -10
 
-# Find high-value targets  
+# Find high-value targets
 grep "✗.*([1-9][0-9]/[1-9][0-9])" # Categories with many passing tests
 ```
 
@@ -222,7 +222,7 @@ cd cs290 && ../cs270/bin/coffee -c -o lib/coffeescript src/es5.coffee
 node -e "const CS=require('./lib/coffeescript'); console.log(CS.compile('test_code'));"
 ```
 
-### 3. Validation Phase  
+### 3. Validation Phase
 ```bash
 # Run full test suite
 node -r coffeescript/register test/runner.coffee es5
@@ -233,7 +233,7 @@ node -r coffeescript/register test/runner.coffee es5/ast-YourCategory.coffee
 
 ### 4. Commit Pattern
 ```bash
-git add -A && git commit -m "Directive: +X tests (new_total/311) 
+git add -A && git commit -m "Directive: +X tests (new_total/311)
 
 - Added YourDirective implementation
 - Fixed specific_issue
@@ -253,7 +253,7 @@ Progress: old_count → new_count (+gain)"
 - Use `o.expression` for actual value, `o.value` for property name
 - This pattern applies to all object context assignments
 
-### 3. **Arrays Are Clean by Default**  
+### 3. **Arrays Are Clean by Default**
 - Resolution-level expansion eliminates nulls at source
 - No need for defensive `_filterNodes` in simple cases
 - Use helper methods for complex cases
@@ -272,7 +272,7 @@ Progress: old_count → new_count (+gain)"
 
 ### Immediate (for 200+ tests):
 1. **Fix remaining Range exclusive logic** (1-2 tests)
-2. **Resolve Try throw syntax parsing** (1 test)  
+2. **Resolve Try throw syntax parsing** (1 test)
 3. **Address Slicing edge cases** (2 tests)
 
 ### Medium-term (for 250+ tests):
@@ -291,7 +291,7 @@ Progress: old_count → new_count (+gain)"
 # Quick compilation test
 node -e "const CS=require('./lib/coffeescript'); console.log(CS.compile('7'));"
 
-# Test specific construct  
+# Test specific construct
 node -e "const CS=require('./lib/coffeescript'); const r=eval(CS.compile('test')); console.log(r);"
 
 # Check for errors
@@ -308,7 +308,7 @@ node -r coffeescript/register test/runner.coffee es5 2>&1 | grep "✓.*(" | wc -
 
 - **`cs290/src/es5.coffee`** - Main Solar backend (EDIT THIS)
 - **`cs290/test/runner.coffee`** - Test runner with smart execution
-- **`cs290/src/syntax.coffee`** - Solar grammar definition  
+- **`cs290/src/syntax.coffee`** - Solar grammar definition
 - **`cs290/src/coffeescript.coffee`** - Compiler entry point
 - **`solar-es5.coffee`** - Parser generator (top-level)
 - **ES6 reference:** `/Users/shreeve/Data/Code/coffeescript/rip/es6/src/es6.coffee`
@@ -316,7 +316,7 @@ node -r coffeescript/register test/runner.coffee es5 2>&1 | grep "✓.*(" | wc -
 ## 🎉 Success Metrics
 
 - **Current:** 197/311 tests (63.3%) - Exceptional for new architecture
-- **Near-term:** 200+ tests (64%+) - Psychological milestone  
+- **Near-term:** 200+ tests (64%+) - Psychological milestone
 - **Medium-term:** 250+ tests (80%+) - Production coverage
 - **Long-term:** Full language coverage in CS300
 
