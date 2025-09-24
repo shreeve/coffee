@@ -381,8 +381,9 @@
               expression = $(o.expression);
               // Expression might be an array, so extract the first element
               actualExpression = Array.isArray(expression) && expression.length > 0 ? expression[0] : expression;
-              // Ensure we have a valid node - empty interpolation gets a space to avoid syntax errors
-              expressionNode = actualExpression instanceof this.ast.Base ? actualExpression : actualExpression != null ? this._ensureNode(actualExpression) : this._ensureNode(actualExpression) || new this.ast.Literal('undefined');
+              // Handle empty interpolation specially
+              // Empty interpolation should produce empty string to avoid ${} syntax error
+              expressionNode = actualExpression instanceof this.ast.Base ? actualExpression : actualExpression != null ? this._ensureNode(actualExpression) : new this.ast.Literal('""');
               return new this.ast.Interpolation(expressionNode);
             case 'StringWithInterpolations':
               body = $(o.body);

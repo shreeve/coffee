@@ -228,13 +228,14 @@ class ES5Backend
               expression[0]
             else
               expression
-            # Ensure we have a valid node - empty interpolation gets a space to avoid syntax errors
+            # Handle empty interpolation specially
             expressionNode = if actualExpression instanceof @ast.Base
               actualExpression
             else if actualExpression?
               @_ensureNode(actualExpression)
             else
-              @_ensureNode(actualExpression) or new @ast.Literal 'undefined'
+              # Empty interpolation should produce empty string to avoid ${} syntax error
+              new @ast.Literal '""'
             new @ast.Interpolation expressionNode
           when 'StringWithInterpolations'
             body = $(o.body)
