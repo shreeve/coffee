@@ -21,10 +21,16 @@ passed = 0
 failed = 0
 errors = []
 
-# Simple test function
-global.test = (name, fn) ->
+# Simple test function (supports both syntaxes)
+global.test = (name, fnOrExpected) ->
   try
-    fn()
+    if typeof fnOrExpected is 'function'
+      # Traditional: test "name", -> expect ...
+      fnOrExpected()
+    else
+      # Ultra-simple: test "code", expected
+      result = eval(CoffeeScript.compile(name.trim()))
+      eq result, fnOrExpected
     passed++
     console.log "#{green}✓#{reset} #{name}"
   catch e
@@ -40,29 +46,64 @@ global.eq = (actual, expected) ->
 global.ok = (value) ->
   throw new Error "Expected truthy value" unless value
 
-# Test helper for clean Solar directive testing
-global.expect = (code) ->
-  result: eval(CoffeeScript.compile(code.trim()))
-  eq: (expected) -> eq @result, expected
+# Test helper for clean Solar directive testing (supports both syntaxes)
+global.expect = (code, expected) ->
+  result = eval(CoffeeScript.compile(code.trim()))
+
+  # Shortcut: expect code, result (auto .eq)
+  if arguments.length is 2
+    eq result, expected
+  else
+    # Fluent API: expect(code).eq(result)
+    result: result
+    eq: (expected) -> eq result, expected
 
 # CoffeeScript reference for testing
 global.CoffeeScript = require '../lib/coffeescript/index.js'
 
+# Parse command line arguments
+args = process.argv[2..]
+targetDir = args[0] # e.g. 'es5' or 'test/es5' for subdirectory
+
 # Main runner
 console.log "#{bold}Solar Directive Test Suite#{reset}\n"
 
-# Find and run all test files
+# Find test files based on arguments
 testDir = __dirname
-testFiles = fs.readdirSync(testDir)
-  .filter (f) -> f.endsWith('.test.coffee')
-  .sort()
-  .map (f) -> path.join(testDir, f)
+if targetDir
+  # Run tests in specific subdirectory
+  subDir = if targetDir.startsWith('test/') then targetDir else path.join(testDir, targetDir)
+  unless fs.existsSync(subDir)
+    console.log "#{red}Directory #{targetDir} not found#{reset}"
+    process.exit 1
 
-console.log "Found #{testFiles.length} test file(s)\n"
+  testFiles = fs.readdirSync(subDir)
+    .filter (f) -> f.endsWith('.test.coffee') or f.endsWith('.coffee')
+    .sort()
+    .map (f) -> path.join(subDir, f)
+
+  console.log "Found #{testFiles.length} test file(s) in #{targetDir}\n"
+else
+  # Run tests in main directory only
+  testFiles = fs.readdirSync(testDir)
+    .filter (f) -> f.endsWith('.test.coffee')
+    .sort()
+    .map (f) -> path.join(testDir, f)
+
+  console.log "Found #{testFiles.length} test file(s)\n"
+
+# Enhanced reporting with per-file tracking
+fileResults = []
+totalTests = 0
 
 # Run each test file
-for file in testFiles
-  console.log "#{bold}Running: #{path.basename(file)}#{reset}"
+for file, fileIndex in testFiles
+  fileName = path.basename(file)
+  fileStartPassed = passed
+  fileStartFailed = failed
+
+  console.log "\n#{bold}[#{fileIndex + 1}/#{testFiles.length}] Running: #{fileName}#{reset}"
+
   code = fs.readFileSync(file, 'utf8')
 
   try
@@ -71,18 +112,36 @@ for file in testFiles
     eval(js)
   catch e
     failed++
-    errors.push {name: file, error: e.message}
-    console.log "#{red}Test file error: #{e.message}#{reset}"
+    errors.push {name: fileName, error: e.message}
+    console.log "#{red}✗ Test file error: #{e.message}#{reset}"
 
-# Summary
-console.log "\n#{bold}Results:#{reset}"
-console.log "#{green}Passed: #{passed}#{reset}"
+  # File summary
+  filePassed = passed - fileStartPassed
+  fileFailed = failed - fileStartFailed
+  fileTotal = filePassed + fileFailed
+  totalTests += fileTotal
+
+  fileStatus = if fileFailed > 0 then red else green
+  fileIcon = if fileFailed > 0 then "✗" else "✓"
+
+  console.log "#{fileStatus}File: #{filePassed}/#{fileTotal} passed#{reset}"
+  fileResults.push {fileName, filePassed, fileFailed, fileTotal, fileStatus, fileIcon}
+
+# Overall summary
+console.log "\n#{bold}Finals:#{reset}"
+console.log "#{green}Passed: #{passed}#{reset}, #{if failed > 0 then red else green}Failed: #{failed}#{reset}"
+console.log "#{green}Totals: #{totalTests} tests in #{testFiles.length} files#{reset}"
+
 if failed > 0
-  console.log "#{red}Failed: #{failed}#{reset}"
-  console.log "\n#{bold}Errors:#{reset}"
+  console.log "\n#{bold}Test Failures:#{reset}"
   for {name, error} in errors
-    console.log "  #{red}#{path.basename(name)}:#{reset} #{error}"
+    console.log "  #{red}✗ #{name}: #{error}#{reset}"
 else
   console.log "#{green}All tests passed!#{reset}"
+
+# File summary (left-aligned icons for quick scanning)
+console.log "\n#{bold}Files:#{reset}"
+for {fileName, filePassed, fileTotal, fileStatus, fileIcon} in fileResults
+  console.log "#{fileStatus}#{fileIcon} #{fileName} (#{filePassed}/#{fileTotal})#{reset}"
 
 process.exit(if failed > 0 then 1 else 0)
