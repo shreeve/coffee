@@ -60,10 +60,10 @@ global.test = (name, fnOrExpected) ->
             result = result(42)  # Single parameter gets 42
           else if name.includes('(a, b) ->') or name.includes('(a, b) =>')
             result = result(3, 4)  # Two parameters get 3, 4 (sum = 7)
-          else if name.includes('(n) ->') or name.includes('(n) =>')  
+          else if name.includes('(n) ->') or name.includes('(n) =>')
             result = result(10)   # n parameter gets 10 (n * 2 = 20)
           else if name.includes('(s) ->') or name.includes('(s) =>')
-            result = result('hello')  # s parameter gets 'hello' 
+            result = result('hello')  # s parameter gets 'hello'
           else
             # Default: try calling with no arguments
             result = result()
