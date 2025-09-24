@@ -144,7 +144,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessor, bodyNode, c, context, elseBody, i, ifNode, item, items, j, k, len, len1, len2, loopNode, name, nodeType, p, property, ref, ref1, ref2, ref3, ref4, resolved, resolvedValue, result, sourceInfo, target, type, val, value, variable;
+      var $, accessor, bodyNode, c, context, elseBody, exclusive, from, i, ifNode, item, items, j, k, len, len1, len2, loopNode, name, nodeType, p, property, ref, ref1, ref2, ref3, ref4, ref5, resolved, resolvedValue, result, sourceInfo, tag, target, to, type, val, value, variable;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -248,7 +248,12 @@
             case 'Arr':
               return new this.ast.Arr($(o.objects));
             case 'Range':
-              return new this.ast.Range($(o.from), $(o.to), $(o.exclusive));
+              from = $(o.from);
+              to = $(o.to);
+              exclusive = $(o.exclusive);
+              // Range constructor expects string 'exclusive' as tag for exclusive ranges
+              tag = exclusive ? 'exclusive' : null;
+              return new this.ast.Range(from, to, tag);
             case 'Block':
               return new this.ast.Block($(o.expressions));
             case 'Return':
@@ -370,8 +375,11 @@
           });
         } else if (o.$use != null) {
           resolvedValue = $(o.$use);
+          // Handle both 'method' (function calls) and 'prop' (property access)
           if (o.method != null) {
             resolvedValue = (ref2 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref2 : resolvedValue;
+          } else if (o.prop != null) {
+            resolvedValue = (ref3 = resolvedValue[o.prop]) != null ? ref3 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -400,9 +408,9 @@
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                ref3 = o.append.slice(1);
-                for (j = 0, len1 = ref3.length; j < len1; j++) {
-                  item = ref3[j];
+                ref4 = o.append.slice(1);
+                for (j = 0, len1 = ref4.length; j < len1; j++) {
+                  item = ref4[j];
                   if (!(item != null)) {
                     continue;
                   }
@@ -416,9 +424,9 @@
                 return target;
               } else if (o.gather != null) {
                 result = [];
-                ref4 = o.gather;
-                for (k = 0, len2 = ref4.length; k < len2; k++) {
-                  item = ref4[k];
+                ref5 = o.gather;
+                for (k = 0, len2 = ref5.length; k < len2; k++) {
+                  item = ref5[k];
                   if (!(item != null)) {
                     continue;
                   }

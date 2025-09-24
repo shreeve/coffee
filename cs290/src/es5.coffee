@@ -160,7 +160,13 @@ class ES5Backend
           when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
           when 'Obj'                then new @ast.Obj $(o.properties), $(o.generated)
           when 'Arr'                then new @ast.Arr $(o.objects)
-          when 'Range'              then new @ast.Range              $(o.from), $(o.to), $(o.exclusive)
+          when 'Range'              
+            from = $(o.from)
+            to = $(o.to)  
+            exclusive = $(o.exclusive)
+            # Range constructor expects string 'exclusive' as tag for exclusive ranges
+            tag = if exclusive then 'exclusive' else null
+            new @ast.Range from, to, tag
           when 'Block'              then new @ast.Block $(o.expressions)
           when 'Return'             then new @ast.Return             $(o.expression)
           when 'Parens'             then new @ast.Parens (@_toBlock($(o.body)) ? new @ast.Block [new @ast.Literal ''])
@@ -210,7 +216,11 @@ class ES5Backend
 
       else if o.$use?
         resolvedValue = $(o.$use)
-        resolvedValue = resolvedValue[o.method]?() ? resolvedValue if o.method?
+        # Handle both 'method' (function calls) and 'prop' (property access)
+        if o.method?
+          resolvedValue = resolvedValue[o.method]?() ? resolvedValue
+        else if o.prop?
+          resolvedValue = resolvedValue[o.prop] ? resolvedValue
         resolvedValue
 
       else if o.$ops?
