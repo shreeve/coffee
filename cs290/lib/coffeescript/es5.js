@@ -319,22 +319,14 @@
               }
               return ifNode;
             case 'While':
-              // Trust our enhanced resolver - much simpler than ES6 manual conversion
               condition = $(o.condition);
               body = $(o.body);
-              // While constructor expects (condition, opts)
-              opts = {};
-              if (o.guard != null) {
-                opts.guard = $(o.guard);
-              }
-              if (o.isLoop != null) {
-                opts.isLoop = $(o.isLoop);
-              }
-              if (o.invert != null) {
-                opts.invert = $(o.invert);
-              }
+              opts = {
+                guard: $(o.guard),
+                isLoop: $(o.isLoop),
+                invert: $(o.invert)
+              };
               whileNode = new this.ast.While(condition, opts);
-              // Our resolver + _toBlock handles body conversion automatically
               whileNode.body = this._toBlock(body);
               return whileNode;
             case 'For':

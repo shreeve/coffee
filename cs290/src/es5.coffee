@@ -219,16 +219,10 @@ class ES5Backend
             ifNode.addElse elseBody if elseBody?.expressions?.length > 0
             ifNode
           when 'While'
-            # Trust our enhanced resolver - much simpler than ES6 manual conversion
             condition = $(o.condition)
             body = $(o.body)
-            # While constructor expects (condition, opts)
-            opts = {}
-            opts.guard = $(o.guard) if o.guard?
-            opts.isLoop = $(o.isLoop) if o.isLoop?
-            opts.invert = $(o.invert) if o.invert?
+            opts = {guard: $(o.guard), isLoop: $(o.isLoop), invert: $(o.invert)}
             whileNode = new @ast.While condition, opts
-            # Our resolver + _toBlock handles body conversion automatically
             whileNode.body = @_toBlock(body)
             whileNode
           when 'For'                  then new @ast.For                $(o.body), $(o.source)
