@@ -262,6 +262,12 @@ class ES5Backend
             new @ast.Catch bodyNode, error
           when 'Throw'              then new @ast.Throw              $(o.expression)
           when 'Literal'            then new @ast.Literal            $(o.value)
+          when 'ThisProperty'       then new @ast.Value new @ast.ThisLiteral($(o.token)), [new @ast.Access($(o.property))]
+          when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
+          when 'DefaultLiteral'     then new @ast.DefaultLiteral     $(o.value)
+          when 'SwitchWhen'         then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
+          when 'Elision'            then new @ast.Elision
+          when 'Expansion'          then new @ast.Expansion
           else
             @_unimplemented nodeType, "AST node type"
 

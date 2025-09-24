@@ -410,6 +410,29 @@
               return new this.ast.Throw($(o.expression));
             case 'Literal':
               return new this.ast.Literal($(o.value));
+            case 'ThisProperty':
+              return new this.ast.Value(new this.ast.ThisLiteral($(o.token)), [new this.ast.Access($(o.property))]);
+            case 'ComputedPropertyName':
+              return new this.ast.ComputedPropertyName($(o.value));
+            case 'DefaultLiteral':
+              return new this.ast.DefaultLiteral($(o.value));
+            case 'SwitchWhen':
+              return new this.ast.SwitchWhen((function() {
+                var j, len1, ref3, ref4, results;
+                ref4 = (ref3 = $(o.conditions)) != null ? ref3 : [];
+                results = [];
+                for (j = 0, len1 = ref4.length; j < len1; j++) {
+                  c = ref4[j];
+                  if ($(c) != null) {
+                    results.push($(c));
+                  }
+                }
+                return results;
+              })(), this._toBlock($(o.block)));
+            case 'Elision':
+              return new this.ast.Elision();
+            case 'Expansion':
+              return new this.ast.Expansion();
             default:
               return this._unimplemented(nodeType, "AST node type");
           }
