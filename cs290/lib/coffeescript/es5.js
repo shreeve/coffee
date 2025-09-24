@@ -56,30 +56,39 @@
       return this.resolve(o);
     }
 
-    resolve(value, lookup = value) {
-      var $, accessor, i, item, items, len, name, nodeType, o, ref, ref1, ref2, ref3, ref4, resolved, resolvedValue, result, target, useLookup;
-      if (typeof value === 'number' && (lookup != null)) {
-        return lookup(value - 1);
+    resolve(o, lookup = o) {
+      var $, accessor, i, item, items, len, name, nodeType, ref, ref1, ref2, resolved, resolvedValue, result, target, type;
+      if (o == null) {
+        return o; // null/undefined early return
       }
-      if (typeof value === 'number') {
-        return value;
+      type = typeof o;
+      
+      // Numbers: only do 1-based lookup for positive integers
+      if (type === 'number') {
+        if (Number.isInteger(o) && o > 0 && typeof lookup === 'function') {
+          return lookup(o - 1);
+        }
+        return o;
       }
-      if ((ref = typeof value) === 'string' || ref === 'boolean') {
-        return value;
+      if (type === 'string' || type === 'boolean') {
+        return o;
       }
-      if (Array.isArray(value)) {
-        return value.map((item) => {
-          return this.resolve(item, lookup);
+      if (Array.isArray(o)) {
+        return o.map((val) => {
+          return this.resolve(val, lookup);
         });
       }
-      if ((value != null) && (typeof value === 'object' || typeof value === 'function')) {
-        o = value;
-        if (((ref1 = o.constructor) != null ? ref1.name : void 0) && ((ref2 = o.constructor.name) !== 'Object' && ref2 !== 'Function')) { // AST nodes
+      
+      // Functions without directive markers are terminals (key fix!)
+      if (type === 'function' && !((o.$ast != null) || (o.$use != null) || (o.$ary != null) || (o.$ops != null))) {
+        return o;
+      }
+      if (type === 'object' || type === 'function') {
+        if ((o.constructor != null) && ((ref = o.constructor) !== Object && ref !== Function)) {
           return o;
         }
-        useLookup = typeof value === 'function' ? value : lookup;
         $ = (val) => {
-          return this.resolve(val, useLookup); // Local resolver
+          return this.resolve(val, lookup); // Local resolver
         };
         if (o.$ast != null) {
           nodeType = o.$ast;
@@ -177,7 +186,7 @@
         } else if (o.$use != null) {
           resolvedValue = $(o.$use);
           if (o.method != null) {
-            resolvedValue = (ref3 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref3 : resolvedValue;
+            resolvedValue = (ref1 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref1 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -204,11 +213,11 @@
               if (o.append != null) {
                 target = $(o.append[0]);
                 items = (function() {
-                  var i, len, ref4, results;
-                  ref4 = o.append.slice(1);
+                  var i, len, ref2, results;
+                  ref2 = o.append.slice(1);
                   results = [];
-                  for (i = 0, len = ref4.length; i < len; i++) {
-                    item = ref4[i];
+                  for (i = 0, len = ref2.length; i < len; i++) {
+                    item = ref2[i];
                     if (item != null) {
                       results.push($(item));
                     }
@@ -221,9 +230,9 @@
                 return target.concat(items);
               } else if (o.gather != null) {
                 result = [];
-                ref4 = o.gather;
-                for (i = 0, len = ref4.length; i < len; i++) {
-                  item = ref4[i];
+                ref2 = o.gather;
+                for (i = 0, len = ref2.length; i < len; i++) {
+                  item = ref2[i];
                   if (!(item != null)) {
                     continue;
                   }
