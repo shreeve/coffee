@@ -83,10 +83,6 @@ class ES5Backend
 
       $ = (val) => @resolve val, lookup  # Local resolver
 
-      ensureBlock = (b) =>
-        b = $(b)
-        if Array.isArray b then new @ast.Block b else b
-
       if o.$ast?
         nodeType = o.$ast
 
@@ -124,7 +120,7 @@ class ES5Backend
           when 'Class'              then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
           when 'FuncGlyph'          then new @ast.FuncGlyph          $(o.glyph)
           when 'Param'              then new @ast.Param              $(o.name), $(o.value), $(o.splat)
-          when 'Code'               then new @ast.Code               $(o.params), ensureBlock(o.body), $(o.funcGlyph), $(o.paramStart)
+          when 'Code'               then new @ast.Code               $(o.params), $(o.body), $(o.funcGlyph), $(o.paramStart)
           when 'Splat'              then new @ast.Splat              $(o.name)
           when 'Existence'          then new @ast.Existence          $(o.expression)
           when 'RegexLiteral'       then new @ast.RegexLiteral       $(o.value)
