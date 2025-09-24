@@ -22,10 +22,10 @@
       var ref, ref1;
       this.options = options1;
       this.ast = ast;
-      this.compileOptions = {
-        bare: (ref = this.options.bare) != null ? ref : true,
-        header: (ref1 = this.options.header) != null ? ref1 : false
-      };
+      // Use Object.create(null) to avoid prototype pollution in options
+      this.compileOptions = Object.create(null);
+      this.compileOptions.bare = (ref = this.options.bare) != null ? ref : true;
+      this.compileOptions.header = (ref1 = this.options.header) != null ? ref1 : false;
     }
 
     // Helper methods (enhanced with ES6 patterns)
@@ -104,6 +104,8 @@
       lookup = function(index) {
         return values[stackTop - symbolCount + 1 + index];
       };
+      // Use Object.create(null) to avoid prototype pollution and JS property conflicts
+      // This prevents conflicts with .name, .length, .constructor, .toString, etc.
       store = Object.create(null);
       handler = {
         apply: function(target, thisArg, args) {
@@ -113,7 +115,8 @@
           if (Object.prototype.hasOwnProperty.call(store, prop)) {
             return store[prop];
           }
-          if (prop === 'name' || prop === 'length' || prop === 'prototype' || prop === 'caller' || prop === 'arguments') {
+          if (prop === 'name' || prop === 'length' || prop === 'prototype' || prop === 'caller' || prop === 'arguments' || prop === 'constructor' || prop === 'toString' || prop === 'valueOf') {
+            // Enhanced reserved property protection using Object.create(null) approach
             return void 0;
           }
           return Reflect.get(target, prop, receiver);

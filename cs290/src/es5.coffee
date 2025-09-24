@@ -15,9 +15,10 @@
 
 class ES5Backend
   constructor: (@options = {}, @ast = {}) ->
-    @compileOptions =
-      bare: @options.bare ? true
-      header: @options.header ? false
+    # Use Object.create(null) to avoid prototype pollution in options
+    @compileOptions = Object.create null
+    @compileOptions.bare = @options.bare ? true
+    @compileOptions.header = @options.header ? false
 
   # Helper methods (enhanced with ES6 patterns)
   _stripQuotes: (value) ->
@@ -72,7 +73,8 @@ class ES5Backend
       apply: (target, thisArg, args) -> target.apply thisArg, args
       get: (target, prop, receiver) ->
         return store[prop] if Object.prototype.hasOwnProperty.call(store, prop)
-        return undefined if prop in ['name', 'length', 'prototype', 'caller', 'arguments']
+        # Enhanced reserved property protection using Object.create(null) approach
+        return undefined if prop in ['name', 'length', 'prototype', 'caller', 'arguments', 'constructor', 'toString', 'valueOf']
         Reflect.get target, prop, receiver
       set: (target, prop, value) ->
         store[prop] = value
