@@ -91,7 +91,7 @@ class ES5Backend
               console.warn "ES5Backend: $ops value without add:", o
               new @ast.Literal "/* $ops: value */"
           when 'array'
-            # Array operations  
+            # Array operations
             if o.append?
               target = $(o.append[0])
               items = ($(item) for item in o.append[1..] when item?)

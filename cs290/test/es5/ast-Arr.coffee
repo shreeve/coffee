@@ -1,4 +1,4 @@
-# Arr Solar Directive Tests  
+# Arr Solar Directive Tests
 # =========================
 # Tests {$ast: 'Arr'} directive processing
 
