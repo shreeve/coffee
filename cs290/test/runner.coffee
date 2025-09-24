@@ -38,7 +38,8 @@ global.test = (name, fnOrExpected) ->
         # Simple literal/expression - can extract return expression safely
         match = compiled.match(/return\s+(.*);/)
         if match
-          result = eval(match[1])
+          # Wrap in parentheses to ensure object literals are treated as expressions
+          result = eval("(" + match[1] + ")")
         else
           result = eval("(#{compiled})()")
       eq result, fnOrExpected
