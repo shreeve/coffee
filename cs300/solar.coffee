@@ -10,11 +10,10 @@
 #   Date: September 23, 2025
 # ==============================================================================
 
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
 VERSION = '1.0.0'
+
+fs      = require 'fs'
+path    = require 'path'
 
 # Token: A terminal symbol that cannot be broken down further
 class Token
@@ -338,12 +337,12 @@ class Generator
     if @mode is 'solar'
       # Solar: Add reduce function (r) - curried with $$, _$ for efficient backend calls
       actions.push @actionInclude or ''
-      actions.push 'var r = yy.backend && function(count, directive) { return yy.backend.reduce($$, _$, $$.length - 1, count, directive); };'
+      actions.push 'const r = yy.backend && ((count, directive) => yy.backend.reduce($$, _$, $$.length - 1, count, directive));'
     else
       # Jison: Add comment about this context and $0 variable
       actions.push '/* this == yyval */'
       actions.push @actionInclude or ''
-      actions.push 'var $0 = $$.length - 1;'
+      actions.push 'const $0 = $$.length - 1;'
 
     actions.push 'switch (yystate) {'
     for action, labels of actionGroups
@@ -708,7 +707,7 @@ class Generator
     #{module.commonCode}
     const parserInstance = #{module.moduleCode};
     #{@moduleInclude}
-    function ParserConstructor () { this.yy = {}; }
+    class ParserConstructor { constructor() { this.yy = {}; } }
     ParserConstructor.prototype = parserInstance;
     parserInstance.Parser = ParserConstructor;
     const #{moduleName} = new ParserConstructor();
@@ -716,7 +715,7 @@ class Generator
     // ES6 exports
     export { #{moduleName} as parser };
     export const Parser = #{moduleName}.Parser;
-    export const parse = function () { return #{moduleName}.parse.apply(#{moduleName}, arguments); };
+    export const parse = (...args) => #{moduleName}.parse.apply(#{moduleName}, args);
     export default #{moduleName};
     """
 
@@ -731,7 +730,7 @@ class Generator
     #{module.commonCode}
     const parserInstance = #{module.moduleCode};
     #{@moduleInclude}
-    function Parser () { this.yy = {}; }
+    class Parser { constructor() { this.yy = {}; } }
     Parser.prototype = parserInstance;
     parserInstance.Parser = Parser;
     const #{moduleName} = new Parser();
@@ -745,7 +744,7 @@ class Generator
     tableCode = @_generateTableCode @parseTable
 
     moduleCode = """{
-      trace: function trace() {},
+      trace() {},
       yy: {},
       symbolIds: #{JSON.stringify @symbolIds},
       tokenNames: #{JSON.stringify(@tokenNames).replace /"([0-9]+)":/g, "$1:"},
@@ -753,8 +752,8 @@ class Generator
       parseTable: #{tableCode.moduleCode},
       defaultActions: #{JSON.stringify(@defaultActions).replace /"([0-9]+)":/g, "$1:"},
       performAction: #{@performAction},
-      parseError: function #{@parseError},
-      parse: function #{@parse}
+      parseError: #{@parseError},
+      parse: #{@parse}
     }"""
 
     {commonCode: tableCode.commonCode, moduleCode}
@@ -954,23 +953,26 @@ class Generator
 # Exports
 # ==============================================================================
 
-export { Generator }
+Solar = exports.Solar = exports
 
-export Parser = (grammar, options) ->
+Solar.Parser = (grammar, options) ->
   generator = new Generator grammar, options
   generator.createParser()
 
-export default {
-  Generator
-  Parser
-  VERSION
-}
+exports.Generator = Generator
+
+Solar.Generator = (g, options) ->
+  new Generator g, Object.assign({}, g.options, options)
+
+exports.Parser = (grammar, options) ->
+  generator = Solar.Generator grammar, options
+  generator.createParser()
 
 # ==============================================================================
 # CLI Interface
 # ==============================================================================
 
-if import.meta.url is `file://${fs.realpathSync(process.argv[1])}`
+if require.main is module
   showHelp = ->
     console.log """
     Solar - SLR(1) Parser Generator
@@ -1038,8 +1040,7 @@ if import.meta.url is `file://${fs.realpathSync(process.argv[1])}`
 
     # Load grammar
     grammar = if grammarFile.endsWith('.coffee')
-      module = await import(path.resolve(grammarFile))
-      module.default or module
+      require(path.resolve(grammarFile))
     else if grammarFile.endsWith('.json')
       JSON.parse fs.readFileSync(grammarFile, 'utf8')
     else
