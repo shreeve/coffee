@@ -3,7 +3,7 @@
 # Tests {$ast: 'Code'} directive processing (functions)
 
 test "-> 5", 5
-test "=> 10", 10  
+test "=> 10", 10
 test "(x) -> x", 42
 test "(a, b) -> a + b", 7
 test "-> 'hello'", "hello"

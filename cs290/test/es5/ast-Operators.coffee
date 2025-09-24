@@ -15,7 +15,7 @@ test "3 <= 2", false
 test "1 == 1", true
 test "1 != 2", true
 test "true and false", false
-test "true or false", true  
+test "true or false", true
 test "not true", false
 test "not false", true
 test "1 in [1, 2, 3]", true

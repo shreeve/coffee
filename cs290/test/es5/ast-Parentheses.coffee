@@ -1,6 +1,6 @@
 # Parentheses Solar Directive Tests
 # ==================================
-# Tests {$ast: 'Parens'} directive processing  
+# Tests {$ast: 'Parens'} directive processing
 
 test "(5)", 5
 test "(1 + 2)", 3

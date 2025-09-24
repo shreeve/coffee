@@ -1,4 +1,4 @@
-# ThisLiteral Solar Directive Tests  
+# ThisLiteral Solar Directive Tests
 # ===================================
 # Tests {$ast: 'ThisLiteral'} directive processing
 
