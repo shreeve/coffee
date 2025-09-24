@@ -2,14 +2,14 @@
 # ======================================
 # Tests property access and method calls
 
-test "obj.prop", "value"
-test "obj.method()", "result"
-test "obj.nested.deep", "found"
-test "obj['key']", "dynamic"
-test "obj?prop", "safe"
-test "obj?.method?()", "conditional"
-test "arr[0]", "first"
-test "arr[arr.length - 1]", "last"
+test 'obj = Object.create(null); obj.prop = "value"; obj.prop', "value"
+test 'obj = Object.create(null); obj.method = () => "result"; obj.method()', "result"  
+test 'obj = Object.create(null); obj.nested = {deep: "found"}; obj.nested.deep', "found"
+test 'obj = Object.create(null); obj["key"] = "dynamic"; obj["key"]', "dynamic"
+test 'obj = Object.create(null); obj.prop = "safe"; obj?.prop', "safe"
+test 'obj = Object.create(null); obj.method = () => "conditional"; obj?.method?.()', "conditional"
+test 'arr = ["first", "middle", "last"]; arr[0]', "first"
+test 'arr = ["first", "middle", "last"]; arr[arr.length - 1]', "last"
 test "Math.PI", Math.PI
 test "Math.abs(-5)", 5
 test "String.fromCharCode(65)", "A"

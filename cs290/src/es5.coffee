@@ -64,6 +64,8 @@ class ES5Backend
 
   reduce: (values, positions, stackTop, symbolCount, directive) ->
     lookup = (index) -> values[stackTop - symbolCount + 1 + index]
+    # Use Object.create(null) to avoid prototype pollution and JS property conflicts
+    # This prevents conflicts with .name, .length, .constructor, .toString, etc.
     store = Object.create null
 
     handler =

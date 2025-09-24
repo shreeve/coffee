@@ -38,19 +38,20 @@ global.test = (name, fnOrExpected) ->
         if name.includes('=') and name.includes(';') and name.includes('(') and name.includes(')')
           # This is assignment + function call (like "func = (...) -> ...; func(...)")
           # The compiled result should be the return value of the final expression
-          # But sometimes eval returns the function instead of executing the call
-          # Force execution of the final expression
-          try
-            # Extract and execute the final expression after the semicolon
-            lastExpr = name.split(';').pop().trim()
-            if lastExpr.includes('(') and lastExpr.includes(')')
-              # Re-evaluate just the function call in the context where variables are defined
-              result = eval(compiled)  # This should execute everything including the call
-            else
+          result = eval(compiled)
+          # If result is still a function, it means the call didn't execute properly
+          # Extract the final expression and try to execute it manually
+          if typeof result is 'function' and name.includes('()')
+            try
+              # For arrow function assignments, try calling the result
+              lastExpr = name.split(';').pop().trim()
+              if lastExpr.includes('()')
+                # This is a function call - the result should be the return value
+                # If we got a function, try calling it
+                result = result()
+            catch callError
+              # If calling fails, keep the function result
               result = result
-          catch recursionError
-            # If we hit recursion, keep the current result
-            result = result
         else if typeof result is 'function'
           # Determine argument count and call with test data
           if name.trim().startsWith('->') or name.trim().startsWith('=>')
