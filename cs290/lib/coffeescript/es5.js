@@ -48,7 +48,7 @@
 
     // Core Solar directive evaluator
     evaluateDirective(directive, frame) {
-      var body, bodyArray, filteredBody, items, nodeType, ref, ref1, value;
+      var body, bodyArray, filteredBody, items, nodeType, ref, ref1, val, value;
       // Handle position references (1, 2, 3, ...)
       if (typeof directive === 'number') {
         return (ref = frame[directive - 1]) != null ? ref.value : void 0; // 1-based → 0-based
@@ -80,6 +80,12 @@
             case 'IdentifierLiteral':
               value = this.evaluateDirective(directive.value, frame);
               return new this.ast.IdentifierLiteral(value);
+            case 'NumberLiteral':
+              value = this.evaluateDirective(directive.value, frame);
+              return new this.ast.NumberLiteral(value);
+            case 'Value':
+              val = this.evaluateDirective(directive.val, frame);
+              return new this.ast.Value(val);
             case 'Literal':
               value = this.evaluateDirective(directive.value, frame);
               return new this.ast.Literal(value);
