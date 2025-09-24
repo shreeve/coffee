@@ -98,10 +98,9 @@ class ES5Backend
           when 'InfinityLiteral'    then new @ast.InfinityLiteral
           when 'NaNLiteral'         then new @ast.NaNLiteral
           when 'Value'              then new @ast.Value              $(o.val)
-          when 'Assign'             then new @ast.Assign             $(o.variable), $(o.value)
+          when 'Assign'             then new @ast.Assign             $(o.variable), $(o.value), $(o.context)
           when 'Op'                 then new @ast.Op                 $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
-          when 'PropertyName'
-            new @ast.PropertyName $(o.value)
+          when 'PropertyName'       then new @ast.PropertyName       $(o.value)
           when 'Access'             then new @ast.Access             $(o.name), soak: o.soak
           when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
           when 'Obj'                then new @ast.Obj                $(o.properties), $(o.generated)
