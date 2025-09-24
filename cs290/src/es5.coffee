@@ -68,6 +68,14 @@ class ES5Backend
             value = @evaluateDirective directive.value, frame
             new @ast.IdentifierLiteral value
 
+          when 'NumberLiteral'
+            value = @evaluateDirective directive.value, frame
+            new @ast.NumberLiteral value
+
+          when 'Value'
+            val = @evaluateDirective directive.val, frame
+            new @ast.Value val
+
           when 'Literal'
             value = @evaluateDirective directive.value, frame
             new @ast.Literal value
