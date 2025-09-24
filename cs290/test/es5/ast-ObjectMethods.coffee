@@ -1,4 +1,4 @@
-# Object Methods Solar Directive Tests  
+# Object Methods Solar Directive Tests
 # =====================================
 # Tests object method calls and properties
 

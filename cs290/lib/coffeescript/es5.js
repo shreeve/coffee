@@ -97,6 +97,16 @@
               return new this.ast.StringLiteral(this._stripQuotes($(o.value)));
             case 'BooleanLiteral':
               return new this.ast.BooleanLiteral($(o.value));
+            case 'ThisLiteral':
+              return new this.ast.ThisLiteral();
+            case 'NullLiteral':
+              return new this.ast.NullLiteral();
+            case 'UndefinedLiteral':
+              return new this.ast.UndefinedLiteral();
+            case 'InfinityLiteral':
+              return new this.ast.InfinityLiteral();
+            case 'NaNLiteral':
+              return new this.ast.NaNLiteral();
             case 'Value':
               return new this.ast.Value($(o.val));
             case 'Assign':
@@ -115,6 +125,42 @@
               return new this.ast.Obj($(o.properties), $(o.generated));
             case 'Arr':
               return new this.ast.Arr($(o.objects));
+            case 'Range':
+              return new this.ast.Range($(o.from), $(o.to), $(o.exclusive));
+            case 'Block':
+              return new this.ast.Block($(o.expressions));
+            case 'Return':
+              return new this.ast.Return($(o.expression));
+            case 'Parens':
+              return new this.ast.Parens($(o.body));
+            case 'Index':
+              return new this.ast.Index($(o.index));
+            case 'Slice':
+              return new this.ast.Slice($(o.range));
+            case 'If':
+              return new this.ast.If($(o.condition), $(o.body), $(o.elseBody));
+            case 'While':
+              return new this.ast.While($(o.condition), $(o.body));
+            case 'For':
+              return new this.ast.For($(o.body), $(o.source));
+            case 'Switch':
+              return new this.ast.Switch($(o.subject), $(o.cases), $(o.otherwise));
+            case 'Try':
+              return new this.ast.Try($(o.attempt), $(o.recovery), $(o.ensure));
+            case 'Class':
+              return new this.ast.Class($(o.variable), $(o.parent), $(o.body));
+            case 'Code':
+              return new this.ast.Code($(o.params), $(o.body));
+            case 'Splat':
+              return new this.ast.Splat($(o.name));
+            case 'Existence':
+              return new this.ast.Existence($(o.expression));
+            case 'RegexLiteral':
+              return new this.ast.RegexLiteral($(o.value));
+            case 'StatementLiteral':
+              return new this.ast.StatementLiteral($(o.value));
+            case 'PassthroughLiteral':
+              return new this.ast.PassthroughLiteral($(o.value));
             case 'Literal':
               return new this.ast.Literal($(o.value));
             default:
@@ -154,7 +200,7 @@
               }
               break;
             case 'array':
-              // Array operations  
+              // Array operations
               if (o.append != null) {
                 target = $(o.append[0]);
                 items = (function() {
