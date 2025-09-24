@@ -42,7 +42,7 @@ class ES5Backend
     return(o.map (val) => @resolve val, lookup) if Array.isArray o
 
     if o? and (type is 'object' or type is 'function')
-      return o if o.constructor?.name and o.constructor.name not in ['Object', 'Function']
+      return o if o.constructor? and o.constructor not in [Object, Function]
       $ = (val) => @resolve val, lookup  # Local resolver
 
       if o.$ast?
