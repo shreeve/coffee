@@ -144,7 +144,17 @@ class ES5Backend
           when 'UndefinedLiteral'   then new @ast.UndefinedLiteral
           when 'InfinityLiteral'    then new @ast.InfinityLiteral
           when 'NaNLiteral'         then new @ast.NaNLiteral
-          when 'Value'              then new @ast.Value              $(o.val)
+          when 'Value'
+            # Tolerant pattern: accept either o.value OR o.val+o.properties
+            base = $(o.value) || $(o.val)
+            properties = $(o.properties) || []
+            # Ensure properties is an array
+            properties = if Array.isArray(properties) then properties else []
+            # Value can have both base and properties (accessors)
+            if properties.length > 0
+              new @ast.Value base, @_filterNodes(properties)
+            else
+              new @ast.Value base
           when 'Assign'
             variable = $(o.variable)
             value = $(o.value)
@@ -161,7 +171,17 @@ class ES5Backend
             new @ast.Assign variable, value, context
           when 'Op'                 then new @ast.Op                 $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
           when 'PropertyName'       then new @ast.PropertyName       $(o.value)
-          when 'Access'             then new @ast.Access             $(o.name), soak: o.soak
+          when 'Access'
+            variable = $(o.variable)
+            name = $(o.name)
+            soak = $(o.soak)
+            # Smart-append: if LHS is already a Value, append to its properties
+            if variable instanceof @ast.Value
+              accessNode = new @ast.Access name, {soak}
+              variable.properties.push accessNode
+              variable  # return the same Value (now with extra segment)
+            else
+              new @ast.Access name, {soak}
           when 'Call'               then new @ast.Call               $(o.variable), $(o.args)
           when 'Obj'                then new @ast.Obj $(o.properties), $(o.generated)
           when 'Arr'                then new @ast.Arr $(o.objects)
@@ -175,7 +195,17 @@ class ES5Backend
           when 'Block'              then new @ast.Block $(o.expressions)
           when 'Return'             then new @ast.Return             $(o.expression)
           when 'Parens'             then new @ast.Parens (@_toBlock($(o.body)) ? new @ast.Block [new @ast.Literal ''])
-          when 'Index'              then new @ast.Index              $(o.object)
+          when 'Index'
+            variable = $(o.variable) || $(o.val) || $(o.base)
+            index = $(o.index) || $(o.object)
+            soak = $(o.soak)
+            # Smart-append: if LHS is already a Value, append to its properties
+            if variable instanceof @ast.Value
+              indexNode = new @ast.Index index, {soak}
+              variable.properties.push indexNode
+              variable  # return the same Value (now with extra segment)
+            else
+              new @ast.Index index, {soak}
           when 'Slice'              then new @ast.Slice              $(o.range)
           when 'If'
             condition = $(o.condition)
@@ -283,7 +313,16 @@ class ES5Backend
         items.filter (item) -> item?
 
       else if o.$use?
-        resolvedValue = $(o.$use)
+        # Special case: $use: 'token' means get the current token's value
+        if o.$use is 'token'
+          # For THIS_PROPERTY tokens, the lookup function has the token value
+          if typeof lookup is 'function' and lookup.value?
+            resolvedValue = lookup.value
+          else
+            # Fallback: try to get from context
+            resolvedValue = lookup(0)?.value ? 'unknown_token'
+        else
+          resolvedValue = $(o.$use)
         # Handle both 'method' (function calls) and 'prop' (property access)
         if o.method?
           resolvedValue = resolvedValue[o.method]?() ? resolvedValue

@@ -154,7 +154,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessor, actualExpression, attempt, body, bodyNode, bodyNodes, c, catchClause, condition, context, elseBody, ensure, error, exclusive, expression, expressionNode, finalBody, from, i, ifNode, item, items, j, k, len, len1, len2, loopNode, name, nodeType, options, p, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, resolved, resolvedValue, result, sourceInfo, tag, target, to, type, typeToken, val, value, variable, whileNode;
+      var $, accessNode, accessor, actualExpression, attempt, base, body, bodyNode, bodyNodes, c, catchClause, condition, context, elseBody, ensure, error, exclusive, expression, expressionNode, finalBody, from, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nodeType, options, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, resolved, resolvedValue, result, soak, sourceInfo, tag, target, to, type, typeToken, val, value, variable, whileNode;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -223,7 +223,19 @@
             case 'NaNLiteral':
               return new this.ast.NaNLiteral();
             case 'Value':
-              return new this.ast.Value($(o.val));
+              
+              // Tolerant pattern: accept either o.value OR o.val+o.properties
+              base = $(o.value) || $(o.val);
+              properties = $(o.properties) || [];
+              // Ensure properties is an array
+              properties = Array.isArray(properties) ? properties : [];
+              // Value can have both base and properties (accessors)
+              if (properties.length > 0) {
+                return new this.ast.Value(base, this._filterNodes(properties));
+              } else {
+                return new this.ast.Value(base);
+              }
+              break;
             case 'Assign':
               variable = $(o.variable);
               value = $(o.value);
@@ -248,9 +260,18 @@
             case 'PropertyName':
               return new this.ast.PropertyName($(o.value));
             case 'Access':
-              return new this.ast.Access($(o.name), {
-                soak: o.soak
-              });
+              variable = $(o.variable);
+              name = $(o.name);
+              soak = $(o.soak);
+              // Smart-append: if LHS is already a Value, append to its properties
+              if (variable instanceof this.ast.Value) {
+                accessNode = new this.ast.Access(name, {soak});
+                variable.properties.push(accessNode);
+                return variable; // return the same Value (now with extra segment)
+              } else {
+                return new this.ast.Access(name, {soak});
+              }
+              break;
             case 'Call':
               return new this.ast.Call($(o.variable), $(o.args));
             case 'Obj':
@@ -271,7 +292,18 @@
             case 'Parens':
               return new this.ast.Parens((ref1 = this._toBlock($(o.body))) != null ? ref1 : new this.ast.Block([new this.ast.Literal('')]));
             case 'Index':
-              return new this.ast.Index($(o.object));
+              variable = $(o.variable) || $(o.val) || $(o.base);
+              index = $(o.index) || $(o.object);
+              soak = $(o.soak);
+              // Smart-append: if LHS is already a Value, append to its properties  
+              if (variable instanceof this.ast.Value) {
+                indexNode = new this.ast.Index(index, {soak});
+                variable.properties.push(indexNode);
+                return variable; // return the same Value (now with extra segment)
+              } else {
+                return new this.ast.Index(index, {soak});
+              }
+              break;
             case 'Slice':
               return new this.ast.Slice($(o.range));
             case 'If':
@@ -448,12 +480,23 @@
             return item != null;
           });
         } else if (o.$use != null) {
-          resolvedValue = $(o.$use);
+          // Special case: $use: 'token' means get the current token's value
+          if (o.$use === 'token') {
+            // For THIS_PROPERTY tokens, the lookup function has the token value
+            if (typeof lookup === 'function' && (lookup.value != null)) {
+              resolvedValue = lookup.value;
+            } else {
+              // Fallback: try to get from context
+              resolvedValue = (ref3 = (ref4 = lookup(0)) != null ? ref4.value : void 0) != null ? ref3 : 'unknown_token';
+            }
+          } else {
+            resolvedValue = $(o.$use);
+          }
           // Handle both 'method' (function calls) and 'prop' (property access)
           if (o.method != null) {
-            resolvedValue = (ref3 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref3 : resolvedValue;
+            resolvedValue = (ref5 = typeof resolvedValue[name1 = o.method] === "function" ? resolvedValue[name1]() : void 0) != null ? ref5 : resolvedValue;
           } else if (o.prop != null) {
-            resolvedValue = (ref4 = resolvedValue[o.prop]) != null ? ref4 : resolvedValue;
+            resolvedValue = (ref6 = resolvedValue[o.prop]) != null ? ref6 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -481,9 +524,9 @@
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                ref5 = o.append.slice(1);
-                for (j = 0, len1 = ref5.length; j < len1; j++) {
-                  item = ref5[j];
+                ref7 = o.append.slice(1);
+                for (j = 0, len1 = ref7.length; j < len1; j++) {
+                  item = ref7[j];
                   if (!(item != null)) {
                     continue;
                   }
@@ -497,9 +540,9 @@
                 return target;
               } else if (o.gather != null) {
                 result = [];
-                ref6 = o.gather;
-                for (k = 0, len2 = ref6.length; k < len2; k++) {
-                  item = ref6[k];
+                ref8 = o.gather;
+                for (k = 0, len2 = ref8.length; k < len2; k++) {
+                  item = ref8[k];
                   if (!(item != null)) {
                     continue;
                   }

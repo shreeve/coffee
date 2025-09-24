@@ -85,6 +85,12 @@ grammar =
     o 'PROPERTY', $ast: 'PropertyName', value: {$use: 1, method: 'toString'}
   ]
 
+  # Bare property name (no leading dot) - for @ident patterns
+  BarePropertyName: [
+    o 'PROPERTY', $ast: 'PropertyName', value: {$use: 1, method: 'toString'}
+    # (optionally also IDENTIFIER if your lexer ever emits that here)
+  ]
+
   # Alphanumerics are separated from the other **Literal** matchers because
   # they can also serve as keys in object literals.
   AlphaNumeric: [
@@ -280,6 +286,7 @@ grammar =
     o 'Range'        , $ast: '@', val: 1
     o 'Invocation'   , $ast: '@', val: 1
     o 'DoIife'       , $ast: '@', val: 1
+    o 'ThisProperty' # ThisProperty first for precedence
     o 'This'
     o 'Super'        , $ast: '@', val: 1
     o 'MetaProperty' , $ast: '@', val: 1
@@ -446,12 +453,45 @@ grammar =
   # A reference to the *this* current object.
   This: [
     o 'THIS', $ast: 'Value', value: {$ast: 'ThisLiteral'}
-    o '@'   , $ast: 'Value', value: {$ast: 'ThisLiteral'}
   ]
 
   # A reference to a property on *this*.
   ThisProperty: [
-    o '@ Property', $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [{$ast: 'Access', name: 2}], bareLiteral: {$ast: 'ThisLiteral'}
+    # NEW: fused token path -> @ident
+    o 'THIS_PROPERTY',
+      $ast: 'Value',
+      val:         {$ast: 'ThisLiteral'},
+      properties:  [ { $ast: 'Access',
+                       name: { $ast: 'PropertyName', value: 1 } } ],
+      bareLiteral: {$ast: 'ThisLiteral'}
+
+    # Support the older split forms explicitly:
+
+    # @ <name>   (if your lexer still ever produces PROPERTY after '@')
+    o '@ BarePropertyName',
+      $ast: 'Value',
+      val:         {$ast: 'ThisLiteral'},
+      properties:  [ { $ast: 'Access', name: 2 } ],
+      bareLiteral: {$ast: 'ThisLiteral'}
+
+    # @ . <name>   (fixes the regression with @.toString)
+    o '@ . BarePropertyName',
+      $ast: 'Value',
+      val:         {$ast: 'ThisLiteral'},
+      properties:  [ { $ast: 'Access', name: 3 } ],
+      bareLiteral: {$ast: 'ThisLiteral'}
+
+    # @ [ expr ]   (computed)
+    o '@ [ Expression ]',
+      $ast: 'Value',
+      val:         {$ast: 'ThisLiteral'},
+      properties:  [ { $ast: 'Index', index: 3 } ],
+      bareLiteral: {$ast: 'ThisLiteral'}
+
+    # Fallback: bare @  (must be last)
+    o '@',
+      $ast: 'Value',
+      value: {$ast: 'ThisLiteral'}
   ]
 
   # The array literal.

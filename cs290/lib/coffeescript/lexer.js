@@ -71,7 +71,7 @@
       // `@literalToken` is the fallback catch-all.
       i = 0;
       while (this.chunk = code.slice(i)) {
-        consumed = this.identifierToken() || this.commentToken() || this.whitespaceToken() || this.lineToken() || this.stringToken() || this.numberToken() || this.jsxToken() || this.regexToken() || this.jsToken() || this.literalToken();
+        consumed = this.atPropertyToken() || this.identifierToken() || this.commentToken() || this.whitespaceToken() || this.lineToken() || this.stringToken() || this.numberToken() || this.jsxToken() || this.regexToken() || this.jsToken() || this.literalToken();
         // Update position.
         [this.chunkLine, this.chunkColumn, this.chunkOffset] = this.getLineAndColumnFromChunk(consumed);
         i += consumed;
@@ -300,6 +300,32 @@
         });
       }
       return input.length;
+    }
+
+    // Matches @identifier patterns for fused THIS_PROPERTY tokens
+    // Must be called before literalToken to handle @ident before bare @
+    atPropertyToken() {
+      var fullMatch, identifier, match;
+      if (this.chunk.charAt(0) !== '@') {
+        return 0;
+      }
+      // Handle @@ first (if supported)
+      if (this.chunk.charAt(1) === '@') {
+        this.token('THIS_CONSTRUCTOR', '@@');
+        return 2;
+      }
+      // Check for @identifier pattern using same logic as IDENTIFIER regex
+      // Match @ident but extract just the identifier part
+      match = /^@((?![\d\s])[$\w\x7f-\uffff]+)/.exec(this.chunk);
+      if (!match) {
+        return 0;
+      }
+      [fullMatch, identifier] = match;
+      // Emit THIS_PROPERTY token with identifier as value (no @ prefix)
+      this.token('THIS_PROPERTY', identifier, {
+        length: fullMatch.length
+      });
+      return fullMatch.length;
     }
 
     // Matches numbers, including decimals, hex, and exponential notation.
@@ -1919,7 +1945,7 @@
   // Tokens which could legitimately be invoked or indexed. An opening
   // parentheses or bracket following these tokens will be recorded as the start
   // of a function invocation or indexing operation.
-  CALLABLE = ['IDENTIFIER', 'PROPERTY', ')', ']', '?', '@', 'THIS', 'SUPER', 'DYNAMIC_IMPORT'];
+  CALLABLE = ['IDENTIFIER', 'PROPERTY', ')', ']', '?', '@', 'THIS', 'THIS_PROPERTY', 'SUPER', 'DYNAMIC_IMPORT'];
 
   INDEXABLE = CALLABLE.concat(['NUMBER', 'INFINITY', 'NAN', 'STRING', 'STRING_END', 'REGEX', 'REGEX_END', 'BOOL', 'NULL', 'UNDEFINED', '}', '::']);
 
