@@ -20,7 +20,7 @@ class ES5Backend
       header: @options.header ? false
 
   reduce: (values, positions, stackTop, symbolCount, directive) ->
-    $ = o = (index) -> values[stackTop - symbolCount + 1 + index]
+    o = (index) -> values[stackTop - symbolCount + 1 + index]
     for own prop, value of directive
       continue if prop in ['name', 'length', 'prototype']
       o[prop] = value
@@ -30,56 +30,35 @@ class ES5Backend
     return lookup(value - 1) if typeof value is 'number' and lookup?
     return value if typeof value is 'number'
     return value if typeof value in ['string', 'boolean']
-    if Array.isArray value
-      return value.map (item) => @resolve item, lookup
+    return(value.map (item) => @resolve item, lookup) if Array.isArray value
 
     if value? and (typeof value is 'object' or typeof value is 'function')
       o = value
       return o if o.constructor?.name and o.constructor.name not in ['Object', 'Function'] # AST nodes
       useLookup = if typeof value is 'function' then value else lookup
+      $ = (val) => @resolve val, useLookup  # Local resolver
 
       if o.$ast?
         nodeType = o.$ast
 
         switch nodeType
-          when 'Root'
-            body = @resolve o.body, useLookup
-            bodyArray = if Array.isArray(body) then body else [body]
-            filteredBody = bodyArray.filter (item) -> item?
-            block = new @ast.Block filteredBody
-            block.makeReturn() if filteredBody.length > 0  # Make final expression return
-            new @ast.Root block
-          when 'IdentifierLiteral'
-            resolvedValue = @resolve o.value, useLookup
-            new @ast.IdentifierLiteral resolvedValue
-          when 'NumberLiteral'
-            resolvedValue = @resolve o.value, useLookup
-            new @ast.NumberLiteral resolvedValue
-          when 'Value'
-            val = @resolve o.val, useLookup
-            new @ast.Value val
-          when 'Assign'
-            variable = @resolve o.variable, useLookup
-            resolvedValue = @resolve o.value, useLookup
-            new @ast.Assign variable, resolvedValue
-          when 'Op'
-            operator = @resolve o.operator, useLookup
-            first = @resolve o.first, useLookup
-            second = @resolve o.second, useLookup
-            new @ast.Op operator, first, second
-          when 'Literal'
-            resolvedValue = @resolve o.value, useLookup
-            new @ast.Literal resolvedValue
+          when 'Root'              then new @ast.Root ((b) -> b.makeReturn(); b)(new @ast.Block $(o.body))
+          when 'IdentifierLiteral' then new @ast.IdentifierLiteral $(o.value)
+          when 'NumberLiteral'     then new @ast.NumberLiteral     $(o.value)
+          when 'Value'             then new @ast.Value             $(o.val)
+          when 'Assign'            then new @ast.Assign            $(o.variable), $(o.value)
+          when 'Op'                then new @ast.Op                $(o.operator), $(o.first), $(o.second)
+          when 'Literal'           then new @ast.Literal           $(o.value)
           else
             console.warn "ES5Backend: Unimplemented AST node type:", nodeType
             new @ast.Literal "/* Unimplemented: #{nodeType} */"
 
       else if o.$ary?
-        items = @resolve o.$ary, useLookup
+        items = $(o.$ary)
         if Array.isArray(items) then items else [items]
 
       else if o.$use?
-        resolvedValue = @resolve o.$use, useLookup
+        resolvedValue = $(o.$use)
         resolvedValue = resolvedValue[o.method]?() ? resolvedValue if o.method?
         resolvedValue
 
