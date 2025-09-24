@@ -87,10 +87,8 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
         options.bare = yes
         break
 
-  # Set up parser and parse the tokens
-  setupParser tokens, options
-  nodes = parser.parse()
-
+  parser.yy.backend = new ES6Backend(options) # Inject Solar backend
+  nodes = parser.parse tokens
   # If all that was requested was a POJO representation of the nodes, e.g.
   # the abstract syntax tree (AST), we can stop now and just return that
   # (after fixing the location data for the root/`File`»`Program` node,
@@ -193,10 +191,8 @@ exports.tokens = withPrettyErrors (code, options) ->
 # or traverse it by using `.traverseChildren()` with a callback.
 exports.nodes = withPrettyErrors (source, options) ->
   tokens = if typeof source is 'string' then lexer.tokenize source, options else source
-
-  # Set up parser and parse the tokens
-  setupParser tokens, options
-  nodes = parser.parse()
+  parser.yy.backend = new ES6Backend(options) # Inject Solar backend
+  parser.parse tokens
 
 # This file used to export these methods; leave stubs that throw warnings
 # instead. These methods have been moved into `index.coffee` to provide
@@ -233,11 +229,6 @@ parser.lexer =
 
 # Make all the AST nodes visible to the parser.
 parser.yy = require './nodes'
-
-# Set up parser to parse new source code
-setupParser = (tokens, options = {}) ->
-  parser.yy.backend = new ES6Backend(options)
-  parser.lexer.setInput tokens
 
 # Override Jison's default error handling function.
 parser.yy.parseError = (message, {token}) ->

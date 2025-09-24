@@ -4,7 +4,7 @@
   // on Node.js/V8, or to run CoffeeScript directly in the browser. This module
   // contains the main entry functions for tokenizing, parsing, and compiling
   // source CoffeeScript into JavaScript.
-  var ES6Backend, FILE_EXTENSIONS, Lexer, SourceMap, base64encode, checkShebangLine, compile, getSourceMap, helpers, lexer, packageJson, parser, registerCompiled, setupParser, withPrettyErrors;
+  var ES6Backend, FILE_EXTENSIONS, Lexer, SourceMap, base64encode, checkShebangLine, compile, getSourceMap, helpers, lexer, packageJson, parser, registerCompiled, withPrettyErrors;
 
   ({Lexer} = require('./lexer'));
 
@@ -114,9 +114,8 @@
         }
       }
     }
-    // Set up parser and parse the tokens
-    setupParser(tokens, options);
-    nodes = parser.parse();
+    parser.yy.backend = new ES6Backend(options); // Inject Solar backend
+    nodes = parser.parse(tokens);
     // If all that was requested was a POJO representation of the nodes, e.g.
     // the abstract syntax tree (AST), we can stop now and just return that
     // (after fixing the location data for the root/`File`»`Program` node,
@@ -228,11 +227,10 @@
   // return the AST. You can then compile it by calling `.compile()` on the root,
   // or traverse it by using `.traverseChildren()` with a callback.
   exports.nodes = withPrettyErrors(function(source, options) {
-    var nodes, tokens;
+    var tokens;
     tokens = typeof source === 'string' ? lexer.tokenize(source, options) : source;
-    // Set up parser and parse the tokens
-    setupParser(tokens, options);
-    return nodes = parser.parse();
+    parser.yy.backend = new ES6Backend(options); // Inject Solar backend
+    return parser.parse(tokens);
   });
 
   // This file used to export these methods; leave stubs that throw warnings
@@ -280,12 +278,6 @@
 
   // Make all the AST nodes visible to the parser.
   parser.yy = require('./nodes');
-
-  // Set up parser to parse new source code
-  setupParser = function(tokens, options = {}) {
-    parser.yy.backend = new ES6Backend(options);
-    return parser.lexer.setInput(tokens);
-  };
 
   // Override Jison's default error handling function.
   parser.yy.parseError = function(message, {token}) {
