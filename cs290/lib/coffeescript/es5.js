@@ -92,7 +92,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, a, accessor, b, body, bodyNode, context, e, elseBody, expr, i, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, name, nodeType, obj, p, prop, property, ref, ref1, ref2, ref3, resolved, resolvedValue, result, sourceInfo, subItem, target, type, value, variable, wrappedBody;
+      var $, a, accessor, actualValue, b, body, bodyNode, context, e, elseBody, expr, i, ifNode, item, items, j, k, key, l, len, len1, len2, len3, loopNode, name, nodeType, obj, p, prop, property, ref, ref1, ref2, ref3, ref4, ref5, resolved, resolvedValue, result, sourceInfo, subItem, target, type, value, variable, wrappedBody;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -158,6 +158,15 @@
               variable = $(o.variable);
               value = $(o.value);
               context = $(o.context);
+              // Fixed: Grammar stores object key in 'value' and actual value in 'expression'
+              // Fix swapped object property parameters (grammar bug workaround)
+              if (context === 'object' && (variable == null) && (value != null ? (ref1 = value.base) != null ? (ref2 = ref1.constructor) != null ? ref2.name : void 0 : void 0 : void 0) === 'PropertyName') {
+                // Grammar bug: variable and value swapped for object properties
+                key = value.base; // PropertyName (the key)
+                actualValue = $(o.expression); // The actual value from expression property
+                variable = new this.ast.Value(key);
+                value = actualValue;
+              }
               if (!((variable != null) && (value != null))) {
                 // Skip if variable or value is null/undefined (from empty {} placeholders)
                 return null;
@@ -175,11 +184,11 @@
               return new this.ast.Call($(o.variable), $(o.args));
             case 'Obj':
               return new this.ast.Obj((function() {
-                var i, len, ref1, ref2, results;
-                ref2 = (ref1 = $(o.properties)) != null ? ref1 : [];
+                var i, len, ref3, ref4, results;
+                ref4 = (ref3 = $(o.properties)) != null ? ref3 : [];
                 results = [];
-                for (i = 0, len = ref2.length; i < len; i++) {
-                  prop = ref2[i];
+                for (i = 0, len = ref4.length; i < len; i++) {
+                  prop = ref4[i];
                   if (prop != null) {
                     results.push(prop);
                   }
@@ -188,11 +197,11 @@
               })(), $(o.generated));
             case 'Arr':
               return new this.ast.Arr((function() {
-                var i, len, ref1, ref2, results;
-                ref2 = (ref1 = $(o.objects)) != null ? ref1 : [];
+                var i, len, ref3, ref4, results;
+                ref4 = (ref3 = $(o.objects)) != null ? ref3 : [];
                 results = [];
-                for (i = 0, len = ref2.length; i < len; i++) {
-                  obj = ref2[i];
+                for (i = 0, len = ref4.length; i < len; i++) {
+                  obj = ref4[i];
                   if (obj != null) {
                     results.push(obj);
                   }
@@ -203,11 +212,11 @@
               return new this.ast.Range($(o.from), $(o.to), $(o.exclusive));
             case 'Block':
               return new this.ast.Block((function() {
-                var i, len, ref1, ref2, results;
-                ref2 = (ref1 = $(o.expressions)) != null ? ref1 : [];
+                var i, len, ref3, ref4, results;
+                ref4 = (ref3 = $(o.expressions)) != null ? ref3 : [];
                 results = [];
-                for (i = 0, len = ref2.length; i < len; i++) {
-                  expr = ref2[i];
+                for (i = 0, len = ref4.length; i < len; i++) {
+                  expr = ref4[i];
                   if (expr != null) {
                     results.push(expr);
                   }
@@ -252,11 +261,11 @@
               return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
               return new this.ast.Code((function() {
-                var i, len, ref1, ref2, results;
-                ref2 = (ref1 = $(o.params)) != null ? ref1 : [];
+                var i, len, ref3, ref4, results;
+                ref4 = (ref3 = $(o.params)) != null ? ref3 : [];
                 results = [];
-                for (i = 0, len = ref2.length; i < len; i++) {
-                  p = ref2[i];
+                for (i = 0, len = ref4.length; i < len; i++) {
+                  p = ref4[i];
                   if (p != null) {
                     results.push(p);
                   }
@@ -358,7 +367,7 @@
         } else if (o.$use != null) {
           resolvedValue = $(o.$use);
           if (o.method != null) {
-            resolvedValue = (ref1 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref1 : resolvedValue;
+            resolvedValue = (ref3 = typeof resolvedValue[name = o.method] === "function" ? resolvedValue[name]() : void 0) != null ? ref3 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -387,9 +396,9 @@
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                ref2 = o.append.slice(1);
-                for (i = 0, len = ref2.length; i < len; i++) {
-                  item = ref2[i];
+                ref4 = o.append.slice(1);
+                for (i = 0, len = ref4.length; i < len; i++) {
+                  item = ref4[i];
                   if (!(item != null)) {
                     continue;
                   }
@@ -408,9 +417,9 @@
                 return target;
               } else if (o.gather != null) {
                 result = [];
-                ref3 = o.gather;
-                for (k = 0, len2 = ref3.length; k < len2; k++) {
-                  item = ref3[k];
+                ref5 = o.gather;
+                for (k = 0, len2 = ref5.length; k < len2; k++) {
+                  item = ref5[k];
                   if (!(item != null)) {
                     continue;
                   }

@@ -102,6 +102,14 @@ class ES5Backend
             variable = $(o.variable)
             value = $(o.value)
             context = $(o.context)
+            # Fixed: Grammar stores object key in 'value' and actual value in 'expression'
+            # Fix swapped object property parameters (grammar bug workaround)
+            if context is 'object' and not variable? and value?.base?.constructor?.name is 'PropertyName'
+              # Grammar bug: variable and value swapped for object properties
+              key = value.base  # PropertyName (the key)
+              actualValue = $(o.expression)  # The actual value from expression property
+              variable = new @ast.Value key
+              value = actualValue
             # Skip if variable or value is null/undefined (from empty {} placeholders)
             return null unless variable? and value?
             new @ast.Assign variable, value, context
