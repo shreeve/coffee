@@ -24,6 +24,14 @@ class ES5Backend
   # Helpers
   # ----------------------------------------------------------------------------
 
+  # Add minimal location data to node to avoid errors in AST operations
+  _addLocationData: (node) ->
+    return node unless node?
+    # Only add location data to objects, not primitives
+    if typeof node is 'object' and node isnt null
+      node.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0, range: [0, 0]}
+    node
+
   # Ensure a node is a Value; if already a Value, return as-is
   _asValue: (node) ->
     return null unless node?
@@ -33,21 +41,29 @@ class ES5Backend
   # Append an Access (with optional soak) to a value-ish LHS
   _appendAccess: (lhs, name, soak) ->
     return null unless name?
-    if lhs? and lhs instanceof @ast.Value
-      lhs.properties.push new @ast.Access name, {soak}
+    # Normalize name into a PropertyName when needed
+    if typeof name is 'string'
+      name = new @ast.PropertyName name
+    else if name? and not (name instanceof @ast.PropertyName) and name?.value?
+      name = new @ast.PropertyName String(name.value)
+    node = new @ast.Access name, {soak}
+    if lhs?
+      lhs = @_asValue(lhs) unless lhs instanceof @ast.Value
+      lhs.properties.push node
       lhs
     else
-      # If there’s no existing Value, a bare Access is fine (caller can wrap later)
-      new @ast.Access name, {soak}
+      node
 
   # Append an Index to a value-ish LHS
   _appendIndex: (lhs, indexExpr) ->
     return null unless indexExpr?
-    if lhs? and lhs instanceof @ast.Value
-      lhs.properties.push new @ast.Index indexExpr
+    node = new @ast.Index indexExpr
+    if lhs?
+      lhs = @_asValue(lhs) unless lhs instanceof @ast.Value
+      lhs.properties.push node
       lhs
     else
-      new @ast.Index indexExpr
+      node
 
   # Build a Value from base + properties array (already resolved)
   _buildValue: (base, properties) ->
@@ -101,10 +117,24 @@ class ES5Backend
 
   # Convert value to a Block node
   _toBlock: (value) ->
-    return new @ast.Block @_filterNodes(value) if Array.isArray(value)
-    return value if value instanceof @ast.Block
-    return new @ast.Block [@_ensureNode(value)] if value?
-    new @ast.Block []
+    block =
+      if Array.isArray(value)
+        nodes = @_filterNodes(value)
+        # Ensure all nodes in block have location data
+        nodes = nodes.map (n) => @_addLocationData(n)
+        new @ast.Block nodes
+      else if value instanceof @ast.Block
+        # Ensure existing block expressions have location data
+        if value.expressions?
+          value.expressions = value.expressions.map (n) => @_addLocationData(n)
+        value
+      else if value?
+        node = @_ensureNode(value)
+        @_addLocationData node if node?
+        new @ast.Block [node].filter (n) -> n?
+      else
+        new @ast.Block []
+    @_addLocationData block
 
   # Unimplemented marker
   _unimplemented: (type, context = "") ->
@@ -117,6 +147,14 @@ class ES5Backend
 
   reduce: (values, positions, stackTop, symbolCount, directive) ->
     lookup = (index) -> values[stackTop - symbolCount + 1 + index]
+    util = null
+
+    # Debug directives when SOLAR_DEBUG is set
+    if process?.env?.SOLAR_DEBUG
+      util = require 'util'
+      rhs = (values[stackTop - symbolCount + 1 + i] for i in [0...symbolCount])
+      console.log "\n[Solar] directive:", util.inspect(directive, {depth: 4, colors: true})
+      console.log "[Solar] rhs:", util.inspect(rhs, {depth: 1, colors: true})
 
     # Use Object.create(null) to avoid pollution and JS property conflicts
     store = Object.create null
@@ -145,7 +183,12 @@ class ES5Backend
     for own prop, value of directive
       o[prop] = if typeof value is 'number' then lookup(value - 1) else value
 
-    @resolve o
+    res = @resolve o
+    if process?.env?.SOLAR_DEBUG
+      util = util or require 'util'
+      outName = res?.constructor?.name ? typeof res
+      console.log "[Solar] result:", outName, util.inspect(res, {depth: 3, colors: true})
+    res
 
   resolve: (o, lookup = o) ->
     return o unless o?  # null/undefined
@@ -208,7 +251,11 @@ class ES5Backend
             @_appendIndex ($(o.variable) or $(o.val) or $(o.base)), ($(o.index) or $(o.object))
           # -------------------------------------------------------------------
 
-          when 'Call'               then new @ast.Call         $(o.variable), $(o.args)
+          when 'Call'
+            callee = @_asValue($(o.variable))
+            args = $(o.args) ? []
+            args = (a for a in args when a?)
+            new @ast.Call callee, args, $(o.soak), $(o.token)
           when 'Obj'                then new @ast.Obj          $(o.properties), $(o.generated)
           when 'Arr'                then new @ast.Arr          $(o.objects)
           when 'Range'              then new @ast.Range        $(o.from), $(o.to), (if $(o.exclusive) then 'exclusive' else null)
@@ -221,10 +268,13 @@ class ES5Backend
           when 'If'
             condition = $(o.condition)
             body = @_toBlock($(o.body))
-            elseBody = @_toBlock($(o.elseBody))
+            elseBody = if o.elseBody? then @_toBlock($(o.elseBody)) else null
             tmp = if $(o.type)?.toString?() is 'unless' then 'unless' else 'if'
             ifNode = new @ast.If condition, body, {type: tmp}
-            ifNode.addElse elseBody if elseBody?.expressions?.length > 0
+            @_addLocationData ifNode
+            if elseBody?.expressions?.length > 0
+              @_addLocationData elseBody
+              ifNode.addElse elseBody
             ifNode
           when 'While'
             whileNode = new @ast.While $(o.condition), {guard: $(o.guard), isLoop: $(o.isLoop), invert: $(o.invert)}
@@ -338,7 +388,10 @@ class ES5Backend
             if o.addElse?
               ifNode = $(o.addElse[0])
               elseBody = $(o.addElse[1])
-              ifNode.addElse elseBody if ifNode instanceof @ast.If
+              if ifNode instanceof @ast.If and elseBody?
+                @_addLocationData ifNode
+                @_addLocationData elseBody
+                ifNode.addElse elseBody
               ifNode
             else
               @_unimplemented "$ops if without addElse", "$ops"
@@ -347,11 +400,18 @@ class ES5Backend
             if o.addSource?
               loopNode = $(o.addSource[0])
               sourceInfo = $(o.addSource[1])
-              loopNode.addSource sourceInfo if loopNode
+              if loopNode
+                @_addLocationData loopNode
+                @_addLocationData sourceInfo if sourceInfo
+                loopNode.addSource sourceInfo
               loopNode
             else if o.addBody?
               loopNode = $(o.addBody[0])
-              loopNode.addBody $(o.addBody[1]) if loopNode
+              body = $(o.addBody[1])
+              if loopNode and body?
+                @_addLocationData loopNode
+                @_addLocationData body
+                loopNode.addBody body
               loopNode
             else
               @_unimplemented "$ops loop without addSource/addBody", "$ops"

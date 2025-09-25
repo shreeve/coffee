@@ -32,7 +32,27 @@
     // Helpers
     // ----------------------------------------------------------------------------
 
-      // Ensure a node is a Value; if already a Value, return as-is
+      // Add minimal location data to node to avoid errors in AST operations
+    _addLocationData(node) {
+      if (node == null) {
+        return node;
+      }
+      // Only add location data to objects, not primitives
+      if (typeof node === 'object' && node !== null) {
+        if (node.locationData == null) {
+          node.locationData = {
+            first_line: 0,
+            first_column: 0,
+            last_line: 0,
+            last_column: 0,
+            range: [0, 0]
+          };
+        }
+      }
+      return node;
+    }
+
+    // Ensure a node is a Value; if already a Value, return as-is
     _asValue(node) {
       if (node == null) {
         return null;
@@ -45,28 +65,43 @@
 
     // Append an Access (with optional soak) to a value-ish LHS
     _appendAccess(lhs, name, soak) {
+      var node;
       if (name == null) {
         return null;
       }
-      if ((lhs != null) && lhs instanceof this.ast.Value) {
-        lhs.properties.push(new this.ast.Access(name, {soak}));
+      // Normalize name into a PropertyName when needed
+      if (typeof name === 'string') {
+        name = new this.ast.PropertyName(name);
+      } else if ((name != null) && !(name instanceof this.ast.PropertyName) && ((name != null ? name.value : void 0) != null)) {
+        name = new this.ast.PropertyName(String(name.value));
+      }
+      node = new this.ast.Access(name, {soak});
+      if (lhs != null) {
+        if (!(lhs instanceof this.ast.Value)) {
+          lhs = this._asValue(lhs);
+        }
+        lhs.properties.push(node);
         return lhs;
       } else {
-        // If there’s no existing Value, a bare Access is fine (caller can wrap later)
-        return new this.ast.Access(name, {soak});
+        return node;
       }
     }
 
     // Append an Index to a value-ish LHS
     _appendIndex(lhs, indexExpr) {
+      var node;
       if (indexExpr == null) {
         return null;
       }
-      if ((lhs != null) && lhs instanceof this.ast.Value) {
-        lhs.properties.push(new this.ast.Index(indexExpr));
+      node = new this.ast.Index(indexExpr);
+      if (lhs != null) {
+        if (!(lhs instanceof this.ast.Value)) {
+          lhs = this._asValue(lhs);
+        }
+        lhs.properties.push(node);
         return lhs;
       } else {
-        return new this.ast.Index(indexExpr);
+        return node;
       }
     }
 
@@ -113,13 +148,13 @@
 
     // Helper to filter and ensure all items are nodes
     _filterNodes(array) {
-      var i, item, len, node, result;
+      var item, j, len, node, result;
       if (array == null) {
         return [];
       }
       result = [];
-      for (i = 0, len = array.length; i < len; i++) {
-        item = array[i];
+      for (j = 0, len = array.length; j < len; j++) {
+        item = array[j];
         node = item instanceof this.ast.Base ? item : this._ensureNode(item);
         if (node != null) {
           result.push(node);
@@ -158,16 +193,17 @@
 
     // Convert value to a Block node
     _toBlock(value) {
-      if (Array.isArray(value)) {
-        return new this.ast.Block(this._filterNodes(value));
-      }
-      if (value instanceof this.ast.Block) {
-        return value;
-      }
-      if (value != null) {
-        return new this.ast.Block([this._ensureNode(value)]);
-      }
-      return new this.ast.Block([]);
+      var block, node, nodes;
+      // Ensure all nodes in block have location data
+      block = Array.isArray(value) ? (nodes = this._filterNodes(value), nodes = nodes.map((n) => {
+        return this._addLocationData(n);
+      // Ensure existing block expressions have location data
+      }), new this.ast.Block(nodes)) : value instanceof this.ast.Block ? (value.expressions != null ? value.expressions = value.expressions.map((n) => {
+        return this._addLocationData(n);
+      }) : void 0, value) : value != null ? (node = this._ensureNode(value), node != null ? this._addLocationData(node) : void 0, new this.ast.Block([node].filter(function(n) {
+        return n != null;
+      }))) : new this.ast.Block([]);
+      return this._addLocationData(block);
     }
 
     // Unimplemented marker
@@ -180,10 +216,31 @@
     // Entry points
     // ----------------------------------------------------------------------------
     reduce(values, positions, stackTop, symbolCount, directive) {
-      var handler, lookup, o, prop, store, value;
+      var handler, i, lookup, o, outName, prop, ref, ref1, ref2, ref3, res, rhs, store, util, value;
       lookup = function(index) {
         return values[stackTop - symbolCount + 1 + index];
       };
+      util = null;
+      // Debug directives when SOLAR_DEBUG is set
+      if (typeof process !== "undefined" && process !== null ? (ref = process.env) != null ? ref.SOLAR_DEBUG : void 0 : void 0) {
+        util = require('util');
+        rhs = (function() {
+          var j, ref1, results;
+          results = [];
+          for (i = j = 0, ref1 = symbolCount; (0 <= ref1 ? j < ref1 : j > ref1); i = 0 <= ref1 ? ++j : --j) {
+            results.push(values[stackTop - symbolCount + 1 + i]);
+          }
+          return results;
+        })();
+        console.log("\n[Solar] directive:", util.inspect(directive, {
+          depth: 4,
+          colors: true
+        }));
+        console.log("[Solar] rhs:", util.inspect(rhs, {
+          depth: 1,
+          colors: true
+        }));
+      }
       // Use Object.create(null) to avoid pollution and JS property conflicts
       store = Object.create(null);
       handler = {
@@ -230,11 +287,20 @@
         value = directive[prop];
         o[prop] = typeof value === 'number' ? lookup(value - 1) : value;
       }
-      return this.resolve(o);
+      res = this.resolve(o);
+      if (typeof process !== "undefined" && process !== null ? (ref1 = process.env) != null ? ref1.SOLAR_DEBUG : void 0 : void 0) {
+        util = util || require('util');
+        outName = (ref2 = res != null ? (ref3 = res.constructor) != null ? ref3.name : void 0 : void 0) != null ? ref2 : typeof res;
+        console.log("[Solar] result:", outName, util.inspect(res, {
+          depth: 3,
+          colors: true
+        }));
+      }
+      return res;
     }
 
     resolve(o, lookup = o) {
-      var $, accessor, actualExpression, base, body, bodyNode, bodyNodes, condition, context, elseBody, expression, expressionNode, i, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, m, name1, nodeType, out, p, property, props, quote, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, sourceInfo, target, tmp, type, v, val, value, variable, whileNode;
+      var $, a, accessor, actualExpression, args, base, body, bodyNode, bodyNodes, callee, condition, context, elseBody, expression, expressionNode, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, m, name1, nodeType, out, p, property, props, q, quote, ref, ref1, ref10, ref11, ref12, ref13, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, sourceInfo, target, tmp, type, v, val, value, variable, whileNode;
       if (o == null) {
         return o; // null/undefined
       }
@@ -254,8 +320,8 @@
       // Arrays: resolve items and skip nullish
       if (Array.isArray(o)) {
         result = [];
-        for (i = 0, len = o.length; i < len; i++) {
-          val = o[i];
+        for (j = 0, len = o.length; j < len; j++) {
+          val = o[j];
           resolved = this.resolve(val, lookup);
           if (resolved != null) {
             result.push(resolved);
@@ -312,7 +378,20 @@
               return this._appendIndex($(o.variable) || $(o.val) || $(o.base), $(o.index) || $(o.object));
             // -------------------------------------------------------------------
             case 'Call':
-              return new this.ast.Call($(o.variable), $(o.args));
+              callee = this._asValue($(o.variable));
+              args = (ref3 = $(o.args)) != null ? ref3 : [];
+              args = (function() {
+                var l, len1, results;
+                results = [];
+                for (l = 0, len1 = args.length; l < len1; l++) {
+                  a = args[l];
+                  if (a != null) {
+                    results.push(a);
+                  }
+                }
+                return results;
+              })();
+              return new this.ast.Call(callee, args, $(o.soak), $(o.token));
             case 'Obj':
               return new this.ast.Obj($(o.properties), $(o.generated));
             case 'Arr':
@@ -326,7 +405,7 @@
             case 'Op':
               return new this.ast.Op($(o.args[0]), $(o.args[1]), (o.args[2] != null ? $(o.args[2]) : void 0));
             case 'Parens':
-              return new this.ast.Parens((ref3 = this._toBlock($(o.body))) != null ? ref3 : new this.ast.Block([new this.ast.Literal('')]));
+              return new this.ast.Parens((ref4 = this._toBlock($(o.body))) != null ? ref4 : new this.ast.Block([new this.ast.Literal('')]));
             case 'PropertyName':
               return new this.ast.PropertyName($(o.value));
             case 'Slice':
@@ -334,12 +413,14 @@
             case 'If':
               condition = $(o.condition);
               body = this._toBlock($(o.body));
-              elseBody = this._toBlock($(o.elseBody));
-              tmp = ((ref4 = $(o.type)) != null ? typeof ref4.toString === "function" ? ref4.toString() : void 0 : void 0) === 'unless' ? 'unless' : 'if';
+              elseBody = o.elseBody != null ? this._toBlock($(o.elseBody)) : null;
+              tmp = ((ref5 = $(o.type)) != null ? typeof ref5.toString === "function" ? ref5.toString() : void 0 : void 0) === 'unless' ? 'unless' : 'if';
               ifNode = new this.ast.If(condition, body, {
                 type: tmp
               });
-              if ((elseBody != null ? (ref5 = elseBody.expressions) != null ? ref5.length : void 0 : void 0) > 0) {
+              this._addLocationData(ifNode);
+              if ((elseBody != null ? (ref6 = elseBody.expressions) != null ? ref6.length : void 0 : void 0) > 0) {
+                this._addLocationData(elseBody);
                 ifNode.addElse(elseBody);
               }
               return ifNode;
@@ -375,11 +456,11 @@
               return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
               return new this.ast.Code((function() {
-                var j, len1, ref6, ref7, results;
-                ref7 = (ref6 = $(o.params)) != null ? ref6 : [];
+                var l, len1, ref7, ref8, results;
+                ref8 = (ref7 = $(o.params)) != null ? ref7 : [];
                 results = [];
-                for (j = 0, len1 = ref7.length; j < len1; j++) {
-                  p = ref7[j];
+                for (l = 0, len1 = ref8.length; l < len1; l++) {
+                  p = ref8[l];
                   if ($(p) != null) {
                     results.push($(p));
                   }
@@ -447,15 +528,15 @@
             if (typeof lookup === 'function' && (lookup.value != null)) {
               resolvedValue = lookup.value;
             } else {
-              resolvedValue = (ref6 = (ref7 = lookup(0)) != null ? ref7.value : void 0) != null ? ref6 : 'unknown_token';
+              resolvedValue = (ref7 = (ref8 = lookup(0)) != null ? ref8.value : void 0) != null ? ref7 : 'unknown_token';
             }
           } else {
             resolvedValue = $(o.$use);
           }
           if (o.method != null) {
-            resolvedValue = (ref8 = typeof resolvedValue[name1 = o.method] === "function" ? resolvedValue[name1]() : void 0) != null ? ref8 : resolvedValue;
+            resolvedValue = (ref9 = typeof resolvedValue[name1 = o.method] === "function" ? resolvedValue[name1]() : void 0) != null ? ref9 : resolvedValue;
           } else if (o.prop != null) {
-            resolvedValue = (ref9 = resolvedValue[o.prop]) != null ? ref9 : resolvedValue;
+            resolvedValue = (ref10 = resolvedValue[o.prop]) != null ? ref10 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -480,9 +561,9 @@
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                ref10 = o.append.slice(1);
-                for (j = 0, len1 = ref10.length; j < len1; j++) {
-                  item = ref10[j];
+                ref11 = o.append.slice(1);
+                for (l = 0, len1 = ref11.length; l < len1; l++) {
+                  item = ref11[l];
                   if (!(item != null)) {
                     continue;
                   }
@@ -496,9 +577,9 @@
                 return target;
               } else if (o.gather != null) {
                 result = [];
-                ref11 = o.gather;
-                for (l = 0, len2 = ref11.length; l < len2; l++) {
-                  item = ref11[l];
+                ref12 = o.gather;
+                for (m = 0, len2 = ref12.length; m < len2; m++) {
+                  item = ref12[m];
                   if (!(item != null)) {
                     continue;
                   }
@@ -518,7 +599,9 @@
               if (o.addElse != null) {
                 ifNode = $(o.addElse[0]);
                 elseBody = $(o.addElse[1]);
-                if (ifNode instanceof this.ast.If) {
+                if (ifNode instanceof this.ast.If && (elseBody != null)) {
+                  this._addLocationData(ifNode);
+                  this._addLocationData(elseBody);
                   ifNode.addElse(elseBody);
                 }
                 return ifNode;
@@ -531,13 +614,20 @@
                 loopNode = $(o.addSource[0]);
                 sourceInfo = $(o.addSource[1]);
                 if (loopNode) {
+                  this._addLocationData(loopNode);
+                  if (sourceInfo) {
+                    this._addLocationData(sourceInfo);
+                  }
                   loopNode.addSource(sourceInfo);
                 }
                 return loopNode;
               } else if (o.addBody != null) {
                 loopNode = $(o.addBody[0]);
-                if (loopNode) {
-                  loopNode.addBody($(o.addBody[1]));
+                body = $(o.addBody[1]);
+                if (loopNode && (body != null)) {
+                  this._addLocationData(loopNode);
+                  this._addLocationData(body);
+                  loopNode.addBody(body);
                 }
                 return loopNode;
               } else {
@@ -571,9 +661,9 @@
               return null;
             }
             out = Object.create(null);
-            ref12 = Object.entries(o);
-            for (m = 0, len3 = ref12.length; m < len3; m++) {
-              [k, v] = ref12[m];
+            ref13 = Object.entries(o);
+            for (q = 0, len3 = ref13.length; q < len3; q++) {
+              [k, v] = ref13[q];
               out[k] = $(v);
             }
             return out;
