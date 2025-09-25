@@ -63,7 +63,7 @@ grammar =
   ]
 
   Yield: [
-    o 'YIELD'                      , $ast: 'Op', args: [1, {$ast: 'Value'}]
+    o 'YIELD'                      , $ast: 'Op', args: [1, {$ast: 'Value', base: {$ast: 'Literal', value: ''}}]
     o 'YIELD Expression'           , $ast: 'Op', args: [1, 2]
     o 'YIELD INDENT Object OUTDENT', $ast: 'Op', args: [1, 3]
     o 'YIELD FROM Expression'      , $ast: 'Op', args: [{$use: 1, method: 'concat', args: [2]}, 3]
@@ -145,12 +145,12 @@ grammar =
   # Assignment when it happens within an object literal. The difference from
   # the ordinary **Assign** is that these allow numbers and strings as keys.
   AssignObj: [
-    o 'ObjAssignable'                                  , $ast: 'Value', val: 1
+    o 'ObjAssignable'                                  , $ast: 'Value', base: 1
     o 'ObjRestValue'
-    o 'ObjAssignable : Expression'                     , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'ObjAssignable : INDENT Expression OUTDENT'      , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'SimpleObjAssignable = Expression'               , $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 3, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'SimpleObjAssignable = INDENT Expression OUTDENT', $ast: 'Assign', value: {$ast: 'Value', val: 1, $pos: 1}, expression: 4, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'ObjAssignable : Expression'                     , $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'ObjAssignable : INDENT Expression OUTDENT'      , $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'SimpleObjAssignable = Expression'               , $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 3, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'SimpleObjAssignable = INDENT Expression OUTDENT', $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 4, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
   ]
 
   SimpleObjAssignable: [
@@ -161,16 +161,16 @@ grammar =
 
   ObjAssignable: [
     o 'SimpleObjAssignable'
-    o '[ Expression ]'  , $ast: 'Value', val: {$ast: 'ComputedPropertyName', expression: 2}
-    o '@ [ Expression ]', $ast: 'Value', val: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
+    o '[ Expression ]'  , $ast: 'Value', base: {$ast: 'ComputedPropertyName', expression: 2}
+    o '@ [ Expression ]', $ast: 'Value', base: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
     o 'AlphaNumeric'
   ]
 
   # Object literal spread properties.
   ObjRestValue: [
     # Shorthand rest: `r...` — ensure identifier is captured
-    o 'SimpleObjAssignable ...', $ast: 'Splat', name: {$ast: 'Value', val: 1}, postfix: false
-    o '... SimpleObjAssignable', $ast: 'Splat', name: {$ast: 'Value', val: 2}, postfix: false
+    o 'SimpleObjAssignable ...', $ast: 'Splat', name: {$ast: 'Value', base: 1}, postfix: false
+    o '... SimpleObjAssignable', $ast: 'Splat', name: {$ast: 'Value', base: 2}, postfix: false
     o 'ObjSpreadExpr ...'      , $ast: 'Splat', name: 1
     o '... ObjSpreadExpr'      , $ast: 'Splat', name: 2, postfix: false
   ]
@@ -183,7 +183,7 @@ grammar =
     o 'This'
     o 'SUPER OptFuncExist Arguments'              , $ast: 'SuperCall', variable: {$ast: 'Super'}, args: 3, soak: {$use: 2, prop: 'soak'}, token: 1
     o 'DYNAMIC_IMPORT Arguments'                  , $ast: 'DynamicImportCall', variable: {$ast: 'DynamicImport'}, args: 2
-    o 'SimpleObjAssignable OptFuncExist Arguments', $ast: 'Call', variable: {$ast: 'Value', val: 1}, args: 3, soak: {$use: 2, prop: 'soak'}
+    o 'SimpleObjAssignable OptFuncExist Arguments', $ast: 'Call', variable: {$ast: 'Value', base: 1}, args: 3, soak: {$use: 2, prop: 'soak'}
     o 'ObjSpreadExpr OptFuncExist Arguments'      , $ast: 'Call', variable: 1, args: 3, soak: {$use: 2, prop: 'soak'}
   ]
 
@@ -266,7 +266,7 @@ grammar =
   ]
 
   SimpleAssignable: [
-    o 'Identifier'    , $ast: 'Value', val: 1
+    o 'Identifier'    , $ast: 'Value', base: 1
     o 'Value Accessor', $ops: 'value', add: [1, 2]
     o 'Code Accessor' , $ops: 'value', add: [1, 2]
     o 'ThisProperty'
@@ -274,22 +274,22 @@ grammar =
 
   Assignable: [
     o 'SimpleAssignable'
-    o 'Array'           , $ast: 'Value', val: 1
-    o 'Object'          , $ast: 'Value', val: 1
+    o 'Array'           , $ast: 'Value', base: 1
+    o 'Object'          , $ast: 'Value', base: 1
   ]
 
   # The types of things that can be treated as values
   Value: [
     o 'Assignable'
-    o 'Literal'      , $ast: '@', val: 1
-    o 'Parenthetical', $ast: '@', val: 1
-    o 'Range'        , $ast: '@', val: 1
-    o 'Invocation'   , $ast: '@', val: 1
-    o 'DoIife'       , $ast: '@', val: 1
+    o 'Literal'      , $ast: '@', base: 1
+    o 'Parenthetical', $ast: '@', base: 1
+    o 'Range'        , $ast: '@', base: 1
+    o 'Invocation'   , $ast: '@', base: 1
+    o 'DoIife'       , $ast: '@', base: 1
     o 'ThisProperty' # ThisProperty first for precedence
     o 'This'
-    o 'Super'        , $ast: '@', val: 1
-    o 'MetaProperty' , $ast: '@', val: 1
+    o 'Super'        , $ast: '@', base: 1
+    o 'MetaProperty' , $ast: '@', base: 1
   ]
 
   # A `super`-based expression that can be used as a value.
@@ -452,20 +452,20 @@ grammar =
 
   # A reference to the *this* current object.
   This: [
-    o 'THIS', $ast: 'Value', val: {$ast: 'ThisLiteral'}
+    o 'THIS', $ast: 'Value', base: {$ast: 'ThisLiteral'}
   ]
 
   # A reference to a property on *this*
   ThisProperty: [
     # First entry is the new fused token path -> @ident
-    o 'THIS_PROPERTY'       , $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: { $ast: 'PropertyName', value: 1 } } ], bareLiteral: {$ast: 'ThisLiteral'}
+    o 'THIS_PROPERTY'       , $ast: 'Value', base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: { $ast: 'PropertyName', value: 1 } } ], bareLiteral: {$ast: 'ThisLiteral'}
 
     # Support the old split forms explicitly:
-    o '@ BarePropertyName'  , $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 2 } ], bareLiteral: {$ast: 'ThisLiteral'} # @   <name>   (if your lexer still ever produces PROPERTY after '@')
-    o '@ . BarePropertyName', $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 3 } ], bareLiteral: {$ast: 'ThisLiteral'} # @ . <name>   (fixes the regression with @.toString)
-    o '@ [ Expression ]'    , $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Index', index: 3 } ], bareLiteral: {$ast: 'ThisLiteral'} # @  [ expr ]  (computed)
-    o 'THIS_CONSTRUCTOR'    , $ast: 'Value', val: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: { $ast: 'PropertyName', value: 'constructor' } } ], bareLiteral: {$ast: 'ThisLiteral'} # @@  -> this.constructor
-    o '@'                   , $ast: 'Value', val: {$ast: 'ThisLiteral'} # Fallback: bare @  (must be last)
+    o '@ BarePropertyName'  , $ast: 'Value', base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 2 } ], bareLiteral: {$ast: 'ThisLiteral'} # @   <name>   (if your lexer still ever produces PROPERTY after '@')
+    o '@ . BarePropertyName', $ast: 'Value', base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 3 } ], bareLiteral: {$ast: 'ThisLiteral'} # @ . <name>   (fixes the regression with @.toString)
+    o '@ [ Expression ]'    , $ast: 'Value', base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Index', index: 3 } ], bareLiteral: {$ast: 'ThisLiteral'} # @  [ expr ]  (computed)
+    o 'THIS_CONSTRUCTOR'    , $ast: 'Value', base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: { $ast: 'PropertyName', value: 'constructor' } } ], bareLiteral: {$ast: 'ThisLiteral'} # @@  -> this.constructor
+    o '@'                   , $ast: 'Value', base: {$ast: 'ThisLiteral'} # Fallback: bare @  (must be last)
   ]
 
   # The array literal.
@@ -566,7 +566,7 @@ grammar =
   # A catch clause names its error and runs a block of code.
   Catch: [
     o 'CATCH Identifier Block', $ast: '@', recovery: 3, variable: 2
-    o 'CATCH Object Block'    , $ast: '@', body: 3, errorVariable: {$ast: 'Value', val: 2}
+    o 'CATCH Object Block'    , $ast: '@', body: 3, errorVariable: {$ast: 'Value', base: 2}
     o 'CATCH Block'           , $ast: '@', recovery: 2
   ]
 
@@ -628,13 +628,13 @@ grammar =
   ]
 
   ForBody: [
-    o 'FOR Range'              , $ast: 'For', body: {$ary: []}, source: {$ast: 'Value', val: 2, $pos: 2}
-    o 'FOR Range BY Expression', $ast: 'For', body: {$ary: []}, source: {$ast: 'Value', val: 2, $pos: 2}, step: 4
+    o 'FOR Range'              , $ast: 'For', body: {$ary: []}, source: {$ast: 'Value', base: 2, $pos: 2}
+    o 'FOR Range BY Expression', $ast: 'For', body: {$ary: []}, source: {$ast: 'Value', base: 2, $pos: 2}, step: 4
     o 'ForStart ForSource'     , $ops: 'loop', addSource: [1, 2]
   ]
 
   ForLineBody: [
-    o 'FOR Range BY ExpressionLine', $ast: 'For', body: {$ary: []}, source: {$ast: 'Value', val: 2, $pos: 2}, step: 4
+    o 'FOR Range BY ExpressionLine', $ast: 'For', body: {$ary: []}, source: {$ast: 'Value', base: 2, $pos: 2}, step: 4
     o 'ForStart ForLineSource'     , $ops: 'loop', addSource: [1, 2]
   ]
 
@@ -649,8 +649,8 @@ grammar =
   ForValue: [
     o 'Identifier'
     o 'ThisProperty'
-    o 'Array' , $ast: 'Value', val: 1
-    o 'Object', $ast: 'Value', val: 1
+    o 'Array' , $ast: 'Value', base: 1
+    o 'Object', $ast: 'Value', base: 1
   ]
 
   # An array or range comprehension has variables for the current element
@@ -767,7 +767,7 @@ grammar =
   ]
 
   Operation: [
-    o 'UNARY Expression'              , $ast: 'Op', args: [{$use: 1, method: 'toString'}, 2, undefined, undefined], originalOperator: {$use: 1, prop: 'original'}
+    o 'UNARY Expression'              , $ast: 'Op', args: [{$use: 1, method: 'toString'}, 2], originalOperator: {$use: 1, prop: 'original'}
     o 'DO Expression'                 , $ast: 'Op', args: [1, 2]
     o 'UNARY_MATH Expression'         , $ast: 'Op', args: [1, 2]
     o '- Expression'                  ,{$ast: 'Op', args: [1, 2]}, prec: 'UNARY_MATH'
