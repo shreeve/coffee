@@ -63,12 +63,12 @@ class ES5Backend
 
     result
 
-  # Process a directive with smart resolution
+  # Process a directive with smart resolution, ordered by most common to least
   process: (o) ->
-    return @processAst o if o.$ast?  # AST first (most common)
-    return @processOps o if o.$ops?  # Operations second
-    return @processUse o if o.$use?  # Use is third
-    return @processAry o if o.$ary?  # Array last (simplest)
+    return @processAst o if o.$ast?
+    return @processUse o if o.$use?
+    return @processOps o if o.$ops?
+    return @processAry o if o.$ary?
     @$ o
 
   # Smart resolver - handles all types of references

@@ -100,19 +100,19 @@
       return result;
     }
 
-    // Process a directive with smart resolution
+    // Process a directive with smart resolution, ordered by most common to least
     process(o) {
       if (o.$ast != null) {
-        return this.processAst(o); // AST first (most common)
-      }
-      if (o.$ops != null) {
-        return this.processOps(o); // Operations second
+        return this.processAst(o);
       }
       if (o.$use != null) {
-        return this.processUse(o); // Use is third
+        return this.processUse(o);
+      }
+      if (o.$ops != null) {
+        return this.processOps(o);
       }
       if (o.$ary != null) {
-        return this.processAry(o); // Array last (simplest)
+        return this.processAry(o);
       }
       return this.$(o);
     }
