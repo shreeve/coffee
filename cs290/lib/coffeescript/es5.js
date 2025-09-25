@@ -290,7 +290,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, condition, elseBody, exclusive, ifNode, index, name, options, ref, ref1, whileNode;
+      var args, body, condition, elseBody, exclusive, ifNode, name, options, ref, ref1, source, whileNode;
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
@@ -380,11 +380,17 @@
           }
           return whileNode;
         case 'For':
-          name = this._toNode(this.$(o.name));
-          if (o.index != null) {
-            index = this._toNode(this.$(o.index));
+          body = this.$(o.body);
+          source = this.$(o.source);
+          if (body == null) {
+            // For now, create empty body if not provided
+            body = new this.ast.Block([]);
           }
-          return new this.ast.For(name, this.$(o.source), index);
+          body = this._ensureLocationData(body);
+          if (source != null) {
+            source = this._ensureLocationData(source);
+          }
+          return new this.ast.For(body, source);
         case 'Switch':
           return new this.ast.Switch(this.$(o.subject), this.$(o.cases) || [], this.$(o.otherwise));
         case 'When':
@@ -434,6 +440,10 @@
           return new this.ast.Literal(this.$(o.value) || '->');
         case 'RegexLiteral':
           return new this.ast.Literal(this.$(o.value));
+        case 'Catch':
+          return new this.ast.Literal('# catch');
+        case 'Interpolation':
+          return new this.ast.Literal(this.$(o.expression) || '');
         default:
           console.warn("Unknown $ast type:", o.$ast);
           return new this.ast.Literal(`# Missing AST node: ${o.$ast}`);

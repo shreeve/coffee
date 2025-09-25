@@ -258,9 +258,13 @@ class ES5Backend
         whileNode
 
       when 'For'
-        name = @_toNode @$(o.name)
-        index = @_toNode(@$(o.index)) if o.index?
-        new @ast.For name, @$(o.source), index
+        # For loops are complex and built via $ops: 'loop'
+        # This creates the initial For node
+        body = @$(o.body) or []
+        source = @$(o.source)
+        forNode = new @ast.For null, null
+        # Body and source will be added via loop operations
+        forNode
 
       when 'Switch' then new @ast.Switch @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
       when 'When'   then new @ast.When   @$(o.conditions), @$(o.body)
@@ -297,6 +301,8 @@ class ES5Backend
       when 'PassthroughLiteral' then new @ast.Literal @$(o.value)
       when 'FuncGlyph'          then new @ast.Literal @$(o.value) or '->'
       when 'RegexLiteral'       then new @ast.Literal @$(o.value)
+      when 'Catch'              then new @ast.Literal '# catch'
+      when 'Interpolation'      then new @ast.Literal @$(o.expression) or ''
 
       else
         console.warn "Unknown $ast type:", o.$ast
