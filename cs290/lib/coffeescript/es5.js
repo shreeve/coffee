@@ -460,11 +460,9 @@
               // Create For node with initial source properties
               body = this._toBlock($(o.body)) || new this.ast.Block([]);
               source = {};
-              
               // Handle name and index - they may come from $use directives
               name = $(o.name);
               index = $(o.index);
-              
               // Ensure name and index are proper nodes if they exist
               if (name != null) {
                 source.name = this._ensureNode(name);
@@ -473,7 +471,6 @@
                 source.index = this._ensureNode(index);
               }
               if (o.await != null) {
-                
                 // Add other properties
                 source.await = $(o.await);
               }
