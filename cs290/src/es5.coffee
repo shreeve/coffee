@@ -1,9 +1,5 @@
 # ==============================================================================
-# ES5 Backend - Solar Directive Processor for CoffeeScript
-# ==============================================================================
-#
-# Converts Solar directives (pure data) to CoffeeScript AST node instances
-# This clean implementation uses smart proxies for automatic resolution
+# ES5 Backend - Converts Solar directives (pure data) to CoffeeScript AST nodes
 # ==============================================================================
 
 class ES5Backend
@@ -23,12 +19,8 @@ class ES5Backend
   # Filter null/undefined nodes from an array
   _filterNodes: (nodes) ->
     return [] unless nodes?
-    if Array.isArray nodes
-      nodes.filter (n) -> n?
-    else if nodes?
-      [nodes]
-    else
-      []
+    return nodes.filter (n) -> n? if Array.isArray nodes
+    [nodes]
 
   # Main entry point (called by parser as 'reduce')
   reduce: (values, positions, stackTop, symbolCount, directive) ->
@@ -73,21 +65,10 @@ class ES5Backend
 
   # Process a directive with smart resolution
   process: (o) ->
-    # Handle special directive types
-    if o.$ops?
-      return @processOps o
-
-    if o.$use?
-      return @processUse o
-
-    if o.$ary?
-      items = @$(o.$ary)
-      return if Array.isArray(items) then items else [items]
-
-    if o.$ast?
-      return @processAst o
-
-    # For regular values, just resolve
+    return @processAst o if o.$ast?  # AST first (most common)
+    return @processOps o if o.$ops?  # Operations second
+    return @processUse o if o.$use?  # Use is third
+    return @processAry o if o.$ary?  # Array last (simplest)
     @$ o
 
   # Smart resolver - handles all types of references
@@ -115,6 +96,19 @@ class ES5Backend
 
     # Everything else passes through
     value
+
+  # Process $ary directives
+  processAry: (o) ->
+    items = @$(o.$ary)
+    if Array.isArray(items) then items else [items]
+
+  # Process $use directives
+  processUse: (o) ->
+    target = @$(o.$use)
+    return target?[o.method]?() ?  target  if o.method?
+    return target?[o.prop     ] ?  target  if o.prop?
+    return target?[@$(o.index)] if target? if o.index?
+    target
 
   # Process $ops directives
   processOps: (o) ->
@@ -174,22 +168,6 @@ class ES5Backend
       else
         console.warn "Unknown $ops:", o.$ops
         null
-
-  # Process $use directives
-  processUse: (o) ->
-    target = @$(o.$use)
-
-    if o.method?
-      return target?[o.method]?() ? target
-
-    if o.prop?
-      return target?[o.prop] ? target
-
-    if o.index?
-      idx = @$(o.index)
-      return target?[idx] if target?
-
-    target
 
   # Process $ast directives - the main AST node creation
   processAst: (o) ->
