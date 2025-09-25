@@ -133,34 +133,60 @@ global.CoffeeScript = require '../lib/coffeescript/index.js'
 
 # Parse command line arguments
 args = process.argv[2..]
-targetDir = args[0] # e.g. 'es5' or 'test/es5' for subdirectory
-
 # Main runner
 console.log "#{bold}Solar Directive Test Suite#{reset}\n"
 
-# Find test files based on arguments
+# Collect test files from args (files or directories). If no args, default to this directory's .test.coffee
 testDir = __dirname
-if targetDir
-  # Run tests in specific subdirectory
-  subDir = if targetDir.startsWith('test/') then targetDir else path.join(testDir, targetDir)
-  unless fs.existsSync(subDir)
-    console.log "#{red}Directory #{targetDir} not found#{reset}"
-    process.exit 1
+cwd = process.cwd()
+testFiles = []
 
-  testFiles = fs.readdirSync(subDir)
+getFilesFromDir = (dir) ->
+  fs.readdirSync(dir)
     .filter (f) -> f.endsWith('.test.coffee') or f.endsWith('.coffee')
     .sort()
-    .map (f) -> path.join(subDir, f)
+    .map (f) -> path.join(dir, f)
 
-  console.log "Found #{testFiles.length} test file(s) in #{targetDir}\n"
+resolvePath = (p) ->
+  return p if path.isAbsolute(p)
+  cand1 = path.resolve(cwd, p)
+  return cand1 if fs.existsSync(cand1)
+  cand2 = path.resolve(testDir, p)
+  return cand2
+
+if args.length > 0
+  for arg in args
+    abs = resolvePath(arg)
+    unless fs.existsSync(abs)
+      console.log "#{red}Path not found: #{arg}#{reset}"
+      continue
+    stat = fs.statSync(abs)
+    if stat.isDirectory()
+      files = getFilesFromDir(abs)
+      console.log "Found #{files.length} test file(s) in #{arg}\n"
+      testFiles = testFiles.concat files
+    else if stat.isFile()
+      if abs.endsWith('.test.coffee') or abs.endsWith('.coffee')
+        console.log "Found 1 test file: #{arg}\n"
+        testFiles.push abs
+      else
+        console.log "#{yellow}Skipping non-test file: #{arg}#{reset}"
 else
-  # Run tests in main directory only
-  testFiles = fs.readdirSync(testDir)
-    .filter (f) -> f.endsWith('.test.coffee')
-    .sort()
-    .map (f) -> path.join(testDir, f)
+  files = getFilesFromDir(testDir)
+  testFiles = testFiles.concat files
+  console.log "Found #{files.length} test file(s)\n"
 
-  console.log "Found #{testFiles.length} test file(s)\n"
+# Deduplicate & sort
+seen = Object.create null
+uniq = []
+for f in testFiles when not seen[f]
+  seen[f] = true
+  uniq.push f
+testFiles = uniq.sort()
+
+if testFiles.length is 0
+  console.log "#{red}No test files found#{reset}"
+  process.exit 1
 
 # Enhanced reporting with per-file tracking
 fileResults = []
