@@ -290,13 +290,18 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, condition, elseBody, exclusive, ifNode, name, options, ref, ref1, source, whileNode;
+      var args, body, condition, elseBody, exclusive, expressions, forNode, ifNode, name, options, params, ref, source, whileNode;
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
           return new this.ast.Root(this.$(o.body));
         case 'Block':
-          return new this.ast.Block((ref = this.$(o.expressions)) != null ? ref : []);
+          expressions = this.$(o.expressions);
+          if (expressions instanceof this.ast.Block) {
+            // Flatten if expressions is already a Block (from Body)
+            expressions = expressions.expressions;
+          }
+          return new this.ast.Block(expressions != null ? expressions : []);
         case 'Splat':
           return new this.ast.Splat(this.$(o.name), {
             postfix: this.$(o.postfix)
@@ -330,7 +335,7 @@
           return new this.ast.NaNLiteral();
         // Value, Access, and Index
         case 'Value':
-          return this._toValue(this.$(o.base), (ref1 = this.$(o.properties)) != null ? ref1 : []);
+          return this._toValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : []);
         case 'Access':
           name = this.$(o.name);
           if (name instanceof this.ast.IdentifierLiteral) {
@@ -380,17 +385,13 @@
           }
           return whileNode;
         case 'For':
-          body = this.$(o.body);
+          // For loops are complex and built via $ops: 'loop'
+          // This creates the initial For node
+          body = this.$(o.body) || [];
           source = this.$(o.source);
-          if (body == null) {
-            // For now, create empty body if not provided
-            body = new this.ast.Block([]);
-          }
-          body = this._ensureLocationData(body);
-          if (source != null) {
-            source = this._ensureLocationData(source);
-          }
-          return new this.ast.For(body, source);
+          forNode = new this.ast.For(null, null);
+          // Body and source will be added via loop operations
+          return forNode;
         case 'Switch':
           return new this.ast.Switch(this.$(o.subject), this.$(o.cases) || [], this.$(o.otherwise));
         case 'When':
@@ -405,7 +406,13 @@
           return new this.ast.Range(this.$(o.from), this.$(o.to), exclusive);
         // Functions
         case 'Code':
-          return new this.ast.Code(this.$(o.params) || [], this.$(o.body));
+          params = this.$(o.params) || [];
+          body = this.$(o.body);
+          if (!(body instanceof this.ast.Block)) {
+            // Wrap body in Block if needed
+            body = new this.ast.Block(Array.isArray(body) ? body : [body]);
+          }
+          return new this.ast.Code(params, body);
         case 'Param':
           return new this.ast.Param(this.$(o.name), this.$(o.value), this.$(o.splat));
         case 'Call':

@@ -204,7 +204,11 @@ class ES5Backend
 
       # Root, Block, and Splat
       when 'Root'  then new @ast.Root @$(o.body)
-      when 'Block' then new @ast.Block @$(o.expressions) ? []
+      when 'Block'
+        expressions = @$(o.expressions)
+        # Flatten if expressions is already a Block (from Body)
+        expressions = expressions.expressions if expressions instanceof @ast.Block
+        new @ast.Block expressions ? []
       when 'Splat' then new @ast.Splat @$(o.name), {postfix: @$(o.postfix)}
 
       # Literals
@@ -277,7 +281,12 @@ class ES5Backend
         new @ast.Range @$(o.from), @$(o.to), exclusive
 
       # Functions
-      when 'Code'   then new @ast.Code   @$(o.params) or [], @$(o.body)
+      when 'Code'
+        params = @$(o.params) or []
+        body = @$(o.body)
+        # Wrap body in Block if needed
+        body = new @ast.Block(if Array.isArray(body) then body else [body]) unless body instanceof @ast.Block
+        new @ast.Code params, body
       when 'Param'  then new @ast.Param  @$(o.name), @$(o.value), @$(o.splat)
       when 'Call'   then new @ast.Call   @$(o.variable), @$(o.args) or [], @$(o.soak)
       when 'Return' then new @ast.Return @$(o.expression)
