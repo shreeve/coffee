@@ -2813,7 +2813,7 @@
       o('- Expression',
       {
         $ast: 'Op',
-        args: ['-',
+        args: [1,
       2]
       },
       {
@@ -2822,7 +2822,7 @@
       o('+ Expression',
       {
         $ast: 'Op',
-        args: ['+',
+        args: [1,
       2]
       },
       {
@@ -2876,14 +2876,14 @@
       o('Expression +  Expression',
       {
         $ast: 'Op',
-        args: ['+',
+        args: [2,
       1,
       3]
       }),
       o('Expression -  Expression',
       {
         $ast: 'Op',
-        args: ['-',
+        args: [2,
       1,
       3]
       }),

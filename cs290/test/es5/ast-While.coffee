@@ -9,10 +9,9 @@ test "while true then break", []
 test "until false then break", []
 
 # Tests that return arrays of iteration values
-# NOTE: cs290 currently converts x++ to ++x, so we get the post-increment values
-# TODO: Fix post-increment operator handling to match original CoffeeScript behavior
-test "x = 0; while x < 3 then x++", [1, 2, 3]  # Should be [0, 1, 2] when fixed
-test "i = 5; until i <= 0 then i--", [4, 3, 2, 1, 0]  # Should be [5, 4, 3, 2, 1] when fixed
+# Post-increment operators now work correctly!
+test "x = 0; while x < 3 then x++", [0, 1, 2]
+test "i = 5; until i <= 0 then i--", [5, 4, 3, 2, 1]
 
 # Tests with false/true conditions (loops that don't execute) - checking final variable value
 test "x = 0; y = (while false then x++); x", 0

@@ -261,7 +261,14 @@ class ES5Backend
           when 'Range'              then new @ast.Range        $(o.from), $(o.to), (if $(o.exclusive) then 'exclusive' else null)
           when 'Block'              then new @ast.Block        $(o.expressions)
           when 'Return'             then new @ast.Return       $(o.expression)
-          when 'Op'                 then new @ast.Op           $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
+          when 'Op'
+            args = o.args.map (arg) -> $(arg)
+            if o.invertOperator? or o.originalOperator?
+              args.push {
+                invertOperator: $(o.invertOperator) if o.invertOperator?
+                originalOperator: $(o.originalOperator) if o.originalOperator?
+              }
+            new @ast.Op args...
           when 'Parens'             then new @ast.Parens       (@_toBlock($(o.body)) ? new @ast.Block [new @ast.Literal ''])
           when 'PropertyName'       then new @ast.PropertyName $(o.value)
           when 'Slice'              then new @ast.Slice        $(o.range)
@@ -277,8 +284,20 @@ class ES5Backend
               ifNode.addElse elseBody
             ifNode
           when 'While'
-            whileNode = new @ast.While $(o.condition), {guard: $(o.guard), isLoop: $(o.isLoop), invert: $(o.invert)}
-            whileNode.body = @_toBlock($(o.body))
+            condition = $(o.condition)
+            opts = {}
+            opts.guard = $(o.guard) if o.guard?
+            opts.isLoop = $(o.isLoop) if o.isLoop?
+            opts.invert = $(o.invert) if o.invert?
+            whileNode = new @ast.While condition, opts
+            # Body will be added later via $ops: 'loop' addBody
+            # But if body is provided directly (e.g., from Loop rule), use it
+            if o.body?
+              whileNode.body = @_toBlock($(o.body))
+            else
+              # Initialize with empty block to avoid undefined errors
+              whileNode.body = new @ast.Block []
+            @_addLocationData whileNode
             whileNode
           when 'For'                  then new @ast.For                  $(o.body), {} # created now; $ops: 'loop' will addSource
           when 'Switch'               then new @ast.Switch               $(o.subject), @_nodes($(o.cases)), @_toBlock($(o.otherwise))
@@ -323,13 +342,15 @@ class ES5Backend
             variable = $(o.variable)
             value = $(o.value)
             context = $(o.context)
+            operator = $(o.operator)
             if context is 'object' and o.expression?
               # In object context, 'value' is the property name, 'expression' is the actual value
               variable = $(o.value)
               value = $(o.expression)
               variable = @_asValue variable
             return null unless variable? and value?
-            new @ast.Assign variable, value, context
+            # Pass operator for compound assignments like +=, -=, etc.
+            new @ast.Assign variable, value, operator || context
           else
             @_unimplemented nodeType, "AST node type"
 
@@ -407,11 +428,30 @@ class ES5Backend
               loopNode
             else if o.addBody?
               loopNode = $(o.addBody[0])
-              body = $(o.addBody[1])
-              if loopNode and body?
+              bodyArg = o.addBody[1]
+
+              # Handle "Body $N" placeholder strings
+              if typeof bodyArg is 'string' and bodyArg.startsWith('Body $')
+                position = parseInt(bodyArg.slice(6))
+                body = $(position)  # Evaluate position reference
+              else
+                body = $(bodyArg)
+
+              if loopNode
+                # Convert body to proper Block if needed
+                bodyBlock = if body?
+                  if Array.isArray(body)
+                    new @ast.Block @_filterNodes(body)
+                  else if body instanceof @ast.Block
+                    body
+                  else
+                    new @ast.Block [@_ensureNode(body)].filter (n) -> n?
+                else
+                  new @ast.Block []
+
                 @_addLocationData loopNode
-                @_addLocationData body
-                loopNode.addBody body
+                @_addLocationData bodyBlock
+                loopNode.addBody bodyBlock
               loopNode
             else
               @_unimplemented "$ops loop without addSource/addBody", "$ops"

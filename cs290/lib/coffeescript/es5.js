@@ -300,7 +300,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, a, accessor, actualExpression, args, base, body, bodyNode, bodyNodes, callee, condition, context, elseBody, expression, expressionNode, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, m, name1, nodeType, out, p, property, props, q, quote, ref, ref1, ref10, ref11, ref12, ref13, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, sourceInfo, target, tmp, type, v, val, value, variable, whileNode;
+      var $, a, accessor, actualExpression, args, base, body, bodyArg, bodyBlock, bodyNode, bodyNodes, callee, condition, context, elseBody, expression, expressionNode, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, m, name1, nodeType, operator, opts, out, p, position, property, props, q, quote, ref, ref1, ref10, ref11, ref12, ref13, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, sourceInfo, target, tmp, type, v, val, value, variable, whileNode;
       if (o == null) {
         return o; // null/undefined
       }
@@ -403,7 +403,16 @@
             case 'Return':
               return new this.ast.Return($(o.expression));
             case 'Op':
-              return new this.ast.Op($(o.args[0]), $(o.args[1]), (o.args[2] != null ? $(o.args[2]) : void 0));
+              args = o.args.map(function(arg) {
+                return $(arg);
+              });
+              if ((o.invertOperator != null) || (o.originalOperator != null)) {
+                args.push({
+                  invertOperator: o.invertOperator != null ? $(o.invertOperator) : void 0,
+                  originalOperator: o.originalOperator != null ? $(o.originalOperator) : void 0
+                });
+              }
+              return new this.ast.Op(...args);
             case 'Parens':
               return new this.ast.Parens((ref4 = this._toBlock($(o.body))) != null ? ref4 : new this.ast.Block([new this.ast.Literal('')]));
             case 'PropertyName':
@@ -425,12 +434,27 @@
               }
               return ifNode;
             case 'While':
-              whileNode = new this.ast.While($(o.condition), {
-                guard: $(o.guard),
-                isLoop: $(o.isLoop),
-                invert: $(o.invert)
-              });
-              whileNode.body = this._toBlock($(o.body));
+              condition = $(o.condition);
+              opts = {};
+              if (o.guard != null) {
+                opts.guard = $(o.guard);
+              }
+              if (o.isLoop != null) {
+                opts.isLoop = $(o.isLoop);
+              }
+              if (o.invert != null) {
+                opts.invert = $(o.invert);
+              }
+              whileNode = new this.ast.While(condition, opts);
+              // Body will be added later via $ops: 'loop' addBody
+              // But if body is provided directly (e.g., from Loop rule), use it
+              if (o.body != null) {
+                whileNode.body = this._toBlock($(o.body));
+              } else {
+                // Initialize with empty block to avoid undefined errors
+                whileNode.body = new this.ast.Block([]);
+              }
+              this._addLocationData(whileNode);
               return whileNode;
             case 'For':
               return new this.ast.For($(o.body), {}); // created now; $ops: 'loop' will addSource
@@ -503,6 +527,7 @@
               variable = $(o.variable);
               value = $(o.value);
               context = $(o.context);
+              operator = $(o.operator);
               if (context === 'object' && (o.expression != null)) {
                 // In object context, 'value' is the property name, 'expression' is the actual value
                 variable = $(o.value);
@@ -512,7 +537,8 @@
               if (!((variable != null) && (value != null))) {
                 return null;
               }
-              return new this.ast.Assign(variable, value, context);
+              // Pass operator for compound assignments like +=, -=, etc.
+              return new this.ast.Assign(variable, value, operator || context);
             default:
               return this._unimplemented(nodeType, "AST node type");
           }
@@ -623,11 +649,22 @@
                 return loopNode;
               } else if (o.addBody != null) {
                 loopNode = $(o.addBody[0]);
-                body = $(o.addBody[1]);
-                if (loopNode && (body != null)) {
+                bodyArg = o.addBody[1];
+                // Handle "Body $N" placeholder strings
+                if (typeof bodyArg === 'string' && bodyArg.startsWith('Body $')) {
+                  position = parseInt(bodyArg.slice(6));
+                  body = $(position); // Evaluate position reference
+                } else {
+                  body = $(bodyArg);
+                }
+                if (loopNode) {
+                  // Convert body to proper Block if needed
+                  bodyBlock = body != null ? Array.isArray(body) ? new this.ast.Block(this._filterNodes(body)) : body instanceof this.ast.Block ? body : new this.ast.Block([this._ensureNode(body)].filter(function(n) {
+                    return n != null;
+                  })) : new this.ast.Block([]);
                   this._addLocationData(loopNode);
-                  this._addLocationData(body);
-                  loopNode.addBody(body);
+                  this._addLocationData(bodyBlock);
+                  loopNode.addBody(bodyBlock);
                 }
                 return loopNode;
               } else {
