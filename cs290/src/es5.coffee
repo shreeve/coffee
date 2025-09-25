@@ -44,7 +44,7 @@ class ES5Backend
     result
 
   # Helper to check if value is a plain object
-  _isPlainObject = (x) ->
+  _isPlainObject: (x) ->
     return false unless x? and typeof x is 'object'
     p = Object.getPrototypeOf x
     p is Object.prototype or p is null
@@ -223,23 +223,23 @@ class ES5Backend
             whileNode = new @ast.While $(o.condition), {guard: $(o.guard), isLoop: $(o.isLoop), invert: $(o.invert)}
             whileNode.body = @_toBlock($(o.body))
             whileNode
-          when 'For'                  then new @ast.For                $(o.body), {} # create this now and $ops: 'loop' will addSource
-          when 'Switch'               then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
-          when 'SwitchWhen'           then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
+          when 'For'                  then new @ast.For                  $(o.body), {} # create this now and $ops: 'loop' will addSource
+          when 'Switch'               then new @ast.Switch               $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
+          when 'SwitchWhen'           then new @ast.SwitchWhen           ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
+          when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
+          when 'DefaultLiteral'       then new @ast.DefaultLiteral       $(o.value)
           when 'Elision'              then new @ast.Elision
           when 'Expansion'            then new @ast.Expansion
-          when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
-          when 'DefaultLiteral'       then new @ast.DefaultLiteral     $(o.value)
-          when 'Try'                  then new @ast.Try                @_toBlock($(o.attempt)), $(o.catch), @_toBlock($(o.ensure))
-          when 'Class'                then new @ast.Class              $(o.variable), $(o.parent), $(o.body)
-          when 'FuncGlyph'            then new @ast.FuncGlyph          $(o.glyph)
-          when 'Param'                then new @ast.Param              $(o.name), $(o.value), $(o.splat)
-          when 'Code'                 then new @ast.Code ($(p) for p in $(o.params) ? [] when $(p)?), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
-          when 'Splat'                then new @ast.Splat              $(o.name)
-          when 'Existence'            then new @ast.Existence          $(o.expression)
-          when 'RegexLiteral'         then new @ast.RegexLiteral       $(o.value)
-          when 'StatementLiteral'     then new @ast.StatementLiteral   $(o.value)
-          when 'PassthroughLiteral'   then new @ast.PassthroughLiteral $(o.value)
+          when 'Try'                  then new @ast.Try                  @_toBlock($(o.attempt)), $(o.catch), @_toBlock($(o.ensure))
+          when 'Class'                then new @ast.Class                $(o.variable), $(o.parent), $(o.body)
+          when 'FuncGlyph'            then new @ast.FuncGlyph            $(o.glyph)
+          when 'Param'                then new @ast.Param                $(o.name), $(o.value), $(o.splat)
+          when 'Code'                 then new @ast.Code ($(p) for p in  $(o.params) ? [] when $(p)?), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
+          when 'Splat'                then new @ast.Splat                $(o.name)
+          when 'Existence'            then new @ast.Existence            $(o.expression)
+          when 'RegexLiteral'         then new @ast.RegexLiteral         $(o.value)
+          when 'StatementLiteral'     then new @ast.StatementLiteral     $(o.value)
+          when 'PassthroughLiteral'   then new @ast.PassthroughLiteral   $(o.value)
           when 'Interpolation'
             expression = $(o.expression)
             # Expression might be an array, so extract the first element
@@ -273,11 +273,6 @@ class ES5Backend
           when 'Catch'                then new @ast.Catch              @_toBlock($(o.recovery) || $(o.body)), $(o.variable) || $(o.errorVariable)
           when 'Throw'                then new @ast.Throw              $(o.expression)
           when 'Literal'              then new @ast.Literal            $(o.value)
-          when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
-          when 'DefaultLiteral'       then new @ast.DefaultLiteral     $(o.value)
-          when 'SwitchWhen'           then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
-          when 'Elision'              then new @ast.Elision
-          when 'Expansion'            then new @ast.Expansion
           else @_unimplemented nodeType, "AST node type"
 
       else if o.$ary?
@@ -353,7 +348,8 @@ class ES5Backend
             # Loop operations
             if o.addSource?
               loopNode = $(o.addSource[0])
-              loopNode.addSource o.addSource[1] if loopNode  # Pass raw directive, let addSource handle it
+              sourceInfo = $(o.addSource[1])
+              loopNode.addSource sourceInfo if loopNode
               loopNode
             else if o.addBody?
               loopNode = $(o.addBody[0])
@@ -379,7 +375,7 @@ class ES5Backend
             @_unimplemented o.$ops, "$ops type"
 
       else
-        if _isPlainObject o
+        if @_isPlainObject o
           return null unless Object.keys(o).length
           out = Object.create null
           out[k] = v for [k, v] in Object.entries o
