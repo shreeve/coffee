@@ -154,7 +154,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessNode, accessor, actualExpression, base, body, bodyNode, bodyNodes, c, condition, context, elseBody, expression, expressionNode, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nodeType, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, soak, sourceInfo, target, type, val, value, variable, whileNode;
+      var $, accessNode, accessor, actualExpression, base, body, bodyNode, bodyNodes, c, condition, context, elseBody, expression, expressionNode, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nodeType, p, properties, property, quote, rawSourceInfo, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, soak, sourceInfo, target, type, val, value, variable, whileNode;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -163,7 +163,10 @@
       // Numbers: only do 1-based lookup for positive integers
       if (type === 'number') {
         if (Number.isInteger(o) && o > 0 && typeof lookup === 'function') {
-          return lookup(o - 1);
+          result = lookup(o - 1);
+          // If lookup returns another lookup function, it means we have nested directives
+          // In this case, return the result as-is (it will be resolved later)
+          return result;
         }
         return o;
       }
@@ -288,14 +291,13 @@
             case 'Index':
               variable = $(o.variable) || $(o.val) || $(o.base);
               index = $(o.index) || $(o.object);
-              soak = $(o.soak);
               // Smart-append: if LHS is already a Value, append to its properties
               if (variable instanceof this.ast.Value) {
-                indexNode = new this.ast.Index(index, {soak});
+                indexNode = new this.ast.Index(index);
                 variable.properties.push(indexNode);
                 return variable; // return the same Value (now with extra segment)
               } else {
-                return new this.ast.Index(index, {soak});
+                return new this.ast.Index(index);
               }
               break;
             case 'Slice':
@@ -319,7 +321,7 @@
               whileNode.body = this._toBlock($(o.body));
               return whileNode;
             case 'For':
-              return new this.ast.For($(o.body), $(o.source));
+              return new this.ast.For(this._toBlock($(o.body)), {});
             case 'Switch':
               return new this.ast.Switch($(o.subject), (function() {
                 var j, len1, ref4, ref5, results;
@@ -539,9 +541,39 @@
               // Loop operations
               if (o.addSource != null) {
                 loopNode = $(o.addSource[0]);
-                sourceInfo = $(o.addSource[1]);
-                if (loopNode) {
-                  loopNode.addSource(sourceInfo);
+                rawSourceInfo = o.addSource[1];
+                // Instead of calling addSource (which has traverseChildren issues),
+                // manually set the properties on the For node
+                if ((rawSourceInfo != null) && loopNode) {
+                  // Resolve rawSourceInfo if it's a positional reference
+                  sourceInfo = typeof rawSourceInfo === 'number' ? $(rawSourceInfo) : rawSourceInfo;
+                  if (sourceInfo.source != null) {
+                    // Manually set each property, resolving as needed
+                    loopNode.source = $(sourceInfo.source);
+                  }
+                  if (sourceInfo.name != null) {
+                    loopNode.name = $(sourceInfo.name);
+                  }
+                  if (sourceInfo.index != null) {
+                    loopNode.index = $(sourceInfo.index);
+                  }
+                  if (sourceInfo.guard != null) {
+                    loopNode.guard = $(sourceInfo.guard);
+                  }
+                  if (sourceInfo.step != null) {
+                    loopNode.step = $(sourceInfo.step);
+                  }
+                  if (sourceInfo.own != null) {
+                    loopNode.own = $(sourceInfo.own);
+                  }
+                  if (sourceInfo.object != null) {
+                    loopNode.object = $(sourceInfo.object);
+                  }
+                  if (sourceInfo.from != null) {
+                    loopNode.from = $(sourceInfo.from);
+                  }
+                  // Set other flags that addSource would normally set
+                  loopNode.returns = false;
                 }
                 return loopNode;
               } else if (o.addBody != null) {

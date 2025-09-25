@@ -26,7 +26,7 @@ case 13:
 return r(1, {$ast: "StatementLiteral", value: 1});
 case 31:
 return r(1, {$ast: "Op", args: [1, {"$ast":"Value"}]});
-case 32: case 381: case 382: case 383: case 385: case 386: case 389: case 391: case 392: case 412:
+case 32: case 381: case 382: case 383: case 385: case 386: case 387: case 388: case 389: case 391: case 392: case 412:
 return r(2, {$ast: "Op", args: [1, 2]});
 case 33: case 390:
 return r(4, {$ast: "Op", args: [1, 3]});
@@ -428,19 +428,11 @@ case 373: case 374: case 379: case 380:
 return r(3, {$ast: "If", condition: 3, body: [1], type: 2, postfix: true});
 case 384:
 return r(2, {$ast: "Op", args: [{"$use":1,"method":"toString"}, 2, , ], originalOperator: {$use: 1, prop: "original"}});
-case 387:
-return r(2, {$ast: "Op", args: ["-", 2]});
-case 388:
-return r(2, {$ast: "Op", args: ["+", 2]});
 case 393: case 394:
 return r(2, {$ast: "Op", args: [2, 1, null, true]});
 case 395:
 return r(2, {$ast: "Existence", expression: 1});
-case 396:
-return r(3, {$ast: "Op", args: ["+", 1, 3]});
-case 397:
-return r(3, {$ast: "Op", args: ["-", 1, 3]});
-case 398: case 399: case 400: case 402: case 403: case 404: case 407:
+case 396: case 397: case 398: case 399: case 400: case 402: case 403: case 404: case 407:
 return r(3, {$ast: "Op", args: [2, 1, 3]});
 case 401: case 405: case 406:
 return r(3, {$ast: "Op", args: [{"$use":2,"method":"toString"}, 1, 3, ], originalOperator: {$use: 2, prop: "original"}});

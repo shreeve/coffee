@@ -105,7 +105,11 @@ class ES5Backend
 
     # Numbers: only do 1-based lookup for positive integers
     if type is 'number'
-      return lookup(o - 1) if Number.isInteger(o) and o > 0 and typeof lookup is 'function'
+      if Number.isInteger(o) and o > 0 and typeof lookup is 'function'
+        result = lookup(o - 1)
+        # If lookup returns another lookup function, it means we have nested directives
+        # In this case, return the result as-is (it will be resolved later)
+        return result
       return o
 
     # Strings and booleans return as-is
@@ -192,14 +196,13 @@ class ES5Backend
           when 'Index'
             variable = $(o.variable) || $(o.val) || $(o.base)
             index = $(o.index) || $(o.object)
-            soak = $(o.soak)
             # Smart-append: if LHS is already a Value, append to its properties
             if variable instanceof @ast.Value
-              indexNode = new @ast.Index index, {soak}
+              indexNode = new @ast.Index index
               variable.properties.push indexNode
               variable  # return the same Value (now with extra segment)
             else
-              new @ast.Index index, {soak}
+              new @ast.Index index
           when 'Slice'              then new @ast.Slice              $(o.range)
           when 'If'
             condition = $(o.condition)
@@ -213,7 +216,7 @@ class ES5Backend
             whileNode = new @ast.While $(o.condition), {guard: $(o.guard), isLoop: $(o.isLoop), invert: $(o.invert)}
             whileNode.body = @_toBlock($(o.body))
             whileNode
-          when 'For'                  then new @ast.For                $(o.body), $(o.source)
+          when 'For'                  then new @ast.For                @_toBlock($(o.body)), o
           when 'Switch'               then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
           when 'SwitchWhen'           then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
           when 'Elision'              then new @ast.Elision
