@@ -12,7 +12,6 @@
       this.ast = ast;
       this.cache = new Map();
       this.currentDirective = null;
-      this.currentType = null;
       this.currentRule = null;
     }
 
@@ -78,7 +77,6 @@
         return values[stackTop - symbolCount + 1 + index];
       };
       this.currentDirective = directive;
-      this.currentType = directive != null ? directive.$ast : void 0;
       this.currentRule = directive;
       this.currentLookup = lookup; // Store lookup for use in $()
       
@@ -276,29 +274,17 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, elseBody, exclusive, expression, ifNode, index, name, options, ref, ref1, whileNode;
+      var args, elseBody, exclusive, ifNode, index, name, options, ref, ref1, whileNode;
       switch (o.$ast) {
-        case '@':
-          // Pass-through directives that use the node type from context
-          switch (this.currentType) {
-            case 'Root':
-              body = this.$(o.body);
-              if (Array.isArray(body)) {
-                // Wrap array in Block if needed
-                body = new this.ast.Block(body);
-              }
-              return new this.ast.Root(body);
-            case 'Block':
-              return new this.ast.Block(this.$(o.expressions) || []);
-            case 'Splat':
-              return new this.ast.Splat(this.$(o.name), {
-                postfix: this.$(o.postfix)
-              });
-            default:
-              console.warn("Unknown @ node type:", this.currentType);
-              return null;
-          }
-          break;
+        // Root, Block, and Splat
+        case 'Root':
+          return new this.ast.Root(this.$(o.body));
+        case 'Block':
+          return new this.ast.Block((ref = this.$(o.expressions)) != null ? ref : []);
+        case 'Splat':
+          return new this.ast.Splat(this.$(o.name), {
+            postfix: this.$(o.postfix)
+          });
         // Literals
         case 'Literal':
           return new this.ast.Literal(this.$(o.value));
@@ -326,9 +312,9 @@
           return new this.ast.InfinityLiteral();
         case 'NaNLiteral':
           return new this.ast.NaNLiteral();
-        // Value and Access
+        // Value, Access, and Index
         case 'Value':
-          return this._buildValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : []);
+          return this._toValue(this.$(o.base), (ref1 = this.$(o.properties)) != null ? ref1 : []);
         case 'Access':
           name = this.$(o.name);
           if (name instanceof this.ast.IdentifierLiteral) {
@@ -405,21 +391,7 @@
         case 'Return':
           return new this.ast.Return(this.$(o.expression));
         case 'Yield':
-          expression = this.$(o.expression);
-          if (expression == null) {
-            expression = new this.ast.Value(new this.ast.Literal(''));
-          }
-          return new this.ast.Yield(expression);
-        // Root and Block
-        case 'Root':
-          body = this.$(o.body);
-          if (Array.isArray(body)) {
-            // Wrap array in Block if needed
-            body = new this.ast.Block(body);
-          }
-          return new this.ast.Root(body);
-        case 'Block':
-          return new this.ast.Block((ref1 = this.$(o.expressions)) != null ? ref1 : []);
+          return new this.ast.Yield(this.$(o.expression) || new this.ast.Value(new this.ast.Literal('')));
         // Classes
         case 'Class':
           return new this.ast.Class(this.$(o.variable), this.$(o.parent), this.$(o.body));
@@ -441,7 +413,7 @@
           return new this.ast.ExportDeclaration(this.$(o.clause), this.$(o.source), this.$(o.default));
         default:
           console.warn("Unknown $ast type:", o.$ast);
-          return null;
+          return new this.ast.Literal(`# Missing AST node: ${o.$ast}`);
       }
     }
 
