@@ -73,7 +73,7 @@ grammar =
   # will convert some postfix forms into blocks for us, by adjusting the
   # token stream.
   Block: [
-    o 'INDENT OUTDENT'     , $ast: '@'
+    o 'INDENT OUTDENT'     , $ast: '@', expressions: []
     o 'INDENT Body OUTDENT', $use: 2
   ]
 

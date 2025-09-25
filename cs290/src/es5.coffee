@@ -65,6 +65,16 @@ class ES5Backend
     else
       node
 
+alrra  # Filter null/undefined nodes from an array
+  _filterNodes: (nodes) ->
+    return [] unless nodes?
+    if Array.isArray nodes
+      nodes.filter (n) -> n?
+    else if nodes?
+      [nodes]
+    else
+      []
+
   # Build a Value from base + properties array (already resolved)
   _buildValue: (base, properties) ->
     if base instanceof @ast.Value
@@ -205,12 +215,12 @@ class ES5Backend
     # Strings and booleans return as-is
     return o if type is 'string' or type is 'boolean'
 
-    # Arrays: resolve items and skip nullish
+    # Arrays: resolve items, preserving structure
     if Array.isArray o
       result = []
       for val in o
         resolved = @resolve val, lookup
-        result.push resolved if resolved?
+        result.push resolved  # Always preserve array structure, including undefined
       return result
 
     # Bare functions without directive markers are terminals
@@ -259,15 +269,15 @@ class ES5Backend
           when 'Obj'                then new @ast.Obj          $(o.properties), $(o.generated)
           when 'Arr'                then new @ast.Arr          $(o.objects)
           when 'Range'              then new @ast.Range        $(o.from), $(o.to), (if $(o.exclusive) then 'exclusive' else null)
-          when 'Block'              then new @ast.Block        $(o.expressions)
+          when 'Block'              then new @ast.Block        ($(o.expressions) or [])
           when 'Return'             then new @ast.Return       $(o.expression)
           when 'Op'
             args = o.args.map (arg) -> $(arg)
             if o.invertOperator? or o.originalOperator?
-              args.push {
-                invertOperator: $(o.invertOperator) if o.invertOperator?
-                originalOperator: $(o.originalOperator) if o.originalOperator?
-              }
+              options = {}
+              options.invertOperator = $(o.invertOperator) if o.invertOperator?
+              options.originalOperator = $(o.originalOperator) if o.originalOperator?
+              args.push options
             new @ast.Op args...
           when 'Parens'             then new @ast.Parens       (@_toBlock($(o.body)) ? new @ast.Block [new @ast.Literal ''])
           when 'PropertyName'       then new @ast.PropertyName $(o.value)

@@ -18,9 +18,9 @@
     hasProp = {}.hasOwnProperty;
 
   ES5Backend = class ES5Backend {
-    constructor(options = {}, ast = {}) {
+    constructor(options1 = {}, ast = {}) {
       var ref, ref1;
-      this.options = options;
+      this.options = options1;
       this.ast = ast;
       // Use Object.create(null) to avoid prototype pollution in options
       this.compileOptions = Object.create(null);
@@ -102,6 +102,22 @@
         return lhs;
       } else {
         return node;
+      }
+    }
+
+    // Filter null/undefined nodes from an array
+    _filterNodes(nodes) {
+      if (nodes == null) {
+        return [];
+      }
+      if (Array.isArray(nodes)) {
+        return nodes.filter(function(n) {
+          return n != null;
+        });
+      } else if (nodes != null) {
+        return [nodes];
+      } else {
+        return [];
       }
     }
 
@@ -300,7 +316,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, a, accessor, actualExpression, args, base, body, bodyArg, bodyBlock, bodyNode, bodyNodes, callee, condition, context, elseBody, expression, expressionNode, ifNode, index, item, items, j, k, l, len, len1, len2, len3, loopNode, m, name, name1, nodeType, operator, opts, out, p, position, property, props, q, quote, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, source, sourceInfo, target, tmp, type, v, val, value, variable, whileNode;
+      var $, a, accessor, actualExpression, args, base, body, bodyArg, bodyBlock, bodyNode, bodyNodes, callee, condition, context, elseBody, expression, expressionNode, ifNode, index, item, items, j, k, l, len, len1, len2, len3, loopNode, m, name, name1, nodeType, operator, options, opts, out, p, position, property, props, q, quote, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, source, sourceInfo, target, tmp, type, v, val, value, variable, whileNode;
       if (o == null) {
         return o; // null/undefined
       }
@@ -317,15 +333,13 @@
         // Strings and booleans return as-is
         return o;
       }
-      // Arrays: resolve items and skip nullish
+      // Arrays: resolve items, preserving structure
       if (Array.isArray(o)) {
         result = [];
         for (j = 0, len = o.length; j < len; j++) {
           val = o[j];
           resolved = this.resolve(val, lookup);
-          if (resolved != null) {
-            result.push(resolved);
-          }
+          result.push(resolved); // Always preserve array structure, including undefined
         }
         return result;
       }
@@ -399,7 +413,7 @@
             case 'Range':
               return new this.ast.Range($(o.from), $(o.to), ($(o.exclusive) ? 'exclusive' : null));
             case 'Block':
-              return new this.ast.Block($(o.expressions));
+              return new this.ast.Block(this._filterNodes($(o.expressions)));
             case 'Return':
               return new this.ast.Return($(o.expression));
             case 'Op':
@@ -407,10 +421,14 @@
                 return $(arg);
               });
               if ((o.invertOperator != null) || (o.originalOperator != null)) {
-                args.push({
-                  invertOperator: o.invertOperator != null ? $(o.invertOperator) : void 0,
-                  originalOperator: o.originalOperator != null ? $(o.originalOperator) : void 0
-                });
+                options = {};
+                if (o.invertOperator != null) {
+                  options.invertOperator = $(o.invertOperator);
+                }
+                if (o.originalOperator != null) {
+                  options.originalOperator = $(o.originalOperator);
+                }
+                args.push(options);
               }
               return new this.ast.Op(...args);
             case 'Parens':
