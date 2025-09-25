@@ -90,9 +90,10 @@ class ES5Backend
         else
           Object.getOwnPropertyDescriptor target, prop
 
+    # Copy directive properties, resolving positional references now
     o = new Proxy lookup, handler
-
-    o[prop] = value for own prop, value of directive
+    for own prop, value of directive
+      o[prop] = if typeof value is 'number' then lookup(value - 1) else value
 
     @resolve o
 
