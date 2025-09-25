@@ -20,6 +20,9 @@ class ES5Backend
     @compileOptions.bare = @options.bare ? true
     @compileOptions.header = @options.header ? false
 
+  # ----------------------------------------------------------------------------
+  # Helpers
+  # ----------------------------------------------------------------------------
 
   # Ensure a node is a Value; if already a Value, return as-is
   _asValue: (node) ->
@@ -52,21 +55,19 @@ class ES5Backend
     props = @_filterNodes (if Array.isArray(properties) then properties else [])
     if props.length then new @ast.Value base, props else new @ast.Value base
 
-  # Helper to ensure value is a proper node (from ES6 version)
+  # Helper to ensure value is a proper node
   _ensureNode: (value) ->
     return null unless value?
     return value if value?.compileToFragments or value instanceof @ast.Base
     # Handle primitives
     if typeof value in ['string', 'number', 'boolean']
-      node = new @ast.Literal String(value)
-      return node
+      return new @ast.Literal String(value)
     # Handle objects with .value property
     if value?.value?
-      node = new @ast.PropertyName value.value
-      return node
+      return new @ast.PropertyName value.value
     null
 
-  # Helper to filter and ensure all items are nodes (from ES6 version)
+  # Helper to filter and ensure all items are nodes
   _filterNodes: (array) ->
     return [] unless array?
     result = []
@@ -81,7 +82,7 @@ class ES5Backend
     p = Object.getPrototypeOf x
     p is Object.prototype or p is null
 
-  # Helper methods (enhanced with ES6 patterns)
+  # Strip surrounding quotes from a string literal
   _stripQuotes: (value) ->
     return value unless value?.length >= 2 and typeof value is 'string'
     if (value[0] is '"' and value[value.length-1] is '"') or (value[0] is "'" and value[value.length-1] is "'")
@@ -89,34 +90,36 @@ class ES5Backend
     else
       value
 
-  # Helper to convert value to a Block node (from ES6 version)
+  # Convert value to a Block node
   _toBlock: (value) ->
     return new @ast.Block @_filterNodes(value) if Array.isArray(value)
     return value if value instanceof @ast.Block
     return new @ast.Block [@_ensureNode(value)] if value?
     new @ast.Block []
 
-  # Helper for unimplemented features (avoids repeated console.warn + literal creation)
+  # Unimplemented marker
   _unimplemented: (type, context = "") ->
     console.warn "ES5Backend: Unimplemented#{if context then " #{context}" else ""}:", type
     new @ast.Literal "/* Unimplemented: #{type} */"
 
+  # ----------------------------------------------------------------------------
+  # Entry points
+  # ----------------------------------------------------------------------------
+
   reduce: (values, positions, stackTop, symbolCount, directive) ->
     lookup = (index) -> values[stackTop - symbolCount + 1 + index]
-    # Use Object.create(null) to avoid prototype pollution and JS property conflicts
-    # This prevents conflicts with .name, .length, .constructor, .toString, etc.
+
+    # Use Object.create(null) to avoid pollution and JS property conflicts
     store = Object.create null
 
     handler =
       apply: (target, thisArg, args) -> target.apply thisArg, args
       get: (target, prop, receiver) ->
         return store[prop] if Object.prototype.hasOwnProperty.call(store, prop)
-        # Enhanced reserved property protection using Object.create(null) approach
+        # Avoid leaking function/meta props from the Proxy target
         return undefined if prop in ['name', 'length', 'prototype', 'caller', 'arguments', 'constructor', 'toString', 'valueOf']
         Reflect.get target, prop, receiver
-      set: (target, prop, value) ->
-        store[prop] = value
-        true
+      set: (target, prop, value) -> store[prop] = value; true
       has: (target, prop) -> Object.prototype.hasOwnProperty.call(store, prop) or prop of target
       ownKeys: (target) -> Reflect.ownKeys(store).concat Reflect.ownKeys(target)
       getOwnPropertyDescriptor: (target, prop) ->
@@ -128,7 +131,7 @@ class ES5Backend
         else
           Object.getOwnPropertyDescriptor target, prop
 
-    # Copy directive properties, resolving positional references now
+    # Copy directive props, resolving positional references now
     o = new Proxy lookup, handler
     for own prop, value of directive
       o[prop] = if typeof value is 'number' then lookup(value - 1) else value
@@ -136,42 +139,37 @@ class ES5Backend
     @resolve o
 
   resolve: (o, lookup = o) ->
-
-    # Null/undefined early return
-    return o unless o?  # null/undefined early return
+    return o unless o?  # null/undefined
 
     type = typeof o
 
-    # Numbers: only do 1-based lookup for positive integers
+    # Numbers: do 1-based lookup for positive integers only
     if type is 'number'
       if Number.isInteger(o) and o > 0 and typeof lookup is 'function'
         result = lookup(o - 1)
-        # If lookup returns another lookup function, it means we have nested directives
-        # In this case, return the result as-is (it will be resolved later)
         return result
       return o
 
     # Strings and booleans return as-is
     return o if type is 'string' or type is 'boolean'
 
-    # Arrays: expand along the way - only include resolved items!
+    # Arrays: resolve items and skip nullish
     if Array.isArray o
       result = []
       for val in o
         resolved = @resolve val, lookup
-        # Expand along the way: skip nulls at source instead of filtering later
         result.push resolved if resolved?
       return result
 
-    # Functions without directive markers are terminals (key fix!)
+    # Bare functions without directive markers are terminals
     if type is 'function' and not (o.$ast? or o.$use? or o.$ary? or o.$ops?)
       return o
 
-    # Objects and functions
+    # Objects and directive-bearing functions
     if type is 'object' or type is 'function'
       return o if o.constructor? and o.constructor not in [Object, Function]
 
-      $ = (val) => @resolve val, lookup  # Local resolver
+      $ = (val) => @resolve val, lookup  # local resolver
 
       if o.$ast?
         nodeType = o.$ast
@@ -187,44 +185,20 @@ class ES5Backend
           when 'UndefinedLiteral'   then new @ast.UndefinedLiteral
           when 'InfinityLiteral'    then new @ast.InfinityLiteral
           when 'NaNLiteral'         then new @ast.NaNLiteral
+
+          # ---- Refactored to helpers ----------------------------------------
           when 'Value'
-            # Tolerant pattern: accept either o.value OR o.val+o.properties
-            base = $(o.value) || $(o.val)
-            properties = $(o.properties) || []
-            # Ensure properties is an array and filter properly
-            properties = if Array.isArray(properties) then properties else []
-            # Value can have both base and properties (accessors)
-            if properties.length > 0
-              new @ast.Value base, @_filterNodes(properties)
-            else
-              new @ast.Value base
-          when 'Assign'
-            variable = $(o.variable)
-            value = $(o.value)
-            context = $(o.context)
-            # Handle object property assignments (learned from ES6 version)
-            if context is 'object' and o.expression?
-              # In object context, 'value' is the property name, 'expression' is the actual value
-              variable = $(o.value)     # Property name/key
-              value = $(o.expression)   # Actual value
-              # Ensure variable is properly wrapped for object context
-              variable = new @ast.Value variable unless variable instanceof @ast.Value
-            # Skip if variable or value is null/undefined (from empty {} placeholders)
-            return null unless variable? and value?
-            new @ast.Assign variable, value, context
-          when 'Op'                 then new @ast.Op                 $(o.args[0]), $(o.args[1]), (if o.args[2]? then $(o.args[2]))
-          when 'PropertyName'       then new @ast.PropertyName       $(o.value)
+            base = $(o.value) ? $(o.val)
+            props = $(o.properties) ? []
+            @_buildValue base, props
+
           when 'Access'
-            variable = $(o.variable)
-            name = $(o.name)
-            soak = $(o.soak)
-            # Smart-append: if LHS is already a Value, append to its properties
-            if variable instanceof @ast.Value
-              accessNode = new @ast.Access name, {soak}
-              variable.properties.push accessNode
-              variable  # return the same Value (now with extra segment)
-            else
-              new @ast.Access name, {soak}
+            @_appendAccess $(o.variable), $(o.name), $(o.soak)
+
+          when 'Index'
+            @_appendIndex ($(o.variable) or $(o.val) or $(o.base)), ($(o.index) or $(o.object))
+          # -------------------------------------------------------------------
+
           when 'Call'               then new @ast.Call   $(o.variable), $(o.args)
           when 'Obj'                then new @ast.Obj    $(o.properties), $(o.generated)
           when 'Arr'                then new @ast.Arr    $(o.objects)
@@ -232,30 +206,20 @@ class ES5Backend
           when 'Block'              then new @ast.Block  $(o.expressions)
           when 'Return'             then new @ast.Return $(o.expression)
           when 'Parens'             then new @ast.Parens (@_toBlock($(o.body)) ? new @ast.Block [new @ast.Literal ''])
-          when 'Index'
-            variable = $(o.variable) || $(o.val) || $(o.base)
-            index = $(o.index) || $(o.object)
-            # Smart-append: if LHS is already a Value, append to its properties
-            if variable instanceof @ast.Value
-              indexNode = new @ast.Index index
-              variable.properties.push indexNode
-              variable  # return the same Value (now with extra segment)
-            else
-              new @ast.Index index
-          when 'Slice'              then new @ast.Slice              $(o.range)
+          when 'Slice'              then new @ast.Slice  $(o.range)
           when 'If'
             condition = $(o.condition)
             body = @_toBlock($(o.body))
             elseBody = @_toBlock($(o.elseBody))
-            type = if $(o.type)?.toString?() is 'unless' then 'unless' else 'if'
-            ifNode = new @ast.If condition, body, {type}
+            tmp = if $(o.type)?.toString?() is 'unless' then 'unless' else 'if'
+            ifNode = new @ast.If condition, body, {type: tmp}
             ifNode.addElse elseBody if elseBody?.expressions?.length > 0
             ifNode
           when 'While'
             whileNode = new @ast.While $(o.condition), {guard: $(o.guard), isLoop: $(o.isLoop), invert: $(o.invert)}
             whileNode.body = @_toBlock($(o.body))
             whileNode
-          when 'For'                  then new @ast.For                  $(o.body), {} # create this now and $ops: 'loop' will addSource
+          when 'For'                  then new @ast.For                  $(o.body), {} # created now; $ops: 'loop' will addSource
           when 'Switch'               then new @ast.Switch               $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
           when 'SwitchWhen'           then new @ast.SwitchWhen           ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
           when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
@@ -266,7 +230,7 @@ class ES5Backend
           when 'Class'                then new @ast.Class                $(o.variable), $(o.parent), $(o.body)
           when 'FuncGlyph'            then new @ast.FuncGlyph            $(o.glyph)
           when 'Param'                then new @ast.Param                $(o.name), $(o.value), $(o.splat)
-          when 'Code'                 then new @ast.Code ($(p) for p in  $(o.params) ? [] when $(p)?), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
+          when 'Code'                 then new @ast.Code                 ($(p) for p in $(o.params) ? [] when $(p)?), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
           when 'Splat'                then new @ast.Splat                $(o.name)
           when 'Existence'            then new @ast.Existence            $(o.expression)
           when 'RegexLiteral'         then new @ast.RegexLiteral         $(o.value)
@@ -274,58 +238,54 @@ class ES5Backend
           when 'PassthroughLiteral'   then new @ast.PassthroughLiteral   $(o.value)
           when 'Interpolation'
             expression = $(o.expression)
-            # Expression might be an array, so extract the first element
-            actualExpression = if Array.isArray(expression) and expression.length > 0
-              expression[0]
-            else
-              expression
-            # Handle empty interpolation specially
-            expressionNode = if actualExpression instanceof @ast.Base
-              actualExpression
-            else if actualExpression?
-              @_ensureNode(actualExpression)
-            else
-              # Empty interpolation should produce empty string to avoid ${} syntax error
-              new @ast.Literal '""'
+            actualExpression = if Array.isArray(expression) and expression.length > 0 then expression[0] else expression
+            expressionNode =
+              if actualExpression instanceof @ast.Base then actualExpression
+              else if actualExpression? then @_ensureNode(actualExpression)
+              else new @ast.Literal '""' # avoid ${} syntax error
             new @ast.Interpolation expressionNode
           when 'StringWithInterpolations'
             body = $(o.body)
             quote = $(o.quote)
-            # Convert body to proper nodes - StringWithInterpolations expects a Block
-            bodyNode = if Array.isArray(body)
-              bodyNodes = body.map (b) => if b instanceof @ast.Base then b else @_ensureNode(b)
-              new @ast.Block @_filterNodes(bodyNodes)
-            else if body instanceof @ast.Block
-              body
-            else if body?
-              new @ast.Block [@_ensureNode(body)]
-            else
-              new @ast.Block []
+            bodyNode =
+              if Array.isArray(body)
+                bodyNodes = body.map (b) => if b instanceof @ast.Base then b else @_ensureNode(b)
+                new @ast.Block @_filterNodes(bodyNodes)
+              else if body instanceof @ast.Block then body
+              else if body? then new @ast.Block [@_ensureNode(body)]
+              else new @ast.Block []
             new @ast.StringWithInterpolations bodyNode, {quote}
-          when 'Catch'                then new @ast.Catch              @_toBlock($(o.recovery) || $(o.body)), $(o.variable) || $(o.errorVariable)
+          when 'Catch'                then new @ast.Catch              @_toBlock($(o.recovery) or $(o.body)), $(o.variable) or $(o.errorVariable)
           when 'Throw'                then new @ast.Throw              $(o.expression)
           when 'Literal'              then new @ast.Literal            $(o.value)
-          else @_unimplemented nodeType, "AST node type"
+          when 'Assign'
+            variable = $(o.variable)
+            value = $(o.value)
+            context = $(o.context)
+            if context is 'object' and o.expression?
+              # In object context, 'value' is the property name, 'expression' is the actual value
+              variable = $(o.value)
+              value = $(o.expression)
+              variable = @_asValue variable
+            return null unless variable? and value?
+            new @ast.Assign variable, value, context
+          else
+            @_unimplemented nodeType, "AST node type"
 
       else if o.$ary?
         items = $(o.$ary)
-        # Ensure we always return an array
         items = if Array.isArray(items) then items else [items]
-        # Important: filter out undefined/null items (common from optional grammar rules)
         items.filter (item) -> item?
 
       else if o.$use?
-        # Special case: $use: 'token' means get the current token's value
+        # $use supports 'token' or nested directive
         if o.$use is 'token'
-          # For THIS_PROPERTY tokens, the lookup function has the token value
           if typeof lookup is 'function' and lookup.value?
             resolvedValue = lookup.value
           else
-            # Fallback: try to get from context
             resolvedValue = lookup(0)?.value ? 'unknown_token'
         else
           resolvedValue = $(o.$use)
-        # Handle both 'method' (function calls) and 'prop' (property access)
         if o.method?
           resolvedValue = resolvedValue[o.method]?() ? resolvedValue
         else if o.prop?
@@ -339,36 +299,31 @@ class ES5Backend
             if o.add?
               target = $(o.add[0])
               accessor = $(o.add[1])
-              target = new @ast.Value target unless target instanceof @ast.Value
+              target = @_asValue target
               target.add [accessor] if accessor?.traverseChildren?
               target
             else
               @_unimplemented "$ops value without add", "$ops"
+
           when 'array'
-            # Array operations
             if o.append?
               target = $(o.append[0])
               target = [] unless Array.isArray target
               for item in o.append[1..] when item?
                 resolved = $(item)
-                if Array.isArray(resolved)
-                  target = target.concat resolved
-                else
-                  target.push resolved
+                if Array.isArray(resolved) then target = target.concat resolved else target.push resolved
               target
             else if o.gather?
               result = []
               for item in o.gather when item?
                 resolved = $(item)
-                if Array.isArray(resolved)
-                  result = result.concat resolved
-                else if resolved?
-                  result.push resolved
+                if Array.isArray(resolved) then result = result.concat resolved
+                else if resolved? then result.push resolved
               result
             else
               @_unimplemented "$ops array without append/gather", "$ops"
+
           when 'if'
-            # If operations for adding else clauses
             if o.addElse?
               ifNode = $(o.addElse[0])
               elseBody = $(o.addElse[1])
@@ -376,8 +331,8 @@ class ES5Backend
               ifNode
             else
               @_unimplemented "$ops if without addElse", "$ops"
+
           when 'loop'
-            # Loop operations
             if o.addSource?
               loopNode = $(o.addSource[0])
               sourceInfo = $(o.addSource[1])
@@ -389,12 +344,11 @@ class ES5Backend
               loopNode
             else
               @_unimplemented "$ops loop without addSource/addBody", "$ops"
+
           when 'prop'
-            # Property operations (like setting soak on Index)
             if o.set?
               target = $(o.set.target)
-              if o.set.property? and target?
-                target[o.set.property] = $(o.set.value)
+              if o.set.property? and target? then target[o.set.property] = $(o.set.value)
               target
             else if o.addProp?
               target = $(o.addProp[0])
@@ -403,6 +357,7 @@ class ES5Backend
               target
             else
               @_unimplemented "$ops prop without set/addProp", "$ops"
+
           else
             @_unimplemented o.$ops, "$ops type"
 
