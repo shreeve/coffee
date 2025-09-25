@@ -81,13 +81,13 @@ return r(5,{$ast:"Assign",variable:1,value:4});
 case 63: case 122: case 127: case 128: case 130: case 131: case 132: case 133: case 134: case 137: case 138: case 317: case 318:
 return r(1,{$ast:"Value",base:1});
 case 65:
-return r(3,{$ast:"Assign",value:{$ast:"Value",base:1,$pos:1},expression:3,context:"object",operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"Assign",variable:{$ast:"Value",base:1,$pos:1},value:3,context:"object",operatorToken:{$ast:"Literal",value:2,$pos:2}});
 case 66:
-return r(5,{$ast:"Assign",value:{$ast:"Value",base:1,$pos:1},expression:4,context:"object",operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(5,{$ast:"Assign",variable:{$ast:"Value",base:1,$pos:1},value:4,context:"object",operatorToken:{$ast:"Literal",value:2,$pos:2}});
 case 67:
-return r(3,{$ast:"Assign",value:{$ast:"Value",base:1,$pos:1},expression:3,operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"Assign",variable:{$ast:"Value",base:1,$pos:1},value:3,operatorToken:{$ast:"Literal",value:2,$pos:2}});
 case 68:
-return r(5,{$ast:"Assign",value:{$ast:"Value",base:1,$pos:1},expression:4,operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(5,{$ast:"Assign",variable:{$ast:"Value",base:1,$pos:1},value:4,operatorToken:{$ast:"Literal",value:2,$pos:2}});
 case 73:
 return r(3,{$ast:"Value",base:{$ast:"ComputedPropertyName",expression:2}});
 case 74:

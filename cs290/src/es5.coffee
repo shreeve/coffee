@@ -244,7 +244,10 @@ class ES5Backend
           args.push options
         new @ast.Op args...
 
-      when 'Assign' then new @ast.Assign @$(o.variable), @$(o.value), @$(o.operator)
+      when 'Assign' 
+        options = {}
+        options.operatorToken = @$(o.operatorToken) if o.operatorToken
+        new @ast.Assign @$(o.variable), @$(o.value), @$(o.context), options
 
       # Control Flow
       when 'If'

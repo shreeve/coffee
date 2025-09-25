@@ -147,10 +147,10 @@ grammar =
   AssignObj: [
     o 'ObjAssignable'                                  , $ast: 'Value', base: 1
     o 'ObjRestValue'
-    o 'ObjAssignable : Expression'                     , $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'ObjAssignable : INDENT Expression OUTDENT'      , $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'SimpleObjAssignable = Expression'               , $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 3, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'SimpleObjAssignable = INDENT Expression OUTDENT', $ast: 'Assign', value: {$ast: 'Value', base: 1, $pos: 1}, expression: 4, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'ObjAssignable : Expression'                     , $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'ObjAssignable : INDENT Expression OUTDENT'      , $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'SimpleObjAssignable = Expression'               , $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 3, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'SimpleObjAssignable = INDENT Expression OUTDENT', $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 4, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
   ]
 
   SimpleObjAssignable: [

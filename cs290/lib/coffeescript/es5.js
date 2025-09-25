@@ -361,7 +361,11 @@
           }
           return new this.ast.Op(...args);
         case 'Assign':
-          return new this.ast.Assign(this.$(o.variable), this.$(o.value), this.$(o.operator));
+          options = {};
+          if (o.operatorToken) {
+            options.operatorToken = this.$(o.operatorToken);
+          }
+          return new this.ast.Assign(this.$(o.variable), this.$(o.value), this.$(o.context), options);
         // Control Flow
         case 'If':
           condition = this._ensureLocationData(this.$(o.condition));
