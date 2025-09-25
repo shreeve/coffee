@@ -31,7 +31,7 @@ global.test = (name, fnOrExpected) ->
       # Ultra-simple: test "code", expected
       compiled = CoffeeScript.compile(name.trim())
       # Smart execution: use full function for variable assignments, expression extraction for literals
-      if name.includes('=') or name.includes(';') or name.includes('if ') or name.includes('unless ') or name.trim().startsWith('->') or name.trim().startsWith('=>') or name.includes(') ->')
+      if name.includes('=') or name.includes(';') or name.includes('if ') or name.includes('unless ') or name.trim().startsWith('->') or name.trim().startsWith('=>') or name.includes(') ->') or name.includes('for ') or name.includes('while ') or name.includes('until ')
         # Contains assignments, control flow, or functions - need full function execution for variable scope
         result = eval(compiled)
         # Special handling for assignment + function call tests
@@ -204,7 +204,7 @@ for file, fileIndex in testFiles
 
   try
     # Use global CoffeeScript to compile and run test
-    js = require('coffeescript').compile(code, bare: true, filename: file)
+    js = CoffeeScript.compile(code, filename: file)
     eval(js)
   catch e
     failed++
