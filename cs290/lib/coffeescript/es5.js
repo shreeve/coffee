@@ -505,7 +505,7 @@
             case 'Try':
               return new this.ast.Try(this._toBlock($(o.attempt)), $(o.catch), this._toBlock($(o.ensure)));
             case 'Class':
-              return new this.ast.Class($(o.variable), $(o.parent), $(o.body));
+              return new this.ast.Class($(o.variable), $(o.parent), this._toBlock($(o.body)));
             case 'FuncGlyph':
               return new this.ast.FuncGlyph($(o.glyph));
             case 'Param':
