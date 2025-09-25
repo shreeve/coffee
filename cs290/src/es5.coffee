@@ -330,7 +330,7 @@ class ES5Backend
           when 'Elision'              then new @ast.Elision
           when 'Expansion'            then new @ast.Expansion
           when 'Try'                  then new @ast.Try                  @_toBlock($(o.attempt)), $(o.catch), @_toBlock($(o.ensure))
-          when 'Class'                then new @ast.Class                $(o.variable), $(o.parent), $(o.body)
+          when 'Class'                then new @ast.Class                $(o.variable), $(o.parent), @_toBlock($(o.body))
           when 'FuncGlyph'            then new @ast.FuncGlyph            $(o.glyph)
           when 'Param'                then new @ast.Param                $(o.name), $(o.value), $(o.splat)
           when 'Code'                 then new @ast.Code                 ($(p) for p in $(o.params) ? [] when $(p)?), @_toBlock($(o.body)), $(o.funcGlyph), $(o.paramStart)
