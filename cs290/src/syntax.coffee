@@ -261,7 +261,7 @@ grammar =
 
   Splat: [
     # Keep original behavior for general splats
-    o 'Expression ...', $ast: '@', body: 1
+    o 'Expression ...', $ast: '@', name: 1
     o '... Expression', $ast: '@', name: 2, postfix: false
   ]
 
