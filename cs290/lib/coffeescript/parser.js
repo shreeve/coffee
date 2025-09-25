@@ -11,9 +11,9 @@ var parserInstance = {
 var r = yy.backend && function(count, directive) { return yy.backend.reduce($$, _$, $$.length - 1, count, directive); };
 switch (yystate) {
 case 1:
-return r(1,{$ast:"Root",body:[]});
+return r(1,{$ast:"Root",body:{$ast:"Block",expressions:[]}});
 case 2:
-return r(1,{$ast:"Root",body:1});
+return r(1,{$ast:"Root",body:{$ast:"Block",expressions:1}});
 case 3: case 44: case 107: case 158: case 184: case 211: case 249: case 263: case 267: case 319: case 365:
 return r(1,{$ary:[1]});
 case 4: case 108: case 159: case 185: case 212: case 250: case 259:
@@ -25,7 +25,7 @@ return r(1,{$use:1});
 case 13:
 return r(1,{$ast:"StatementLiteral",value:1});
 case 31:
-return r(1,{$ast:"Op",args:[1,{$ast:"Value"}]});
+return r(1,{$ast:"Op",args:[1,{$ast:"Value",base:{$ast:"Literal",value:""}}]});
 case 32: case 381: case 382: case 383: case 385: case 386: case 387: case 388: case 389: case 391: case 392: case 412:
 return r(2,{$ast:"Op",args:[1,2]});
 case 33: case 390:
@@ -34,8 +34,8 @@ case 34:
 return r(3,{$ast:"Op",args:[{$use:1,method:"concat",args:[2]},3]});
 case 35:
 return r(2,{$ast:"Block",expressions:[]});
-case 36: case 151:
-return r(3,{$use:2});
+case 36:
+return r(3,{$ast:"Block",expressions:2});
 case 37:
 return r(1,{$ast:"IdentifierLiteral",value:1});
 case 38: case 39:
@@ -77,24 +77,24 @@ return r(4,{$ast:"Assign",variable:1,value:4});
 case 62:
 return r(5,{$ast:"Assign",variable:1,value:4});
 case 63: case 122: case 127: case 128: case 130: case 131: case 132: case 133: case 134: case 137: case 138: case 317: case 318:
-return r(1,{$ast:"Value",val:1});
+return r(1,{$ast:"Value",base:1});
 case 65:
-return r(3,{$ast:"Assign",value:{$ast:"Value",val:1,$pos:1},expression:3,context:"object",operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"Assign",value:{$ast:"Value",base:1,$pos:1},expression:3,context:"object",operatorToken:{$ast:"Literal",value:2,$pos:2}});
 case 66:
-return r(5,{$ast:"Assign",value:{$ast:"Value",val:1,$pos:1},expression:4,context:"object",operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(5,{$ast:"Assign",value:{$ast:"Value",base:1,$pos:1},expression:4,context:"object",operatorToken:{$ast:"Literal",value:2,$pos:2}});
 case 67:
-return r(3,{$ast:"Assign",value:{$ast:"Value",val:1,$pos:1},expression:3,operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"Assign",value:{$ast:"Value",base:1,$pos:1},expression:3,operatorToken:{$ast:"Literal",value:2,$pos:2}});
 case 68:
-return r(5,{$ast:"Assign",value:{$ast:"Value",val:1,$pos:1},expression:4,operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(5,{$ast:"Assign",value:{$ast:"Value",base:1,$pos:1},expression:4,operatorToken:{$ast:"Literal",value:2,$pos:2}});
 case 73:
-return r(3,{$ast:"Value",val:{$ast:"ComputedPropertyName",expression:2}});
+return r(3,{$ast:"Value",base:{$ast:"ComputedPropertyName",expression:2}});
 case 74:
-return r(4,{$ast:"Value",val:{$ast:"ThisLiteral",value:1,$pos:1},properties:[{$ast:"ComputedPropertyName",name:3,$pos:3}],context:"this"});
+return r(4,{$ast:"Value",base:{$ast:"ThisLiteral",value:1,$pos:1},properties:[{$ast:"ComputedPropertyName",name:3,$pos:3}],context:"this"});
 case 76:
-return r(2,{$ast:"Splat",name:{$ast:"Value",val:1},postfix:false});
+return r(2,{$ast:"Splat",name:{$ast:"Value",base:1},postfix:false});
 case 77:
-return r(2,{$ast:"Splat",name:{$ast:"Value",val:2},postfix:false});
-case 78:
+return r(2,{$ast:"Splat",name:{$ast:"Value",base:2},postfix:false});
+case 78: case 120:
 return r(2,{$ast:"Splat",name:1});
 case 79: case 121:
 return r(2,{$ast:"Splat",name:2,postfix:false});
@@ -103,7 +103,7 @@ return r(3,{$ast:"SuperCall",variable:{$ast:"Super"},args:3,soak:{$use:2,prop:"s
 case 86: case 224:
 return r(2,{$ast:"DynamicImportCall",variable:{$ast:"DynamicImport"},args:2});
 case 87:
-return r(3,{$ast:"Call",variable:{$ast:"Value",val:1},args:3,soak:{$use:2,prop:"soak"}});
+return r(3,{$ast:"Call",variable:{$ast:"Value",base:1},args:3,soak:{$use:2,prop:"soak"}});
 case 88: case 222:
 return r(3,{$ast:"Call",variable:1,args:3,soak:{$use:2,prop:"soak"}});
 case 89: case 90: case 123: case 124:
@@ -148,8 +148,6 @@ case 114:
 return r(3,{$ast:"Param",name:1,value:3});
 case 115: case 257:
 return r(1,{$ast:"Expansion"});
-case 120:
-return r(2,{$ast:"Splat",body:1});
 case 139:
 return r(3,{$ast:"Super",accessor:{$ast:"Access",name:3,$pos:3},literal:{$ast:"Literal",value:1,$pos:1}});
 case 140:
@@ -170,6 +168,8 @@ case 148:
 return r(1,{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true});
 case 149:
 return r(1,{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true,soak:true});
+case 151:
+return r(3,{$use:2});
 case 152:
 return r(5,{$use:3});
 case 153:
@@ -291,17 +291,17 @@ return r(2,{$ary:[{}]});
 case 228:
 return r(4,{$ary:2,implicit:{$use:1,prop:"generated"}});
 case 229: case 235:
-return r(1,{$ast:"Value",val:{$ast:"ThisLiteral"}});
+return r(1,{$ast:"Value",base:{$ast:"ThisLiteral"}});
 case 230:
-return r(1,{$ast:"Value",val:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:{$ast:"PropertyName",value:1}}],bareLiteral:{$ast:"ThisLiteral"}});
+return r(1,{$ast:"Value",base:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:{$ast:"PropertyName",value:1}}],bareLiteral:{$ast:"ThisLiteral"}});
 case 231:
-return r(2,{$ast:"Value",val:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:2}],bareLiteral:{$ast:"ThisLiteral"}});
+return r(2,{$ast:"Value",base:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:2}],bareLiteral:{$ast:"ThisLiteral"}});
 case 232:
-return r(3,{$ast:"Value",val:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:3}],bareLiteral:{$ast:"ThisLiteral"}});
+return r(3,{$ast:"Value",base:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:3}],bareLiteral:{$ast:"ThisLiteral"}});
 case 233:
-return r(4,{$ast:"Value",val:{$ast:"ThisLiteral"},properties:[{$ast:"Index",index:3}],bareLiteral:{$ast:"ThisLiteral"}});
+return r(4,{$ast:"Value",base:{$ast:"ThisLiteral"},properties:[{$ast:"Index",index:3}],bareLiteral:{$ast:"ThisLiteral"}});
 case 234:
-return r(1,{$ast:"Value",val:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:{$ast:"PropertyName",value:"constructor"}}],bareLiteral:{$ast:"ThisLiteral"}});
+return r(1,{$ast:"Value",base:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:{$ast:"PropertyName",value:"constructor"}}],bareLiteral:{$ast:"ThisLiteral"}});
 case 236:
 return r(2,{$ast:"Arr",value:{$ary:[{}]}});
 case 237:
@@ -345,7 +345,7 @@ return r(5,{$ast:"Try",attempt:2,catch:3,ensure:5,finallyTag:{$ast:"Literal",val
 case 279:
 return r(3,{$ast:"Catch",recovery:3,variable:2});
 case 280:
-return r(3,{$ast:"Catch",body:3,errorVariable:{$ast:"Value",val:2}});
+return r(3,{$ast:"Catch",body:3,errorVariable:{$ast:"Value",base:2}});
 case 281:
 return r(2,{$ast:"Catch",recovery:2});
 case 282:
@@ -375,9 +375,9 @@ return r(2,{$ast:"While",condition:{$ast:"BooleanLiteral",value:"true"},isLoop:t
 case 303: case 304:
 return r(2,{$ops:"loop",addBody:[2,1],postfix:true});
 case 307:
-return r(2,{$ast:"For",body:{$ary:[]},source:{$ast:"Value",val:2,$pos:2}});
+return r(2,{$ast:"For",body:{$ary:[]},source:{$ast:"Value",base:2,$pos:2}});
 case 308: case 310:
-return r(4,{$ast:"For",body:{$ary:[]},source:{$ast:"Value",val:2,$pos:2},step:4});
+return r(4,{$ast:"For",body:{$ary:[]},source:{$ast:"Value",base:2,$pos:2},step:4});
 case 309: case 311:
 return r(2,{$ops:"loop",addSource:[1,2]});
 case 312:
@@ -427,7 +427,7 @@ return r(3,{$ops:"if",addElse:[1,3]});
 case 373: case 374: case 379: case 380:
 return r(3,{$ast:"If",condition:3,body:[1],type:2,postfix:true});
 case 384:
-return r(2,{$ast:"Op",args:[{$use:1,method:"toString"},2,undefined,undefined],originalOperator:{$use:1,prop:"original"}});
+return r(2,{$ast:"Op",args:[{$use:1,method:"toString"},2],originalOperator:{$use:1,prop:"original"}});
 case 393: case 394:
 return r(2,{$ast:"Op",args:[2,1,null,true]});
 case 395:
