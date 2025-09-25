@@ -26,18 +26,16 @@ class ES5Backend
 
   # Helper to convert base + properties to Value node
   _toValue: (base, properties) ->
+    props = if Array.isArray(properties) then properties else []
+
+    # Handle existing Value
     if base instanceof @ast.Value
-      props = if Array.isArray(properties) then properties else []
       base.add props if props.length
       return base
 
+    # Ensure base is a node
     base = @_toNode(base) if base? and not (base instanceof @ast.Base)
-    props = if Array.isArray(properties) then properties else []
-
-    if props.length
-      new @ast.Value base, props
-    else
-      new @ast.Value base
+    new @ast.Value base, props
 
   # Main entry point (called by parser as 'reduce')
   reduce: (values, positions, stackTop, symbolCount, directive) ->
