@@ -20,14 +20,6 @@ class ES5Backend
     @compileOptions.bare = @options.bare ? true
     @compileOptions.header = @options.header ? false
 
-  # Helper methods (enhanced with ES6 patterns)
-  _stripQuotes: (value) ->
-    return value unless value?.length >= 2 and typeof value is 'string'
-    if (value[0] is '"' and value[value.length-1] is '"') or (value[0] is "'" and value[value.length-1] is "'")
-      value.slice(1, -1)
-    else
-      value
-
   # Helper to ensure value is a proper node (from ES6 version)
   _ensureNode: (value) ->
     return null unless value?
@@ -50,6 +42,14 @@ class ES5Backend
       node = if item instanceof @ast.Base then item else @_ensureNode(item)
       result.push node if node?
     result
+
+  # Helper methods (enhanced with ES6 patterns)
+  _stripQuotes: (value) ->
+    return value unless value?.length >= 2 and typeof value is 'string'
+    if (value[0] is '"' and value[value.length-1] is '"') or (value[0] is "'" and value[value.length-1] is "'")
+      value.slice(1, -1)
+    else
+      value
 
   # Helper to convert value to a Block node (from ES6 version)
   _toBlock: (value) ->
