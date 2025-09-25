@@ -28,6 +28,58 @@
       this.compileOptions.header = (ref1 = this.options.header) != null ? ref1 : false;
     }
 
+    // Ensure a node is a Value; if already a Value, return as-is
+    _asValue(node) {
+      if (node == null) {
+        return null;
+      }
+      if (node instanceof this.ast.Value) {
+        return node;
+      }
+      return new this.ast.Value(node);
+    }
+
+    // Append an Access (with optional soak) to a value-ish LHS
+    _appendAccess(lhs, name, soak) {
+      if (name == null) {
+        return null;
+      }
+      if ((lhs != null) && lhs instanceof this.ast.Value) {
+        lhs.properties.push(new this.ast.Access(name, {soak}));
+        return lhs;
+      } else {
+        // If there’s no existing Value, a bare Access is fine (caller can wrap later)
+        return new this.ast.Access(name, {soak});
+      }
+    }
+
+    // Append an Index to a value-ish LHS
+    _appendIndex(lhs, indexExpr) {
+      if (indexExpr == null) {
+        return null;
+      }
+      if ((lhs != null) && lhs instanceof this.ast.Value) {
+        lhs.properties.push(new this.ast.Index(indexExpr));
+        return lhs;
+      } else {
+        return new this.ast.Index(indexExpr);
+      }
+    }
+
+    // Build a Value from base + properties array (already resolved)
+    _buildValue(base, properties) {
+      var props;
+      if ((base != null) && !(base instanceof this.ast.Base)) {
+        base = this._ensureNode(base);
+      }
+      props = this._filterNodes((Array.isArray(properties) ? properties : []));
+      if (props.length) {
+        return new this.ast.Value(base, props);
+      } else {
+        return new this.ast.Value(base);
+      }
+    }
+
     // Helper to ensure value is a proper node (from ES6 version)
     _ensureNode(value) {
       var node, ref;
@@ -577,7 +629,7 @@
             ref10 = Object.entries(o);
             for (m = 0, len3 = ref10.length; m < len3; m++) {
               [k, v] = ref10[m];
-              out[k] = v;
+              out[k] = $(v);
             }
             return out;
           }

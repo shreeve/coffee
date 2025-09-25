@@ -20,6 +20,38 @@ class ES5Backend
     @compileOptions.bare = @options.bare ? true
     @compileOptions.header = @options.header ? false
 
+
+  # Ensure a node is a Value; if already a Value, return as-is
+  _asValue: (node) ->
+    return null unless node?
+    return node if node instanceof @ast.Value
+    new @ast.Value node
+
+  # Append an Access (with optional soak) to a value-ish LHS
+  _appendAccess: (lhs, name, soak) ->
+    return null unless name?
+    if lhs? and lhs instanceof @ast.Value
+      lhs.properties.push new @ast.Access name, {soak}
+      lhs
+    else
+      # If there’s no existing Value, a bare Access is fine (caller can wrap later)
+      new @ast.Access name, {soak}
+
+  # Append an Index to a value-ish LHS
+  _appendIndex: (lhs, indexExpr) ->
+    return null unless indexExpr?
+    if lhs? and lhs instanceof @ast.Value
+      lhs.properties.push new @ast.Index indexExpr
+      lhs
+    else
+      new @ast.Index indexExpr
+
+  # Build a Value from base + properties array (already resolved)
+  _buildValue: (base, properties) ->
+    base = @_ensureNode(base) if base? and not (base instanceof @ast.Base)
+    props = @_filterNodes (if Array.isArray(properties) then properties else [])
+    if props.length then new @ast.Value base, props else new @ast.Value base
+
   # Helper to ensure value is a proper node (from ES6 version)
   _ensureNode: (value) ->
     return null unless value?
