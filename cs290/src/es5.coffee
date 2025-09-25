@@ -16,12 +16,6 @@ class ES5Backend
       node.updateLocationDataIfMissing?(node.locationData)
     node
 
-  # Filter null/undefined nodes from an array
-  _filterNodes: (nodes) ->
-    return [] unless nodes?
-    return nodes.filter (n) -> n? if Array.isArray nodes
-    [nodes]
-
   # Main entry point (called by parser as 'reduce')
   reduce: (values, positions, stackTop, symbolCount, directive) ->
     # Create lookup function to access stack values
@@ -154,7 +148,7 @@ class ES5Backend
 
             # Ensure body is a Block
             if not (body instanceof @ast.Block)
-              body = new @ast.Block @_filterNodes(if Array.isArray(body) then body else [body])
+              body = new @ast.Block (if Array.isArray(body) then body else [body])
 
             @_addLocationData loopNode
             @_addLocationData body
@@ -330,12 +324,12 @@ class ES5Backend
   # Build a Value from base + properties
   _buildValue: (base, properties) ->
     if base instanceof @ast.Value
-      props = @_filterNodes (if Array.isArray(properties) then properties else [])
+      props = if Array.isArray(properties) then properties else []
       base.add props if props.length
       return base
 
     base = @_ensureNode(base) if base? and not (base instanceof @ast.Base)
-    props = @_filterNodes (if Array.isArray(properties) then properties else [])
+    props = if Array.isArray(properties) then properties else []
 
     if props.length
       new @ast.Value base, props

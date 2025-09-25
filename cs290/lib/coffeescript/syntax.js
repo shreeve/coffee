@@ -24,7 +24,10 @@
       o('',
       {
         $ast: '@',
-        body: []
+        body: {
+          $ast: 'Block',
+          expressions: []
+        }
       }),
       o('Body',
       {
@@ -35,13 +38,24 @@
     Body: [
       o('Line',
       {
-        $ary: [1]
+        $ast: 'Block',
+        expressions: {
+          $ary: [1]
+        }
       }),
       o('Body TERMINATOR Line',
       {
-        $ops: 'array',
-        append: [1,
-      3]
+        $ast: 'Block',
+        expressions: {
+          $ops: 'array',
+          append: [
+            {
+              $use: 1,
+              prop: 'expressions'
+            },
+            3
+          ]
+        }
       }),
       o('Body TERMINATOR')
     ],
@@ -68,7 +82,11 @@
         args: [
           1,
           {
-            $ast: 'Value'
+            $ast: 'Value',
+            base: {
+              $ast: 'Literal',
+              value: ''
+            }
           }
         ]
       }),
@@ -103,11 +121,13 @@
     Block: [
       o('INDENT OUTDENT',
       {
-        $ast: '@'
+        $ast: '@',
+        expressions: []
       }),
       o('INDENT Body OUTDENT',
       {
-        $use: 2
+        $ast: '@',
+        expressions: 2
       })
     ],
     Identifier: [
@@ -358,7 +378,7 @@
       o('ObjAssignable',
       {
         $ast: 'Value',
-        val: 1
+        base: 1
       }),
       o('ObjRestValue'),
       o('ObjAssignable : Expression',
@@ -366,7 +386,7 @@
         $ast: 'Assign',
         value: {
           $ast: 'Value',
-          val: 1,
+          base: 1,
           $pos: 1
         },
         expression: 3,
@@ -382,7 +402,7 @@
         $ast: 'Assign',
         value: {
           $ast: 'Value',
-          val: 1,
+          base: 1,
           $pos: 1
         },
         expression: 4,
@@ -398,7 +418,7 @@
         $ast: 'Assign',
         value: {
           $ast: 'Value',
-          val: 1,
+          base: 1,
           $pos: 1
         },
         expression: 3,
@@ -413,7 +433,7 @@
         $ast: 'Assign',
         value: {
           $ast: 'Value',
-          val: 1,
+          base: 1,
           $pos: 1
         },
         expression: 4,
@@ -430,7 +450,7 @@
       o('[ Expression ]',
       {
         $ast: 'Value',
-        val: {
+        base: {
           $ast: 'ComputedPropertyName',
           expression: 2
         }
@@ -438,7 +458,7 @@
       o('@ [ Expression ]',
       {
         $ast: 'Value',
-        val: {
+        base: {
           $ast: 'ThisLiteral',
           value: 1,
           $pos: 1
@@ -462,7 +482,7 @@
         $ast: 'Splat',
         name: {
           $ast: 'Value',
-          val: 1
+          base: 1
         },
         postfix: false
       }),
@@ -471,7 +491,7 @@
         $ast: 'Splat',
         name: {
           $ast: 'Value',
-          val: 2
+          base: 2
         },
         postfix: false
       }),
@@ -519,7 +539,7 @@
         $ast: 'Call',
         variable: {
           $ast: 'Value',
-          val: 1
+          base: 1
         },
         args: 3,
         soak: {
@@ -748,7 +768,7 @@
       o('Expression ...',
       {
         $ast: '@',
-        body: 1
+        name: 1
       }),
       o('... Expression',
       {
@@ -761,7 +781,7 @@
       o('Identifier',
       {
         $ast: 'Value',
-        val: 1
+        base: 1
       }),
       o('Value Accessor',
       {
@@ -782,12 +802,12 @@
       o('Array',
       {
         $ast: 'Value',
-        val: 1
+        base: 1
       }),
       o('Object',
       {
         $ast: 'Value',
-        val: 1
+        base: 1
       })
     ],
     // The types of things that can be treated as values
@@ -796,39 +816,39 @@
       o('Literal',
       {
         $ast: '@',
-        val: 1
+        base: 1
       }),
       o('Parenthetical',
       {
         $ast: '@',
-        val: 1
+        base: 1
       }),
       o('Range',
       {
         $ast: '@',
-        val: 1
+        base: 1
       }),
       o('Invocation',
       {
         $ast: '@',
-        val: 1
+        base: 1
       }),
       o('DoIife',
       {
         $ast: '@',
-        val: 1
+        base: 1
       }),
       o('ThisProperty'), // ThisProperty first for precedence
       o('This'),
       o('Super',
       {
         $ast: '@',
-        val: 1
+        base: 1
       }),
       o('MetaProperty',
       {
         $ast: '@',
-        val: 1
+        base: 1
       })
     ],
     // A `super`-based expression that can be used as a value.
@@ -1612,7 +1632,7 @@
       o('THIS',
       {
         $ast: 'Value',
-        val: {
+        base: {
           $ast: 'ThisLiteral'
         }
       })
@@ -1623,7 +1643,7 @@
       o('THIS_PROPERTY',
       {
         $ast: 'Value',
-        val: {
+        base: {
           $ast: 'ThisLiteral'
         },
         properties: [
@@ -1643,7 +1663,7 @@
       o('@ BarePropertyName',
       {
         $ast: 'Value',
-        val: {
+        base: {
           $ast: 'ThisLiteral'
         },
         properties: [
@@ -1659,7 +1679,7 @@
       o('@ . BarePropertyName',
       {
         $ast: 'Value',
-        val: {
+        base: {
           $ast: 'ThisLiteral'
         },
         properties: [
@@ -1675,7 +1695,7 @@
       o('@ [ Expression ]',
       {
         $ast: 'Value',
-        val: {
+        base: {
           $ast: 'ThisLiteral'
         },
         properties: [
@@ -1691,7 +1711,7 @@
       o('THIS_CONSTRUCTOR',
       {
         $ast: 'Value',
-        val: {
+        base: {
           $ast: 'ThisLiteral'
         },
         properties: [
@@ -1710,7 +1730,7 @@
       o('@',
       {
         $ast: 'Value',
-        val: {
+        base: {
           $ast: 'ThisLiteral' // Fallback: bare @  (must be last)
         }
       })
@@ -2023,7 +2043,7 @@
         body: 3,
         errorVariable: {
           $ast: 'Value',
-          val: 2
+          base: 2
         }
       }),
       o('CATCH Block',
@@ -2225,7 +2245,7 @@
         },
         source: {
           $ast: 'Value',
-          val: 2,
+          base: 2,
           $pos: 2
         }
       }),
@@ -2237,7 +2257,7 @@
         },
         source: {
           $ast: 'Value',
-          val: 2,
+          base: 2,
           $pos: 2
         },
         step: 4
@@ -2258,7 +2278,7 @@
         },
         source: {
           $ast: 'Value',
-          val: 2,
+          base: 2,
           $pos: 2
         },
         step: 4
@@ -2337,12 +2357,12 @@
       o('Array',
       {
         $ast: 'Value',
-        val: 1
+        base: 1
       }),
       o('Object',
       {
         $ast: 'Value',
-        val: 1
+        base: 1
       })
     ],
     // An array or range comprehension has variables for the current element
@@ -2789,9 +2809,7 @@
             $use: 1,
             method: 'toString'
           },
-          2,
-          void 0,
-          void 0
+          2
         ],
         originalOperator: {
           $use: 1,
