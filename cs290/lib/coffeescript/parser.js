@@ -13,11 +13,11 @@ switch (yystate) {
 case 1:
 return r(1,{$ast:"Root",body:{$ast:"Block",expressions:[]}});
 case 2:
-return r(1,{$ast:"Root",body:{$ast:"Block",expressions:1}});
-case 3: case 44: case 107: case 158: case 184: case 211: case 249: case 263: case 267: case 319: case 365:
-return r(1,{$ary:[1]});
-case 4: case 108: case 159: case 185: case 212: case 250: case 259:
-return r(3,{$ops:"array",append:[1,3]});
+return r(1,{$ast:"Root",body:1});
+case 3:
+return r(1,{$ast:"Block",expressions:{$ary:[1]}});
+case 4:
+return r(3,{$ops:"addToBlock",block:1,line:3});
 case 5: case 270:
 return r(2,{$use:1});
 case 6: case 7: case 8: case 9: case 10: case 11: case 12: case 14: case 15: case 16: case 17: case 18: case 19: case 20: case 21: case 22: case 23: case 24: case 25: case 26: case 27: case 28: case 29: case 30: case 41: case 49: case 52: case 54: case 64: case 69: case 70: case 71: case 72: case 75: case 80: case 81: case 82: case 83: case 84: case 104: case 105: case 116: case 117: case 118: case 119: case 125: case 126: case 129: case 135: case 136: case 150: case 254: case 255: case 256: case 258: case 271: case 272: case 300: case 315: case 316: case 371: case 377:
@@ -46,6 +46,8 @@ case 42:
 return r(1,{$ast:"StringLiteral",value:{$use:1,method:"slice",args:[1,-1]},quote:{$use:1,prop:"quote"},initialChunk:{$use:1,prop:"initialChunk"},finalChunk:{$use:1,prop:"finalChunk"},indent:{$use:1,prop:"indent"},double:{$use:1,prop:"double"},heregex:{$use:1,prop:"heregex"}});
 case 43:
 return r(3,{$ast:"StringWithInterpolations",body:2,quote:{$use:1,prop:"quote"},startQuote:{$ast:"Literal",value:{$use:1,method:"toString"},$pos:1}});
+case 44: case 107: case 158: case 184: case 211: case 249: case 263: case 267: case 319: case 365:
+return r(1,{$ary:[1]});
 case 45: case 264: case 268: case 366:
 return r(2,{$ops:"array",append:[1,2]});
 case 46:
@@ -134,6 +136,8 @@ case 102: case 103:
 return r(1,{$ast:"FuncGlyph",glyph:1});
 case 106: case 157:
 return r(1,{$ary:[]});
+case 108: case 159: case 185: case 212: case 250: case 259:
+return r(3,{$ops:"array",append:[1,3]});
 case 109: case 160: case 186: case 213: case 251: case 260:
 return r(4,{$ops:"array",append:[1,4]});
 case 110: case 161: case 188: case 215: case 253:

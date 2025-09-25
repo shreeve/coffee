@@ -10,14 +10,14 @@ o = (pattern, action, options) ->
 
 grammar =
   Root: [
-    o ''    , $ast: '@', body: []
+    o ''    , $ast: '@', body: {$ast: 'Block', expressions: []}
     o 'Body', $ast: '@', body: 1
   ]
 
   Body: [
-    o 'Line'                , $ary: [1]
-    o 'Body TERMINATOR Line', $ops: 'array', append: [1, 3]
-    o 'Body TERMINATOR'
+    o 'Line'                , $ast: 'Block', expressions: {$ary: [1]}
+    o 'Body TERMINATOR Line', $ops: 'addToBlock', block: 1, line: 3
+    o 'Body TERMINATOR'     , $use: 1
   ]
 
   Line: [

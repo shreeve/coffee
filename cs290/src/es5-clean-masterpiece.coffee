@@ -130,17 +130,6 @@ class ES5Backend
               result.push resolved
         result
 
-      when 'addToBlock'
-        block = @$(o.block)
-        line = @$(o.line)
-        # If block is already a Block, add to it
-        if block instanceof @ast.Block
-          block.expressions.push line if line?
-          block
-        else
-          # Create new block with both items
-          new @ast.Block [block, line].filter (x) -> x?
-
       when 'if'
         ifNode = new @ast.If @$(o.condition), @$(o.body), {soak: @$(o.soak), postfix: @$(o.postfix)}
         if o.elseBody?
@@ -241,7 +230,9 @@ class ES5Backend
 
       # Value and Access
       when 'Value'
-        @_buildValue @$(o.base), @$(o.properties) ? []
+        base = @$(o.base) ? @$(o.value) ? @$(o.val)
+        props = @$(o.properties) ? []
+        @_buildValue base, props
 
       when 'Access'
         name = @$(o.name)
@@ -319,15 +310,12 @@ class ES5Backend
         expression = new @ast.Value(new @ast.Literal '') unless expression?
         new @ast.Yield expression
 
-      # Root and Block
+      # Root (special case)
       when 'Root'
         body = @$(o.body)
         # Wrap array in Block if needed
         body = new @ast.Block(body) if Array.isArray(body)
         new @ast.Root body
-
-      when 'Block'
-        new @ast.Block @$(o.expressions) ? []
 
       # Classes
       when 'Class'
