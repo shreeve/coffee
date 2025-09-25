@@ -43,6 +43,12 @@ class ES5Backend
       result.push node if node?
     result
 
+  # Helper to check if value is a plain object
+  _isPlainObject = (x) ->
+    return false unless x? and typeof x is 'object'
+    p = Object.getPrototypeOf x
+    p is Object.prototype or p is null
+
   # Helper methods (enhanced with ES6 patterns)
   _stripQuotes: (value) ->
     return value unless value?.length >= 2 and typeof value is 'string'
@@ -373,9 +379,13 @@ class ES5Backend
             @_unimplemented o.$ops, "$ops type"
 
       else
-        # Empty objects {} are grammar placeholders - return null to signal "no value"
-        if typeof o is 'object' and o.constructor is Object and Object.keys(o).length is 0
-          return null
+        if _isPlainObject o
+          return null unless Object.keys(o).length
+          out = Object.create null
+          out[k] = v for [k, v] in Object.entries o
+          return out
+
+        # Finally, give up...
         @_unimplemented o, "directive"
 
     else
