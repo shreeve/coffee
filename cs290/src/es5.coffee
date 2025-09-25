@@ -6,7 +6,6 @@ class ES5Backend
   constructor: (@options = {}, @ast = {}) ->
     @cache = new Map()
     @currentDirective = null
-    @currentType = null
     @currentRule = null
 
   # Helper to ensure node has location data to avoid errors in AST operations
@@ -43,7 +42,6 @@ class ES5Backend
     lookup = (index) -> values[stackTop - symbolCount + 1 + index]
 
     @currentDirective = directive
-    @currentType = directive?.$ast
     @currentRule = directive
     @currentLookup = lookup  # Store lookup for use in $()
 
@@ -188,18 +186,10 @@ class ES5Backend
   processAst: (o) ->
     switch o.$ast
 
-      # Pass-through directives that use the node type from context
-      when '@'
-        switch @currentType
-          when 'Root'
-            body = @$(o.body)
-            body = new @ast.Block(body) if Array.isArray(body)
-            new @ast.Root body
-          when 'Block' then new @ast.Block @$(o.expressions) or []
-          when 'Splat' then new @ast.Splat @$(o.name), {postfix: @$(o.postfix)}
-          else
-            console.warn "Unknown @ node type:", @currentType
-            null
+      # Root, Block, and Splat
+      when 'Root'  then new @ast.Root @$(o.body)
+      when 'Block' then new @ast.Block @$(o.expressions) ? []
+      when 'Splat' then new @ast.Splat @$(o.name), {postfix: @$(o.postfix)}
 
       # Literals
       when 'Literal'                  then new @ast.Literal                  @$(o.value)
@@ -216,15 +206,12 @@ class ES5Backend
       when 'InfinityLiteral'          then new @ast.InfinityLiteral
       when 'NaNLiteral'               then new @ast.NaNLiteral
 
-      # Value and Access
-      when 'Value'
-        @_toValue @$(o.base), @$(o.properties) ? []
-
+      # Value, Access, and Index
+      when 'Value' then @_toValue @$(o.base), @$(o.properties) ? []
       when 'Access'
         name = @$(o.name)
         name = new @ast.PropertyName name.value if name instanceof @ast.IdentifierLiteral
         new @ast.Access name, @$(o.soak)
-
       when 'Index' then new @ast.Index @$(o.index)
 
       # Operations
@@ -232,7 +219,7 @@ class ES5Backend
         args = o.args.map (arg) => @$(arg)
         if o.invertOperator? or o.originalOperator?
           options = {}
-          options.invertOperator = @$(o.invertOperator) if o.invertOperator?
+          options.invertOperator   = @$(o.invertOperator) if o.invertOperator?
           options.originalOperator = @$(o.originalOperator) if o.originalOperator?
           args.push options
         new @ast.Op args...
@@ -274,20 +261,7 @@ class ES5Backend
       when 'Param'  then new @ast.Param  @$(o.name), @$(o.value), @$(o.splat)
       when 'Call'   then new @ast.Call   @$(o.variable), @$(o.args) or [], @$(o.soak)
       when 'Return' then new @ast.Return @$(o.expression)
-
-      when 'Yield'
-        expression = @$(o.expression)
-        expression = new @ast.Value(new @ast.Literal '') unless expression?
-        new @ast.Yield expression
-
-      # Root and Block
-      when 'Root'
-        body = @$(o.body)
-        # Wrap array in Block if needed
-        body = new @ast.Block(body) if Array.isArray(body)
-        new @ast.Root body
-
-      when 'Block' then new @ast.Block @$(o.expressions) ? []
+      when 'Yield'  then new @ast.Yield  @$(o.expression) or new @ast.Value(new @ast.Literal '')
 
       # Classes
       when 'Class'              then new @ast.Class              @$(o.variable), @$(o.parent), @$(o.body)
@@ -305,6 +279,6 @@ class ES5Backend
 
       else
         console.warn "Unknown $ast type:", o.$ast
-        null
+        new @ast.Literal "# Missing AST node: #{o.$ast}"
 
 module.exports = ES5Backend
