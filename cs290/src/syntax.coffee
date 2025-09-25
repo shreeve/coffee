@@ -74,7 +74,7 @@ grammar =
   # token stream.
   Block: [
     o 'INDENT OUTDENT'     , $ast: '@', expressions: []
-    o 'INDENT Body OUTDENT', $use: 2
+    o 'INDENT Body OUTDENT', $ast: '@', expressions: 2
   ]
 
   Identifier: [
