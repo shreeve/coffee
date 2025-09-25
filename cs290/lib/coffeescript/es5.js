@@ -28,7 +28,11 @@
       this.compileOptions.header = (ref1 = this.options.header) != null ? ref1 : false;
     }
 
-    // Ensure a node is a Value; if already a Value, return as-is
+    // ----------------------------------------------------------------------------
+    // Helpers
+    // ----------------------------------------------------------------------------
+
+      // Ensure a node is a Value; if already a Value, return as-is
     _asValue(node) {
       if (node == null) {
         return null;
@@ -69,6 +73,13 @@
     // Build a Value from base + properties array (already resolved)
     _buildValue(base, properties) {
       var props;
+      if (base instanceof this.ast.Value) {
+        props = this._filterNodes((Array.isArray(properties) ? properties : []));
+        if (props.length) {
+          base.add(props);
+        }
+        return base;
+      }
       if ((base != null) && !(base instanceof this.ast.Base)) {
         base = this._ensureNode(base);
       }
@@ -80,9 +91,9 @@
       }
     }
 
-    // Helper to ensure value is a proper node (from ES6 version)
+    // Helper to ensure value is a proper node
     _ensureNode(value) {
-      var node, ref;
+      var ref;
       if (value == null) {
         return null;
       }
@@ -91,18 +102,16 @@
       }
       // Handle primitives
       if ((ref = typeof value) === 'string' || ref === 'number' || ref === 'boolean') {
-        node = new this.ast.Literal(String(value));
-        return node;
+        return new this.ast.Literal(String(value));
       }
       // Handle objects with .value property
       if ((value != null ? value.value : void 0) != null) {
-        node = new this.ast.PropertyName(value.value);
-        return node;
+        return new this.ast.PropertyName(value.value);
       }
       return null;
     }
 
-    // Helper to filter and ensure all items are nodes (from ES6 version)
+    // Helper to filter and ensure all items are nodes
     _filterNodes(array) {
       var i, item, len, node, result;
       if (array == null) {
@@ -119,6 +128,12 @@
       return result;
     }
 
+    // Normalize an array-like into AST nodes (ensures array, resolves and filters)
+    _nodes(xs) {
+      xs = Array.isArray(xs) ? xs : (xs != null ? [xs] : []);
+      return this._filterNodes(xs);
+    }
+
     // Helper to check if value is a plain object
     _isPlainObject(x) {
       var p;
@@ -129,7 +144,7 @@
       return p === Object.prototype || p === null;
     }
 
-    // Helper methods (enhanced with ES6 patterns)
+    // Strip surrounding quotes from a string literal
     _stripQuotes(value) {
       if (!((value != null ? value.length : void 0) >= 2 && typeof value === 'string')) {
         return value;
@@ -141,7 +156,7 @@
       }
     }
 
-    // Helper to convert value to a Block node (from ES6 version)
+    // Convert value to a Block node
     _toBlock(value) {
       if (Array.isArray(value)) {
         return new this.ast.Block(this._filterNodes(value));
@@ -155,19 +170,21 @@
       return new this.ast.Block([]);
     }
 
-    // Helper for unimplemented features (avoids repeated console.warn + literal creation)
+    // Unimplemented marker
     _unimplemented(type, context = "") {
       console.warn(`ES5Backend: Unimplemented${context ? ` ${context}` : ""}:`, type);
       return new this.ast.Literal(`/* Unimplemented: ${type} */`);
     }
 
+    // ----------------------------------------------------------------------------
+    // Entry points
+    // ----------------------------------------------------------------------------
     reduce(values, positions, stackTop, symbolCount, directive) {
       var handler, lookup, o, prop, store, value;
       lookup = function(index) {
         return values[stackTop - symbolCount + 1 + index];
       };
-      // Use Object.create(null) to avoid prototype pollution and JS property conflicts
-      // This prevents conflicts with .name, .length, .constructor, .toString, etc.
+      // Use Object.create(null) to avoid pollution and JS property conflicts
       store = Object.create(null);
       handler = {
         apply: function(target, thisArg, args) {
@@ -178,7 +195,7 @@
             return store[prop];
           }
           if (prop === 'name' || prop === 'length' || prop === 'prototype' || prop === 'caller' || prop === 'arguments' || prop === 'constructor' || prop === 'toString' || prop === 'valueOf') {
-            // Enhanced reserved property protection using Object.create(null) approach
+            // Avoid leaking function/meta props from the Proxy target
             return void 0;
           }
           return Reflect.get(target, prop, receiver);
@@ -206,7 +223,7 @@
           }
         }
       };
-      // Copy directive properties, resolving positional references now
+      // Copy directive props, resolving positional references now
       o = new Proxy(lookup, handler);
       for (prop in directive) {
         if (!hasProp.call(directive, prop)) continue;
@@ -217,18 +234,15 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessNode, accessor, actualExpression, base, body, bodyNode, bodyNodes, c, condition, context, elseBody, expression, expressionNode, i, ifNode, index, indexNode, item, items, j, k, l, len, len1, len2, len3, loopNode, m, name, name1, nodeType, out, p, properties, property, quote, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, soak, sourceInfo, target, type, v, val, value, variable, whileNode;
+      var $, accessor, actualExpression, base, body, bodyNode, bodyNodes, condition, context, elseBody, expression, expressionNode, i, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, m, name1, nodeType, out, p, property, props, quote, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, sourceInfo, target, tmp, type, v, val, value, variable, whileNode;
       if (o == null) {
-        // Null/undefined early return
-        return o; // null/undefined early return
+        return o; // null/undefined
       }
       type = typeof o;
-      // Numbers: only do 1-based lookup for positive integers
+      // Numbers: do 1-based lookup for positive integers only
       if (type === 'number') {
         if (Number.isInteger(o) && o > 0 && typeof lookup === 'function') {
           result = lookup(o - 1);
-          // If lookup returns another lookup function, it means we have nested directives
-          // In this case, return the result as-is (it will be resolved later)
           return result;
         }
         return o;
@@ -237,30 +251,29 @@
         // Strings and booleans return as-is
         return o;
       }
-      // Arrays: expand along the way - only include resolved items!
+      // Arrays: resolve items and skip nullish
       if (Array.isArray(o)) {
         result = [];
         for (i = 0, len = o.length; i < len; i++) {
           val = o[i];
           resolved = this.resolve(val, lookup);
           if (resolved != null) {
-            // Expand along the way: skip nulls at source instead of filtering later
             result.push(resolved);
           }
         }
         return result;
       }
-      // Functions without directive markers are terminals (key fix!)
+      // Bare functions without directive markers are terminals
       if (type === 'function' && !((o.$ast != null) || (o.$use != null) || (o.$ary != null) || (o.$ops != null))) {
         return o;
       }
-      // Objects and functions
+      // Objects and directive-bearing functions
       if (type === 'object' || type === 'function') {
         if ((o.constructor != null) && ((ref = o.constructor) !== Object && ref !== Function)) {
           return o;
         }
         $ = (val) => {
-          return this.resolve(val, lookup); // Local resolver
+          return this.resolve(val, lookup); // local resolver
         };
         if (o.$ast != null) {
           nodeType = o.$ast;
@@ -288,55 +301,16 @@
               return new this.ast.InfinityLiteral();
             case 'NaNLiteral':
               return new this.ast.NaNLiteral();
+            // ---- Refactored to helpers ----------------------------------------
             case 'Value':
-              // Tolerant pattern: accept either o.value OR o.val+o.properties
-              base = $(o.value) || $(o.val);
-              properties = $(o.properties) || [];
-              // Ensure properties is an array and filter properly
-              properties = Array.isArray(properties) ? properties : [];
-              // Value can have both base and properties (accessors)
-              if (properties.length > 0) {
-                return new this.ast.Value(base, this._filterNodes(properties));
-              } else {
-                return new this.ast.Value(base);
-              }
-              break;
-            case 'Assign':
-              variable = $(o.variable);
-              value = $(o.value);
-              context = $(o.context);
-              // Handle object property assignments (learned from ES6 version)
-              if (context === 'object' && (o.expression != null)) {
-                // In object context, 'value' is the property name, 'expression' is the actual value
-                variable = $(o.value); // Property name/key
-                value = $(o.expression); // Actual value
-                if (!(variable instanceof this.ast.Value)) {
-                  // Ensure variable is properly wrapped for object context
-                  variable = new this.ast.Value(variable);
-                }
-              }
-              if (!((variable != null) && (value != null))) {
-                // Skip if variable or value is null/undefined (from empty {} placeholders)
-                return null;
-              }
-              return new this.ast.Assign(variable, value, context);
-            case 'Op':
-              return new this.ast.Op($(o.args[0]), $(o.args[1]), (o.args[2] != null ? $(o.args[2]) : void 0));
-            case 'PropertyName':
-              return new this.ast.PropertyName($(o.value));
+              base = (ref1 = $(o.value)) != null ? ref1 : $(o.val);
+              props = (ref2 = $(o.properties)) != null ? ref2 : [];
+              return this._buildValue(base, props);
             case 'Access':
-              variable = $(o.variable);
-              name = $(o.name);
-              soak = $(o.soak);
-              // Smart-append: if LHS is already a Value, append to its properties
-              if (variable instanceof this.ast.Value) {
-                accessNode = new this.ast.Access(name, {soak});
-                variable.properties.push(accessNode);
-                return variable; // return the same Value (now with extra segment)
-              } else {
-                return new this.ast.Access(name, {soak});
-              }
-              break;
+              return this._appendAccess($(o.variable), $(o.name), $(o.soak));
+            case 'Index':
+              return this._appendIndex($(o.variable) || $(o.val) || $(o.base), $(o.index) || $(o.object));
+            // -------------------------------------------------------------------
             case 'Call':
               return new this.ast.Call($(o.variable), $(o.args));
             case 'Obj':
@@ -349,29 +323,23 @@
               return new this.ast.Block($(o.expressions));
             case 'Return':
               return new this.ast.Return($(o.expression));
+            case 'Op':
+              return new this.ast.Op($(o.args[0]), $(o.args[1]), (o.args[2] != null ? $(o.args[2]) : void 0));
             case 'Parens':
-              return new this.ast.Parens((ref1 = this._toBlock($(o.body))) != null ? ref1 : new this.ast.Block([new this.ast.Literal('')]));
-            case 'Index':
-              variable = $(o.variable) || $(o.val) || $(o.base);
-              index = $(o.index) || $(o.object);
-              // Smart-append: if LHS is already a Value, append to its properties
-              if (variable instanceof this.ast.Value) {
-                indexNode = new this.ast.Index(index);
-                variable.properties.push(indexNode);
-                return variable; // return the same Value (now with extra segment)
-              } else {
-                return new this.ast.Index(index);
-              }
-              break;
+              return new this.ast.Parens((ref3 = this._toBlock($(o.body))) != null ? ref3 : new this.ast.Block([new this.ast.Literal('')]));
+            case 'PropertyName':
+              return new this.ast.PropertyName($(o.value));
             case 'Slice':
               return new this.ast.Slice($(o.range));
             case 'If':
               condition = $(o.condition);
               body = this._toBlock($(o.body));
               elseBody = this._toBlock($(o.elseBody));
-              type = ((ref2 = $(o.type)) != null ? typeof ref2.toString === "function" ? ref2.toString() : void 0 : void 0) === 'unless' ? 'unless' : 'if';
-              ifNode = new this.ast.If(condition, body, {type});
-              if ((elseBody != null ? (ref3 = elseBody.expressions) != null ? ref3.length : void 0 : void 0) > 0) {
+              tmp = ((ref4 = $(o.type)) != null ? typeof ref4.toString === "function" ? ref4.toString() : void 0 : void 0) === 'unless' ? 'unless' : 'if';
+              ifNode = new this.ast.If(condition, body, {
+                type: tmp
+              });
+              if ((elseBody != null ? (ref5 = elseBody.expressions) != null ? ref5.length : void 0 : void 0) > 0) {
                 ifNode.addElse(elseBody);
               }
               return ifNode;
@@ -384,33 +352,11 @@
               whileNode.body = this._toBlock($(o.body));
               return whileNode;
             case 'For':
-              return new this.ast.For($(o.body), {}); // create this now and $ops: 'loop' will addSource
+              return new this.ast.For($(o.body), {}); // created now; $ops: 'loop' will addSource
             case 'Switch':
-              return new this.ast.Switch($(o.subject), (function() {
-                var j, len1, ref4, ref5, results;
-                ref5 = (ref4 = $(o.cases)) != null ? ref4 : [];
-                results = [];
-                for (j = 0, len1 = ref5.length; j < len1; j++) {
-                  c = ref5[j];
-                  if ($(c) != null) {
-                    results.push($(c));
-                  }
-                }
-                return results;
-              })(), this._toBlock($(o.otherwise)));
+              return new this.ast.Switch($(o.subject), this._nodes($(o.cases)), this._toBlock($(o.otherwise)));
             case 'SwitchWhen':
-              return new this.ast.SwitchWhen((function() {
-                var j, len1, ref4, ref5, results;
-                ref5 = (ref4 = $(o.conditions)) != null ? ref4 : [];
-                results = [];
-                for (j = 0, len1 = ref5.length; j < len1; j++) {
-                  c = ref5[j];
-                  if ($(c) != null) {
-                    results.push($(c));
-                  }
-                }
-                return results;
-              })(), this._toBlock($(o.block)));
+              return new this.ast.SwitchWhen(this._nodes($(o.conditions)), this._toBlock($(o.body)));
             case 'ComputedPropertyName':
               return new this.ast.ComputedPropertyName($(o.value));
             case 'DefaultLiteral':
@@ -429,11 +375,11 @@
               return new this.ast.Param($(o.name), $(o.value), $(o.splat));
             case 'Code':
               return new this.ast.Code((function() {
-                var j, len1, ref4, ref5, results;
-                ref5 = (ref4 = $(o.params)) != null ? ref4 : [];
+                var j, len1, ref6, ref7, results;
+                ref7 = (ref6 = $(o.params)) != null ? ref6 : [];
                 results = [];
-                for (j = 0, len1 = ref5.length; j < len1; j++) {
-                  p = ref5[j];
+                for (j = 0, len1 = ref7.length; j < len1; j++) {
+                  p = ref7[j];
                   if ($(p) != null) {
                     results.push($(p));
                   }
@@ -452,16 +398,12 @@
               return new this.ast.PassthroughLiteral($(o.value));
             case 'Interpolation':
               expression = $(o.expression);
-              // Expression might be an array, so extract the first element
               actualExpression = Array.isArray(expression) && expression.length > 0 ? expression[0] : expression;
-              // Handle empty interpolation specially
-              // Empty interpolation should produce empty string to avoid ${} syntax error
-              expressionNode = actualExpression instanceof this.ast.Base ? actualExpression : actualExpression != null ? this._ensureNode(actualExpression) : new this.ast.Literal('""');
+              expressionNode = actualExpression instanceof this.ast.Base ? actualExpression : actualExpression != null ? this._ensureNode(actualExpression) : new this.ast.Literal('""'); // avoid ${} syntax error
               return new this.ast.Interpolation(expressionNode);
             case 'StringWithInterpolations':
               body = $(o.body);
               quote = $(o.quote);
-              // Convert body to proper nodes - StringWithInterpolations expects a Block
               bodyNode = Array.isArray(body) ? (bodyNodes = body.map((b) => {
                 if (b instanceof this.ast.Base) {
                   return b;
@@ -476,35 +418,44 @@
               return new this.ast.Throw($(o.expression));
             case 'Literal':
               return new this.ast.Literal($(o.value));
+            case 'Assign':
+              variable = $(o.variable);
+              value = $(o.value);
+              context = $(o.context);
+              if (context === 'object' && (o.expression != null)) {
+                // In object context, 'value' is the property name, 'expression' is the actual value
+                variable = $(o.value);
+                value = $(o.expression);
+                variable = this._asValue(variable);
+              }
+              if (!((variable != null) && (value != null))) {
+                return null;
+              }
+              return new this.ast.Assign(variable, value, context);
             default:
               return this._unimplemented(nodeType, "AST node type");
           }
         } else if (o.$ary != null) {
           items = $(o.$ary);
-          // Ensure we always return an array
           items = Array.isArray(items) ? items : [items];
-          // Important: filter out undefined/null items (common from optional grammar rules)
           return items.filter(function(item) {
             return item != null;
           });
         } else if (o.$use != null) {
-          // Special case: $use: 'token' means get the current token's value
+          // $use supports 'token' or nested directive
           if (o.$use === 'token') {
-            // For THIS_PROPERTY tokens, the lookup function has the token value
             if (typeof lookup === 'function' && (lookup.value != null)) {
               resolvedValue = lookup.value;
             } else {
-              // Fallback: try to get from context
-              resolvedValue = (ref4 = (ref5 = lookup(0)) != null ? ref5.value : void 0) != null ? ref4 : 'unknown_token';
+              resolvedValue = (ref6 = (ref7 = lookup(0)) != null ? ref7.value : void 0) != null ? ref6 : 'unknown_token';
             }
           } else {
             resolvedValue = $(o.$use);
           }
-          // Handle both 'method' (function calls) and 'prop' (property access)
           if (o.method != null) {
-            resolvedValue = (ref6 = typeof resolvedValue[name1 = o.method] === "function" ? resolvedValue[name1]() : void 0) != null ? ref6 : resolvedValue;
+            resolvedValue = (ref8 = typeof resolvedValue[name1 = o.method] === "function" ? resolvedValue[name1]() : void 0) != null ? ref8 : resolvedValue;
           } else if (o.prop != null) {
-            resolvedValue = (ref7 = resolvedValue[o.prop]) != null ? ref7 : resolvedValue;
+            resolvedValue = (ref9 = resolvedValue[o.prop]) != null ? ref9 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -514,9 +465,7 @@
               if (o.add != null) {
                 target = $(o.add[0]);
                 accessor = $(o.add[1]);
-                if (!(target instanceof this.ast.Value)) {
-                  target = new this.ast.Value(target);
-                }
+                target = this._asValue(target);
                 if ((accessor != null ? accessor.traverseChildren : void 0) != null) {
                   target.add([accessor]);
                 }
@@ -526,15 +475,14 @@
               }
               break;
             case 'array':
-              // Array operations
               if (o.append != null) {
                 target = $(o.append[0]);
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                ref8 = o.append.slice(1);
-                for (j = 0, len1 = ref8.length; j < len1; j++) {
-                  item = ref8[j];
+                ref10 = o.append.slice(1);
+                for (j = 0, len1 = ref10.length; j < len1; j++) {
+                  item = ref10[j];
                   if (!(item != null)) {
                     continue;
                   }
@@ -548,9 +496,9 @@
                 return target;
               } else if (o.gather != null) {
                 result = [];
-                ref9 = o.gather;
-                for (l = 0, len2 = ref9.length; l < len2; l++) {
-                  item = ref9[l];
+                ref11 = o.gather;
+                for (l = 0, len2 = ref11.length; l < len2; l++) {
+                  item = ref11[l];
                   if (!(item != null)) {
                     continue;
                   }
@@ -567,7 +515,6 @@
               }
               break;
             case 'if':
-              // If operations for adding else clauses
               if (o.addElse != null) {
                 ifNode = $(o.addElse[0]);
                 elseBody = $(o.addElse[1]);
@@ -580,7 +527,6 @@
               }
               break;
             case 'loop':
-              // Loop operations
               if (o.addSource != null) {
                 loopNode = $(o.addSource[0]);
                 sourceInfo = $(o.addSource[1]);
@@ -599,7 +545,6 @@
               }
               break;
             case 'prop':
-              // Property operations (like setting soak on Index)
               if (o.set != null) {
                 target = $(o.set.target);
                 if ((o.set.property != null) && (target != null)) {
@@ -626,9 +571,9 @@
               return null;
             }
             out = Object.create(null);
-            ref10 = Object.entries(o);
-            for (m = 0, len3 = ref10.length; m < len3; m++) {
-              [k, v] = ref10[m];
+            ref12 = Object.entries(o);
+            for (m = 0, len3 = ref12.length; m < len3; m++) {
+              [k, v] = ref12[m];
               out[k] = $(v);
             }
             return out;

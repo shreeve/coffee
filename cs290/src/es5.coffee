@@ -80,6 +80,11 @@ class ES5Backend
       result.push node if node?
     result
 
+  # Normalize an array-like into AST nodes (ensures array, resolves and filters)
+  _nodes: (xs) ->
+    xs = if Array.isArray(xs) then xs else (if xs? then [xs] else [])
+    @_filterNodes xs
+
   # Helper to check if value is a plain object
   _isPlainObject: (x) ->
     return false unless x? and typeof x is 'object'
@@ -226,8 +231,8 @@ class ES5Backend
             whileNode.body = @_toBlock($(o.body))
             whileNode
           when 'For'                  then new @ast.For                  $(o.body), {} # created now; $ops: 'loop' will addSource
-          when 'Switch'               then new @ast.Switch               $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
-          when 'SwitchWhen'           then new @ast.SwitchWhen           ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
+          when 'Switch'               then new @ast.Switch               $(o.subject), @_nodes($(o.cases)), @_toBlock($(o.otherwise))
+          when 'SwitchWhen'           then new @ast.SwitchWhen           @_nodes($(o.conditions)), @_toBlock($(o.body))
           when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
           when 'DefaultLiteral'       then new @ast.DefaultLiteral       $(o.value)
           when 'Elision'              then new @ast.Elision
