@@ -321,7 +321,7 @@
               whileNode.body = this._toBlock($(o.body));
               return whileNode;
             case 'For':
-              return new this.ast.For(this._toBlock($(o.body)), {});
+              return new this.ast.For($(o.body), o);
             case 'Switch':
               return new this.ast.Switch($(o.subject), (function() {
                 var j, len1, ref4, ref5, results;

@@ -216,7 +216,7 @@ class ES5Backend
             whileNode = new @ast.While $(o.condition), {guard: $(o.guard), isLoop: $(o.isLoop), invert: $(o.invert)}
             whileNode.body = @_toBlock($(o.body))
             whileNode
-          when 'For'                  then new @ast.For                @_toBlock($(o.body)), o
+          when 'For'                  then new @ast.For                $(o.body), o
           when 'Switch'               then new @ast.Switch             $(o.subject), ($(c) for c in $(o.cases) ? [] when $(c)?), @_toBlock($(o.otherwise))
           when 'SwitchWhen'           then new @ast.SwitchWhen         ($(c) for c in $(o.conditions) ? [] when $(c)?), @_toBlock($(o.block))
           when 'Elision'              then new @ast.Elision
