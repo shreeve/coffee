@@ -69,7 +69,7 @@ class ES5Backend
     # Process the directive
     result = @process o
 
-    if process?.env?.SOLAR_DEBUG
+    if global.process?.env?.SOLAR_DEBUG
       util = require 'util'
       outName = result?.constructor?.name ? typeof result
       console.log "[Solar] result:", outName, util.inspect(result, {depth: 3, colors: true})
@@ -138,13 +138,29 @@ class ES5Backend
         result
 
       when 'if'
-        ifNode = new @ast.If @$(o.condition), @$(o.body), {soak: @$(o.soak), postfix: @$(o.postfix)}
-        if o.elseBody?
-          elseBody = @$(o.elseBody)
+        # Handle addElse operation for if-else chains
+        if o.addElse?
+          [ifNode, elseBody] = o.addElse.map (item) => @$(item)
           @_ensureLocationData ifNode
           @_ensureLocationData elseBody
           ifNode.addElse elseBody
-        ifNode
+          return ifNode
+
+        # This shouldn't happen with current grammar
+        console.warn "Unexpected $ops: 'if' without addElse"
+        null
+
+      when 'value'
+        # Handle adding accessors to Values
+        if o.add?
+          [value, accessor] = o.add.map (item) => @$(item)
+          if value instanceof @ast.Value
+            return value.add accessor
+          else
+            return @_toValue value, [accessor]
+
+        console.warn "Unexpected $ops: 'value' without add"
+        null
 
       when 'loop'
         switch o.type
@@ -228,11 +244,11 @@ class ES5Backend
 
       # Control Flow
       when 'If'
-        ifNode = new @ast.If @$(o.condition), @$(o.body), {soak: @$(o.soak), postfix: @$(o.postfix)}
+        condition = @_ensureLocationData @$(o.condition)
+        body = @_ensureLocationData @$(o.body)
+        ifNode = new @ast.If condition, body, {soak: @$(o.soak), postfix: @$(o.postfix)}
         if o.elseBody?
-          elseBody = @$(o.elseBody)
-          @_ensureLocationData ifNode
-          @_ensureLocationData elseBody
+          elseBody = @_ensureLocationData @$(o.elseBody)
           ifNode.addElse elseBody
         ifNode
 
@@ -276,6 +292,11 @@ class ES5Backend
       when 'Expansion'         then new @ast.Expansion
       when 'ImportDeclaration' then new @ast.ImportDeclaration @$(o.clause), @$(o.source)
       when 'ExportDeclaration' then new @ast.ExportDeclaration @$(o.clause), @$(o.source), @$(o.default)
+
+      # Additional types (temporary implementations)
+      when 'PassthroughLiteral' then new @ast.Literal @$(o.value)
+      when 'FuncGlyph'          then new @ast.Literal @$(o.value) or '->'
+      when 'RegexLiteral'       then new @ast.Literal @$(o.value)
 
       else
         console.warn "Unknown $ast type:", o.$ast

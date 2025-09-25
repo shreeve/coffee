@@ -71,7 +71,7 @@
 
     // Main entry point (called by parser as 'reduce')
     reduce(values, positions, stackTop, symbolCount, directive) {
-      var handler, lookup, o, outName, ref, ref1, ref2, result, util;
+      var handler, lookup, o, outName, ref, ref1, ref2, ref3, result, util;
       // Create lookup function to access stack values
       lookup = function(index) {
         return values[stackTop - symbolCount + 1 + index];
@@ -109,9 +109,9 @@
       o = new Proxy(directive, handler);
       // Process the directive
       result = this.process(o);
-      if (typeof process !== "undefined" && process !== null ? (ref = process.env) != null ? ref.SOLAR_DEBUG : void 0 : void 0) {
+      if ((ref = global.process) != null ? (ref1 = ref.env) != null ? ref1.SOLAR_DEBUG : void 0 : void 0) {
         util = require('util');
-        outName = (ref1 = result != null ? (ref2 = result.constructor) != null ? ref2.name : void 0 : void 0) != null ? ref1 : typeof result;
+        outName = (ref2 = result != null ? (ref3 = result.constructor) != null ? ref3.name : void 0 : void 0) != null ? ref2 : typeof result;
         console.log("[Solar] result:", outName, util.inspect(result, {
           depth: 3,
           colors: true
@@ -205,7 +205,7 @@
 
     // Process $ops directives
     processOps(o) {
-      var body, elseBody, i, idx, ifNode, item, len, loopNode, ref, resolved, result, sourceInfo;
+      var accessor, body, elseBody, i, idx, ifNode, item, len, loopNode, ref, resolved, result, sourceInfo, value;
       switch (o.$ops) {
         case 'array':
           result = [];
@@ -223,17 +223,33 @@
           }
           return result;
         case 'if':
-          ifNode = new this.ast.If(this.$(o.condition), this.$(o.body), {
-            soak: this.$(o.soak),
-            postfix: this.$(o.postfix)
-          });
-          if (o.elseBody != null) {
-            elseBody = this.$(o.elseBody);
+          // Handle addElse operation for if-else chains
+          if (o.addElse != null) {
+            [ifNode, elseBody] = o.addElse.map((item) => {
+              return this.$(item);
+            });
             this._ensureLocationData(ifNode);
             this._ensureLocationData(elseBody);
             ifNode.addElse(elseBody);
+            return ifNode;
           }
-          return ifNode;
+          // This shouldn't happen with current grammar
+          console.warn("Unexpected $ops: 'if' without addElse");
+          return null;
+        case 'value':
+          // Handle adding accessors to Values
+          if (o.add != null) {
+            [value, accessor] = o.add.map((item) => {
+              return this.$(item);
+            });
+            if (value instanceof this.ast.Value) {
+              return value.add(accessor);
+            } else {
+              return this._toValue(value, [accessor]);
+            }
+          }
+          console.warn("Unexpected $ops: 'value' without add");
+          return null;
         case 'loop':
           switch (o.type) {
             case 'addSource':
@@ -274,7 +290,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, elseBody, exclusive, ifNode, index, name, options, ref, ref1, whileNode;
+      var args, body, condition, elseBody, exclusive, ifNode, index, name, options, ref, ref1, whileNode;
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
@@ -343,14 +359,14 @@
           return new this.ast.Assign(this.$(o.variable), this.$(o.value), this.$(o.operator));
         // Control Flow
         case 'If':
-          ifNode = new this.ast.If(this.$(o.condition), this.$(o.body), {
+          condition = this._ensureLocationData(this.$(o.condition));
+          body = this._ensureLocationData(this.$(o.body));
+          ifNode = new this.ast.If(condition, body, {
             soak: this.$(o.soak),
             postfix: this.$(o.postfix)
           });
           if (o.elseBody != null) {
-            elseBody = this.$(o.elseBody);
-            this._ensureLocationData(ifNode);
-            this._ensureLocationData(elseBody);
+            elseBody = this._ensureLocationData(this.$(o.elseBody));
             ifNode.addElse(elseBody);
           }
           return ifNode;
@@ -411,6 +427,13 @@
           return new this.ast.ImportDeclaration(this.$(o.clause), this.$(o.source));
         case 'ExportDeclaration':
           return new this.ast.ExportDeclaration(this.$(o.clause), this.$(o.source), this.$(o.default));
+        // Additional types (temporary implementations)
+        case 'PassthroughLiteral':
+          return new this.ast.Literal(this.$(o.value));
+        case 'FuncGlyph':
+          return new this.ast.Literal(this.$(o.value) || '->');
+        case 'RegexLiteral':
+          return new this.ast.Literal(this.$(o.value));
         default:
           console.warn("Unknown $ast type:", o.$ast);
           return new this.ast.Literal(`# Missing AST node: ${o.$ast}`);
