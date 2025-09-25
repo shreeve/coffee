@@ -17,9 +17,7 @@ test "String.fromCharCode(65)", "A"
 test "Number.parseInt('42')", 42
 test "Array.from([1, 2])", [1, 2]
 test "Object.keys({a: 1})", ['a']
-test "Date.now()", ->
-  result = Date.now()
-  typeof result is 'number' and result > 0
+test "Date.now() > 0", true
 test "JSON.stringify({x: 1})", '{"x":1}'
 test "console.log('test')", undefined
 test "process.env.NODE_ENV", undefined
