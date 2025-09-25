@@ -410,7 +410,7 @@ class ES5Backend
         if @_isPlainObject o
           return null unless Object.keys(o).length
           out = Object.create null
-          out[k] = v for [k, v] in Object.entries o
+          out[k] = $(v) for [k, v] in Object.entries o
           return out
 
         # Finally, give up...
