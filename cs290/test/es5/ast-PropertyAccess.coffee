@@ -22,3 +22,8 @@ test "Date.now()", ->
 test "JSON.stringify({x: 1})", '{"x":1}'
 test "console.log('test')", undefined
 test "process.env.NODE_ENV", undefined
+
+# Additional method call and optional-call coverage
+test 'obj = Object.create(null); obj.method = (x, y) => x + y; obj.method(1, 2)', 3
+test 'obj = Object.create(null); obj.method = (x) => x; obj?.method?(5)', 5
+test 'a = Object.create(null); a.b = {c: -> {d: 42}}; a?.b.c?().d', 42
