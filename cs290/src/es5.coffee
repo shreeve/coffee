@@ -299,7 +299,30 @@ class ES5Backend
               whileNode.body = new @ast.Block []
             @_addLocationData whileNode
             whileNode
-          when 'For'                  then new @ast.For                  $(o.body), {} # created now; $ops: 'loop' will addSource
+          when 'For'
+            # Create For node with initial source properties
+            body = @_toBlock($(o.body)) || new @ast.Block []
+            source = {}
+
+            # Handle name and index - they may come from $use directives
+            name = $(o.name)
+            index = $(o.index)
+
+            # Ensure name and index are proper nodes if they exist
+            if name?
+              source.name = @_ensureNode(name)
+            if index?
+              source.index = @_ensureNode(index)
+
+            # Add other properties
+            source.await = $(o.await) if o.await?
+            source.awaitTag = $(o.awaitTag) if o.awaitTag?
+            source.own = $(o.own) if o.own?
+            source.ownTag = $(o.ownTag) if o.ownTag?
+            source.step = $(o.step) if o.step?
+            source.source = $(o.source) if o.source?
+
+            new @ast.For body, source
           when 'Switch'               then new @ast.Switch               $(o.subject), @_nodes($(o.cases)), @_toBlock($(o.otherwise))
           when 'SwitchWhen'           then new @ast.SwitchWhen           @_nodes($(o.conditions)), @_toBlock($(o.body))
           when 'ComputedPropertyName' then new @ast.ComputedPropertyName $(o.value)
@@ -372,6 +395,8 @@ class ES5Backend
           resolvedValue = resolvedValue[o.method]?() ? resolvedValue
         else if o.prop?
           resolvedValue = resolvedValue[o.prop] ? resolvedValue
+        else if o.index?
+          resolvedValue = resolvedValue[o.index] ? resolvedValue
         resolvedValue
 
       else if o.$ops?

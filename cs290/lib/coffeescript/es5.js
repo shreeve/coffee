@@ -300,7 +300,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, a, accessor, actualExpression, args, base, body, bodyArg, bodyBlock, bodyNode, bodyNodes, callee, condition, context, elseBody, expression, expressionNode, ifNode, item, items, j, k, l, len, len1, len2, len3, loopNode, m, name1, nodeType, operator, opts, out, p, position, property, props, q, quote, ref, ref1, ref10, ref11, ref12, ref13, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, sourceInfo, target, tmp, type, v, val, value, variable, whileNode;
+      var $, a, accessor, actualExpression, args, base, body, bodyArg, bodyBlock, bodyNode, bodyNodes, callee, condition, context, elseBody, expression, expressionNode, ifNode, index, item, items, j, k, l, len, len1, len2, len3, loopNode, m, name, name1, nodeType, operator, opts, out, p, position, property, props, q, quote, ref, ref1, ref10, ref11, ref12, ref13, ref14, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, source, sourceInfo, target, tmp, type, v, val, value, variable, whileNode;
       if (o == null) {
         return o; // null/undefined
       }
@@ -457,7 +457,42 @@
               this._addLocationData(whileNode);
               return whileNode;
             case 'For':
-              return new this.ast.For($(o.body), {}); // created now; $ops: 'loop' will addSource
+              // Create For node with initial source properties
+              body = this._toBlock($(o.body)) || new this.ast.Block([]);
+              source = {};
+              
+              // Handle name and index - they may come from $use directives
+              name = $(o.name);
+              index = $(o.index);
+              
+              // Ensure name and index are proper nodes if they exist
+              if (name != null) {
+                source.name = this._ensureNode(name);
+              }
+              if (index != null) {
+                source.index = this._ensureNode(index);
+              }
+              if (o.await != null) {
+                
+                // Add other properties
+                source.await = $(o.await);
+              }
+              if (o.awaitTag != null) {
+                source.awaitTag = $(o.awaitTag);
+              }
+              if (o.own != null) {
+                source.own = $(o.own);
+              }
+              if (o.ownTag != null) {
+                source.ownTag = $(o.ownTag);
+              }
+              if (o.step != null) {
+                source.step = $(o.step);
+              }
+              if (o.source != null) {
+                source.source = $(o.source);
+              }
+              return new this.ast.For(body, source);
             case 'Switch':
               return new this.ast.Switch($(o.subject), this._nodes($(o.cases)), this._toBlock($(o.otherwise)));
             case 'SwitchWhen':
@@ -563,6 +598,8 @@
             resolvedValue = (ref9 = typeof resolvedValue[name1 = o.method] === "function" ? resolvedValue[name1]() : void 0) != null ? ref9 : resolvedValue;
           } else if (o.prop != null) {
             resolvedValue = (ref10 = resolvedValue[o.prop]) != null ? ref10 : resolvedValue;
+          } else if (o.index != null) {
+            resolvedValue = (ref11 = resolvedValue[o.index]) != null ? ref11 : resolvedValue;
           }
           return resolvedValue;
         } else if (o.$ops != null) {
@@ -587,9 +624,9 @@
                 if (!Array.isArray(target)) {
                   target = [];
                 }
-                ref11 = o.append.slice(1);
-                for (l = 0, len1 = ref11.length; l < len1; l++) {
-                  item = ref11[l];
+                ref12 = o.append.slice(1);
+                for (l = 0, len1 = ref12.length; l < len1; l++) {
+                  item = ref12[l];
                   if (!(item != null)) {
                     continue;
                   }
@@ -603,9 +640,9 @@
                 return target;
               } else if (o.gather != null) {
                 result = [];
-                ref12 = o.gather;
-                for (m = 0, len2 = ref12.length; m < len2; m++) {
-                  item = ref12[m];
+                ref13 = o.gather;
+                for (m = 0, len2 = ref13.length; m < len2; m++) {
+                  item = ref13[m];
                   if (!(item != null)) {
                     continue;
                   }
@@ -698,9 +735,9 @@
               return null;
             }
             out = Object.create(null);
-            ref13 = Object.entries(o);
-            for (q = 0, len3 = ref13.length; q < len3; q++) {
-              [k, v] = ref13[q];
+            ref14 = Object.entries(o);
+            for (q = 0, len3 = ref14.length; q < len3; q++) {
+              [k, v] = ref14[q];
               out[k] = $(v);
             }
             return out;
