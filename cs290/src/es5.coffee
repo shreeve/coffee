@@ -9,12 +9,35 @@ class ES5Backend
     @currentType = null
     @currentRule = null
 
-  # Add minimal location data to node to avoid errors in AST operations
-  _addLocationData: (node) ->
+  # Helper to ensure node has location data to avoid errors in AST operations
+  _ensureLocationData: (node) ->
     if typeof node is 'object' and node isnt null
       node.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0, range: [0, 0]}
       node.updateLocationDataIfMissing?(node.locationData)
     node
+
+  # Helper to convert primitive values to AST nodes
+  _toNode: (value) ->
+    return value if value instanceof @ast.Base
+    return new @ast.IdentifierLiteral value if typeof value is 'string'
+    return new @ast.NumberLiteral     value if typeof value is 'number'
+    return new @ast.BooleanLiteral    value if typeof value is 'boolean'
+    value
+
+  # Helper to convert base + properties to Value node
+  _toValue: (base, properties) ->
+    if base instanceof @ast.Value
+      props = if Array.isArray(properties) then properties else []
+      base.add props if props.length
+      return base
+
+    base = @_toNode(base) if base? and not (base instanceof @ast.Base)
+    props = if Array.isArray(properties) then properties else []
+
+    if props.length
+      new @ast.Value base, props
+    else
+      new @ast.Value base
 
   # Main entry point (called by parser as 'reduce')
   reduce: (values, positions, stackTop, symbolCount, directive) ->
@@ -122,8 +145,8 @@ class ES5Backend
         ifNode = new @ast.If @$(o.condition), @$(o.body), {soak: @$(o.soak), postfix: @$(o.postfix)}
         if o.elseBody?
           elseBody = @$(o.elseBody)
-          @_addLocationData ifNode
-          @_addLocationData elseBody
+          @_ensureLocationData ifNode
+          @_ensureLocationData elseBody
           ifNode.addElse elseBody
         ifNode
 
@@ -132,8 +155,8 @@ class ES5Backend
           when 'addSource'
             loopNode = @$(o.loop)
             sourceInfo = @$(o.source)
-            @_addLocationData loopNode
-            @_addLocationData sourceInfo
+            @_ensureLocationData loopNode
+            @_ensureLocationData sourceInfo
             loopNode.addSource sourceInfo
             loopNode
 
@@ -150,8 +173,8 @@ class ES5Backend
             if not (body instanceof @ast.Block)
               body = new @ast.Block (if Array.isArray(body) then body else [body])
 
-            @_addLocationData loopNode
-            @_addLocationData body
+            @_ensureLocationData loopNode
+            @_ensureLocationData body
             loopNode.addBody body
             loopNode
 
@@ -230,8 +253,8 @@ class ES5Backend
         ifNode = new @ast.If @$(o.condition), @$(o.body), {soak: @$(o.soak), postfix: @$(o.postfix)}
         if o.elseBody?
           elseBody = @$(o.elseBody)
-          @_addLocationData ifNode
-          @_addLocationData elseBody
+          @_ensureLocationData ifNode
+          @_ensureLocationData elseBody
           ifNode.addElse elseBody
         ifNode
 
@@ -241,8 +264,8 @@ class ES5Backend
         whileNode
 
       when 'For'
-        name = @_ensureNode @$(o.name)
-        index = @_ensureNode(@$(o.index)) if o.index?
+        name = @_toNode @$(o.name)
+        index = @_toNode(@$(o.index)) if o.index?
         new @ast.For name, @$(o.source), index
 
       when 'Switch'
@@ -320,28 +343,5 @@ class ES5Backend
       else
         console.warn "Unknown $ast type:", o.$ast
         null
-
-  # Build a Value from base + properties
-  _buildValue: (base, properties) ->
-    if base instanceof @ast.Value
-      props = if Array.isArray(properties) then properties else []
-      base.add props if props.length
-      return base
-
-    base = @_ensureNode(base) if base? and not (base instanceof @ast.Base)
-    props = if Array.isArray(properties) then properties else []
-
-    if props.length
-      new @ast.Value base, props
-    else
-      new @ast.Value base
-
-  # Helper to ensure value is a proper node
-  _ensureNode: (value) ->
-    return value if value instanceof @ast.Base
-    return new @ast.IdentifierLiteral value if typeof value is 'string'
-    return new @ast.NumberLiteral value if typeof value is 'number'
-    return new @ast.BooleanLiteral value if typeof value is 'boolean'
-    value
 
 module.exports = ES5Backend
