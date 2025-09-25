@@ -51,6 +51,10 @@ class ES5Backend
 
   # Build a Value from base + properties array (already resolved)
   _buildValue: (base, properties) ->
+    if base instanceof @ast.Value
+      props = @_filterNodes (if Array.isArray(properties) then properties else [])
+      if props.length then base.add props
+      return base
     base = @_ensureNode(base) if base? and not (base instanceof @ast.Base)
     props = @_filterNodes (if Array.isArray(properties) then properties else [])
     if props.length then new @ast.Value base, props else new @ast.Value base
