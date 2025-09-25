@@ -16,8 +16,8 @@
       this.currentRule = null;
     }
 
-    // Add minimal location data to node to avoid errors in AST operations
-    _addLocationData(node) {
+    // Helper to ensure node has location data to avoid errors in AST operations
+    _ensureLocationData(node) {
       if (typeof node === 'object' && node !== null) {
         if (node.locationData == null) {
           node.locationData = {
@@ -33,6 +33,41 @@
         }
       }
       return node;
+    }
+
+    // Helper to convert primitive values to AST nodes
+    _toNode(value) {
+      if (value instanceof this.ast.Base) {
+        return value;
+      }
+      if (typeof value === 'string') {
+        return new this.ast.IdentifierLiteral(value);
+      }
+      if (typeof value === 'number') {
+        return new this.ast.NumberLiteral(value);
+      }
+      if (typeof value === 'boolean') {
+        return new this.ast.BooleanLiteral(value);
+      }
+      return value;
+    }
+
+    // Helper to convert base + properties to Value node
+    _toValue(base, properties) {
+      var props;
+      props = Array.isArray(properties) ? properties : [];
+      // Handle existing Value
+      if (base instanceof this.ast.Value) {
+        if (props.length) {
+          base.add(props);
+        }
+        return base;
+      }
+      if ((base != null) && !(base instanceof this.ast.Base)) {
+        // Ensure base is a node
+        base = this._toNode(base);
+      }
+      return new this.ast.Value(base, props);
     }
 
     // Main entry point (called by parser as 'reduce')
@@ -196,8 +231,8 @@
           });
           if (o.elseBody != null) {
             elseBody = this.$(o.elseBody);
-            this._addLocationData(ifNode);
-            this._addLocationData(elseBody);
+            this._ensureLocationData(ifNode);
+            this._ensureLocationData(elseBody);
             ifNode.addElse(elseBody);
           }
           return ifNode;
@@ -206,8 +241,8 @@
             case 'addSource':
               loopNode = this.$(o.loop);
               sourceInfo = this.$(o.source);
-              this._addLocationData(loopNode);
-              this._addLocationData(sourceInfo);
+              this._ensureLocationData(loopNode);
+              this._ensureLocationData(sourceInfo);
               loopNode.addSource(sourceInfo);
               return loopNode;
             case 'addBody':
@@ -224,8 +259,8 @@
               if (!(body instanceof this.ast.Block)) {
                 body = new this.ast.Block((Array.isArray(body) ? body : [body]));
               }
-              this._addLocationData(loopNode);
-              this._addLocationData(body);
+              this._ensureLocationData(loopNode);
+              this._ensureLocationData(body);
               loopNode.addBody(body);
               return loopNode;
             default:
@@ -328,8 +363,8 @@
           });
           if (o.elseBody != null) {
             elseBody = this.$(o.elseBody);
-            this._addLocationData(ifNode);
-            this._addLocationData(elseBody);
+            this._ensureLocationData(ifNode);
+            this._ensureLocationData(elseBody);
             ifNode.addElse(elseBody);
           }
           return ifNode;
@@ -343,9 +378,9 @@
           }
           return whileNode;
         case 'For':
-          name = this._ensureNode(this.$(o.name));
+          name = this._toNode(this.$(o.name));
           if (o.index != null) {
-            index = this._ensureNode(this.$(o.index));
+            index = this._toNode(this.$(o.index));
           }
           return new this.ast.For(name, this.$(o.source), index);
         case 'Switch':
@@ -408,44 +443,6 @@
           console.warn("Unknown $ast type:", o.$ast);
           return null;
       }
-    }
-
-    // Build a Value from base + properties
-    _buildValue(base, properties) {
-      var props;
-      if (base instanceof this.ast.Value) {
-        props = Array.isArray(properties) ? properties : [];
-        if (props.length) {
-          base.add(props);
-        }
-        return base;
-      }
-      if ((base != null) && !(base instanceof this.ast.Base)) {
-        base = this._ensureNode(base);
-      }
-      props = Array.isArray(properties) ? properties : [];
-      if (props.length) {
-        return new this.ast.Value(base, props);
-      } else {
-        return new this.ast.Value(base);
-      }
-    }
-
-    // Helper to ensure value is a proper node
-    _ensureNode(value) {
-      if (value instanceof this.ast.Base) {
-        return value;
-      }
-      if (typeof value === 'string') {
-        return new this.ast.IdentifierLiteral(value);
-      }
-      if (typeof value === 'number') {
-        return new this.ast.NumberLiteral(value);
-      }
-      if (typeof value === 'boolean') {
-        return new this.ast.BooleanLiteral(value);
-      }
-      return value;
     }
 
   };
