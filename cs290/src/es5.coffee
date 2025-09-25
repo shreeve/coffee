@@ -187,51 +187,45 @@ class ES5Backend
   # Process $ast directives - the main AST node creation
   processAst: (o) ->
     switch o.$ast
+
+      # Pass-through directives that use the node type from context
       when '@'
-        # Pass-through directives that use the node type from context
         switch @currentType
           when 'Root'
             body = @$(o.body)
-            # Wrap array in Block if needed
             body = new @ast.Block(body) if Array.isArray(body)
             new @ast.Root body
-
-          when 'Block'
-            new @ast.Block @$(o.expressions) or []
-
-          when 'Splat'
-            new @ast.Splat @$(o.name), {postfix: @$(o.postfix)}
-
+          when 'Block' then new @ast.Block @$(o.expressions) or []
+          when 'Splat' then new @ast.Splat @$(o.name), {postfix: @$(o.postfix)}
           else
             console.warn "Unknown @ node type:", @currentType
             null
 
       # Literals
-      when 'Literal'             then new @ast.Literal              @$(o.value)
-      when 'NumberLiteral'       then new @ast.NumberLiteral        @$(o.value)
-      when 'StringLiteral'       then new @ast.StringLiteral        @$(o.value)
+      when 'Literal'                  then new @ast.Literal                  @$(o.value)
+      when 'NumberLiteral'            then new @ast.NumberLiteral            @$(o.value)
+      when 'StringLiteral'            then new @ast.StringLiteral            @$(o.value)
       when 'StringWithInterpolations' then new @ast.StringWithInterpolations @$(o.body)
-      when 'BooleanLiteral'      then new @ast.BooleanLiteral       @$(o.value)
-      when 'IdentifierLiteral'   then new @ast.IdentifierLiteral    @$(o.value)
-      when 'PropertyName'        then new @ast.PropertyName         @$(o.value)
-      when 'StatementLiteral'    then new @ast.StatementLiteral     @$(o.value)
-      when 'ThisLiteral'         then new @ast.ThisLiteral
-      when 'UndefinedLiteral'    then new @ast.UndefinedLiteral
-      when 'NullLiteral'         then new @ast.NullLiteral
-      when 'InfinityLiteral'     then new @ast.InfinityLiteral
-      when 'NaNLiteral'          then new @ast.NaNLiteral
+      when 'BooleanLiteral'           then new @ast.BooleanLiteral           @$(o.value)
+      when 'IdentifierLiteral'        then new @ast.IdentifierLiteral        @$(o.value)
+      when 'PropertyName'             then new @ast.PropertyName             @$(o.value)
+      when 'StatementLiteral'         then new @ast.StatementLiteral         @$(o.value)
+      when 'ThisLiteral'              then new @ast.ThisLiteral
+      when 'UndefinedLiteral'         then new @ast.UndefinedLiteral
+      when 'NullLiteral'              then new @ast.NullLiteral
+      when 'InfinityLiteral'          then new @ast.InfinityLiteral
+      when 'NaNLiteral'               then new @ast.NaNLiteral
 
       # Value and Access
       when 'Value'
-        @_buildValue @$(o.base), @$(o.properties) ? []
+        @_toValue @$(o.base), @$(o.properties) ? []
 
       when 'Access'
         name = @$(o.name)
         name = new @ast.PropertyName name.value if name instanceof @ast.IdentifierLiteral
         new @ast.Access name, @$(o.soak)
 
-      when 'Index'
-        new @ast.Index @$(o.index)
+      when 'Index' then new @ast.Index @$(o.index)
 
       # Operations
       when 'Op'
@@ -243,8 +237,7 @@ class ES5Backend
           args.push options
         new @ast.Op args...
 
-      when 'Assign'
-        new @ast.Assign @$(o.variable), @$(o.value), @$(o.operator)
+      when 'Assign' then new @ast.Assign @$(o.variable), @$(o.value), @$(o.operator)
 
       # Control Flow
       when 'If'
@@ -266,35 +259,21 @@ class ES5Backend
         index = @_toNode(@$(o.index)) if o.index?
         new @ast.For name, @$(o.source), index
 
-      when 'Switch'
-        new @ast.Switch @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
-
-      when 'When'
-        new @ast.When @$(o.conditions), @$(o.body)
+      when 'Switch' then new @ast.Switch @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
+      when 'When'   then new @ast.When   @$(o.conditions), @$(o.body)
 
       # Collections
-      when 'Obj'
-        new @ast.Obj @$(o.properties) or [], @$(o.generated)
-
-      when 'Arr'
-        new @ast.Arr @$(o.objects) or []
-
+      when 'Obj' then new @ast.Obj @$(o.properties) or [], @$(o.generated)
+      when 'Arr' then new @ast.Arr @$(o.objects) or []
       when 'Range'
         exclusive = if @$(o.exclusive) then 'exclusive' else null
         new @ast.Range @$(o.from), @$(o.to), exclusive
 
       # Functions
-      when 'Code'
-        new @ast.Code @$(o.params) or [], @$(o.body)
-
-      when 'Param'
-        new @ast.Param @$(o.name), @$(o.value), @$(o.splat)
-
-      when 'Call'
-        new @ast.Call @$(o.variable), @$(o.args) or [], @$(o.soak)
-
-      when 'Return'
-        new @ast.Return @$(o.expression)
+      when 'Code'   then new @ast.Code   @$(o.params) or [], @$(o.body)
+      when 'Param'  then new @ast.Param  @$(o.name), @$(o.value), @$(o.splat)
+      when 'Call'   then new @ast.Call   @$(o.variable), @$(o.args) or [], @$(o.soak)
+      when 'Return' then new @ast.Return @$(o.expression)
 
       when 'Yield'
         expression = @$(o.expression)
@@ -308,35 +287,21 @@ class ES5Backend
         body = new @ast.Block(body) if Array.isArray(body)
         new @ast.Root body
 
-      when 'Block'
-        new @ast.Block @$(o.expressions) ? []
+      when 'Block' then new @ast.Block @$(o.expressions) ? []
 
       # Classes
-      when 'Class'
-        new @ast.Class @$(o.variable), @$(o.parent), @$(o.body)
-
-      when 'ClassProtoAssignOp'
-        new @ast.ClassProtoAssignOp @$(o.variable), @$(o.value)
+      when 'Class'              then new @ast.Class              @$(o.variable), @$(o.parent), @$(o.body)
+      when 'ClassProtoAssignOp' then new @ast.ClassProtoAssignOp @$(o.variable), @$(o.value)
 
       # Try/Catch
-      when 'Try'
-        new @ast.Try @$(o.attempt), @$(o.errorVariable), @$(o.recovery), @$(o.ensure)
+      when 'Try' then new @ast.Try @$(o.attempt), @$(o.errorVariable), @$(o.recovery), @$(o.ensure)
 
       # Other
-      when 'Existence'
-        new @ast.Existence @$(o.expression)
-
-      when 'Parens'
-        new @ast.Parens @$(o.body)
-
-      when 'Expansion'
-        new @ast.Expansion
-
-      when 'ImportDeclaration'
-        new @ast.ImportDeclaration @$(o.clause), @$(o.source)
-
-      when 'ExportDeclaration'
-        new @ast.ExportDeclaration @$(o.clause), @$(o.source), @$(o.default)
+      when 'Existence'         then new @ast.Existence         @$(o.expression)
+      when 'Parens'            then new @ast.Parens            @$(o.body)
+      when 'Expansion'         then new @ast.Expansion
+      when 'ImportDeclaration' then new @ast.ImportDeclaration @$(o.clause), @$(o.source)
+      when 'ExportDeclaration' then new @ast.ExportDeclaration @$(o.clause), @$(o.source), @$(o.default)
 
       else
         console.warn "Unknown $ast type:", o.$ast
