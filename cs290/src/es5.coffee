@@ -130,17 +130,6 @@ class ES5Backend
               result.push resolved
         result
 
-      when 'addToBlock'
-        block = @$(o.block)
-        line = @$(o.line)
-        # If block is already a Block, add to it
-        if block instanceof @ast.Block
-          block.expressions.push line if line?
-          block
-        else
-          # Create new block with both items
-          new @ast.Block [block, line].filter (x) -> x?
-
       when 'if'
         ifNode = new @ast.If @$(o.condition), @$(o.body), {soak: @$(o.soak), postfix: @$(o.postfix)}
         if o.elseBody?

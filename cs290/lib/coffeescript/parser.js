@@ -17,7 +17,7 @@ return r(1,{$ast:"Root",body:1});
 case 3:
 return r(1,{$ast:"Block",expressions:{$ary:[1]}});
 case 4:
-return r(3,{$ops:"addToBlock",block:1,line:3});
+return r(3,{$ast:"Block",expressions:{$ops:"array",append:[{$use:1,prop:"expressions"},3]}});
 case 5: case 270:
 return r(2,{$use:1});
 case 6: case 7: case 8: case 9: case 10: case 11: case 12: case 14: case 15: case 16: case 17: case 18: case 19: case 20: case 21: case 22: case 23: case 24: case 25: case 26: case 27: case 28: case 29: case 30: case 41: case 49: case 52: case 54: case 64: case 69: case 70: case 71: case 72: case 75: case 80: case 81: case 82: case 83: case 84: case 104: case 105: case 116: case 117: case 118: case 119: case 125: case 126: case 129: case 135: case 136: case 150: case 254: case 255: case 256: case 258: case 271: case 272: case 300: case 315: case 316: case 371: case 377:

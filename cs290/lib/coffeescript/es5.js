@@ -171,7 +171,7 @@
 
     // Process $ops directives
     processOps(o) {
-      var block, body, elseBody, i, idx, ifNode, item, len, line, loopNode, ref, resolved, result, sourceInfo;
+      var body, elseBody, i, idx, ifNode, item, len, loopNode, ref, resolved, result, sourceInfo;
       switch (o.$ops) {
         case 'array':
           result = [];
@@ -188,22 +188,6 @@
             }
           }
           return result;
-        case 'addToBlock':
-          block = this.$(o.block);
-          line = this.$(o.line);
-          // If block is already a Block, add to it
-          if (block instanceof this.ast.Block) {
-            if (line != null) {
-              block.expressions.push(line);
-            }
-            return block;
-          } else {
-            // Create new block with both items
-            return new this.ast.Block([block, line].filter(function(x) {
-              return x != null;
-            }));
-          }
-          break;
         case 'if':
           ifNode = new this.ast.If(this.$(o.condition), this.$(o.body), {
             soak: this.$(o.soak),
