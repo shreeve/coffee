@@ -346,13 +346,11 @@ class ES5Backend
             # Loop operations
             if o.addSource?
               loopNode = $(o.addSource[0])
-              sourceInfo = $(o.addSource[1])
-              loopNode.addSource sourceInfo if loopNode
+              loopNode.addSource o.addSource[1] if loopNode  # Pass raw directive, let addSource handle it
               loopNode
             else if o.addBody?
               loopNode = $(o.addBody[0])
-              bodyNode = $(o.addBody[1])
-              loopNode.addBody bodyNode if loopNode
+              loopNode.addBody $(o.addBody[1]) if loopNode
               loopNode
             else
               @_unimplemented "$ops loop without addSource/addBody", "$ops"

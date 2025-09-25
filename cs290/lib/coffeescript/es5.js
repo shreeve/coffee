@@ -154,7 +154,7 @@
     }
 
     resolve(o, lookup = o) {
-      var $, accessNode, accessor, actualExpression, base, body, bodyNode, bodyNodes, c, condition, context, elseBody, expression, expressionNode, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nodeType, p, properties, property, quote, rawSourceInfo, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, soak, sourceInfo, target, type, val, value, variable, whileNode;
+      var $, accessNode, accessor, actualExpression, base, body, bodyNode, bodyNodes, c, condition, context, elseBody, expression, expressionNode, i, ifNode, index, indexNode, item, items, j, k, len, len1, len2, loopNode, name, name1, nodeType, p, properties, property, quote, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, resolved, resolvedValue, result, soak, target, type, val, value, variable, whileNode;
       if (o == null) {
         // Null/undefined early return
         return o; // null/undefined early return
@@ -541,46 +541,14 @@
               // Loop operations
               if (o.addSource != null) {
                 loopNode = $(o.addSource[0]);
-                rawSourceInfo = o.addSource[1];
-                // Instead of calling addSource (which has traverseChildren issues),
-                // manually set the properties on the For node
-                if ((rawSourceInfo != null) && loopNode) {
-                  // Resolve rawSourceInfo if it's a positional reference
-                  sourceInfo = typeof rawSourceInfo === 'number' ? $(rawSourceInfo) : rawSourceInfo;
-                  if (sourceInfo.source != null) {
-                    // Manually set each property, resolving as needed
-                    loopNode.source = $(sourceInfo.source);
-                  }
-                  if (sourceInfo.name != null) {
-                    loopNode.name = $(sourceInfo.name);
-                  }
-                  if (sourceInfo.index != null) {
-                    loopNode.index = $(sourceInfo.index);
-                  }
-                  if (sourceInfo.guard != null) {
-                    loopNode.guard = $(sourceInfo.guard);
-                  }
-                  if (sourceInfo.step != null) {
-                    loopNode.step = $(sourceInfo.step);
-                  }
-                  if (sourceInfo.own != null) {
-                    loopNode.own = $(sourceInfo.own);
-                  }
-                  if (sourceInfo.object != null) {
-                    loopNode.object = $(sourceInfo.object);
-                  }
-                  if (sourceInfo.from != null) {
-                    loopNode.from = $(sourceInfo.from);
-                  }
-                  // Set other flags that addSource would normally set
-                  loopNode.returns = false;
+                if (loopNode) { // Pass raw directive, let addSource handle it
+                  loopNode.addSource(o.addSource[1]);
                 }
                 return loopNode;
               } else if (o.addBody != null) {
                 loopNode = $(o.addBody[0]);
-                bodyNode = $(o.addBody[1]);
                 if (loopNode) {
-                  loopNode.addBody(bodyNode);
+                  loopNode.addBody($(o.addBody[1]));
                 }
                 return loopNode;
               } else {
