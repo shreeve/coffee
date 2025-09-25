@@ -21,6 +21,6 @@ test "x = 0; y = (until true then x++); x", 0
 test "x = 0; (while x < 3 then x++); x", 3
 test "i = 5; (until i <= 0 then i--); i", 0
 
-# Tests with simple loops - checking final variable value
-test "x = 0; y = while x < 2 then x += 1; x", 2
-test "x = 10; y = until x < 5 then x -= 2; x", 4
+# Tests with simple loops - the expression returns the loop results (y), not x
+test "x = 0; y = while x < 2 then x += 1", [1, 2]
+test "x = 10; y = until x < 5 then x -= 2", [8, 6, 4]
