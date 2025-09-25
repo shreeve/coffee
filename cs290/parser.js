@@ -307,11 +307,11 @@ return r(4,{$ast:"Value",base:{$ast:"ThisLiteral"},properties:[{$ast:"Index",ind
 case 234:
 return r(1,{$ast:"Value",base:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:{$ast:"PropertyName",value:"constructor"}}],bareLiteral:{$ast:"ThisLiteral"}});
 case 236:
-return r(2,{$ast:"Arr",objects:[]});
+return r(2,{$ast:"Arr",value:{$ary:[{}]}});
 case 237:
 return r(3,{$ast:"Arr",objects:2});
 case 238:
-return r(4,{$ast:"Arr",objects:2});
+return r(4,{$ast:"Arr",objects:{$ops:"array",gather:[[],2]},elisions:3});
 case 239:
 return r(1,{exclusive:false});
 case 240:

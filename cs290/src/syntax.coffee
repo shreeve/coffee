@@ -323,7 +323,7 @@ grammar =
   ]
 
   IndexValue: [
-    o 'Expression', $ast: 'Index', object: 1
+    o 'Expression', $ast: 'Index', index: 1
     o 'Slice'     , $ast: 'Slice', range: 1
   ]
 
@@ -470,9 +470,9 @@ grammar =
 
   # The array literal.
   Array: [
-    o '[ ]'                           , $ast: 'Arr', value: {$ary: [{}]}
+    o '[ ]'                           , $ast: 'Arr', objects: []
     o '[ Elisions ]'                  , $ast: 'Arr', objects: 2
-    o '[ ArgElisionList OptElisions ]', $ast: 'Arr', objects: {$ops: 'array', gather: [[], 2]}, elisions: 3
+    o '[ ArgElisionList OptElisions ]', $ast: 'Arr', objects: 2
   ]
 
   # Inclusive and exclusive range dots.
