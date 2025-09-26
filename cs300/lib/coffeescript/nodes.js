@@ -4791,10 +4791,10 @@ export const Assign = (function() {
         // Look through the current scope's expressions for reassignments
         const scope = o.scope;
         let assignmentCount = 0;
-        
+
         // Helper to check if a node is an assignment to our variable
         const checkNode = (node) => {
-          if (node instanceof Assign && 
+          if (node instanceof Assign &&
               node.variable.unwrapAll() instanceof IdentifierLiteral &&
               node.variable.unwrapAll().value === varName &&
               !node.context) {
@@ -4805,12 +4805,12 @@ export const Assign = (function() {
             node.traverseChildren(false, checkNode);
           }
         };
-        
+
         // Check all expressions in the current scope
         if (scope.expressions) {
           scope.expressions.traverseChildren(false, checkNode);
         }
-        
+
         // If we find more than one assignment (including this one), use let
         return assignmentCount > 1;
       }
