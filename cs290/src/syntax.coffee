@@ -767,7 +767,7 @@ grammar =
   ]
 
   Operation: [
-    o 'UNARY Expression'              , $ast: 'Op', args: [{$use: 1, method: 'toString'}, 2], originalOperator: {$use: 1, prop: 'original'}
+    o 'UNARY Expression'              , $ast: 'Op', args: [{$use: 1, method: 'toString'}, 2, undefined, undefined], originalOperator: {$use: 1, prop: 'original'}
     o 'DO Expression'                 , $ast: 'Op', args: [1, 2]
     o 'UNARY_MATH Expression'         , $ast: 'Op', args: [1, 2]
     o '- Expression'                  ,{$ast: 'Op', args: [1, 2]}, prec: 'UNARY_MATH'
