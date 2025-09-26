@@ -431,7 +431,7 @@ return r(3,{$ops:"if",addElse:[1,3]});
 case 373: case 374: case 379: case 380:
 return r(3,{$ast:"If",condition:3,body:[1],type:2,postfix:true});
 case 384:
-return r(2,{$ast:"Op",args:[{$use:1,method:"toString"},2],originalOperator:{$use:1,prop:"original"}});
+return r(2,{$ast:"Op",args:[{$use:1,method:"toString"},2,undefined,undefined],originalOperator:{$use:1,prop:"original"}});
 case 393: case 394:
 return r(2,{$ast:"Op",args:[2,1,null,true]});
 case 395:
