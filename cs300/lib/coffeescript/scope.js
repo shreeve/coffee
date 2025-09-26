@@ -32,6 +32,8 @@ export class Scope {
       }
       // The `@root` is the top-level **Scope** object for a given file.
       this.root = (ref = (ref1 = this.parent) != null ? ref1.root : void 0) != null ? ref : this;
+    // ES6: Track variable reassignments for const/let determination
+    this.assignments = {};
     }
     // Adds a new variable or overrides an existing one.
     add(name, type, immediate) {
@@ -165,6 +167,34 @@ export class Scope {
         }
       }
       return results;
+    }
+    
+    // ES6: Track when a variable is assigned to
+    trackAssignment(name) {
+      if (!this.assignments[name]) {
+        this.assignments[name] = 0;
+      }
+      this.assignments[name]++;
+      // Also track in parent scopes
+      if (this.parent) {
+        this.parent.trackAssignment(name);
+      }
+    }
+    
+    // ES6: Check if a variable will be reassigned
+    willBeReassigned(name) {
+      // Check this scope and all parent scopes
+      const totalAssignments = this.getTotalAssignments(name);
+      return totalAssignments > 1;
+    }
+    
+    // ES6: Get total assignment count across all scopes
+    getTotalAssignments(name) {
+      let count = this.assignments[name] || 0;
+      if (this.parent) {
+        count += this.parent.getTotalAssignments(name);
+      }
+      return count;
     }
 };
 export default Scope;
