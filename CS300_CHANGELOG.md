@@ -69,7 +69,7 @@ let x = 10;
 
 ### 4. **Arrow Functions** (Committed: 22bbd40)
 
-### 2025-09-26 04:57 US/Mountain  
+### 2025-09-26 04:57 US/Mountain
 ### 5. **ES6 Classes**
 - Native ES6 class syntax
 - Support for `extends`, `super()`, and static methods
