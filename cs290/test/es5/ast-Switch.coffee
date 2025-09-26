@@ -7,23 +7,20 @@
 # These tests use assignment to capture switch results
 
 # Execute complex switch statements and capture results
-x = (switch 3
+result1 = (switch 3
   when 1, 2 then 'low'
   else 'high')
-result1 = x
 
 type = 'string'
-x = (switch type
+result2 = (switch type
   when 'number', 'string' then 'primitive'
   when 'object', 'function' then 'complex'
   else 'unknown')
-result2 = x
 
 day = 3
-x = (switch day
+result3 = (switch day
   when 0, 6 then 'weekend'
   when 1, 2, 3, 4, 5 then 'weekday')
-result3 = x
 
 test "x = (switch 1\n  when 1 then 'one'\n  when 2 then 'two'); x", "one"
 test "x = (switch 2\n  when 1 then 'one'\n  when 2 then 'two'); x", "two"
