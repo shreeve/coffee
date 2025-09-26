@@ -2149,13 +2149,13 @@
       {
         $ops: 'loop',
         addBody: [1,
-      'Body $2']
+      2]
       }),
       o('WhileLineSource Block',
       {
         $ops: 'loop',
         addBody: [1,
-      'Body $2']
+      2]
       }),
       o('Statement  WhileSource',
       {
@@ -2674,7 +2674,11 @@
         $ast: 'If',
         condition: 2,
         body: 3,
-        type: 1
+        type: 1,
+        invert: {
+          $use: 1,
+          prop: 'invert'
+        }
       }),
       o('IfBlock ELSE IF Expression Block',
       {
@@ -2686,6 +2690,10 @@
             condition: 4,
             body: 5,
             type: 3,
+            invert: {
+              $use: 3,
+              prop: 'invert'
+            },
             $pos: [3,
           5]
           }

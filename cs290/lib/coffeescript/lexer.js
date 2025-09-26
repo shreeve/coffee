@@ -201,6 +201,7 @@
           };
         } else if (tag === 'UNLESS') {
           tag = 'IF';
+          tokenData.invert = true;
         } else if (tag === 'IMPORT') {
           this.seenImport = true;
         } else if (tag === 'EXPORT') {

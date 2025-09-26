@@ -217,7 +217,7 @@
 
     // Process $ops directives
     processOps(o) {
-      var accessor, body, elseBody, i, idx, ifNode, item, len, loopNode, ref, resolved, result, sourceInfo, value;
+      var accessor, body, elseBody, i, idx, ifNode, item, len, loopNode, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, resolved, result, sourceInfo, util, value;
       switch (o.$ops) {
         case 'array':
           result = [];
@@ -276,6 +276,9 @@
             return loopNode;
           }
           if (o.addBody != null) {
+            if ((ref1 = global.process) != null ? (ref2 = ref1.env) != null ? ref2.SOLAR_DEBUG : void 0 : void 0) {
+              console.log("[Solar] loop.addBody operation:", o.addBody);
+            }
             // addBody: [1, 2] means loop is at position 1, body at position 2
             [loopNode, body] = o.addBody.map((item) => {
               return this.$(item);
@@ -286,10 +289,25 @@
               if (idx >= 0) {
                 body = this.currentDirective[idx + 1];
               }
+              if ((ref3 = global.process) != null ? (ref4 = ref3.env) != null ? ref4.SOLAR_DEBUG : void 0 : void 0) {
+                util = require('util');
+                console.log(`[Solar] loop.addBody resolved body from 'Body $${idx + 1}':`, util.inspect(body, {
+                  depth: 2,
+                  colors: true
+                }));
+              }
             }
             // Ensure body is a Block
             if (!(body instanceof this.ast.Block)) {
               body = new this.ast.Block((Array.isArray(body) ? body : [body]));
+            }
+            if ((ref5 = global.process) != null ? (ref6 = ref5.env) != null ? ref6.SOLAR_DEBUG : void 0 : void 0) {
+              util = require('util');
+              console.log("[Solar] loop.addBody loopNode:", loopNode != null ? (ref7 = loopNode.constructor) != null ? ref7.name : void 0 : void 0);
+              console.log("[Solar] loop.addBody body:", util.inspect(body, {
+                depth: 2,
+                colors: true
+              }));
             }
             this._ensureLocationData(loopNode);
             this._ensureLocationData(body);
@@ -304,7 +322,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, condition, elseBody, expressions, forNode, ifNode, index, name, options, params, ref, ref1, whileNode;
+      var args, body, condition, context, elseBody, expression, expressions, forNode, ifNode, index, invert, name, opValue, operator, options, params, ref, ref1, type, value, variable, whileNode;
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
@@ -396,17 +414,39 @@
           }
           return new this.ast.Op(...args);
         case 'Assign':
-          options = {};
-          if (o.operatorToken) {
-            options.operatorToken = this.$(o.operatorToken);
+          // Handle both simple and compound assignments
+          variable = this.$(o.variable);
+          value = this.$(o.value);
+          context = this.$(o.context);
+          // Check for compound assignment (+=, -=, etc.)
+          if (o.operator != null) {
+            operator = this.$(o.operator);
+            if (operator && operator !== '=') {
+              // Create an Op node for compound assignment
+              // e.g., x += 1 becomes x = x + 1
+              opValue = new this.ast.Op(operator.replace('=', ''), variable, value);
+              return new this.ast.Assign(variable, opValue, context);
+            } else {
+              return new this.ast.Assign(variable, value, context);
+            }
+          } else {
+            // Simple assignment
+            options = {};
+            if (o.operatorToken) {
+              options.operatorToken = this.$(o.operatorToken);
+            }
+            return new this.ast.Assign(variable, value, context, options);
           }
-          return new this.ast.Assign(this.$(o.variable), this.$(o.value), this.$(o.context), options);
+          break;
         // Control Flow
         case 'If':
           condition = this._ensureLocationData(this.$(o.condition));
           body = this._ensureLocationData(this.$(o.body));
+          // Handle `unless` by checking invert flag from lexer
+          invert = this.$(o.invert);
+          type = invert ? 'unless' : this.$(o.type);
           ifNode = new this.ast.If(condition, body, {
-            soak: this.$(o.soak),
+            type,
             postfix: this.$(o.postfix)
           });
           if (o.elseBody != null) {
@@ -526,7 +566,16 @@
         case 'RegexLiteral':
           return new this.ast.Literal(this.$(o.value));
         case 'Interpolation':
-          return new this.ast.Literal(this.$(o.expression) || '');
+          // Create an actual Interpolation node for use in StringWithInterpolations
+          expression = this.$(o.expression);
+          if (expression != null) {
+            // Expression might be a Block with multiple statements
+            return new this.ast.Interpolation(expression);
+          } else {
+            // Empty interpolation - use EmptyInterpolation class
+            return new this.ast.EmptyInterpolation();
+          }
+          break;
         default:
           console.warn("Unknown $ast type:", o.$ast);
           return new this.ast.Literal(`# Missing AST node: ${o.$ast}`);

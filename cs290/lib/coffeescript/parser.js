@@ -368,8 +368,8 @@ case 288: case 293:
 return r(2,{$ast:"While",condition:2,invert:true});
 case 289: case 294: case 295:
 return r(4,{$ast:"While",condition:2,invert:true,guard:4});
-case 296: case 297: case 305: case 306:
-return r(2,{$ops:"loop",addBody:[1,"Body $2"]});
+case 296: case 297:
+return r(2,{$ops:"loop",addBody:[1,2]});
 case 298: case 299:
 return r(2,{$ops:"loop",addBody:[2,[1]],postfix:true});
 case 301:
@@ -378,6 +378,8 @@ case 302:
 return r(2,{$ast:"While",condition:{$ast:"BooleanLiteral",value:"true"},isLoop:true,body:[2]});
 case 303: case 304:
 return r(2,{$ops:"loop",addBody:[2,1],postfix:true});
+case 305: case 306:
+return r(2,{$ops:"loop",addBody:[1,"Body $2"]});
 case 307:
 return r(2,{$ast:"For",body:{$arr:[]},source:{$ast:"Value",base:2,$pos:2}});
 case 308: case 310:
@@ -422,14 +424,18 @@ case 367:
 return r(3,{$ast:"SwitchWhen",conditions:2,body:3});
 case 368:
 return r(4,{$ast:"SwitchWhen",conditions:2,body:3,$pos:[1,3]});
-case 369: case 375:
-return r(3,{$ast:"If",condition:2,body:3,type:1});
-case 370: case 376:
-return r(5,{$ops:"if",addElse:[1,{$ast:"If",condition:4,body:5,type:3,$pos:[3,5]}]});
+case 369:
+return r(3,{$ast:"If",condition:2,body:3,type:1,invert:{$use:1,prop:"invert"}});
+case 370:
+return r(5,{$ops:"if",addElse:[1,{$ast:"If",condition:4,body:5,type:3,invert:{$use:3,prop:"invert"},$pos:[3,5]}]});
 case 372: case 378:
 return r(3,{$ops:"if",addElse:[1,3]});
 case 373: case 374: case 379: case 380:
 return r(3,{$ast:"If",condition:3,body:[1],type:2,postfix:true});
+case 375:
+return r(3,{$ast:"If",condition:2,body:3,type:1});
+case 376:
+return r(5,{$ops:"if",addElse:[1,{$ast:"If",condition:4,body:5,type:3,$pos:[3,5]}]});
 case 384:
 return r(2,{$ast:"Op",args:[{$use:1,method:"toString"},2,undefined,undefined],originalOperator:{$use:1,prop:"original"}});
 case 393: case 394:
