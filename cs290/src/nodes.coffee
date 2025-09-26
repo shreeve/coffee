@@ -3167,17 +3167,8 @@ exports.ExecutableClassBody = class ExecutableClassBody extends Base
         variable  = new Value new ThisLiteral(), [ prototype, name ]
 
         assign.variable = variable
-      else
-        # Static member defined with @prop: value in class body
-        if assign.value instanceof Code
-          assign.value.isStatic = true
-        else
-          prop = variable?.properties?[0]
-          propName = prop?.name?.value
-          if propName?
-            classIdent = new IdentifierLiteral @name
-            staticAccess = new Access new PropertyName propName
-            assign.variable = new Value classIdent, [ staticAccess ]
+      else if assign.value instanceof Code
+        assign.value.isStatic = true
 
       assign
     compact result
