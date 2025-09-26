@@ -32,15 +32,20 @@ coffee test/runner.coffee test/es5/ast-NumberLiteral.coffee  # Run specific test
 
 ### Current Issues to Fix
 
-#### 1. **Variable assignments not working**
+#### 1. **For loops - COMPLEX ISSUE (traverseChildren error)**
+**Investigation Summary:**
+- Implemented deep nested `$use` resolution in `reduce()` method via `_resolveNestedUse`
+- Successfully resolves `{$use: 2, index: 0}` patterns from ForVariables
+- Issue: `addSource` in nodes.coffee expects all attributes to be AST nodes
+- The For node attributes (name, index, etc.) must be AST nodes for traverseChildren
+- Multiple attempted workarounds all failed
+- **Recommendation**: Come back after fixing simpler issues
+
+#### 2. **Variable assignments not working**
 - `a = 5; a` returns "a is not defined"
 - Assignment statements aren't creating proper scope
 
-#### 2. **For loop bodies incomplete**
-- For loops compile but body isn't properly executed
-- `for x in [1,2,3] then x` doesn't iterate correctly
-
-#### 3. **String interpolation incomplete**
+#### 3. **String interpolation incomplete**  
 - Compiles without error but output is incomplete
 - `"result: #{1 + 2}"` outputs `` `result: ` `` instead of full interpolation
 
