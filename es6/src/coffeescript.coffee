@@ -3,29 +3,30 @@
 # contains the main entry functions for tokenizing, parsing, and compiling
 # source CoffeeScript into JavaScript.
 
-{Lexer}       = require './lexer'
-{parser}      = require './parser'
-helpers       = require './helpers'
-SourceMap     = require './sourcemap'
-ES5Backend    = require './es5'
+import {Lexer} from './lexer.js'
+import {parser} from './parser.js'
+import * as helpers from './helpers.js'
+import SourceMap from './sourcemap.js'
+import ES6Backend from './es6.js'
 
-# Require `package.json`, which is two levels above this file, as this file is
-# evaluated from `lib/coffeescript`.
-packageJson   = require '../../package.json'
+# Import package.json using createRequire for ES6 modules
+import { createRequire } from 'module'
+require = createRequire(import.meta.url)
+packageJson = require('../../package.json')
 
 # The current CoffeeScript version number.
-exports.VERSION = packageJson.version
+export VERSION = packageJson.version
 
-exports.FILE_EXTENSIONS = FILE_EXTENSIONS = ['.coffee', '.litcoffee', '.coffee.md']
+export FILE_EXTENSIONS = ['.coffee', '.litcoffee', '.coffee.md']
 
 # Expose helpers for testing.
-exports.helpers = helpers
+export { helpers }
 
 {getSourceMap, registerCompiled} = SourceMap
 # This is exported to enable an external module to implement caching of
 # sourcemaps. This is used only when `patchStackTrace` has been called to adjust
 # stack traces for files with cached source maps.
-exports.registerCompiled = registerCompiled
+export { registerCompiled }
 
 # Function that allows for btoa in both nodejs and the browser.
 base64encode = (src) -> switch
@@ -61,7 +62,7 @@ withPrettyErrors = (fn) ->
 # in which case this returns a `{js, v3SourceMap, sourceMap}`
 # object, where sourceMap is a sourcemap.coffee#SourceMap object, handy for
 # doing programmatic lookups.
-exports.compile = compile = withPrettyErrors (code, options = {}) ->
+export compile = withPrettyErrors (code, options = {}) ->
   # Clone `options`, to avoid mutating the `options` object passed in.
   options = Object.assign {}, options
 
@@ -183,23 +184,23 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
     js
 
 # Tokenize a string of CoffeeScript code, and return the array of tokens.
-exports.tokens = withPrettyErrors (code, options) ->
+export tokens = withPrettyErrors (code, options) ->
   lexer.tokenize code, options
 
 # Parse a string of CoffeeScript code or an array of lexed tokens, and
 # return the AST. You can then compile it by calling `.compile()` on the root,
 # or traverse it by using `.traverseChildren()` with a callback.
-exports.nodes = withPrettyErrors (source, options) ->
+export nodes = withPrettyErrors (source, options) ->
   source = lexer.tokenize source, options if typeof source is 'string'
-  parser.yy.backend = new ES5Backend(options, parser.yy) # Inject Solar backend
+  parser.yy.backend = new ES6Backend(options, parser.yy) # Inject Solar backend
   parser.parse source
 
 # This file used to export these methods; leave stubs that throw warnings
 # instead. These methods have been moved into `index.coffee` to provide
 # separate entrypoints for Node and non-Node environments, so that static
-# analysis tools don’t choke on Node packages when compiling for a non-Node
+# analysis tools don't choke on Node packages when compiling for a non-Node
 # environment.
-exports.run = exports.eval = exports.register = ->
+export run = export evalCS = export register = ->
   throw new Error 'require index.coffee, not this file'
 
 # Instantiate a Lexer for our use here.
@@ -254,7 +255,7 @@ parser.yy.parseError = (message, {token}) ->
   # from the lexer.
   helpers.throwSyntaxError "unexpected #{errorText}", errorLoc
 
-exports.patchStackTrace = ->
+export patchStackTrace = ->
   # Based on http://v8.googlecode.com/svn/branches/bleeding_edge/src/messages.js
   # Modified to handle sourceMap
   formatSourcePosition = (frame, getSourceMapping) ->
@@ -338,3 +339,20 @@ checkShebangLine = (file, input) ->
     '''
     console.error "The shebang line was: '#{firstLine}' in file '#{file}'"
     console.error "The arguments were: #{JSON.stringify args}"
+
+# Create and export the CoffeeScript module
+CoffeeScript = {
+  VERSION
+  FILE_EXTENSIONS
+  helpers
+  registerCompiled
+  compile
+  tokens
+  nodes
+  run
+  eval: evalCS
+  register
+  patchStackTrace
+}
+
+export default CoffeeScript

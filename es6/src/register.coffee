@@ -1,7 +1,7 @@
-CoffeeScript  = require './'
-child_process = require 'child_process'
-helpers       = require './helpers'
-path          = require 'path'
+import CoffeeScript from './index.js'
+import child_process from 'child_process'
+import * as helpers from './helpers.js'
+import path from 'path'
 
 {patchStackTrace} = CoffeeScript
 

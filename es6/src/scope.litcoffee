@@ -5,7 +5,7 @@ and has a reference to its parent enclosing scope. In this way, we know which
 variables are new and need to be declared with `var`, and which are shared
 with external scopes.
 
-    exports.Scope = class Scope
+    export class Scope
 
 Initialize a scope with its parent, for lookups up the chain,
 as well as a reference to the **Block** node it belongs to, which is
@@ -23,6 +23,8 @@ that should be output as part of variable declarations.
 The `@root` is the top-level **Scope** object for a given file.
 
         @root = @parent?.root ? this
+        # ES6: Track variable reassignments for const/let determination
+        @assignments = {}
 
 Adds a new variable or overrides an existing one.
 
@@ -118,3 +120,27 @@ of this scope.
 
       assignedVariables: ->
         "#{v.name} = #{v.type.value}" for v in @variables when v.type.assigned
+
+ES6: Track variable assignments for const/let determination
+
+      trackAssignment: (name) ->
+        @assignments[name] ?= 0
+        @assignments[name]++
+        # Also track in parent scopes as variables can be used across scopes
+        @parent?.trackAssignment(name)
+
+ES6: Check if a variable will be reassigned
+
+      willBeReassigned: (name) ->
+        # Check this scope and all parent scopes
+        totalAssignments = @getTotalAssignments(name)
+        totalAssignments > 1
+
+ES6: Get total assignment count across all scopes
+
+      getTotalAssignments: (name) ->
+        count = @assignments[name] or 0
+        count += @parent.getTotalAssignments(name) if @parent
+        count
+
+    export default Scope

@@ -1,9 +1,9 @@
-fs = require 'fs'
-path = require 'path'
-vm = require 'vm'
-nodeREPL = require 'repl'
-CoffeeScript = require './'
-{merge, updateSyntaxError} = require './helpers'
+import fs from 'fs'
+import path from 'path'
+import vm from 'vm'
+import nodeREPL from 'repl'
+import CoffeeScript from './index.js'
+import {merge, updateSyntaxError} from './helpers.js'
 
 sawSIGINT = no
 transpile = no
@@ -187,50 +187,49 @@ getCommandId = (repl, commandName) ->
   commandsHaveLeadingDot = repl.commands['.help']?
   if commandsHaveLeadingDot then ".#{commandName}" else commandName
 
-module.exports =
-  start: (opts = {}) ->
-    [major, minor, build] = process.versions.node.split('.').map (n) -> parseInt(n, 10)
+export start = (opts = {}) ->
+  [major, minor, build] = process.versions.node.split('.').map (n) -> parseInt(n, 10)
 
-    if major < 6
-      console.warn "Node 6+ required for CoffeeScript REPL"
-      process.exit 1
+  if major < 6
+    console.warn "Node 6+ required for CoffeeScript REPL"
+    process.exit 1
 
-    CoffeeScript.register()
-    process.argv = ['coffee'].concat process.argv[2..]
-    if opts.transpile
-      transpile = {}
+  CoffeeScript.register()
+  process.argv = ['coffee'].concat process.argv[2..]
+  if opts.transpile
+    transpile = {}
+    try
+      transpile.transpile = require('@babel/core').transform
+    catch
       try
-        transpile.transpile = require('@babel/core').transform
+        transpile.transpile = require('babel-core').transform
       catch
-        try
-          transpile.transpile = require('babel-core').transform
-        catch
-          console.error '''
-            To use --transpile with an interactive REPL, @babel/core must be installed either in the current folder or globally:
-              npm install --save-dev @babel/core
-            or
-              npm install --global @babel/core
-            And you must save options to configure Babel in one of the places it looks to find its options.
-            See https://coffeescript.org/#transpilation
-          '''
-          process.exit 1
-      transpile.options =
-        filename: path.resolve process.cwd(), '<repl>'
-      # Since the REPL compilation path is unique (in `eval` above), we need
-      # another way to get the `options` object attached to a module so that
-      # it knows later on whether it needs to be transpiled. In the case of
-      # the REPL, the only applicable option is `transpile`.
-      Module = require 'module'
-      originalModuleLoad = Module::load
-      Module::load = (filename) ->
-        @options = transpile: transpile.options
-        originalModuleLoad.call @, filename
-    opts = merge replDefaults, opts
-    repl = nodeREPL.start opts
-    runInContext opts.prelude, repl.context, 'prelude' if opts.prelude
-    repl.on 'exit', -> repl.outputStream.write '\n' if not repl.closed
-    addMultilineHandler repl
-    addHistory repl, opts.historyFile, opts.historyMaxInputSize if opts.historyFile
-    # Adapt help inherited from the node REPL
-    repl.commands[getCommandId(repl, 'load')].help = 'Load code from a file into this REPL session'
-    repl
+        console.error '''
+          To use --transpile with an interactive REPL, @babel/core must be installed either in the current folder or globally:
+            npm install --save-dev @babel/core
+          or
+            npm install --global @babel/core
+          And you must save options to configure Babel in one of the places it looks to find its options.
+          See https://coffeescript.org/#transpilation
+        '''
+        process.exit 1
+    transpile.options =
+      filename: path.resolve process.cwd(), '<repl>'
+    # Since the REPL compilation path is unique (in `eval` above), we need
+    # another way to get the `options` object attached to a module so that
+    # it knows later on whether it needs to be transpiled. In the case of
+    # the REPL, the only applicable option is `transpile`.
+    Module = require 'module'
+    originalModuleLoad = Module::load
+    Module::load = (filename) ->
+      @options = transpile: transpile.options
+      originalModuleLoad.call @, filename
+  opts = merge replDefaults, opts
+  repl = nodeREPL.start opts
+  runInContext opts.prelude, repl.context, 'prelude' if opts.prelude
+  repl.on 'exit', -> repl.outputStream.write '\n' if not repl.closed
+  addMultilineHandler repl
+  addHistory repl, opts.historyFile, opts.historyMaxInputSize if opts.historyFile
+  # Adapt help inherited from the node REPL
+  repl.commands[getCommandId(repl, 'load')].help = 'Load code from a file into this REPL session'
+  repl
