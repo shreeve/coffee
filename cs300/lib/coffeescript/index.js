@@ -51,22 +51,38 @@ CoffeeScript.compile = function(code, options) {
 // setting `__filename`, `__dirname`, and relative `require()`.
 CoffeeScript.run = function(code, options = {}) {
   let answer, dir, mainModule, ref;
-  mainModule = require.main;
+  mainModule = require.main || {}; // ES modules don't have require.main, so provide a fallback
   // Set the filename.
-  mainModule.filename = process.argv[1] = options.filename ? fs.realpathSync(options.filename) : helpers.anonymousFileName();
+  const filename = options.filename ? fs.realpathSync(options.filename) : helpers.anonymousFileName();
+  if (mainModule.filename !== undefined) {
+    mainModule.filename = filename;
+  }
+  process.argv[1] = filename;
   // Clear the module cache.
-  mainModule.moduleCache && (mainModule.moduleCache = {});
+  if (mainModule.moduleCache) {
+    mainModule.moduleCache = {};
+  }
   // Assign paths for node_modules loading
   dir = options.filename != null ? path.dirname(fs.realpathSync(options.filename)) : fs.realpathSync('.');
-  mainModule.paths = require('module')._nodeModulePaths(dir);
+  if (mainModule.paths !== undefined) {
+    mainModule.paths = require('module')._nodeModulePaths(dir);
+  }
   // Save the options for compiling child imports.
-  mainModule.options = options;
-  options.filename = mainModule.filename;
+  if (mainModule.options !== undefined) {
+    mainModule.options = options;
+  }
+  options.filename = filename;
   options.inlineMap = true;
   // Compile.
   answer = CoffeeScript.compile(code, options);
   code = (ref = answer.js) != null ? ref : answer;
-  return mainModule._compile(code, mainModule.filename);
+
+  // In ES modules, mainModule might not have _compile, so use vm.runInThisContext as fallback
+  if (mainModule._compile) {
+    return mainModule._compile(code, filename);
+  } else {
+    return vm.runInThisContext(code, { filename });
+  }
 };
 
 // Compile and evaluate a string of CoffeeScript (in a Node.js-like environment).
@@ -136,8 +152,8 @@ CoffeeScript.eval = function(code, options = {}) {
   }
 };
 
-CoffeeScript.register = async function() {
-  return (await import('./register.js')).default;
+CoffeeScript.register = function() {
+  return import('./register.js').then(m => m.default);
 };
 
 // Throw error with deprecation warning when depending upon implicit `require.extensions` registration

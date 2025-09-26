@@ -3,7 +3,7 @@
 // nodes are created as the result of actions in the [grammar](grammar.html),
 // but some are created by other nodes as a method of code generation. To convert
 // the syntax tree into a string of JavaScript code, call `compile()` on the root.
-var HEREGEX_OMIT, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, NEGATE, NO, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, TAB, THIS, TRAILING_BLANK_LINE, UTILITIES, YES, astAsBlockIfNeeded, emptyExpressionLocationData, extractSameLineLocationDataFirst, extractSameLineLocationDataLast, fragmentsToText, greater, hasLineComments, indentInitial, isAstLocGreater, isLiteralArguments, isLiteralThis, isLocationDataEndGreater, isLocationDataStartGreater, jisonLocationDataToAstLocationData, lesser, makeDelimitedLiteral, mergeAstLocationData, mergeLocationData, moveComments, multident, shouldCacheOrIsAssignable, sniffDirectives, unfoldSoak, unshiftAfterComments, utility, zeroWidthLocationDataFromEndLocation, hasProp = {}.hasOwnProperty, indexOf = [].indexOf, splice = [].splice, slice = [].slice, slice1 = [].slice;
+var HEREGEX_OMIT, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, NEGATE, NO, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, TAB, THIS, TRAILING_BLANK_LINE, UTILITIES, YES, astAsBlockIfNeeded, emptyExpressionLocationData, extractSameLineLocationDataFirst, extractSameLineLocationDataLast, fragmentsToText, greater, hasLineComments, indentInitial, isAstLocGreater, isLiteralArguments, isLiteralThis, isLocationDataEndGreater, isLocationDataStartGreater, lesser, makeDelimitedLiteral, moveComments, multident, shouldCacheOrIsAssignable, sniffDirectives, unfoldSoak, unshiftAfterComments, utility, zeroWidthLocationDataFromEndLocation, hasProp = {}.hasOwnProperty, indexOf = [].indexOf, splice = [].splice, slice = [].slice, slice1 = [].slice;
 Error.stackTraceLimit = 2e308;
 import { Scope } from './scope.js';
 import { isUnassignable, JS_FORBIDDEN } from './lexer.js';
@@ -8218,7 +8218,7 @@ isLocationDataEndGreater = function(a, b) {
 // mergeLocationData(first, second, justLeading: yes).range # [1, 5]
 // mergeLocationData(first, second, justEnding:  yes).range # [4, 10]
 // ```
-exports.mergeLocationData = mergeLocationData = function(locationDataA, locationDataB, {justLeading, justEnding} = {}) {
+export const mergeLocationData = function(locationDataA, locationDataB, {justLeading, justEnding} = {}) {
     return Object.assign(justEnding ? {
       first_line: locationDataA.first_line,
       first_column: locationDataA.first_column
@@ -8260,7 +8260,7 @@ exports.mergeLocationData = mergeLocationData = function(locationDataA, location
 // mergeAstLocationData(first, second, justLeading: yes).range # [1, 5]
 // mergeAstLocationData(first, second, justEnding:  yes).range # [4, 10]
 // ```
-exports.mergeAstLocationData = mergeAstLocationData = function(nodeA, nodeB, {justLeading, justEnding} = {}) {
+export const mergeAstLocationData = function(nodeA, nodeB, {justLeading, justEnding} = {}) {
     return {
       loc: {
         start: justEnding ? nodeA.loc.start : isAstLocGreater(nodeA.loc.start, nodeB.loc.start) ? nodeB.loc.start : nodeA.loc.start,
@@ -8272,7 +8272,7 @@ exports.mergeAstLocationData = mergeAstLocationData = function(nodeA, nodeB, {ju
     };
 };
 // Convert Jison-style node class location data to Babel-style location data
-exports.jisonLocationDataToAstLocationData = jisonLocationDataToAstLocationData = function({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) {
+export const jisonLocationDataToAstLocationData = function({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) {
     return {
       loc: {
         start: {

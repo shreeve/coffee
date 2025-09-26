@@ -4,6 +4,7 @@
 // ==============================================================================
 
 import { createRequire } from 'module';
+import util from 'util';
 
 const require = createRequire(import.meta.url);
 const hasProp = {}.hasOwnProperty;
@@ -126,7 +127,6 @@ class ES6Backend {
     // Process the directive
     result = this.process(o);
     if ((ref = global.process) != null ? (ref1 = ref.env) != null ? ref1.SOLAR_DEBUG : void 0 : void 0) {
-      util = require('util');
       outName = (ref2 = result != null ? (ref3 = result.constructor) != null ? ref3.name : void 0 : void 0) != null ? ref2 : typeof result;
       console.log("[Solar] result:", outName, util.inspect(result, {
         depth: 3,
@@ -290,7 +290,6 @@ class ES6Backend {
             body = new this.ast.Block((Array.isArray(body) ? body : [body]));
           }
           if ((ref3 = global.process) != null ? (ref4 = ref3.env) != null ? ref4.SOLAR_DEBUG : void 0 : void 0) {
-            util = require('util');
             console.log("[Solar] loop.addBody loopNode:", loopNode != null ? (ref5 = loopNode.constructor) != null ? ref5.name : void 0 : void 0);
             console.log("[Solar] loop.addBody body:", util.inspect(body, {
               depth: 2,
