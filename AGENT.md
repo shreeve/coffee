@@ -1,21 +1,24 @@
 # CoffeeScript Solar Directive Compiler - Agent Handoff
 
-## Current Status: 260/326 tests passing (80%)
+## Current Status: 280/326 tests passing (86%)
 
-### Recent Session Achievements (258 → 260 = +2 tests)
-1. **Fixed `unless` statements** - Proper condition inversion now works (+2 tests)
+### Recent Session Achievements (260 → 280 = +20 tests)
+1. **MASSIVE FIX: For loops & Comprehensions** (+20 tests!)
+   - Fixed processUse bug: `o.index` is a literal number, not a position
+   - Changed from `@$(o.index)` to just `o.index` 
+   - For loops: 1→13 tests passing (+12!)
+   - Comprehensions: 0→8 tests passing (ALL 8 tests!)
+   - Changed For grammar from 'Body $2' to direct position [1, 2]
+2. **Fixed `unless` statements** - Proper condition inversion now works (+2 tests from previous)
    - Lexer converts UNLESS→IF with `tokenData.invert = true` flag
    - Grammar extracts invert flag via `{$use: 1, prop: 'invert}`
    - ES5 backend sets `type: 'unless'` when invert is true
    - If node's `processedCondition()` inverts when `type === 'unless'`
-2. **Architecture discovery - THEN tokens**
+3. **Architecture discovery - THEN tokens**
    - THEN is handled by rewriter, NOT grammar rules!
    - Rewriter inserts INDENT/OUTDENT after THEN (line 722)
    - No need for explicit `WhileSource Expression` grammar rules
    - `while x < 10 then x++` works via implicit indentation
-3. **Cleaned up grammar** - Removed unnecessary While rules we added
-   - Reverted to original `'Body $2'` placeholder pattern
-   - Then fixed it to pass Block directly with `2` instead
 
 ### Previous Achievements (235 → 258 = +23 tests)
 1. **Fixed While loops** - Bodies now compile correctly (+12 tests)
