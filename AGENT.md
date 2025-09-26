@@ -1,20 +1,25 @@
 # CoffeeScript Solar Directive Compiler - Agent Handoff
 
-## Current Status: 280/326 tests passing (86%)
+## Current Status: 285/326 tests passing (87%)
 
-### Recent Session Achievements (260 → 280 = +20 tests)
+### Current Session Achievements (260 → 285 = +25 tests)
 1. **MASSIVE FIX: For loops & Comprehensions** (+20 tests!)
    - Fixed processUse bug: `o.index` is a literal number, not a position
-   - Changed from `@$(o.index)` to just `o.index`
+   - Changed from `@$(o.index)` to just `o.index` 
    - For loops: 1→13 tests passing (+12!)
    - Comprehensions: 0→8 tests passing (ALL 8 tests!)
    - Changed For grammar from 'Body $2' to direct position [1, 2]
-2. **Fixed `unless` statements** - Proper condition inversion now works (+2 tests from previous)
+2. **Fixed exclusive ranges (...)** (+5 tests!)
+   - Range constructor expects string 'exclusive', not boolean true
+   - Changed to: `tag = if exclusive then 'exclusive' else undefined`
+   - Range tests: 4/6 → 6/6 (ALL PASS!)
+   - For tests: 13/14 → 14/14 (ALL PASS!)
+3. **Fixed `unless` statements** - Proper condition inversion now works (+2 tests from previous)
    - Lexer converts UNLESS→IF with `tokenData.invert = true` flag
    - Grammar extracts invert flag via `{$use: 1, prop: 'invert}`
    - ES5 backend sets `type: 'unless'` when invert is true
    - If node's `processedCondition()` inverts when `type === 'unless'`
-3. **Architecture discovery - THEN tokens**
+4. **Architecture discovery - THEN tokens**
    - THEN is handled by rewriter, NOT grammar rules!
    - Rewriter inserts INDENT/OUTDENT after THEN (line 722)
    - No need for explicit `WhileSource Expression` grammar rules
@@ -49,41 +54,50 @@ npm run build            # Rebuild all CoffeeScript files
 coffee test/runner.coffee test/es5/ast-If.coffee  # Run specific test
 ```
 
-### Current Issues (66 tests remaining)
+### Current Issues (41 tests remaining)
 
-#### 1. **For loops - COMPLEX (empty body compilation)**
-- Parser creates For nodes correctly
-- Issue with `addSource` expecting AST nodes for all attributes
-- Bodies compile as empty `for (...) {}`
-- Related: Comprehensions also broken (`x * 2 for x in [1,2,3]`)
+#### 1. **ObjectMethods - 13 tests failing**
+- Object method calls not working properly
+- Largest single category of failures
 
-#### 2. **Class inheritance**
-- `class B extends A` fails
-- Need to implement extends handling
+#### 2. **Code (Functions) - 5 tests failing**  
+- Functions with parameters fail: `(x) -> x` throws "x is not defined"
+- Test runner issue: doesn't call functions with arguments
 
-#### 3. **String interpolation edge cases (2 tests)**
+#### 3. **Splat/Spread operator - 3 tests failing**
+- Spread operator issues in arrays
+
+#### 4. **String interpolation edge cases - 2 tests**
 - Functions in interpolation not working
 - `"func: #{-> 5}"` and `"expr: #{(x) -> x + 1}"` fail
 
-#### 4. **Range operations**
-- `[1..5]` style ranges not working
-- Need Range AST node implementation
+#### 5. **Class inheritance - 1 test**
+- `class B extends A` fails
+- Need to implement extends handling
 
-#### 5. **Break/Continue statements**
-- Need to implement as statement literals
+#### 6. **Other edge cases**
+- Complex expressions (2 tests)
+- PropertyAccess (2 tests)
+- Slicing (2 tests)
+- ThisLiteral (2 tests)
+- Return statement (1 test)
+- Try/catch (1 test)
 
-### What's Working Well (260 tests!)
+### What's Working Well (285 tests!)
 - ✅ Numbers, Booleans, Strings
 - ✅ Arrays, Objects, indexing, property access
 - ✅ Functions with bodies
 - ✅ All operators (arithmetic, comparison, logical, `in`, `not`)
 - ✅ Method calls (with and without arguments)
 - ✅ **If/else, unless/else** (all 6 tests pass!)
+- ✅ **For loops** (all 14 tests pass!)
+- ✅ **Comprehensions** (all 8 tests pass!)
+- ✅ **Ranges** (all 6 tests pass! Both inclusive `..` and exclusive `...`)
 - ✅ Switch/case statements
-- ✅ Try/catch
+- ✅ Try/catch (most cases)
 - ✅ While/until loops with bodies
 - ✅ Throw statements
-- ✅ Array slicing
+- ✅ Array slicing (most cases)
 - ✅ String interpolation (12/14 tests)
 - ✅ Compound assignments (+=, -=, etc.)
 - ✅ Variable assignments and destructuring
@@ -162,5 +176,5 @@ coffee test/runner.coffee test/es5/ast-While.coffee  # All 12 pass!
 - **UNTIL**: Similar to UNLESS, converted to WHILE + invert flag
 - This design keeps the grammar simpler by preprocessing in lexer/rewriter
 
-## Mission: Get to 100% test compatibility - Only 66 tests remaining!
-## We're at 80% - The final push is within reach!
+## Mission: Get to 100% test compatibility - Only 41 tests remaining!
+## We're at 87% - The final push is within reach!
