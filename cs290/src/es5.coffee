@@ -259,21 +259,11 @@ class ES5Backend
         new @ast.Op args...
 
       when 'Assign'
-        # Handle object property assignments differently 
-        # When context is 'object' and we have an expression, the AST structure is different:
-        # - 'value' contains the property name/variable
-        # - 'expression' contains the actual value
-        if o.context is 'object' and o.expression?
-          # In object context (e.g., @x: 10 in class body)
-          variable = @$(o.value)      # This is the property name (@x)
-          value = @$(o.expression)     # This is the value (10)
-          context = o.context          # Keep 'object' context
-        else
-          # Regular assignment
-          variable = @$(o.variable)
-          value = @$(o.value)
-          context = @$(o.context)
-        
+        # Handle both simple and compound assignments
+        variable = @$(o.variable)
+        value = @$(o.value)
+        context = @$(o.context)
+
         # Check for compound assignment (+=, -=, etc.)
         if o.operator?
           operator = @$(o.operator)
@@ -373,10 +363,8 @@ class ES5Backend
         # The catch directive should be a Catch AST node
         catchNode = @$(o.catch)
         new @ast.Try @$(o.attempt), catchNode, @$(o.ensure)
-
       when 'Catch'
         # Create a proper Catch AST node
-        # Catch constructor expects (recovery, errorVariable)
         recovery = @$(o.recovery) or @$(o.body)
         errorVariable = @$(o.variable) or @$(o.errorVariable)
         new @ast.Catch recovery, errorVariable
