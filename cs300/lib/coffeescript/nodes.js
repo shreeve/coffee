@@ -5263,44 +5263,29 @@ export const Code = (function() {
         haveBodyParam = false;
         this.checkForDuplicateParams();
         this.disallowLoneExpansionAndMultipleSplats();
-        // Separate `this` assignments.
-        // ES6: For derived constructors, we'll handle @params differently
+        // Separate `this` assignments
         const isDerivedConstructor = this.ctor === 'derived';
 
         this.eachParamName(function(name, node, param, obj) {
           var replacement, target;
-          // Check for @params - they come as Value objects with a ThisLiteral base
-          const isThisParam = node && node.base instanceof ThisLiteral;
-          if (isThisParam) {
+          // @params come as Value objects with a ThisLiteral base
+          if (node && node.base instanceof ThisLiteral) {
             name = node.properties[0].name.value;
             if (indexOf.call(JS_FORBIDDEN, name) >= 0) {
               name = `_${name}`;
             }
+            target = new IdentifierLiteral(o.scope.freeVariable(name, {reserve: false}));
 
             if (isDerivedConstructor) {
-              // ES6: In derived constructors, just use the parameter name directly
-              // The assignment will happen after super()
-              // Store the actual parameter identifier that will be used
-              const paramIdentifier = new IdentifierLiteral(o.scope.freeVariable(name, {reserve: false}));
-              // ES6: Mark the ThisLiteral in the @param as from a parameter
-              // so it doesn't trigger the error check
-              node.base.isFromParam = true;
-              node.isFromParam = true;
-              param.renameParam(node, paramIdentifier);
-              // Store the assignment for later (after super)
-              // Use the ACTUAL parameter name that was assigned
-              const thisLiteral = new ThisLiteral();
-              thisLiteral.isFromParam = true;
-              const thisNode = new Value(thisLiteral, [new Access(new PropertyName(name))]);
-              thisNode.isFromParam = true;
-              const assignment = new Assign(thisNode, paramIdentifier);
+              // ES6: Move @param assignments after super() in derived constructors
+              node.base.isFromParam = node.isFromParam = true;
+              param.renameParam(node, target);
+              const thisNode = new Value(new ThisLiteral(), [new Access(new PropertyName(name))]);
+              thisNode.isFromParam = thisNode.base.isFromParam = true;
+              const assignment = new Assign(thisNode, target);
               assignment.isFromParam = true;
               return thisAssignments.push(assignment);
             } else {
-              // Normal behavior for base constructors
-              target = new IdentifierLiteral(o.scope.freeVariable(name, {
-                reserve: false
-              }));
               replacement = param.name instanceof Obj && obj instanceof Assign && obj.operatorToken.value === '=' ? new Assign(new IdentifierLiteral(name), target, 'object') : target;
               param.renameParam(node, replacement);
               return thisAssignments.push(new Assign(node, target));
@@ -5439,31 +5424,18 @@ export const Code = (function() {
         }
         // Add new expressions to the function body
         wasEmpty = this.body.isEmpty();
-        // ES6: For derived constructors with @params, don't check for 'this' in params
-        // since we'll move those assignments after super()
-        // Check the params DIRECTLY since thisAssignments isn't populated yet
-        const hasThisParams = this.ctor === 'derived' && this.params.some(param => {
-          // Check if the param's name is a Value with a ThisLiteral base
-          const hasThis = param.name && param.name.base instanceof ThisLiteral;
-          return hasThis;
-        });
-        if (hasThisParams) {
-          // Check for super in params but NOT for 'this' before super
-          this.disallowSuperInParamDefaults({forAst: true});
-        } else {
-          this.disallowSuperInParamDefaults();
-        }
-        // ES6: For derived constructors with @params, we need to handle them specially
-        // Don't check for 'this' before super yet if we have @params that will be moved
-        const skipThisCheck = hasThisParams;
-        if (!skipThisCheck) {
+        // ES6: Handle @params in derived constructors - move after super()
+        const hasThisParams = this.ctor === 'derived' && this.params.some(param =>
+          param.name && param.name.base instanceof ThisLiteral
+        );
+        this.disallowSuperInParamDefaults({forAst: hasThisParams});
+        if (!hasThisParams) {
           this.checkSuperCallsInConstructorBody();
         }
         if (!this.expandCtorSuper(thisAssignments)) {
           this.body.expressions.unshift(...thisAssignments);
         }
-        // ES6: Now check for super calls after we've moved @param assignments
-        if (skipThisCheck) {
+        if (hasThisParams) {
           this.checkSuperCallsInConstructorBody();
         }
         this.body.expressions.unshift(...exprs);
@@ -5714,8 +5686,7 @@ export const Code = (function() {
         if (!this.ctor) {
           return false;
         }
-        // ES6: Don't check for 'this' before super when expanding @param assignments
-        // since we're moving them to after super()
+        // Move @param assignments after super() in derived constructors
         seenSuper = this.eachSuperCall(this.body, (superCall) => {
           return superCall.expressions = thisAssignments;
         }, {checkForThisBeforeSuper: false});
@@ -5750,8 +5721,7 @@ export const Code = (function() {
             seenSuper = true;
             iterator(child);
           } else if (checkForThisBeforeSuper && child instanceof ThisLiteral && this.ctor === 'derived' && !seenSuper) {
-            // ES6: Skip the error for @param-generated 'this' references
-            // They will be moved after super() by expandCtorSuper
+            // ES6: Skip error for @param 'this' references - they'll move after super()
             if (!child.isFromParam) {
               child.error("Can't reference 'this' before calling super in derived class constructors");
             }
@@ -5788,27 +5758,17 @@ export const Code = (function() {
         this.updateOptions(o);
         this.checkForAsyncOrGeneratorConstructor();
         this.checkForDuplicateParams();
-        // ES6: For AST generation, always skip 'this' checks for @params in derived constructors
-        // The compilation phase will handle moving them after super()
-        this.disallowSuperInParamDefaults({
-          forAst: true
-        });
+        // ES6: Skip 'this' checks for @params in derived constructors (handled during compilation)
+        this.disallowSuperInParamDefaults({forAst: true});
         this.disallowLoneExpansionAndMultipleSplats();
-        // ES6: For derived constructors with @params, skip the check here
-        // We'll check it properly during compilation after moving @params
-        const hasThisParams = this.ctor === 'derived' && this.params.some(param => {
-          // Check if the param's name is a Value with a ThisLiteral base
-          return param.name && param.name.base instanceof ThisLiteral;
-        });
-        if (!hasThisParams) {
-          seenSuper = this.checkSuperCallsInConstructorBody();
-        } else {
-          // Still need to check if super exists, just not for 'this' before super
-          seenSuper = this.eachSuperCall(this.body, () => {}, {checkForThisBeforeSuper: false});
-        }
+        const hasThisParams = this.ctor === 'derived' && this.params.some(param => 
+          param.name && param.name.base instanceof ThisLiteral
+        );
+        seenSuper = hasThisParams
+          ? this.eachSuperCall(this.body, () => {}, {checkForThisBeforeSuper: false})
+          : this.checkSuperCallsInConstructorBody();
         if (this.ctor === 'derived' && !seenSuper) {
           this.eachParamName((name, node) => {
-            // Check for @params - they come as Value objects with a ThisLiteral base
             if (node && node.base instanceof ThisLiteral) {
               return this.flagThisParamInDerivedClassConstructorWithoutCallingSuper(node);
             }
