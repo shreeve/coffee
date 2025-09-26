@@ -308,7 +308,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, condition, context, elseBody, exclusive, expression, expressions, forNode, ifNode, index, invert, name, opValue, operator, options, params, ref, ref1, tag, type, value, variable, whileNode;
+      var args, body, catchClause, condition, context, elseBody, errorVariable, exclusive, expression, expressions, forNode, ifNode, index, invert, name, opValue, operator, options, params, recovery, ref, ref1, tag, type, value, variable, whileNode;
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
@@ -531,9 +531,21 @@
           return new this.ast.ClassProtoAssignOp(this.$(o.variable), this.$(o.value));
         // Try/Catch/Throw
         case 'Try':
-          return new this.ast.Try(this.$(o.attempt), this.$(o.errorVariable), this.$(o.recovery), this.$(o.ensure));
+          
+          // The catch directive points to a Catch node which has the variable and recovery
+          catchClause = this.$(o.catch);
+          errorVariable = catchClause != null ? catchClause.variable : void 0;
+          recovery = (catchClause != null ? catchClause.recovery : void 0) || (catchClause != null ? catchClause.body : void 0);
+          return new this.ast.Try(this.$(o.attempt), errorVariable, recovery, this.$(o.ensure));
         case 'Catch':
-          return new this.ast.Literal('# catch'); //!# NOTE: Not implemented yet!
+          return {
+            // Catch node with variable and recovery block
+            // Return a structure that the Try node can use
+            variable: this.$(o.variable),
+            errorVariable: this.$(o.errorVariable),
+            recovery: this.$(o.recovery),
+            body: this.$(o.body)
+          };
         case 'Throw':
           return new this.ast.Throw(this.$(o.expression));
         // Other

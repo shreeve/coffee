@@ -359,8 +359,22 @@ class ES5Backend
       when 'ClassProtoAssignOp' then new @ast.ClassProtoAssignOp @$(o.variable), @$(o.value)
 
       # Try/Catch/Throw
-      when 'Try'   then new @ast.Try   @$(o.attempt), @$(o.errorVariable), @$(o.recovery), @$(o.ensure)
-      when 'Catch'              then new @ast.Literal '# catch' #!# NOTE: Not implemented yet!
+      when 'Try'   
+        # The catch directive points to a Catch node which has the variable and recovery
+        catchClause = @$(o.catch)
+        errorVariable = catchClause?.variable
+        recovery = catchClause?.recovery or catchClause?.body
+        new @ast.Try @$(o.attempt), errorVariable, recovery, @$(o.ensure)
+        
+      when 'Catch'
+        # Catch node with variable and recovery block
+        # Return a structure that the Try node can use
+        {
+          variable: @$(o.variable),
+          errorVariable: @$(o.errorVariable),
+          recovery: @$(o.recovery),
+          body: @$(o.body)
+        }
       when 'Throw' then new @ast.Throw @$(o.expression)
 
       # Other
