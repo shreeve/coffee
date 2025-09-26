@@ -7393,6 +7393,10 @@ export const For = (function() {
         guardPart = '';
         defPart = '';
         idt1 = this.tab + TAB;
+        
+        // ES6: Use for...of loops for arrays (when not a range or object)
+        const useForOf = !this.range && !this.object && !this.from && !this.step;
+        
         if (this.range) {
           forPartFragments = source.compileToFragments(merge(o, {
             index: ivar,
@@ -7400,16 +7404,34 @@ export const For = (function() {
             step: this.step,
             shouldCache: shouldCacheOrIsAssignable
           }));
+        } else if (useForOf) {
+          // ES6: Generate for...of loop
+          svar = this.source.compile(o, LEVEL_LIST);
+          if (name && !(this.source.unwrap() instanceof IdentifierLiteral)) {
+            defPart += `${this.tab}const ${ref = scope.freeVariable('ref')} = ${svar};\n`;
+            svar = ref;
+          }
+          
+          if (this.index && name) {
+            // Need both index and value: for (const [i, item] of array.entries())
+            forPartFragments = [this.makeCode(`const [${index}, ${name}] of ${svar}.entries()`)];
+          } else if (name) {
+            // Just value: for (const item of array)
+            forPartFragments = [this.makeCode(`const ${name} of ${svar}`)];
+          } else if (this.index) {
+            // Just index: for (const i of array.keys())
+            forPartFragments = [this.makeCode(`const ${index} of ${svar}.keys()`)];
+          }
         } else {
           svar = this.source.compile(o, LEVEL_LIST);
           if ((name || this.own) && !this.from && !(this.source.unwrap() instanceof IdentifierLiteral)) {
             defPart += `${this.tab}${ref = scope.freeVariable('ref')} = ${svar};\n`;
             svar = ref;
           }
-          if (name && !this.pattern && !this.from) {
+          if (name && !this.pattern && !this.from && !useForOf) {
             namePart = `${name} = ${svar}[${kvar}]`;
           }
-          if (!this.object && !this.from) {
+          if (!this.object && !this.from && !useForOf) {
             if (step !== stepVar) {
               defPart += `${this.tab}${step};\n`;
             }
