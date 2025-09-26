@@ -7,6 +7,10 @@
   - Removed `body.makeReturn()` from Root processing in `es5.coffee`
   - Added `makeReturn` compile option for test runner compatibility
   - REPL works correctly without special handling
+- **Improved REPL error handling**: Clean, concise error stack traces
+  - Trimmed verbose 28+ line stack traces to show only relevant information
+  - Shows error location, message, and REPL context
+  - Stops at VM boundary to match Node.js REPL behavior
 - Fixed Try/Catch with `then` syntax by emitting proper `Catch` nodes (inspired by es6 backend)
 - Class static property with colon syntax `@static: 10` now emits `F.static = 10`
   - Minimal fix in `cs290/src/es5.coffee`: mark object-context `@prop:` assigns as `this` (`variable.this = true`)
@@ -23,9 +27,10 @@
 - Parser rebuilt; no conflicts; performance unchanged
 
 ### Key Files
-- `cs290/src/es5.coffee` — ES5 backend (Assign tweak for static)
+- `cs290/src/es5.coffee` — ES5 backend (Assign tweak for static, makeReturn option support)
 - `cs290/src/syntax.coffee` — Grammar with Solar directives (simplified THIS rules)
-- `cs290/test/runner.coffee` — Stable, no hacks required
+- `cs290/test/runner.coffee` — Test runner using makeReturn option
+- `cs290/src/repl.coffee` — REPL with clean error handling
 
 ### Commands
 ```bash
