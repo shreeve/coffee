@@ -5,7 +5,7 @@
 ### Current Session Achievements (260 → 284 = +24 tests)
 1. **MASSIVE FIX: For loops & Comprehensions** (+20 tests!)
    - Fixed processUse bug: `o.index` is a literal number, not a position
-   - Changed from `@$(o.index)` to just `o.index` 
+   - Changed from `@$(o.index)` to just `o.index`
    - For loops: 1→13 tests passing (+12!)
    - Comprehensions: 0→8 tests passing (ALL 8 tests!)
    - Changed For grammar from 'Body $2' to direct position [1, 2]
