@@ -127,13 +127,9 @@ class ES5Backend
   # Process $use directives
   processUse: (o) ->
     target = @$(o.$use)
-    return target?[o.method]?() ? target if o.method?
-    return target?[o.prop] ? target if o.prop?
-
-    if o.index?
-      # Handle numeric index
-      idx = @$(o.index)
-      return target?[idx] if target?
+    return target?[o.method   ]?() ? target  if o.method?
+    return target?[o.prop     ]    ? target  if o.prop?
+    return target?[@$(o.index)]   if target? if o.index?
 
     target
 
