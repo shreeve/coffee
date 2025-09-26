@@ -9,7 +9,7 @@
    - Inspired by es6.coffee approach
 2. **Fixed all remaining test issues** (+38 tests)
    - Code tests: All 12 passing (IIFE approach)
-   - Splat tests: All 3 passing  
+   - Splat tests: All 3 passing
    - Return tests: All 13 passing
    - ThisLiteral tests: All 2 passing
    - Switch tests: All 3 passing (inline execution trick)

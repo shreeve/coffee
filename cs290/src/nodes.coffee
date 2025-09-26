@@ -1418,10 +1418,10 @@ exports.Value = class Value extends Base
   looksStatic: (className) ->
     thisLiteral = @base if @base instanceof ThisLiteral
     name = @base if @base.value is className
-    
+
     return no unless (thisLiteral or name) and
       @properties.length is 1 and @properties[0].name?.value isnt 'prototype'
-    
+
     return
       staticClassName: thisLiteral ? name
 
@@ -2945,7 +2945,7 @@ exports.Class = class Class extends Base
       @addClassProperty node
     else if not o.compiling and @validClassPrototypeProperty node
       # Special check: if this is a @property with object context, it should be static
-      if node instanceof Assign and node.context is 'object' and 
+      if node instanceof Assign and node.context is 'object' and
          node.variable.base instanceof ThisLiteral
         # This is @x: syntax - treat as static property, not prototype property
         @addClassProperty node
