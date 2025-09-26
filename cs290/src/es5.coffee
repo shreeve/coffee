@@ -250,20 +250,13 @@ class ES5Backend
 
       # Operations
       when 'Op'
-        # Process args, filtering out undefined values
-        args = []
-        if o.args
-          for arg in o.args
-            processed = @$(arg)
-            args.push processed if processed?
-
-        # Add options if present
+        # Process args - preserve undefineds for proper positioning
+        args = o.args?.map((arg) => @$(arg)) or []
         if o.invertOperator? or o.originalOperator?
           options = {}
           options.invertOperator   = @$(o.invertOperator) if o.invertOperator?
           options.originalOperator = @$(o.originalOperator) if o.originalOperator?
           args.push options
-
         new @ast.Op args...
 
       when 'Assign'
