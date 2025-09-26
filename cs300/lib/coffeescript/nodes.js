@@ -636,17 +636,14 @@ export const Root = (function() {
       // better not to generate them in the first place, but for now, clean up
       // obvious double-parentheses.
       compileNode(o) {
-        var fragments, functionKeyword;
-        o.indent = o.bare ? '' : TAB;
+        var fragments;
+        o.indent = '';
         o.level = LEVEL_TOP;
         o.compiling = true;
         this.initializeScope(o);
         fragments = this.body.compileRoot(o);
-        if (o.bare) {
-          return fragments;
-        }
-        functionKeyword = `${this.isAsync ? 'async ' : ''}function`;
-        return [].concat(this.makeCode(`(${functionKeyword}() {\n`), fragments, this.makeCode("\n}).call(this);\n"));
+        // ES6 output: Always bare, no IIFE wrapper
+        return fragments;
       }
       initializeScope(o) {
         var j, len1, name, ref1, ref2, results1;
