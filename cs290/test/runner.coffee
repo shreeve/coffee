@@ -27,9 +27,13 @@ global.test = (code, expected) ->
     # Compile the CoffeeScript code in bare mode
     compiled = CoffeeScript.compile code, bare: true
 
-    # For if/else and other control flow, we need to evaluate the whole thing
+    # For if/else, control flow, and variable declarations, evaluate the whole thing
     # Wrap in a function and call it
-    if compiled.includes('if (') or compiled.includes('try {') or compiled.includes('switch (')
+    # Skip while loops as they may have infinite loops
+    if compiled.includes('while (')
+      # Skip while loops for now to avoid hangs
+      throw new Error "While loop evaluation not supported yet"
+    else if compiled.includes('if (') or compiled.includes('try {') or compiled.includes('switch (') or compiled.includes('var ')
       actual = eval("(function() { #{compiled} })()")
     else
       # Extract return value: "return <expr>;"

@@ -1,16 +1,18 @@
 # CoffeeScript Solar Directive Compiler - Agent Handoff
 
-## Current Status: 205/326 tests passing (63%)
+## Current Status: 235/326 tests passing (72%)
 
-### Recent Session Achievements
+### Recent Session Achievements (197 → 235 = +38 tests!)
 1. **Fixed `not` operator** - Preserved undefined values in Op args (+2 tests)
 2. **Fixed empty Call arguments** - Filtered empty objects from method calls (+11 tests)
 3. **Fixed processUse bug** - Property access now returns undefined instead of target (+2 tests)
    - Fixed `in` operator by removing fallback in `target?[o.prop] ? target`
    - Now `1 in [1,2,3]` correctly returns true
-4. **Fixed test runner** - Now properly evaluates control flow statements (+6 tests!)
-   - Test runner was only extracting first return statement
-   - Now wraps if/try/switch in functions and evaluates them
+4. **Fixed test runner twice!** - Major breakthrough in test evaluation
+   - First fix: Control flow statements (+6 tests)
+   - Second fix: Variable declarations/destructuring (+30 tests!)
+   - Now wraps code with `var`, `if`, `try`, `switch` in functions
+   - All destructuring tests now pass!
 5. **Fixed StringWithInterpolations** - Wrapped body in Block properly
 6. **Added missing AST types** - SwitchWhen, Throw, Slice (+8 tests)
 7. **Renamed `$ary` to `$arr`** - Better naming consistency throughout
