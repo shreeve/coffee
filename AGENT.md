@@ -5,7 +5,7 @@
 ### Current Session Achievements (260 → 285 = +25 tests)
 1. **MASSIVE FIX: For loops & Comprehensions** (+20 tests!)
    - Fixed processUse bug: `o.index` is a literal number, not a position
-   - Changed from `@$(o.index)` to just `o.index` 
+   - Changed from `@$(o.index)` to just `o.index`
    - For loops: 1→13 tests passing (+12!)
    - Comprehensions: 0→8 tests passing (ALL 8 tests!)
    - Changed For grammar from 'Body $2' to direct position [1, 2]
@@ -60,7 +60,7 @@ coffee test/runner.coffee test/es5/ast-If.coffee  # Run specific test
 - Object method calls not working properly
 - Largest single category of failures
 
-#### 2. **Code (Functions) - 5 tests failing**  
+#### 2. **Code (Functions) - 5 tests failing**
 - Functions with parameters fail: `(x) -> x` throws "x is not defined"
 - Test runner issue: doesn't call functions with arguments
 
