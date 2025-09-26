@@ -25,24 +25,12 @@ totalFiles = 0
 global.test = (code, expected) ->
   try
     # Compile the CoffeeScript code in bare mode
-    compiled = CoffeeScript.compile code, bare: true
+    # For testing, we need the value of expressions, so compile with returns
+    compiled = CoffeeScript.compile code, bare: true, makeReturn: true
 
-    # For if/else, control flow, and variable declarations, evaluate the whole thing
-    # Wrap in a function and call it
-    if /(?:if \(|try \{|switch \(|var |while \()/.test(compiled)
-      actual = eval("(function() { #{compiled} })()")
-    else
-      # Extract return value: "return <expr>;" (can be multi-line)
-      # Match from return to the LAST semicolon (handles multi-line functions)
-      match = compiled.match(/^return\s+([\s\S]*);$/m)
-      unless match
-        throw new Error "No return statement found in compiled output"
-
-      # Evaluate the expression
-      # Wrap in parens if it starts with { or 'function' to avoid statement interpretation
-      expr = match[1].trim()
-      expr = "(#{expr})" if expr[0] is '{' or expr.startsWith('function')
-      actual = eval(expr)
+    # Wrap everything in a function and call it
+    # This handles all cases: returns, control flow, assignments, etc.
+    actual = eval("(function() { #{compiled} })()")
 
     # Handle function expected values (for validation tests like Object.defineProperty)
     if typeof expected == 'function'

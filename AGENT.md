@@ -1,13 +1,17 @@
 # CoffeeScript Solar Directive Compiler - Agent Handoff
 
-## Current Status: 326/326 tests passing (100%)
+## Current Status: 326/326 tests passing (100%) with cs270-compatible behavior
 
 ### Latest Achievements
+- **cs290 now matches cs270 behavior**: No automatic `return` statements in top-level code
+  - Removed `body.makeReturn()` from Root processing in `es5.coffee`
+  - Added `makeReturn` compile option for test runner compatibility
+  - REPL works correctly without special handling
 - Fixed Try/Catch with `then` syntax by emitting proper `Catch` nodes (inspired by es6 backend)
 - Class static property with colon syntax `@static: 10` now emits `F.static = 10`
   - Minimal fix in `cs290/src/es5.coffee`: mark object-context `@prop:` assigns as `this` (`variable.this = true`)
   - No nodes.coffee surgery required
-- Test runner and grammar stabilizations retained; full suite green
+- Test runner uses `makeReturn: true` option to ensure test expressions return values
 
 ### Grammar Simplifications (kept behavior identical)
 - Removed fused THIS tokens from grammar (and didn’t require any lexer support):

@@ -208,7 +208,8 @@ class ES5Backend
         body = @$(o.body)
         # Ensure body is a Block
         body = new @ast.Block [body] unless body instanceof @ast.Block
-        body.makeReturn()
+        # Add makeReturn if requested via compile options
+        body.makeReturn() if @options.makeReturn
         new @ast.Root body
       when 'Block'
         expressions = @$(o.expressions)

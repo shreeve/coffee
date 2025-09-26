@@ -317,7 +317,10 @@
             // Ensure body is a Block
             body = new this.ast.Block([body]);
           }
-          body.makeReturn();
+          if (this.options.makeReturn) {
+            // Add makeReturn if requested via compile options
+            body.makeReturn();
+          }
           return new this.ast.Root(body);
         case 'Block':
           expressions = this.$(o.expressions);
