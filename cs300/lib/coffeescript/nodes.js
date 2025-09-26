@@ -5761,7 +5761,7 @@ export const Code = (function() {
         // ES6: Skip 'this' checks for @params in derived constructors (handled during compilation)
         this.disallowSuperInParamDefaults({forAst: true});
         this.disallowLoneExpansionAndMultipleSplats();
-        const hasThisParams = this.ctor === 'derived' && this.params.some(param => 
+        const hasThisParams = this.ctor === 'derived' && this.params.some(param =>
           param.name && param.name.base instanceof ThisLiteral
         );
         seenSuper = hasThisParams
