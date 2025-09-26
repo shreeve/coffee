@@ -5,13 +5,13 @@
 # interactive REPL.
 
 # External dependencies.
-fs             = require 'fs'
-path           = require 'path'
-helpers        = require './helpers'
-optparse       = require './optparse'
-CoffeeScript   = require './'
-{spawn, exec}  = require 'child_process'
-{EventEmitter} = require 'events'
+import fs from 'fs'
+import path from 'path'
+import * as helpers from './helpers.js'
+import * as optparse from './optparse.js'
+import CoffeeScript from './index.js'
+import {spawn, exec} from 'child_process'
+import {EventEmitter} from 'events'
 
 useWinPathSep  = path.sep is '\\'
 
@@ -63,13 +63,13 @@ notSources   = {}
 watchedDirs  = {}
 optionParser = null
 
-exports.buildCSOptionParser = buildCSOptionParser = ->
+export buildCSOptionParser = ->
   new optparse.OptionParser SWITCHES, BANNER
 
 # Run `coffee` by parsing passed options and determining what action to take.
 # Many flags cause us to divert before compiling anything. Flags passed after
 # `--` will be passed verbatim to your script as arguments in `process.argv`
-exports.run = ->
+export run = ->
   optionParser = buildCSOptionParser()
   try parseOptions()
   catch err

@@ -1,10 +1,16 @@
 # Node.js Implementation
-CoffeeScript  = require './coffeescript'
-fs            = require 'fs'
-vm            = require 'vm'
-path          = require 'path'
+import CoffeeScriptModule from './coffeescript.js'
+import fs from 'fs'
+import vm from 'vm'
+import path from 'path'
+import { createRequire } from 'module'
+import { fileURLToPath } from 'url'
 
-helpers       = CoffeeScript.helpers
+CoffeeScript = CoffeeScriptModule
+helpers = CoffeeScript.helpers
+
+# Create require function for ES6 modules
+require = createRequire(import.meta.url)
 
 CoffeeScript.transpile = (js, options) ->
   try
@@ -137,24 +143,13 @@ CoffeeScript._compileFile = (filename, options = {}) ->
 
   CoffeeScript._compileRawFileContent raw, filename, options
 
-module.exports = CoffeeScript
+export default CoffeeScript
 
-# Explicitly define all named exports so that Node’s automatic detection of
-# named exports from CommonJS packages finds all of them. This enables consuming
+# Explicitly define all named exports so that Node's automatic detection of
+# named exports finds all of them. This enables consuming
 # packages to write code like `import { compile } from 'coffeescript'`.
-# Don’t simplify this into a loop or similar; the `module.exports.name` part is
-# essential for Node’s algorithm to successfully detect the name.
-module.exports.VERSION = CoffeeScript.VERSION
-module.exports.FILE_EXTENSIONS = CoffeeScript.FILE_EXTENSIONS
-module.exports.helpers = CoffeeScript.helpers
-module.exports.registerCompiled = CoffeeScript.registerCompiled
-module.exports.compile = CoffeeScript.compile
-module.exports.tokens = CoffeeScript.tokens
-module.exports.nodes = CoffeeScript.nodes
-module.exports.register = CoffeeScript.register
-module.exports.eval = CoffeeScript.eval
-module.exports.run = CoffeeScript.run
-module.exports.transpile = CoffeeScript.transpile
-module.exports.patchStackTrace = CoffeeScript.patchStackTrace
-module.exports._compileRawFileContent = CoffeeScript._compileRawFileContent
-module.exports._compileFile = CoffeeScript._compileFile
+export VERSION = CoffeeScript.VERSION
+export FILE_EXTENSIONS = CoffeeScript.FILE_EXTENSIONS
+export { helpers }
+export registerCompiled = CoffeeScript.registerCompiled
+export { compile, tokens, nodes, register, eval: evalCS, run, transpile, patchStackTrace, _compileRawFileContent, _compileFile } = CoffeeScript

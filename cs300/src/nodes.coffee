@@ -5,18 +5,17 @@
 
 Error.stackTraceLimit = Infinity
 
-{Scope} = require './scope'
-{isUnassignable, JS_FORBIDDEN} = require './lexer'
+import {Scope} from './scope.js'
+import {isUnassignable, JS_FORBIDDEN} from './lexer.js'
 
 # Import the helpers we plan to use.
-{compact, flatten, extend, merge, del, starts, ends, some,
+import {compact, flatten, extend, merge, del, starts, ends, some,
 addDataToNode, attachCommentsToNode, locationDataToString,
 throwSyntaxError, replaceUnicodeCodePointEscapes,
-isFunction, isPlainObject, isNumber, parseNumber} = require './helpers'
+isFunction, isPlainObject, isNumber, parseNumber} from './helpers.js'
 
 # Functions required by parser.
-exports.extend = extend
-exports.addDataToNode = addDataToNode
+export { extend, addDataToNode }
 
 # Constant functions for nodes that don’t need customization.
 YES     = -> yes
@@ -30,7 +29,7 @@ NEGATE  = -> @negated = not @negated; this
 # A CodeFragments is a block of generated code, and the location in the source file where the code
 # came from. CodeFragments can be assembled together into working code just by catting together
 # all the CodeFragments' `code` snippets, in order.
-exports.CodeFragment = class CodeFragment
+export class CodeFragment
   constructor: (parent, code) ->
     @code = "#{code}"
     @type = parent?.constructor?.name or 'unknown'
@@ -56,7 +55,7 @@ fragmentsToText = (fragments) ->
 # the environment from higher in the tree (such as if a returned value is
 # being requested by the surrounding function), information about the current
 # scope, and indentation level.
-exports.Base = class Base
+export class Base
 
   compile: (o, lvl) ->
     fragmentsToText @compileToFragments o, lvl
@@ -470,7 +469,7 @@ exports.Base = class Base
 
 # A **HoistTargetNode** represents the output location in the node tree for a hoisted node.
 # See Base#hoist.
-exports.HoistTarget = class HoistTarget extends Base
+export class HoistTarget extends Base
   # Expands hoisted fragments in the given array
   @expand = (fragments) ->
     for fragment, i in fragments by -1 when fragment.fragments
@@ -510,7 +509,7 @@ exports.HoistTarget = class HoistTarget extends Base
 #### Root
 
 # The root node of the node tree
-exports.Root = class Root extends Base
+export class Root extends Base
   constructor: (@body) ->
     super()
 
@@ -564,7 +563,7 @@ exports.Root = class Root extends Base
 # The block is the list of expressions that forms the body of an
 # indented block of code -- the implementation of a function, a clause in an
 # `if`, `switch`, or `try`, and so on...
-exports.Block = class Block extends Base
+export class Block extends Base
   constructor: (nodes) ->
     super()
 
@@ -900,7 +899,7 @@ exports.Block = class Block extends Base
 
 # A directive e.g. 'use strict'.
 # Currently only used during AST generation.
-exports.Directive = class Directive extends Base
+export class Directive extends Base
   constructor: (@value) ->
     super()
 
@@ -915,7 +914,7 @@ exports.Directive = class Directive extends Base
 # `Literal` is a base class for static values that can be passed through
 # directly into JavaScript without translation, such as: strings, numbers,
 # `true`, `false`, `null`...
-exports.Literal = class Literal extends Base
+export class Literal extends Base
   constructor: (@value) ->
     super()
 
@@ -935,7 +934,7 @@ exports.Literal = class Literal extends Base
     # This is only intended for debugging.
     " #{if @isStatement() then super() else @constructor.name}: #{@value}"
 
-exports.NumberLiteral = class NumberLiteral extends Literal
+export class NumberLiteral extends Literal
   constructor: (@value, {@parsedValue} = {}) ->
     super()
     unless @parsedValue?
@@ -969,7 +968,7 @@ exports.NumberLiteral = class NumberLiteral extends Literal
             @parsedValue
         raw: @value
 
-exports.InfinityLiteral = class InfinityLiteral extends NumberLiteral
+export class InfinityLiteral extends NumberLiteral
   constructor: (@value, {@originalValue = 'Infinity'} = {}) ->
     super()
 
@@ -988,7 +987,7 @@ exports.InfinityLiteral = class InfinityLiteral extends NumberLiteral
       name: 'Infinity'
       declaration: no
 
-exports.NaNLiteral = class NaNLiteral extends NumberLiteral
+export class NaNLiteral extends NumberLiteral
   constructor: ->
     super 'NaN'
 
@@ -1003,7 +1002,7 @@ exports.NaNLiteral = class NaNLiteral extends NumberLiteral
       name: 'NaN'
       declaration: no
 
-exports.StringLiteral = class StringLiteral extends Literal
+export class StringLiteral extends Literal
   constructor: (@originalValue, {@quote, @initialChunk, @finalChunk, @indent, @double, @heregex} = {}) ->
     super ''
     @quote = null if @quote is '///'
@@ -1104,7 +1103,7 @@ exports.StringLiteral = class StringLiteral extends Literal
       extra:
         raw: "#{@delimiter}#{@originalValue}#{@delimiter}"
 
-exports.RegexLiteral = class RegexLiteral extends Literal
+export class RegexLiteral extends Literal
   constructor: (value, {@delimiter = '/', @heregexCommentTokens = []} = {}) ->
     super ''
     heregex = @delimiter is '///'
@@ -1137,7 +1136,7 @@ exports.RegexLiteral = class RegexLiteral extends Literal
             new LineComment(heregexCommentToken).ast o
     }
 
-exports.PassthroughLiteral = class PassthroughLiteral extends Literal
+export class PassthroughLiteral extends Literal
   constructor: (@originalValue, {@here, @generated} = {}) ->
     super ''
     @value = @originalValue.replace /\\+(`|$)/g, (string) ->
@@ -1155,7 +1154,7 @@ exports.PassthroughLiteral = class PassthroughLiteral extends Literal
       here: !!@here
     }
 
-exports.IdentifierLiteral = class IdentifierLiteral extends Literal
+export class IdentifierLiteral extends Literal
   isAssignable: YES
 
   eachName: (iterator) ->
@@ -1172,7 +1171,7 @@ exports.IdentifierLiteral = class IdentifierLiteral extends Literal
       name: @value
       declaration: !!@isDeclaration
 
-exports.PropertyName = class PropertyName extends Literal
+export class PropertyName extends Literal
   isAssignable: YES
 
   astType: ->
@@ -1186,14 +1185,14 @@ exports.PropertyName = class PropertyName extends Literal
       name: @value
       declaration: no
 
-exports.ComputedPropertyName = class ComputedPropertyName extends PropertyName
+export class ComputedPropertyName extends PropertyName
   compileNode: (o) ->
     [@makeCode('['), @value.compileToFragments(o, LEVEL_LIST)..., @makeCode(']')]
 
   astNode: (o) ->
     @value.ast o
 
-exports.StatementLiteral = class StatementLiteral extends Literal
+export class StatementLiteral extends Literal
   isStatement: YES
 
   makeReturn: THIS
@@ -1211,7 +1210,7 @@ exports.StatementLiteral = class StatementLiteral extends Literal
       when 'break'    then 'BreakStatement'
       when 'debugger' then 'DebuggerStatement'
 
-exports.ThisLiteral = class ThisLiteral extends Literal
+export class ThisLiteral extends Literal
   constructor: (value) ->
     super 'this'
     @shorthand = value is '@'
@@ -1226,7 +1225,7 @@ exports.ThisLiteral = class ThisLiteral extends Literal
     return
       shorthand: @shorthand
 
-exports.UndefinedLiteral = class UndefinedLiteral extends Literal
+export class UndefinedLiteral extends Literal
   constructor: ->
     super 'undefined'
 

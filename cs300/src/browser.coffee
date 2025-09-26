@@ -3,7 +3,7 @@
 # We add support for loading remote Coffee scripts via **XHR**, and
 # `text/coffeescript` script tags, source maps via data-URLs, and so on.
 
-CoffeeScript = require './coffeescript'
+import CoffeeScript from './coffeescript.js'
 { compile } = CoffeeScript
 
 # Use `window.eval` to evaluate code, rather than just `eval`, to run the
@@ -23,7 +23,7 @@ CoffeeScript.run = (code, options = {}) ->
 
 # Export this more limited `CoffeeScript` than what is exported by
 # `index.coffee`, which is intended for a Node environment.
-module.exports = CoffeeScript
+export default CoffeeScript
 
 # If we’re not in a browser environment, we’re finished with the public API.
 return unless window?

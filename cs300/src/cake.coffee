@@ -7,11 +7,11 @@
 # current directory's Cakefile.
 
 # External dependencies.
-fs           = require 'fs'
-path         = require 'path'
-helpers      = require './helpers'
-optparse     = require './optparse'
-CoffeeScript = require './'
+import fs from 'fs'
+import path from 'path'
+import * as helpers from './helpers.js'
+import * as optparse from './optparse.js'
+import CoffeeScript from './index.js'
 
 # Register .coffee extension
 CoffeeScript.register()
@@ -46,7 +46,7 @@ helpers.extend global,
 # asynchrony may cause tasks to execute in a different order than you'd expect.
 # If no tasks are passed, print the help screen. Keep a reference to the
 # original directory name, when running Cake tasks from subdirectories.
-exports.run = ->
+export run = ->
   global.__originalDirname = fs.realpathSync '.'
   process.chdir cakefileDirectory __originalDirname
   args = process.argv[2..]
