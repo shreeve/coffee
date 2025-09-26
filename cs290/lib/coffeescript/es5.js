@@ -201,18 +201,16 @@
 
     // Process $use directives
     processUse(o) {
-      var name1, ref, ref1, target;
+      var name1, target;
       target = this.$(o.$use);
       if (o.method != null) {
-        return (ref = target != null ? typeof target[name1 = o.method] === "function" ? target[name1]() : void 0 : void 0) != null ? ref : target;
+        return target != null ? typeof target[name1 = o.method] === "function" ? target[name1]() : void 0 : void 0;
       }
       if (o.prop != null) {
-        return (ref1 = target != null ? target[o.prop] : void 0) != null ? ref1 : target;
+        return target != null ? target[o.prop] : void 0;
       }
       if (o.index != null) {
-        if (target != null) {
-          return target != null ? target[this.$(o.index)] : void 0;
-        }
+        return target != null ? target[this.$(o.index)] : void 0;
       }
       return target;
     }

@@ -27,13 +27,18 @@ global.test = (code, expected) ->
     # Compile the CoffeeScript code in bare mode
     compiled = CoffeeScript.compile code, bare: true
     
-    # Extract return value: "return <expr>;"
-    match = compiled.match(/return\s+(.*);/)
-    unless match
-      throw new Error "No return statement found in compiled output"
-    
-    # Evaluate the expression
-    actual = eval(match[1])
+    # For if/else and other control flow, we need to evaluate the whole thing
+    # Wrap in a function and call it
+    if compiled.includes('if (') or compiled.includes('try {') or compiled.includes('switch (')
+      actual = eval("(function() { #{compiled} })()")
+    else
+      # Extract return value: "return <expr>;"
+      match = compiled.match(/return\s+(.*);/)
+      unless match
+        throw new Error "No return statement found in compiled output"
+      
+      # Evaluate the expression
+      actual = eval(match[1])
     
     # Deep equality comparison
     actualStr = JSON.stringify(actual)

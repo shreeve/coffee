@@ -1,15 +1,20 @@
 # CoffeeScript Solar Directive Compiler - Agent Handoff
 
-## Current Status: 192/326 tests passing (59%)
+## Current Status: 205/326 tests passing (63%)
 
 ### Recent Session Achievements
 1. **Fixed `not` operator** - Preserved undefined values in Op args (+2 tests)
 2. **Fixed empty Call arguments** - Filtered empty objects from method calls (+11 tests)
-3. **Fixed For loops** - They now compile without errors
-4. **Fixed StringWithInterpolations** - Wrapped body in Block properly
-5. **Added missing AST types** - SwitchWhen, Throw, Slice (+8 tests)
-6. **Renamed `$ary` to `$arr`** - Better naming consistency throughout
-7. **Code cleanup** - Simplified Op args with map, used switch expressions
+3. **Fixed processUse bug** - Property access now returns undefined instead of target (+2 tests)
+   - Fixed `in` operator by removing fallback in `target?[o.prop] ? target`
+   - Now `1 in [1,2,3]` correctly returns true
+4. **Fixed test runner** - Now properly evaluates control flow statements (+6 tests!)
+   - Test runner was only extracting first return statement
+   - Now wraps if/try/switch in functions and evaluates them
+5. **Fixed StringWithInterpolations** - Wrapped body in Block properly
+6. **Added missing AST types** - SwitchWhen, Throw, Slice (+8 tests)
+7. **Renamed `$ary` to `$arr`** - Better naming consistency throughout
+8. **Code cleanup** - Simplified Op args with map, used switch expressions
 
 ### Current Architecture
 - **es5.coffee**: 364 lines (very clean and well-organized!)
@@ -45,7 +50,7 @@ coffee test/runner.coffee test/es5/ast-NumberLiteral.coffee  # Run specific test
 - `a = 5; a` returns "a is not defined"
 - Assignment statements aren't creating proper scope
 
-#### 3. **String interpolation incomplete**  
+#### 3. **String interpolation incomplete**
 - Compiles without error but output is incomplete
 - `"result: #{1 + 2}"` outputs `` `result: ` `` instead of full interpolation
 
