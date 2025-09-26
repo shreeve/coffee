@@ -8,8 +8,8 @@
     "compiler"
   ],
   "version": "3.0.0",
-  "license": "MIT",
   "type": "module",
+  "license": "MIT",
   "engines": {
     "node": ">=6"
   },
@@ -30,8 +30,10 @@
     "repl.js"
   ],
   "scripts": {
-    "test": "node ./bin/cake test",
-    "test-harmony": "node --harmony ./bin/cake test"
+    "parser": "coffee ../solar-es5.coffee -o lib/coffeescript/parser.js src/syntax.coffee",
+    "build": "coffee -c -o lib/coffeescript src/*.coffee",
+    "test": "coffee test/runner.coffee test/es5",
+    "version": "coffee --version"
   },
   "homepage": "https://coffeescript.org",
   "bugs": "https://github.com/jashkenas/coffeescript/issues",
