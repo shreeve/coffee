@@ -247,9 +247,7 @@
             ifNode.addElse(elseBody);
             return ifNode;
           }
-          // This shouldn't happen with current grammar
-          console.warn("Unexpected $ops: 'if' without addElse");
-          return new this.ast.Literal("# Missing $ops: 'if' without addElse");
+          break;
         case 'value':
           // Handle adding accessors to Values
           if (o.add != null) {
@@ -262,8 +260,7 @@
               return this._toValue(value, [accessor]);
             }
           }
-          console.warn("Unexpected $ops: 'value' without add");
-          return new this.ast.Literal("# Missing $ops: 'value' without add");
+          break;
         case 'loop':
           // Handle different loop operations
           if (o.addSource != null) {
@@ -301,12 +298,10 @@
             loopNode.addBody(body);
             return loopNode;
           }
-          console.warn("Unknown loop operation:", o);
-          return new this.ast.Literal(`# Missing loop operation: ${JSON.stringify(o)}`);
-        default:
-          console.warn("Unknown $ops:", o.$ops);
-          return new this.ast.Literal(`# Missing $ops: ${o.$ops}`);
       }
+      // Catchall for any missing $ops directive handlers
+      console.warn("Missing $ops directive handler:", o);
+      return new this.ast.Literal(`# Missing $ops directive handler for: ${JSON.stringify(o)}`);
     }
 
     // Process $ast directives - the main AST node creation

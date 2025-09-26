@@ -145,7 +145,7 @@ class ES5Backend
               result.push resolved...
             else if resolved?
               result.push resolved
-        result
+        return result
 
       when 'if'
         # Handle addElse operation for if-else chains
@@ -156,10 +156,6 @@ class ES5Backend
           ifNode.addElse elseBody
           return ifNode
 
-        # This shouldn't happen with current grammar
-        console.warn "Unexpected $ops: 'if' without addElse"
-        new @ast.Literal "# Missing $ops: 'if' without addElse"
-
       when 'value'
         # Handle adding accessors to Values
         if o.add?
@@ -168,9 +164,6 @@ class ES5Backend
             return value.add accessor
           else
             return @_toValue value, [accessor]
-
-        console.warn "Unexpected $ops: 'value' without add"
-        new @ast.Literal "# Missing $ops: 'value' without add"
 
       when 'loop'
         # Handle different loop operations
@@ -200,12 +193,9 @@ class ES5Backend
           loopNode.addBody body
           return loopNode
 
-        console.warn "Unknown loop operation:", o
-        new @ast.Literal "# Missing loop operation: #{JSON.stringify(o)}"
-
-      else
-        console.warn "Unknown $ops:", o.$ops
-        new @ast.Literal "# Missing $ops: #{o.$ops}"
+    # Catchall for any missing $ops directive handlers
+    console.warn "Missing $ops directive handler:", o
+    new @ast.Literal "# Missing $ops directive handler for: #{JSON.stringify(o)}"
 
   # Process $ast directives - the main AST node creation
   processAst: (o) ->
