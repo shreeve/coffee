@@ -250,17 +250,12 @@ class ES5Backend
 
       # Operations
       when 'Op'
-        # Process args, ensuring we have proper AST nodes
+        # Process args, filtering out undefined values
         args = []
         if o.args
           for arg in o.args
             processed = @$(arg)
-            # Ensure it's a proper node
-            if processed?
-              # Convert strings to proper nodes
-              if typeof processed is 'string'
-                processed = new @ast.Literal processed
-              args.push processed
+            args.push processed if processed?
 
         # Add options if present
         if o.invertOperator? or o.originalOperator?
