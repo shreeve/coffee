@@ -145,20 +145,8 @@
         }
       })
     ],
-    // Bare property name (no leading dot) - for @ident patterns
-    BarePropertyName: [
-      o('PROPERTY',
-      {
-        $ast: 'PropertyName',
-        value: {
-          $use: 1,
-          method: 'toString'
-        }
-      })
-    ],
     // Alphanumerics are separated from the other **Literal** matchers because
     // they can also serve as keys in object literals.
-    // (optionally also IDENTIFIER if your lexer ever emits that here)
     AlphaNumeric: [
       o('NUMBER',
       {
@@ -1637,28 +1625,7 @@
     ],
     // A reference to a property on *this*
     ThisProperty: [
-      // First entry is the new fused token path -> @ident
-      o('THIS_PROPERTY',
-      {
-        $ast: 'Value',
-        base: {
-          $ast: 'ThisLiteral'
-        },
-        properties: [
-          {
-            $ast: 'Access',
-            name: {
-              $ast: 'PropertyName',
-              value: 1
-            }
-          }
-        ],
-        bareLiteral: {
-          $ast: 'ThisLiteral'
-        }
-      }),
-      // Support the old split forms explicitly:
-      o('@ BarePropertyName',
+      o('@ Property',
       {
         $ast: 'Value',
         base: {
@@ -1671,10 +1638,10 @@
           }
         ],
         bareLiteral: {
-          $ast: 'ThisLiteral' // @   <name>   (if your lexer still ever produces PROPERTY after '@')
+          $ast: 'ThisLiteral'
         }
       }),
-      o('@ . BarePropertyName',
+      o('@ . Property',
       {
         $ast: 'Value',
         base: {
@@ -1687,7 +1654,7 @@
           }
         ],
         bareLiteral: {
-          $ast: 'ThisLiteral' // @ . <name>   (fixes the regression with @.toString)
+          $ast: 'ThisLiteral'
         }
       }),
       o('@ [ Expression ]',
@@ -1703,33 +1670,14 @@
           }
         ],
         bareLiteral: {
-          $ast: 'ThisLiteral' // @  [ expr ]  (computed)
-        }
-      }),
-      o('THIS_CONSTRUCTOR',
-      {
-        $ast: 'Value',
-        base: {
           $ast: 'ThisLiteral'
-        },
-        properties: [
-          {
-            $ast: 'Access',
-            name: {
-              $ast: 'PropertyName',
-              value: 'constructor'
-            }
-          }
-        ],
-        bareLiteral: {
-          $ast: 'ThisLiteral' // @@  -> this.constructor
         }
       }),
       o('@',
       {
         $ast: 'Value',
         base: {
-          $ast: 'ThisLiteral' // Fallback: bare @  (must be last)
+          $ast: 'ThisLiteral'
         }
       })
     ],

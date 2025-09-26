@@ -83,12 +83,6 @@ grammar =
     o 'PROPERTY', $ast: 'PropertyName', value: {$use: 1, method: 'toString'}
   ]
 
-  # Bare property name (no leading dot) - for @ident patterns
-  BarePropertyName: [
-    o 'PROPERTY', $ast: 'PropertyName', value: {$use: 1, method: 'toString'}
-    # (optionally also IDENTIFIER if your lexer ever emits that here)
-  ]
-
   # Alphanumerics are separated from the other **Literal** matchers because
   # they can also serve as keys in object literals.
   AlphaNumeric: [
