@@ -3161,16 +3161,26 @@
         // Fix @param arguments in super() calls for derived constructors
         // Replace super(@name) with super(name)
         if (this.args) {
-          this.args = this.args.map(function(arg) {
-            var method, propertyName, ref1;
+          this.args = this.args.map((arg) => {
+            var actualParamName, method, propertyName, ref1;
             // Check if this is a @param reference (Value with ThisLiteral base)
             if (arg instanceof Value && arg.base instanceof ThisLiteral && arg.properties.length === 1) {
               propertyName = arg.properties[0].name.value;
               // Check if we're in a constructor context
               method = o.scope.method || ((ref1 = o.scope.parent) != null ? ref1.method : void 0);
               if (method != null ? method.ctor : void 0) {
-                // Replace with simple identifier
-                return new IdentifierLiteral(propertyName);
+                // Find the actual parameter name (it may have been renamed to arg, arg1, etc.)
+                actualParamName = propertyName;
+                method.eachParamName(function(name, node, param) {
+                  if (node instanceof Value && node.base instanceof ThisLiteral && node.properties[0].name.value === propertyName) {
+                    // Get the renamed parameter
+                    if (param.name instanceof Value && param.name.base instanceof IdentifierLiteral) {
+                      return actualParamName = param.name.base.value;
+                    }
+                  }
+                });
+                // Replace with the actual parameter identifier
+                return new IdentifierLiteral(actualParamName);
               }
             }
             return arg;
@@ -6077,13 +6087,11 @@
         // Add new expressions to the function body
         wasEmpty = this.body.isEmpty();
         this.disallowSuperInParamDefaults();
-        
         // Check if we have @params in a derived constructor
         hasThisParams = isDerivedConstructor && thisAssignments.some(function(assignment) {
           return assignment.isFromParam;
         });
         if (!hasThisParams) {
-          
           // Check super calls before expanding (skip for @params, they'll be handled specially)
           this.checkSuperCallsInConstructorBody();
         }
@@ -6091,7 +6099,6 @@
           this.body.expressions.unshift(...thisAssignments);
         }
         if (hasThisParams) {
-          
           // If we had @params, check super calls after expanding
           this.checkSuperCallsInConstructorBody();
         }
@@ -6262,22 +6269,39 @@
         
         // Collect @param names
         thisParamNames = [];
-        this.eachParamName(function(name, node, param) {
-          if (node != null ? node.this : void 0) {
-            return thisParamNames.push(node.properties[0].name.value);
+        this.eachParamName((name, node, param) => {
+          var propName;
+          // Check if this is a @param (Value with ThisLiteral base)
+          if (node instanceof Value && node.base instanceof ThisLiteral) {
+            propName = node.properties[0].name.value;
+            return thisParamNames.push(propName);
           }
         });
         if (!thisParamNames.length) {
           return;
         }
         
-        // Also mark the @param nodes themselves as special
+        // Mark the @param nodes themselves as special
         this.eachParamName(function(name, node, param) {
-          if (node != null ? node.this : void 0) {
-            if (node.base) {
-              return node.base.isFromParam = node.isFromParam = true;
-            }
+          if (node instanceof Value && node.base instanceof ThisLiteral) {
+            return node.base.isFromParam = node.isFromParam = true;
           }
+        });
+        
+        // Mark ALL ThisLiterals in the body before super  
+        // We need to traverse Values that contain ThisLiterals
+        this.body.traverseChildren(true, (child) => {
+          var propName, ref1;
+          if (child instanceof Value && child.base instanceof ThisLiteral && child.properties.length === 1) {
+            propName = (ref1 = child.properties[0].name) != null ? ref1.value : void 0;
+            if (indexOf.call(thisParamNames, propName) >= 0) {
+              child.isFromParam = child.base.isFromParam = true;
+            }
+          } else if (child instanceof ThisLiteral) {
+            // Mark standalone ThisLiterals too (in case they appear without Value wrapper)
+            child.isFromParam = true;
+          }
+          return true;
         });
         
         // Mark @params in super() arguments as special
@@ -6460,7 +6484,6 @@
           forAst: true
         });
         this.disallowLoneExpansionAndMultipleSplats();
-        
         // Mark @params in derived constructors as special (they'll move after super())
         isDerivedConstructor = this.ctor === 'derived';
         hasThisParams = false;
@@ -6473,7 +6496,6 @@
           });
         }
         if (!hasThisParams) {
-          
           // Only check for super calls if we don't have @params (they get special handling)
           seenSuper = this.checkSuperCallsInConstructorBody();
         }

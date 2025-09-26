@@ -2132,15 +2132,22 @@ exports.SuperCall = class SuperCall extends Call
     # Fix @param arguments in super() calls for derived constructors
     # Replace super(@name) with super(name)
     if @args
-      @args = @args.map (arg) ->
+      @args = @args.map (arg) =>
         # Check if this is a @param reference (Value with ThisLiteral base)
         if arg instanceof Value and arg.base instanceof ThisLiteral and arg.properties.length is 1
           propertyName = arg.properties[0].name.value
           # Check if we're in a constructor context
           method = o.scope.method or o.scope.parent?.method
           if method?.ctor
-            # Replace with simple identifier
-            return new IdentifierLiteral propertyName
+            # Find the actual parameter name (it may have been renamed to arg, arg1, etc.)
+            actualParamName = propertyName
+            method.eachParamName (name, node, param) ->
+              if node instanceof Value and node.base instanceof ThisLiteral and node.properties[0].name.value is propertyName
+                # Get the renamed parameter
+                if param.name instanceof Value and param.name.base instanceof IdentifierLiteral
+                  actualParamName = param.name.base.value
+            # Replace with the actual parameter identifier
+            return new IdentifierLiteral actualParamName
         arg
 
     return super o unless @expressions?.length
@@ -4211,20 +4218,34 @@ exports.Code = class Code extends Base
   # Mark @params in super() calls so they don't trigger errors before transformation
   markThisParamsInSuper: ->
     return unless @ctor is 'derived'
-
+    
     # Collect @param names
     thisParamNames = []
-    @eachParamName (name, node, param) ->
-      if node?.this
-        thisParamNames.push node.properties[0].name.value
-
+    @eachParamName (name, node, param) =>
+      # Check if this is a @param (Value with ThisLiteral base)
+      if node instanceof Value and node.base instanceof ThisLiteral
+        propName = node.properties[0].name.value
+        thisParamNames.push propName
+    
     return unless thisParamNames.length
-
-    # Also mark the @param nodes themselves as special
+    
+    # Mark the @param nodes themselves as special
     @eachParamName (name, node, param) ->
-      if node?.this
-        node.base.isFromParam = node.isFromParam = yes if node.base
-
+      if node instanceof Value and node.base instanceof ThisLiteral
+        node.base.isFromParam = node.isFromParam = yes
+    
+    # Mark ALL ThisLiterals in the body before super  
+    # We need to traverse Values that contain ThisLiterals
+    @body.traverseChildren yes, (child) =>
+      if child instanceof Value and child.base instanceof ThisLiteral and child.properties.length is 1
+        propName = child.properties[0].name?.value
+        if propName in thisParamNames
+          child.isFromParam = child.base.isFromParam = yes
+      else if child instanceof ThisLiteral
+        # Mark standalone ThisLiterals too (in case they appear without Value wrapper)
+        child.isFromParam = yes
+      true
+    
     # Mark @params in super() arguments as special
     @eachSuperCall @body, (superCall) =>
       return unless superCall.args
