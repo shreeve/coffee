@@ -40,7 +40,7 @@ npm run build
 
 ### Core ES6 Features ✅
 
-#### 1. **Smart Const/Let Analysis** 
+#### 1. **Smart Const/Let Analysis**
 The compiler intelligently determines optimal variable declarations:
 
 ```coffeescript
@@ -57,7 +57,7 @@ counter += 1;
 const greet = () => "Hello"; // ✅ Const for functions
 ```
 
-#### 2. **@params in Derived Constructors** 
+#### 2. **@params in Derived Constructors**
 The "impossible" problem - SOLVED:
 
 ```coffeescript
@@ -140,7 +140,7 @@ import CoffeeScript from './lib/coffeescript/index.js';
 const js = CoffeeScript.compile(`
   class Greeting
     constructor: (@name = "World") ->
-    
+
     say: -> "Hello #{@name}!"
 `);
 
@@ -158,11 +158,11 @@ console.log(js);
 # API Service with async/await
 class ApiService
   constructor: (@baseUrl) ->
-  
+
   getData: (endpoint) ->
     response = await fetch "#{@baseUrl}/#{endpoint}"
     await response.json()
-  
+
   postData: (endpoint, data) ->
     response = await fetch "#{@baseUrl}/#{endpoint}",
       method: 'POST'
@@ -173,17 +173,17 @@ class ApiService
 # React-style component
 class TodoList
   constructor: (@items = []) ->
-  
+
   addItem: (text) ->
     @items = [...@items, {id: Date.now(), text, done: false}]
-  
+
   toggleItem: (id) ->
     @items = @items.map (item) ->
       if item.id is id
         {...item, done: !item.done}
       else
         item
-  
+
   getActive: ->
     item for item in @items when not item.done
 
