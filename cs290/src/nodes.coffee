@@ -3965,13 +3965,13 @@ exports.Code = class Code extends Base
 
     # Separate `this` assignments.
     isDerivedConstructor = @ctor is 'derived'
-    
+
     @eachParamName (name, node, param, obj) =>
       # @params come as Value objects with a ThisLiteral base
       if node and node.base instanceof ThisLiteral
         name   = node.properties[0].name.value
         name   = "_#{name}" if name in JS_FORBIDDEN
-        
+
         if isDerivedConstructor
           # For derived constructors, use the simple parameter name
           # and move the this.x = x assignment after super()
