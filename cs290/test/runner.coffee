@@ -26,7 +26,7 @@ global.test = (code, expected) ->
   try
     # Compile the CoffeeScript code in bare mode
     compiled = CoffeeScript.compile code, bare: true
-    
+
     # For if/else and other control flow, we need to evaluate the whole thing
     # Wrap in a function and call it
     if compiled.includes('if (') or compiled.includes('try {') or compiled.includes('switch (')
@@ -36,14 +36,14 @@ global.test = (code, expected) ->
       match = compiled.match(/return\s+(.*);/)
       unless match
         throw new Error "No return statement found in compiled output"
-      
+
       # Evaluate the expression
       actual = eval(match[1])
-    
+
     # Deep equality comparison
     actualStr = JSON.stringify(actual)
     expectedStr = JSON.stringify(expected)
-    
+
     if actualStr == expectedStr
       passed++
       console.log "#{green}✓#{reset} #{code}"
@@ -81,14 +81,14 @@ for arg in args
 for file in testFiles
   totalFiles++
   console.log "\n#{bold}[#{totalFiles}/#{testFiles.length}] #{path.basename(file)}#{reset}"
-  
+
   # Reset test counts for this file
   filePassed = passed
   fileFailed = failed
-  
+
   # Load and run the test file
   require path.resolve(file)
-  
+
   # Show file summary
   filePassCount = passed - filePassed
   fileFailCount = failed - fileFailed
