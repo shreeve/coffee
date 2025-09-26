@@ -19,7 +19,7 @@ transpile = false;
 replDefaults = {
   prompt: 'coffee> ',
   historyFile: (function() {
-    var historyPath;
+    let historyPath;
     historyPath = process.env.XDG_CACHE_HOME || process.env.HOME;
     if (historyPath) {
       return path.join(historyPath, '.coffee_history');
@@ -27,7 +27,7 @@ replDefaults = {
   })(),
   historyMaxInputSize: 10240,
   eval: function(input, context, filename, cb) {
-    var ast, err, i, isAsync, js, len, line, lines, ref, ref1, referencedVars, relevantLines, result, token, tokens;
+    let ast, err, i, isAsync, js, len, line, lines, ref, ref1, referencedVars, relevantLines, result, token, tokens;
     // XXX: multiline hack.
     input = input.replace(/\uFF00/g, '\n');
     // Node's REPL sends the input ending with a newline and then wrapped in
@@ -48,7 +48,7 @@ replDefaults = {
       }
       // Collect referenced variable names just like in `CoffeeScript.compile`.
       referencedVars = (function() {
-        var i, len, results;
+        let i, len, results;
         results = [];
         for (i = 0, len = tokens.length; i < len; i++) {
           token = tokens[i];
@@ -126,7 +126,7 @@ runInContext = function(js, context, filename) {
 };
 
 addMultilineHandler = function(repl) {
-  var inputStream, multiline, nodeLineListener, origPrompt, outputStream, ref;
+  let inputStream, multiline, nodeLineListener, origPrompt, outputStream, ref;
   ({inputStream, outputStream} = repl);
   // Node 0.11.12 changed API, prompt is now _prompt.
   origPrompt = (ref = repl._prompt) != null ? ref : repl.prompt;
@@ -190,7 +190,7 @@ addMultilineHandler = function(repl) {
 
 // Store and load command history from a file
 addHistory = function(repl, filename, maxSize) {
-  var buffer, fd, lastLine, readFd, size, stat;
+  let buffer, fd, lastLine, readFd, size, stat;
   lastLine = null;
   try {
     // Get file info and at most maxSize of command history
@@ -240,7 +240,7 @@ addHistory = function(repl, filename, maxSize) {
 };
 
 getCommandId = function(repl, commandName) {
-  var commandsHaveLeadingDot;
+  let commandsHaveLeadingDot;
   // Node 0.11 changed API, a command such as '.help' is now stored as 'help'
   commandsHaveLeadingDot = repl.commands['.help'] != null;
   if (commandsHaveLeadingDot) {
@@ -252,7 +252,7 @@ getCommandId = function(repl, commandName) {
 
 export const start =
 function(opts = {}) {
-    var Module, build, major, minor, originalModuleLoad, repl;
+    let Module, build, major, minor, originalModuleLoad, repl;
     [major, minor, build] = process.versions.node.split('.').map(function(n) {
       return parseInt(n, 10);
     });

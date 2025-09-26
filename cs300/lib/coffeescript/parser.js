@@ -447,7 +447,7 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
 }
 },
   parseError(str, hash) {
-      var error;
+      let error;
       if (hash.recoverable) {
         return this.trace(str);
       } else {
@@ -457,7 +457,7 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
       }
     },
   parse(input) {
-      var EOF, TERROR, action, errStr, expected, k, len, lex, lexer, loc, locFirst, locLast, newState, p, parseTable, preErrorSymbol, r, ranges, recovering, ref, ref1, ref2, sharedState, state, stk, symbol, v, val, yyleng, yylineno, yyloc, yytext, yyval;
+      let EOF, TERROR, action, errStr, expected, k, len, lex, lexer, loc, locFirst, locLast, newState, p, parseTable, preErrorSymbol, r, ranges, recovering, ref, ref1, ref2, sharedState, state, stk, symbol, v, val, yyleng, yylineno, yyloc, yytext, yyval;
       [stk, val, loc] = [[0], [null], []];
       [parseTable, yytext, yylineno, yyleng, recovering] = [this.parseTable, '', 0, 0, 0];
       [TERROR, EOF] = [2, 1];
@@ -481,7 +481,7 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
       ranges = (ref1 = lexer.options) != null ? ref1.ranges : void 0;
       this.parseError = typeof sharedState.yy.parseError === 'function' ? sharedState.yy.parseError : Object.getPrototypeOf(this).parseError;
       lex = () => {
-        var token;
+        let token;
         token = lexer.lex() || EOF;
         if (typeof token !== 'number') {
           token = this.symbolIds[token] || token;
@@ -496,7 +496,7 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
           errStr = '';
           if (!recovering) {
             expected = (function() {
-              var ref3, results;
+              let ref3, results;
               ref3 = parseTable[state];
               results = [];
               for (p in ref3) {
