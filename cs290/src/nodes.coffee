@@ -4101,19 +4101,19 @@ exports.Code = class Code extends Base
     # Add new expressions to the function body
     wasEmpty = @body.isEmpty()
     @disallowSuperInParamDefaults()
-    
+
     # Check if we have @params in a derived constructor
     hasThisParams = isDerivedConstructor and thisAssignments.some (assignment) ->
       assignment.isFromParam
-    
+
     # Check super calls before expanding (skip for @params, they'll be handled specially)
     @checkSuperCallsInConstructorBody() unless hasThisParams
-    
+
     @body.expressions.unshift thisAssignments... unless @expandCtorSuper thisAssignments
-    
+
     # If we had @params, check super calls after expanding
     @checkSuperCallsInConstructorBody() if hasThisParams
-    
+
     @body.expressions.unshift exprs...
     if @isMethod and @bound and not @isStatic and @classVariable
       boundMethodCheck = new Value new Literal utility 'boundMethodCheck', o
@@ -4211,20 +4211,20 @@ exports.Code = class Code extends Base
   # Mark @params in super() calls so they don't trigger errors before transformation
   markThisParamsInSuper: ->
     return unless @ctor is 'derived'
-    
+
     # Collect @param names
     thisParamNames = []
     @eachParamName (name, node, param) ->
       if node?.this
         thisParamNames.push node.properties[0].name.value
-    
+
     return unless thisParamNames.length
-    
+
     # Also mark the @param nodes themselves as special
     @eachParamName (name, node, param) ->
       if node?.this
         node.base.isFromParam = node.isFromParam = yes if node.base
-    
+
     # Mark @params in super() arguments as special
     @eachSuperCall @body, (superCall) =>
       return unless superCall.args
@@ -4331,7 +4331,7 @@ exports.Code = class Code extends Base
     @checkForDuplicateParams()
     @disallowSuperInParamDefaults forAst: yes
     @disallowLoneExpansionAndMultipleSplats()
-    
+
     # Mark @params in derived constructors as special (they'll move after super())
     isDerivedConstructor = @ctor is 'derived'
     hasThisParams = no
@@ -4340,11 +4340,11 @@ exports.Code = class Code extends Base
         if node.this
           hasThisParams = yes
           node.base.isFromParam = node.isFromParam = yes
-    
+
     # Only check for super calls if we don't have @params (they get special handling)
     seenSuper = @checkSuperCallsInConstructorBody() unless hasThisParams
     seenSuper = yes if hasThisParams  # Assume super will be handled correctly for @params
-    
+
     if @ctor is 'derived' and not seenSuper
       @eachParamName (name, node) =>
         if node.this and not node.isFromParam
