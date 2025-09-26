@@ -226,19 +226,25 @@ class ES5Backend
       when 'Splat' then new @ast.Splat @$(o.name), {postfix: @$(o.postfix)}
 
       # Literals
-      when 'Literal'                  then new @ast.Literal                  @$(o.value)
-      when 'NumberLiteral'            then new @ast.NumberLiteral            @$(o.value)
-      when 'StringLiteral'            then new @ast.StringLiteral            @_stripQuotes(@$(o.value))
-      when 'StringWithInterpolations' then new @ast.StringWithInterpolations @$(o.body)
-      when 'BooleanLiteral'           then new @ast.BooleanLiteral           @$(o.value)
-      when 'IdentifierLiteral'        then new @ast.IdentifierLiteral        @$(o.value)
-      when 'PropertyName'             then new @ast.PropertyName             @$(o.value)
-      when 'StatementLiteral'         then new @ast.StatementLiteral         @$(o.value)
-      when 'ThisLiteral'              then new @ast.ThisLiteral
-      when 'UndefinedLiteral'         then new @ast.UndefinedLiteral
-      when 'NullLiteral'              then new @ast.NullLiteral
-      when 'InfinityLiteral'          then new @ast.InfinityLiteral
-      when 'NaNLiteral'               then new @ast.NaNLiteral
+      when 'Literal'       then new @ast.Literal       @$(o.value)
+      when 'NumberLiteral' then new @ast.NumberLiteral @$(o.value)
+      when 'StringLiteral' then new @ast.StringLiteral @_stripQuotes(@$(o.value))
+      when 'StringWithInterpolations'
+        body = @$(o.body)
+        new @ast.StringWithInterpolations switch
+          when Array.isArray(body)        then new @ast.Block  body
+          when body instanceof @ast.Block then body
+          when body?                      then new @ast.Block [body]
+          else                                 new @ast.Block []
+      when 'BooleanLiteral'    then new @ast.BooleanLiteral    @$(o.value)
+      when 'IdentifierLiteral' then new @ast.IdentifierLiteral @$(o.value)
+      when 'PropertyName'      then new @ast.PropertyName      @$(o.value)
+      when 'StatementLiteral'  then new @ast.StatementLiteral  @$(o.value)
+      when 'ThisLiteral'       then new @ast.ThisLiteral
+      when 'UndefinedLiteral'  then new @ast.UndefinedLiteral
+      when 'NullLiteral'       then new @ast.NullLiteral
+      when 'InfinityLiteral'   then new @ast.InfinityLiteral
+      when 'NaNLiteral'        then new @ast.NaNLiteral
 
       # Value, Access, and Index
       when 'Value' then @_toValue @$(o.base), @$(o.properties) ? []
