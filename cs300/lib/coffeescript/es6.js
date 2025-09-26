@@ -540,6 +540,8 @@ class ES6Backend {
         return new this.ast.SuperCall(this.$(o.variable), args, this.$(o.soak));
       case 'Super':
         return new this.ast.Super(this.$(o.accessor), this.$(o.superLiteral));
+      case 'ComputedPropertyName':
+        return new this.ast.ComputedPropertyName(this.$(o.value));
       case 'Return':
         return new this.ast.Return(this.$(o.expression));
       case 'Yield':
