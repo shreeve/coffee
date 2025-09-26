@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# remove all compiled files
+rm -rf \
+  lib/coffeescript/browser.js      \
+  lib/coffeescript/cake.js         \
+  lib/coffeescript/coffeescript.js \
+  lib/coffeescript/command.js      \
+  lib/coffeescript/grammar.js      \
+  lib/coffeescript/helpers.js      \
+  lib/coffeescript/index.js        \
+  lib/coffeescript/lexer.js        \
+  lib/coffeescript/nodes.js        \
+  lib/coffeescript/optparse.js     \
+  lib/coffeescript/parser.js       \
+  lib/coffeescript/register.js     \
+  lib/coffeescript/repl.js         \
+  lib/coffeescript/rewriter.js     \
+  lib/coffeescript/scope.js        \
+  lib/coffeescript/sourcemap.js    \
+  lib/coffeescript/syntax.js       \
+
+# generate parser.js from syntax.coffee
+./solar.coffee -o lib/coffeescript/parser.js src/syntax.coffee
+
+# processGrammar: 2.256ms
+# buildLRAutomaton: 54.61ms
+# processLookaheads: 10.824ms
+# buildParseTable: 118.678ms
+# 💥 Total time: 188.96ms
+#
+# ⏱️ Statistics:
+# • Tokens: 106
+# • Types: 98
+# • Rules: 407
+# • States: 780
+# • Conflicts: 153
+
+# rebuild from source, using global coffee
+coffee -c -o lib/coffeescript \
+  src/browser.coffee          \
+  src/cake.coffee             \
+  src/coffeescript.coffee     \
+  src/command.coffee          \
+  src/helpers.coffee          \
+  src/index.coffee            \
+  src/lexer.coffee            \
+  src/nodes.coffee            \
+  src/optparse.coffee         \
+  src/register.coffee         \
+  src/repl.coffee             \
+  src/rewriter.coffee         \
+  src/scope.litcoffee         \
+  src/sourcemap.litcoffee
+
+# # attempt to self host / compile our own compiler
+# cake build
