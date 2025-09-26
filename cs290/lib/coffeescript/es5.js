@@ -308,7 +308,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, catchClause, condition, context, elseBody, errorVariable, exclusive, expression, expressions, forNode, ifNode, index, invert, name, opValue, operator, options, params, recovery, ref, ref1, tag, type, value, variable, whileNode;
+      var args, body, catchNode, condition, context, elseBody, errorVariable, exclusive, expression, expressions, forNode, ifNode, index, invert, name, opValue, operator, options, params, recovery, ref, ref1, tag, type, value, variable, whileNode;
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
@@ -400,10 +400,22 @@
           }
           return new this.ast.Op(...args);
         case 'Assign':
-          // Handle both simple and compound assignments
-          variable = this.$(o.variable);
-          value = this.$(o.value);
-          context = this.$(o.context);
+          // Handle object property assignments differently 
+          // When context is 'object' and we have an expression, the AST structure is different:
+          // - 'value' contains the property name/variable
+          // - 'expression' contains the actual value
+          if (o.context === 'object' && (o.expression != null)) {
+            // In object context (e.g., @x: 10 in class body)
+            variable = this.$(o.value); // This is the property name (@x)
+            value = this.$(o.expression); // This is the value (10)
+            context = o.context; // Keep 'object' context
+          } else {
+            // Regular assignment
+            variable = this.$(o.variable);
+            value = this.$(o.value);
+            context = this.$(o.context);
+          }
+          
           // Check for compound assignment (+=, -=, etc.)
           if (o.operator != null) {
             operator = this.$(o.operator);
@@ -531,21 +543,15 @@
           return new this.ast.ClassProtoAssignOp(this.$(o.variable), this.$(o.value));
         // Try/Catch/Throw
         case 'Try':
-          
-          // The catch directive points to a Catch node which has the variable and recovery
-          catchClause = this.$(o.catch);
-          errorVariable = catchClause != null ? catchClause.variable : void 0;
-          recovery = (catchClause != null ? catchClause.recovery : void 0) || (catchClause != null ? catchClause.body : void 0);
-          return new this.ast.Try(this.$(o.attempt), errorVariable, recovery, this.$(o.ensure));
+          // The catch directive should be a Catch AST node
+          catchNode = this.$(o.catch);
+          return new this.ast.Try(this.$(o.attempt), catchNode, this.$(o.ensure));
         case 'Catch':
-          return {
-            // Catch node with variable and recovery block
-            // Return a structure that the Try node can use
-            variable: this.$(o.variable),
-            errorVariable: this.$(o.errorVariable),
-            recovery: this.$(o.recovery),
-            body: this.$(o.body)
-          };
+          // Create a proper Catch AST node
+          // Catch constructor expects (recovery, errorVariable)
+          recovery = this.$(o.recovery) || this.$(o.body);
+          errorVariable = this.$(o.variable) || this.$(o.errorVariable);
+          return new this.ast.Catch(recovery, errorVariable);
         case 'Throw':
           return new this.ast.Throw(this.$(o.expression));
         // Other

@@ -1416,8 +1416,12 @@ exports.Value = class Value extends Base
     lastProperty instanceof Slice
 
   looksStatic: (className) ->
-    return no unless ((thisLiteral = @base) instanceof ThisLiteral or (name = @base).value is className) and
+    thisLiteral = @base if @base instanceof ThisLiteral
+    name = @base if @base.value is className
+    
+    return no unless (thisLiteral or name) and
       @properties.length is 1 and @properties[0].name?.value isnt 'prototype'
+    
     return
       staticClassName: thisLiteral ? name
 
@@ -2940,7 +2944,13 @@ exports.Class = class Class extends Base
     else if not o.compiling and @validClassProperty node
       @addClassProperty node
     else if not o.compiling and @validClassPrototypeProperty node
-      @addClassPrototypeProperty node
+      # Special check: if this is a @property with object context, it should be static
+      if node instanceof Assign and node.context is 'object' and 
+         node.variable.base instanceof ThisLiteral
+        # This is @x: syntax - treat as static property, not prototype property
+        @addClassProperty node
+      else
+        @addClassPrototypeProperty node
     else
       null
 
@@ -2975,6 +2985,8 @@ exports.Class = class Class extends Base
 
   validClassProperty: (node) ->
     return no unless node instanceof Assign
+    # Static properties can be defined with either = or : syntax
+    # Both "@x = 10" and "@x: 10" should be treated as static properties
     return node.variable.looksStatic @name
 
   addClassProperty: (assign) ->
@@ -2990,6 +3002,9 @@ exports.Class = class Class extends Base
 
   validClassPrototypeProperty: (node) ->
     return no unless node instanceof Assign
+    # Only plain identifiers in object context are prototype properties
+    # @x: should be a static property, not a prototype property
+    return no if node.variable.base instanceof ThisLiteral
     node.context is 'object' and not node.variable.hasProperties()
 
   addClassPrototypeProperty: (assign) ->

@@ -2100,7 +2100,13 @@
 
       looksStatic(className) {
         var name, ref1, thisLiteral;
-        if (!(((thisLiteral = this.base) instanceof ThisLiteral || (name = this.base).value === className) && this.properties.length === 1 && ((ref1 = this.properties[0].name) != null ? ref1.value : void 0) !== 'prototype')) {
+        if (this.base instanceof ThisLiteral) {
+          thisLiteral = this.base;
+        }
+        if (this.base.value === className) {
+          name = this.base;
+        }
+        if (!((thisLiteral || name) && this.properties.length === 1 && ((ref1 = this.properties[0].name) != null ? ref1.value : void 0) !== 'prototype')) {
           return false;
         }
         return {
@@ -4391,7 +4397,13 @@
         } else if (!o.compiling && this.validClassProperty(node)) {
           return this.addClassProperty(node);
         } else if (!o.compiling && this.validClassPrototypeProperty(node)) {
-          return this.addClassPrototypeProperty(node);
+          // Special check: if this is a @property with object context, it should be static
+          if (node instanceof Assign && node.context === 'object' && node.variable.base instanceof ThisLiteral) {
+            // This is @x: syntax - treat as static property, not prototype property
+            return this.addClassProperty(node);
+          } else {
+            return this.addClassPrototypeProperty(node);
+          }
         } else {
           return null;
         }
@@ -4440,6 +4452,8 @@
         if (!(node instanceof Assign)) {
           return false;
         }
+        // Static properties can be defined with either = or : syntax
+        // Both "@x = 10" and "@x: 10" should be treated as static properties
         return node.variable.looksStatic(this.name);
       }
 
@@ -4458,6 +4472,11 @@
 
       validClassPrototypeProperty(node) {
         if (!(node instanceof Assign)) {
+          return false;
+        }
+        if (node.variable.base instanceof ThisLiteral) {
+          // Only plain identifiers in object context are prototype properties
+          // @x: should be a static property, not a prototype property
           return false;
         }
         return node.context === 'object' && !node.variable.hasProperties();
