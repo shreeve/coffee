@@ -2763,7 +2763,7 @@ export const SuperCall = (function() {
       }
       compileNode(o) {
         var arg, i, ref, ref1, replacement, superCall;
-        
+
         // ES6: Fix @param arguments in super() calls for derived constructors
         // Replace super(@name) with super(name)
         if (this.args) {
@@ -2781,7 +2781,7 @@ export const SuperCall = (function() {
             }
           }
         }
-        
+
         // ES6: Generate proper super() calls
         if (!((ref1 = this.expressions) != null ? ref1.length : void 0)) {
           // Simple super() call without expressions
@@ -5325,7 +5325,7 @@ export const Code = (function() {
             if (indexOf.call(JS_FORBIDDEN, name) >= 0) {
               name = `_${name}`;
             }
-            
+
             if (isDerivedConstructor) {
               // ES6: For derived constructors, use the simple parameter name
               // and move the this.x = x assignment after super()
