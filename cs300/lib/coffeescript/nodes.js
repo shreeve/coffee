@@ -5441,11 +5441,11 @@ export const Code = (function() {
         if (this.isAsync) {
           modifiers.push('async');
         }
-        
+
         // ES6: Determine if we should use arrow function
         var useArrowFunction = false;
         var isSimpleBody = false;
-        
+
         // Check if this can be an arrow function
         if (!this.isMethod && !this.isGenerator && !this.ctor) {
           // Check if the body is a single expression (for concise arrow)
@@ -5459,7 +5459,7 @@ export const Code = (function() {
           // Use arrow function for simple cases or bound functions
           useArrowFunction = true;
         }
-        
+
         if (!(this.isMethod || this.bound || useArrowFunction)) {
           modifiers.push(`function${this.isGenerator ? '*' : ''}`);
         } else if (this.isGenerator) {
@@ -5528,14 +5528,14 @@ export const Code = (function() {
           answer.push(...name);
         }
         answer.push(...signature);
-        
+
         // ES6: Generate arrow function syntax
         if (this.bound && !this.isMethod) {
           answer.push(this.makeCode(' =>'));
         } else if (useArrowFunction) {
           answer.push(this.makeCode(' =>'));
         }
-        
+
         // ES6: For simple arrow functions, we can omit braces
         if (useArrowFunction && isSimpleBody) {
           answer.push(this.makeCode(' '));
