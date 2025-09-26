@@ -8,6 +8,13 @@ class ES5Backend
     @currentDirective = null
     @currentRule = null
 
+  # Helper to ensure node has location data to avoid errors in AST operations
+  _ensureLocationData: (node) ->
+    if typeof node is 'object' and node isnt null
+      node.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0, range: [0, 0]}
+      node.updateLocationDataIfMissing?(node.locationData)
+    node
+
   # Helper to strip quotes from string literals
   _stripQuotes: (str) ->
     return str unless str?
@@ -16,13 +23,6 @@ class ES5Backend
       str.slice(1, -1)
     else
       str
-
-  # Helper to ensure node has location data to avoid errors in AST operations
-  _ensureLocationData: (node) ->
-    if typeof node is 'object' and node isnt null
-      node.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0, range: [0, 0]}
-      node.updateLocationDataIfMissing?(node.locationData)
-    node
 
   # Helper to convert primitive values to AST nodes
   _toNode: (value) ->

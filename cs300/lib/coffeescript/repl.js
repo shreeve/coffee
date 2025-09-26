@@ -29,7 +29,7 @@
     })(),
     historyMaxInputSize: 10240,
     eval: function(input, context, filename, cb) {
-      var Assign, Block, Call, Code, Literal, Root, Value, ast, err, isAsync, js, ref, ref1, referencedVars, result, token, tokens;
+      var Assign, Block, Call, Code, Literal, Root, Value, ast, err, i, isAsync, js, len, line, lines, ref, ref1, referencedVars, relevantLines, result, token, tokens;
       // XXX: multiline hack.
       input = input.replace(/\uFF00/g, '\n');
       // Node's REPL sends the input ending with a newline and then wrapped in
@@ -99,6 +99,23 @@
         err = error;
         // AST's `compile` does not add source code information to syntax errors.
         updateSyntaxError(err, input);
+        // For REPL, trim the stack trace to only show the relevant parts
+        // Remove internal REPL/Node machinery from the stack
+        if (err.stack) {
+          lines = err.stack.split('\n');
+          // Keep the error message and the REPL code location lines
+          relevantLines = [];
+          for (i = 0, len = lines.length; i < len; i++) {
+            line = lines[i];
+            relevantLines.push(line);
+            if (line.includes('at Script.runInThisContext') || line.includes('at Object.runInThisContext')) {
+              // Stop after we hit the vm context execution
+              // This keeps the error message and code location but removes the internal stack
+              break;
+            }
+          }
+          err.stack = relevantLines.join('\n');
+        }
         return cb(err);
       }
     }

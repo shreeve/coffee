@@ -242,13 +242,13 @@ class Generator
   # Call reduce function with count then Solar directive
   _generateDataAction: (directive, symbols) ->
     len = symbols.length
-    dir = @_objectToJSUnresolved(directive)
-    "return r(#{len}, #{dir});"
+    dir = @_asJS(directive)
+    "return r(#{len},#{dir});"
 
   _needsQuotes: (key) -> not /^[$_a-zA-Z][$_a-zA-Z0-9]*$/.test(key)
 
-  # Generate Solar directive with unresolved position references
-  _objectToJSUnresolved: (obj) ->
+  # Convert object to JavaScript string representation
+  _asJS: (obj) ->
     return 'null' unless obj?
 
     if typeof obj is 'number'
@@ -259,8 +259,14 @@ class Generator
     else if typeof obj is 'boolean'
       JSON.stringify(obj)
     else if Array.isArray(obj)
-      items = (if typeof item is 'object' and item? then @_objectToJSUnresolved(item) else JSON.stringify(item) for item in obj)
-      "[#{items.join(', ')}]"
+      items = for item in obj
+        if item is undefined
+          'undefined'
+        else if typeof item is 'object' and item?
+          @_asJS(item)
+        else
+          JSON.stringify(item)
+      "[#{items.join(',')}]"
     else if typeof obj is 'object'
       props = []
       for key, value of obj
@@ -269,43 +275,14 @@ class Generator
 
         # Replace $ast: '@' with the actual rule name
         if key is '$ast' and value is '@'
-          props.push "#{keyStr}: #{JSON.stringify(@currentType)}"
+          props.push "#{keyStr}:#{JSON.stringify(@currentType)}"  # No space after colon
         else if typeof value is 'number'
-          props.push "#{keyStr}: #{value}"  # Keep as position number
+          props.push "#{keyStr}:#{value}"  # No space after colon
         else if typeof value is 'object' and value?
-          props.push "#{keyStr}: #{@_objectToJSUnresolved(value)}"
+          props.push "#{keyStr}:#{@_asJS(value)}"  # No space after colon
         else
-          props.push "#{keyStr}: #{JSON.stringify(value)}"
-      "{#{props.join(', ')}}"
-    else
-      JSON.stringify(obj)
-
-  _objectToJS: (obj, symbols) ->
-    return 'null' unless obj?
-
-    if typeof obj is 'number'
-      # Position reference
-      "$$[#{obj}]"
-    else if typeof obj is 'string'
-      JSON.stringify(obj)
-    else if typeof obj is 'boolean'
-      JSON.stringify(obj)
-    else if Array.isArray(obj)
-      # Array of Solar directives
-      items = (if typeof item is 'object' then @_objectToJS(item, symbols) else JSON.stringify(item) for item in obj)
-      "[#{items.join(', ')}]"
-    else if typeof obj is 'object'
-      # Object with properties
-      props = []
-      for key, value of obj
-        if typeof value is 'number'
-          props.push "#{JSON.stringify(key)}: $$[#{value}]"
-        else if typeof value is 'object' and value?
-          props.push "#{JSON.stringify(key)}: #{@_objectToJS(value, symbols)}"
-        else
-          props.push "#{JSON.stringify(key)}: #{JSON.stringify(value)}"
-
-      "{#{props.join(', ')}}"
+          props.push "#{keyStr}:#{JSON.stringify(value)}"  # No space after colon
+      "{#{props.join(',')}}"
     else
       JSON.stringify(obj)
 
