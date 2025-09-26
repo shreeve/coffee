@@ -99,7 +99,6 @@
         err = error;
         // AST's `compile` does not add source code information to syntax errors.
         updateSyntaxError(err, input);
-        
         // For REPL, trim the stack trace to only show the relevant parts
         // Remove internal REPL/Node machinery from the stack
         if (err.stack) {

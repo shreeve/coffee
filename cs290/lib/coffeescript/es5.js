@@ -15,20 +15,6 @@
       this.currentRule = null;
     }
 
-    // Helper to strip quotes from string literals
-    _stripQuotes(str) {
-      var ref;
-      if (str == null) {
-        return str;
-      }
-      // Remove surrounding quotes if present
-      if (((ref = str[0]) === '"' || ref === "'") && str[0] === str[str.length - 1]) {
-        return str.slice(1, -1);
-      } else {
-        return str;
-      }
-    }
-
     // Helper to ensure node has location data to avoid errors in AST operations
     _ensureLocationData(node) {
       if (typeof node === 'object' && node !== null) {
@@ -46,6 +32,20 @@
         }
       }
       return node;
+    }
+
+    // Helper to strip quotes from string literals
+    _stripQuotes(str) {
+      var ref;
+      if (str == null) {
+        return str;
+      }
+      // Remove surrounding quotes if present
+      if (((ref = str[0]) === '"' || ref === "'") && str[0] === str[str.length - 1]) {
+        return str.slice(1, -1);
+      } else {
+        return str;
+      }
     }
 
     // Helper to convert primitive values to AST nodes
