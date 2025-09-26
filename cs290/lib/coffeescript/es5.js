@@ -294,7 +294,13 @@
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
-          return new this.ast.Root(this.$(o.body));
+          body = this.$(o.body);
+          if (!(body instanceof this.ast.Block)) {
+            // Ensure body is a Block
+            body = new this.ast.Block([body]);
+          }
+          body.makeReturn();
+          return new this.ast.Root(body);
         case 'Block':
           expressions = this.$(o.expressions);
           if (expressions instanceof this.ast.Block) {

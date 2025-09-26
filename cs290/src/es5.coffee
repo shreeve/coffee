@@ -203,7 +203,12 @@ class ES5Backend
     switch o.$ast
 
       # Root, Block, and Splat
-      when 'Root'  then new @ast.Root @$(o.body)
+      when 'Root'  
+        body = @$(o.body)
+        # Ensure body is a Block
+        body = new @ast.Block [body] unless body instanceof @ast.Block
+        body.makeReturn()
+        new @ast.Root body
       when 'Block'
         expressions = @$(o.expressions)
         # Flatten if expressions is already a Block (from Body)
