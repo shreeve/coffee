@@ -4707,7 +4707,7 @@ export const Assign = (function() {
         // ES6: Check if we need to declare the variable inline BEFORE adding to scope
         var needsDeclaration = false;
         var declarationKeyword = 'let'; // Default to let for now
-        
+
         // Check if this is a simple identifier assignment
         if (this.variable.unwrapAll() instanceof IdentifierLiteral && !this.context && !this.moduleDeclaration) {
           var varName = this.variable.unwrapAll().value;
@@ -4716,7 +4716,7 @@ export const Assign = (function() {
             needsDeclaration = true;
           }
         }
-        
+
         this.addScopeVariables(o);
         if (this.value instanceof Code) {
           if (this.value.isStatic) {
@@ -4737,9 +4737,9 @@ export const Assign = (function() {
           }
           return compiledName.concat(this.makeCode(': '), val);
         }
-        
+
         answer = compiledName.concat(this.makeCode(` ${this.context || '='} `), val);
-        
+
         // Prepend declaration if needed
         if (needsDeclaration) {
           answer.unshift(this.makeCode(`${declarationKeyword} `));
