@@ -21,7 +21,7 @@
   "browser": "./lib/coffeescript-browser-compiler-legacy/coffeescript.js",
   "bin": {
     "coffee": "./bin/coffee.js",
-    "cake": "./bin/cake"
+    "cake": "./bin/cake.js"
   },
   "files": [
     "bin",

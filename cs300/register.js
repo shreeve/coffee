@@ -1,1 +1,1 @@
-require('./lib/coffeescript/register');
+import './lib/coffeescript/register.js';
