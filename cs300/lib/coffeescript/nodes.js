@@ -2762,7 +2762,26 @@ export const SuperCall = (function() {
         return ((ref1 = this.expressions) != null ? ref1.length : void 0) && o.level === LEVEL_TOP;
       }
       compileNode(o) {
-        var ref, ref1, replacement, superCall;
+        var arg, i, ref, ref1, replacement, superCall;
+        
+        // ES6: Fix @param arguments in super() calls for derived constructors
+        // Replace super(@name) with super(name)
+        if (this.args) {
+          for (i = 0; i < this.args.length; i++) {
+            arg = this.args[i];
+            // Check if this is a @param reference (Value with ThisLiteral base)
+            if (arg instanceof Value && arg.base instanceof ThisLiteral && arg.properties.length === 1) {
+              const propertyName = arg.properties[0].name.value;
+              // Check if we're in a constructor context where this param exists
+              const method = o.scope.method || (o.scope.parent && o.scope.parent.method);
+              if (method && method.ctor) {
+                // Replace with simple identifier
+                this.args[i] = new IdentifierLiteral(propertyName);
+              }
+            }
+          }
+        }
+        
         // ES6: Generate proper super() calls
         if (!((ref1 = this.expressions) != null ? ref1.length : void 0)) {
           // Simple super() call without expressions
@@ -5306,10 +5325,11 @@ export const Code = (function() {
             if (indexOf.call(JS_FORBIDDEN, name) >= 0) {
               name = `_${name}`;
             }
-            target = new IdentifierLiteral(o.scope.freeVariable(name, {reserve: false}));
-
+            
             if (isDerivedConstructor) {
-              // ES6: Move @param assignments after super() in derived constructors
+              // ES6: For derived constructors, use the simple parameter name
+              // and move the this.x = x assignment after super()
+              target = new IdentifierLiteral(name);
               node.base.isFromParam = node.isFromParam = true;
               param.renameParam(node, target);
               const thisNode = new Value(new ThisLiteral(), [new Access(new PropertyName(name))]);
@@ -5318,6 +5338,8 @@ export const Code = (function() {
               assignment.isFromParam = true;
               return thisAssignments.push(assignment);
             } else {
+              // For regular constructors, use the freeVariable approach
+              target = new IdentifierLiteral(o.scope.freeVariable(name, {reserve: false}));
               replacement = param.name instanceof Obj && obj instanceof Assign && obj.operatorToken.value === '=' ? new Assign(new IdentifierLiteral(name), target, 'object') : target;
               param.renameParam(node, replacement);
               return thisAssignments.push(new Assign(node, target));
