@@ -3157,36 +3157,26 @@
       }
 
       compileNode(o) {
-        var ref, ref1, replacement, superCall;
+        var arg, i, j, len1, method, propertyName, ref, ref1, ref2, ref3, replacement, superCall;
         // Fix @param arguments in super() calls for derived constructors
         // Replace super(@name) with super(name)
         if (this.args) {
-          this.args = this.args.map((arg) => {
-            var actualParamName, method, propertyName, ref1;
+          ref1 = this.args;
+          for (i = j = 0, len1 = ref1.length; j < len1; i = ++j) {
+            arg = ref1[i];
             // Check if this is a @param reference (Value with ThisLiteral base)
             if (arg instanceof Value && arg.base instanceof ThisLiteral && arg.properties.length === 1) {
               propertyName = arg.properties[0].name.value;
               // Check if we're in a constructor context
-              method = o.scope.method || ((ref1 = o.scope.parent) != null ? ref1.method : void 0);
+              method = o.scope.method || ((ref2 = o.scope.parent) != null ? ref2.method : void 0);
               if (method != null ? method.ctor : void 0) {
-                // Find the actual parameter name (it may have been renamed to arg, arg1, etc.)
-                actualParamName = propertyName;
-                method.eachParamName(function(name, node, param) {
-                  if (node instanceof Value && node.base instanceof ThisLiteral && node.properties[0].name.value === propertyName) {
-                    // Get the renamed parameter
-                    if (param.name instanceof Value && param.name.base instanceof IdentifierLiteral) {
-                      return actualParamName = param.name.base.value;
-                    }
-                  }
-                });
-                // Replace with the actual parameter identifier
-                return new IdentifierLiteral(actualParamName);
+                // Replace with simple identifier (just the property name)
+                this.args[i] = new IdentifierLiteral(propertyName);
               }
             }
-            return arg;
-          });
+          }
         }
-        if (!((ref1 = this.expressions) != null ? ref1.length : void 0)) {
+        if (!((ref3 = this.expressions) != null ? ref3.length : void 0)) {
           return super.compileNode(o);
         }
         superCall = new Literal(fragmentsToText(super.compileNode(o)));
@@ -5923,18 +5913,21 @@
         this.disallowLoneExpansionAndMultipleSplats();
         // Separate `this` assignments.
         isDerivedConstructor = this.ctor === 'derived';
-        this.eachParamName(function(name, node, param, obj) {
+        this.eachParamName((name, node, param, obj) => {
           var assignment, replacement, target, thisNode;
-          if (node.this) {
+          // @params come as Value objects with a ThisLiteral base
+          if (node && node.base instanceof ThisLiteral) {
             name = node.properties[0].name.value;
             if (indexOf.call(JS_FORBIDDEN, name) >= 0) {
               name = `_${name}`;
             }
             if (isDerivedConstructor) {
-              // For derived constructors, use simple parameter names
+              // For derived constructors, use the simple parameter name
+              // and move the this.x = x assignment after super()
               target = new IdentifierLiteral(name);
               node.base.isFromParam = node.isFromParam = true;
               param.renameParam(node, target);
+              // Create the assignment: this.name = name
               thisNode = new Value(new ThisLiteral(), [new Access(new PropertyName(name))]);
               thisNode.isFromParam = thisNode.base.isFromParam = true;
               assignment = new Assign(thisNode, target);
@@ -6266,7 +6259,6 @@
         if (this.ctor !== 'derived') {
           return;
         }
-        
         // Collect @param names
         thisParamNames = [];
         this.eachParamName((name, node, param) => {
@@ -6280,15 +6272,13 @@
         if (!thisParamNames.length) {
           return;
         }
-        
         // Mark the @param nodes themselves as special
         this.eachParamName(function(name, node, param) {
           if (node instanceof Value && node.base instanceof ThisLiteral) {
             return node.base.isFromParam = node.isFromParam = true;
           }
         });
-        
-        // Mark ALL ThisLiterals in the body before super  
+        // Mark ALL ThisLiterals in the body before super
         // We need to traverse Values that contain ThisLiterals
         this.body.traverseChildren(true, (child) => {
           var propName, ref1;
@@ -6303,7 +6293,6 @@
           }
           return true;
         });
-        
         // Mark @params in super() arguments as special
         return this.eachSuperCall(this.body, (superCall) => {
           var arg, j, len1, paramName, ref1, results1;

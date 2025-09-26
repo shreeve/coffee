@@ -2132,23 +2132,15 @@ exports.SuperCall = class SuperCall extends Call
     # Fix @param arguments in super() calls for derived constructors
     # Replace super(@name) with super(name)
     if @args
-      @args = @args.map (arg) =>
+      for arg, i in @args
         # Check if this is a @param reference (Value with ThisLiteral base)
         if arg instanceof Value and arg.base instanceof ThisLiteral and arg.properties.length is 1
           propertyName = arg.properties[0].name.value
           # Check if we're in a constructor context
           method = o.scope.method or o.scope.parent?.method
           if method?.ctor
-            # Find the actual parameter name (it may have been renamed to arg, arg1, etc.)
-            actualParamName = propertyName
-            method.eachParamName (name, node, param) ->
-              if node instanceof Value and node.base instanceof ThisLiteral and node.properties[0].name.value is propertyName
-                # Get the renamed parameter
-                if param.name instanceof Value and param.name.base instanceof IdentifierLiteral
-                  actualParamName = param.name.base.value
-            # Replace with the actual parameter identifier
-            return new IdentifierLiteral actualParamName
-        arg
+            # Replace with simple identifier (just the property name)
+            @args[i] = new IdentifierLiteral propertyName
 
     return super o unless @expressions?.length
 
@@ -3973,17 +3965,20 @@ exports.Code = class Code extends Base
 
     # Separate `this` assignments.
     isDerivedConstructor = @ctor is 'derived'
-
-    @eachParamName (name, node, param, obj) ->
-      if node.this
+    
+    @eachParamName (name, node, param, obj) =>
+      # @params come as Value objects with a ThisLiteral base
+      if node and node.base instanceof ThisLiteral
         name   = node.properties[0].name.value
         name   = "_#{name}" if name in JS_FORBIDDEN
-
+        
         if isDerivedConstructor
-          # For derived constructors, use simple parameter names
+          # For derived constructors, use the simple parameter name
+          # and move the this.x = x assignment after super()
           target = new IdentifierLiteral name
           node.base.isFromParam = node.isFromParam = yes
           param.renameParam node, target
+          # Create the assignment: this.name = name
           thisNode = new Value(new ThisLiteral, [new Access(new PropertyName(name))])
           thisNode.isFromParam = thisNode.base.isFromParam = yes
           assignment = new Assign thisNode, target
@@ -4218,7 +4213,7 @@ exports.Code = class Code extends Base
   # Mark @params in super() calls so they don't trigger errors before transformation
   markThisParamsInSuper: ->
     return unless @ctor is 'derived'
-    
+
     # Collect @param names
     thisParamNames = []
     @eachParamName (name, node, param) =>
@@ -4226,15 +4221,15 @@ exports.Code = class Code extends Base
       if node instanceof Value and node.base instanceof ThisLiteral
         propName = node.properties[0].name.value
         thisParamNames.push propName
-    
+
     return unless thisParamNames.length
-    
+
     # Mark the @param nodes themselves as special
     @eachParamName (name, node, param) ->
       if node instanceof Value and node.base instanceof ThisLiteral
         node.base.isFromParam = node.isFromParam = yes
-    
-    # Mark ALL ThisLiterals in the body before super  
+
+    # Mark ALL ThisLiterals in the body before super
     # We need to traverse Values that contain ThisLiterals
     @body.traverseChildren yes, (child) =>
       if child instanceof Value and child.base instanceof ThisLiteral and child.properties.length is 1
@@ -4245,7 +4240,7 @@ exports.Code = class Code extends Base
         # Mark standalone ThisLiterals too (in case they appear without Value wrapper)
         child.isFromParam = yes
       true
-    
+
     # Mark @params in super() arguments as special
     @eachSuperCall @body, (superCall) =>
       return unless superCall.args
