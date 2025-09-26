@@ -118,7 +118,7 @@ const obj = {
 # CoffeeScript
 class Animal
   constructor: (@name) ->
-  
+
   speak: ->
     console.log "#{@name} says hello"
 ```
@@ -130,11 +130,11 @@ Animal = (function() {
   function Animal(name) {
     this.name = name;
   }
-  
+
   Animal.prototype.speak = function() {
     return console.log(this.name + " says hello");
   };
-  
+
   return Animal;
 })();
 
@@ -143,7 +143,7 @@ class Animal {
   constructor(name) {
     this.name = name
   }
-  
+
   speak() {
     console.log(`${this.name} says hello`)
   }
@@ -163,11 +163,11 @@ class User
 var User;
 User = (function() {
   function User() {}
-  
+
   User.findById = function(id) {
     return console.log("Finding user " + id);
   };
-  
+
   return User;
 })();
 
@@ -185,7 +185,7 @@ class User {
 class Dog extends Animal
   constructor: (name, @breed) ->
     super name
-  
+
   speak: ->
     super()
     console.log "Woof!"
@@ -198,17 +198,17 @@ var Dog,
 
 Dog = (function(superClass) {
   extend(Dog, superClass);
-  
+
   function Dog(name, breed) {
     this.breed = breed;
     Dog.__super__.constructor.call(this, name);
   }
-  
+
   Dog.prototype.speak = function() {
     Dog.__super__.speak.call(this);
     return console.log("Woof!");
   };
-  
+
   return Dog;
 })(Animal);
 
@@ -218,7 +218,7 @@ class Dog extends Animal {
     super(name)
     this.breed = breed
   }
-  
+
   speak() {
     super.speak()
     console.log("Woof!")
@@ -445,7 +445,7 @@ const greet = (name = "World") => {
 # CoffeeScript
 fetchData = ->
   await fetch '/api/data'
-  
+
 processData = ->
   data = await fetchData()
   console.log data
@@ -507,7 +507,7 @@ export {helper1, helper2}
 class Button
   constructor: ->
     @count = 0
-  
+
   handleClick: =>
     @count++
     console.log @count
@@ -521,12 +521,12 @@ Button = (function() {
     this.handleClick = bind(this.handleClick, this);
     this.count = 0;
   }
-  
+
   Button.prototype.handleClick = function() {
     this.count++;
     return console.log(this.count);
   };
-  
+
   return Button;
 })();
 
@@ -535,7 +535,7 @@ class Button {
   constructor() {
     this.count = 0
   }
-  
+
   handleClick = () => {
     this.count++
     console.log(this.count)

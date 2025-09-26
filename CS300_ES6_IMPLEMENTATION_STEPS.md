@@ -65,7 +65,7 @@ compile = (code, options = {}) ->
   - Hoist to top of file
   - Generate ES6 import syntax
   - Handle default vs named imports
-  
+
 - [ ] **Export Generation**
   - Track exported symbols
   - Generate export statements at bottom
@@ -130,12 +130,12 @@ compile = (code, options = {}) ->
 
 ### Syntax Modernization Tasks
 - [ ] **Object Features**
-  - Shorthand properties `{ x }` 
+  - Shorthand properties `{ x }`
   - Computed properties `{ [key]: val }`
   - Method shorthand
   - Spread in objects
 
-- [ ] **Array Features**  
+- [ ] **Array Features**
   - Spread operator `[...arr]`
   - Destructuring assignments
   - for...of loops
@@ -174,7 +174,7 @@ if (o.target === 'es6' && !o.globals) {
 
 #### Assign Class
 ```javascript
-// compileNode method  
+// compileNode method
 if (o.target === 'es6') {
   // Use const/let based on mutability
   const declareWord = this.isConst() ? 'const' : 'let'
@@ -214,9 +214,9 @@ getDeclaration: (name) ->
   if @assignments[name] <= 1 then 'const' else 'let'
 
 # Block scope support
-enterBlock: -> 
+enterBlock: ->
   @blockScopes.push({})
-  
+
 exitBlock: ->
   @blockScopes.pop()
 ```
@@ -229,7 +229,7 @@ compile(code, options = {}) {
   // Default options
   options.target ??= 'es5'  // 'es5' | 'es6' | 'esnext'
   options.modules ??= options.target === 'es6' ? 'es6' : 'commonjs'
-  
+
   // Pass through compilation pipeline
   const ast = this.nodes(code)
   return ast.compile(options)
@@ -245,7 +245,7 @@ compile(code, options = {}) {
 4. **Thursday**: Simple arrow functions
 5. **Friday**: Template literals for string interpolation
 
-### Week 2: Essential Features  
+### Week 2: Essential Features
 6. **Monday**: ES6 class generation
 7. **Tuesday**: Object shorthand and computed properties
 8. **Wednesday**: Destructuring assignments
@@ -254,7 +254,7 @@ compile(code, options = {}) {
 
 ### Week 3: Module System
 11. **Monday**: Import statement generation
-12. **Tuesday**: Export statement generation  
+12. **Tuesday**: Export statement generation
 13. **Wednesday**: require() transformation
 14. **Thursday**: Module vs script detection
 15. **Friday**: Dynamic import support
