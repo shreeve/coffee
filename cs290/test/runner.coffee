@@ -32,26 +32,39 @@ global.test = (code, expected) ->
     if /(?:if \(|try \{|switch \(|var |while \()/.test(compiled)
       actual = eval("(function() { #{compiled} })()")
     else
-      # Extract return value: "return <expr>;"
-      match = compiled.match(/return\s+(.*);/)
+      # Extract return value: "return <expr>;" (can be multi-line)
+      # Match from return to the LAST semicolon (handles multi-line functions)
+      match = compiled.match(/^return\s+([\s\S]*);$/m)
       unless match
         throw new Error "No return statement found in compiled output"
 
       # Evaluate the expression
-      actual = eval(match[1])
+      # Wrap in parens if it starts with { or 'function' to avoid statement interpretation
+      expr = match[1].trim()
+      expr = "(#{expr})" if expr[0] is '{' or expr.startsWith('function')
+      actual = eval(expr)
 
-    # Deep equality comparison
-    actualStr = JSON.stringify(actual)
-    expectedStr = JSON.stringify(expected)
+    # Handle function expected values (for validation tests like Object.defineProperty)
+    if typeof expected == 'function'
+      # The expected function validates the actual result
+      testPassed = expected.call(null, actual)
+    else
+      # Deep equality comparison
+      actualStr = JSON.stringify(actual)
+      expectedStr = JSON.stringify(expected)
+      testPassed = actualStr == expectedStr
 
-    if actualStr == expectedStr
+    if testPassed
       passed++
       console.log "#{green}✓#{reset} #{code}"
     else
       failed++
       console.log "#{red}✗#{reset} #{code}"
-      console.log "    Expected: #{expectedStr}"
-      console.log "    Got:      #{actualStr}"
+      if typeof expected != 'function'
+        console.log "    Expected: #{expectedStr}"
+        console.log "    Got:      #{actualStr}"
+      else
+        console.log "    Validation function returned false"
   catch e
     failed++
     console.log "#{red}✗#{reset} #{code}"
