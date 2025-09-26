@@ -5441,7 +5441,26 @@ export const Code = (function() {
         if (this.isAsync) {
           modifiers.push('async');
         }
-        if (!(this.isMethod || this.bound)) {
+        
+        // ES6: Determine if we should use arrow function
+        var useArrowFunction = false;
+        var isSimpleBody = false;
+        
+        // Check if this can be an arrow function
+        if (!this.isMethod && !this.isGenerator && !this.ctor) {
+          // Check if the body is a single expression (for concise arrow)
+          if (this.body.expressions.length === 1) {
+            var singleExpr = this.body.expressions[0];
+            // Check if it's a simple return statement
+            if (singleExpr instanceof Return && singleExpr.expression) {
+              isSimpleBody = true;
+            }
+          }
+          // Use arrow function for simple cases or bound functions
+          useArrowFunction = true;
+        }
+        
+        if (!(this.isMethod || this.bound || useArrowFunction)) {
           modifiers.push(`function${this.isGenerator ? '*' : ''}`);
         } else if (this.isGenerator) {
           modifiers.push('*');
@@ -5509,14 +5528,29 @@ export const Code = (function() {
           answer.push(...name);
         }
         answer.push(...signature);
+        
+        // ES6: Generate arrow function syntax
         if (this.bound && !this.isMethod) {
           answer.push(this.makeCode(' =>'));
+        } else if (useArrowFunction) {
+          answer.push(this.makeCode(' =>'));
         }
-        answer.push(this.makeCode(' {'));
-        if (body != null ? body.length : void 0) {
-          answer.push(this.makeCode('\n'), ...body, this.makeCode(`\n${this.tab}`));
+        
+        // ES6: For simple arrow functions, we can omit braces
+        if (useArrowFunction && isSimpleBody) {
+          answer.push(this.makeCode(' '));
+          // Get the expression from the Return statement
+          var returnStmt = this.body.expressions[0];
+          var expr = returnStmt.expression || returnStmt;
+          answer.push(...expr.compileToFragments(o, LEVEL_TOP));
+        } else {
+          // Traditional block body
+          answer.push(this.makeCode(' {'));
+          if (body != null ? body.length : void 0) {
+            answer.push(this.makeCode('\n'), ...body, this.makeCode(`\n${this.tab}`));
+          }
+          answer.push(this.makeCode('}'));
         }
-        answer.push(this.makeCode('}'));
         if (this.isMethod) {
           return indentInitial(answer, this);
         }
