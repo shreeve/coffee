@@ -404,6 +404,10 @@
           variable = this.$(o.variable);
           value = this.$(o.value);
           context = this.$(o.context);
+          // Mark @-based object-context assignments as static (for class bodies)
+          if (context === 'object' && variable instanceof this.ast.Value && variable.base instanceof this.ast.ThisLiteral) {
+            variable.this = true;
+          }
           // Check for compound assignment (+=, -=, etc.)
           if (o.operator != null) {
             operator = this.$(o.operator);

@@ -4670,9 +4670,9 @@
 
       // Make class/prototype assignments for invalid ES properties
       addProperties(assigns) {
-        var assign, base, name, prototype, result, value, variable;
+        var assign, base, classIdent, name, prop, propName, prototype, result, staticAccess, value, variable;
         result = (function() {
-          var j, len1, results1;
+          var j, len1, ref1, ref2, results1;
           results1 = [];
           for (j = 0, len1 = assigns.length; j < len1; j++) {
             assign = assigns[j];
@@ -4691,8 +4691,19 @@
               prototype = new Access(new PropertyName('prototype'));
               variable = new Value(new ThisLiteral(), [prototype, name]);
               assign.variable = variable;
-            } else if (assign.value instanceof Code) {
-              assign.value.isStatic = true;
+            } else {
+              // Static member defined with @prop: value in class body
+              if (assign.value instanceof Code) {
+                assign.value.isStatic = true;
+              } else {
+                prop = variable != null ? (ref1 = variable.properties) != null ? ref1[0] : void 0 : void 0;
+                propName = prop != null ? (ref2 = prop.name) != null ? ref2.value : void 0 : void 0;
+                if (propName != null) {
+                  classIdent = new IdentifierLiteral(this.name);
+                  staticAccess = new Access(new PropertyName(propName));
+                  assign.variable = new Value(classIdent, [staticAccess]);
+                }
+              }
             }
             results1.push(assign);
           }

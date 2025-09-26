@@ -264,6 +264,10 @@ class ES5Backend
         value = @$(o.value)
         context = @$(o.context)
 
+        # Mark @-based object-context assignments as static (for class bodies)
+        if context is 'object' and variable instanceof @ast.Value and variable.base instanceof @ast.ThisLiteral
+          variable.this = true
+
         # Check for compound assignment (+=, -=, etc.)
         if o.operator?
           operator = @$(o.operator)
