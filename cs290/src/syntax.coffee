@@ -1,7 +1,5 @@
 # ==============================================================================
-# Solar Syntax - Data-Oriented Grammar for CoffeeScript 3
-#
-# Run `bun run build.ts` to regenerate `lib/parser.js`
+# Solar Syntax - Data-Oriented Grammar for CoffeeScript
 # ==============================================================================
 
 o = (pattern, action, options) ->
@@ -10,8 +8,8 @@ o = (pattern, action, options) ->
 
 grammar =
   Root: [
-    o ''    , $ast: 'Root', body: {$ast: 'Block', expressions: []}
-    o 'Body', $ast: 'Root', body: 1
+    o ''    , $ast: '@', body: {$ast: 'Block', expressions: []}
+    o 'Body', $ast: '@', body: 1
   ]
 
   Body: [
@@ -261,8 +259,8 @@ grammar =
 
   Splat: [
     # Keep original behavior for general splats
-    o 'Expression ...', $ast: 'Splat', name: 1
-    o '... Expression', $ast: 'Splat', name: 2, postfix: false
+    o 'Expression ...', $ast: '@', name: 1
+    o '... Expression', $ast: '@', name: 2, postfix: false
   ]
 
   SimpleAssignable: [
