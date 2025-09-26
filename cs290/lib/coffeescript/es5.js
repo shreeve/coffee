@@ -378,7 +378,6 @@
               }
             }
           }
-          
           // Add options if present
           if ((o.invertOperator != null) || (o.originalOperator != null)) {
             options = {};

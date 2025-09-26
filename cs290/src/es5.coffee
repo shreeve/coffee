@@ -263,7 +263,7 @@ class ES5Backend
           options.invertOperator   = @$(o.invertOperator) if o.invertOperator?
           options.originalOperator = @$(o.originalOperator) if o.originalOperator?
           args.push options
-        
+
         new @ast.Op args...
 
       when 'Assign'
