@@ -4,7 +4,7 @@ Modern test suite for CoffeeScript 3.0 Solar directive processing.
 
 ## Architecture
 
-**Test Runner:** `coffee runner.coffee` (uses global CoffeeScript 2.7.0)
+**Test Runner:** `coffee runner.coffee`
 **Test Format:** CoffeeScript files with `.test.coffee` extension
 **Testing Target:** Our cs290 Solar directive implementation
 
