@@ -400,22 +400,10 @@
           }
           return new this.ast.Op(...args);
         case 'Assign':
-          // Handle object property assignments differently 
-          // When context is 'object' and we have an expression, the AST structure is different:
-          // - 'value' contains the property name/variable
-          // - 'expression' contains the actual value
-          if (o.context === 'object' && (o.expression != null)) {
-            // In object context (e.g., @x: 10 in class body)
-            variable = this.$(o.value); // This is the property name (@x)
-            value = this.$(o.expression); // This is the value (10)
-            context = o.context; // Keep 'object' context
-          } else {
-            // Regular assignment
-            variable = this.$(o.variable);
-            value = this.$(o.value);
-            context = this.$(o.context);
-          }
-          
+          // Handle both simple and compound assignments
+          variable = this.$(o.variable);
+          value = this.$(o.value);
+          context = this.$(o.context);
           // Check for compound assignment (+=, -=, etc.)
           if (o.operator != null) {
             operator = this.$(o.operator);
@@ -548,7 +536,6 @@
           return new this.ast.Try(this.$(o.attempt), catchNode, this.$(o.ensure));
         case 'Catch':
           // Create a proper Catch AST node
-          // Catch constructor expects (recovery, errorVariable)
           recovery = this.$(o.recovery) || this.$(o.body);
           errorVariable = this.$(o.variable) || this.$(o.errorVariable);
           return new this.ast.Catch(recovery, errorVariable);
