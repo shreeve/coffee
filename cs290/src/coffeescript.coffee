@@ -190,9 +190,9 @@ exports.tokens = withPrettyErrors (code, options) ->
 # return the AST. You can then compile it by calling `.compile()` on the root,
 # or traverse it by using `.traverseChildren()` with a callback.
 exports.nodes = withPrettyErrors (source, options) ->
-  tokens = if typeof source is 'string' then lexer.tokenize source, options else source
+  source = lexer.tokenize source, options if typeof source is 'string'
   parser.yy.backend = new ES5Backend(options, parser.yy) # Inject Solar backend
-  parser.parse tokens
+  parser.parse source
 
 # This file used to export these methods; leave stubs that throw warnings
 # instead. These methods have been moved into `index.coffee` to provide

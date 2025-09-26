@@ -47,16 +47,7 @@ extend = exports.extend = (object, properties) ->
 # Return a flattened version of an array.
 # Handy for getting a list of `children` from the nodes.
 exports.flatten = flatten = (array) ->
-  # ES5-compatible flatten implementation
-  result = []
-  flattenRecursive = (arr) ->
-    for item in arr
-      if Array.isArray(item)
-        flattenRecursive(item)
-      else
-        result.push(item)
-  flattenRecursive(array)
-  result
+  array.flat(Infinity)
 
 # Delete a key from an object, returning the value. Useful when a node is
 # looking for a particular method in an options hash.

@@ -80,24 +80,7 @@
   // Return a flattened version of an array.
   // Handy for getting a list of `children` from the nodes.
   exports.flatten = flatten = function(array) {
-    var flattenRecursive, result;
-    // ES5-compatible flatten implementation
-    result = [];
-    flattenRecursive = function(arr) {
-      var i, item, len1, results;
-      results = [];
-      for (i = 0, len1 = arr.length; i < len1; i++) {
-        item = arr[i];
-        if (Array.isArray(item)) {
-          results.push(flattenRecursive(item));
-        } else {
-          results.push(result.push(item));
-        }
-      }
-      return results;
-    };
-    flattenRecursive(array);
-    return result;
+    return array.flat(2e308);
   };
 
   // Delete a key from an object, returning the value. Useful when a node is

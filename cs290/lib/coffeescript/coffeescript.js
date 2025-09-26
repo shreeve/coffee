@@ -227,10 +227,11 @@
   // return the AST. You can then compile it by calling `.compile()` on the root,
   // or traverse it by using `.traverseChildren()` with a callback.
   exports.nodes = withPrettyErrors(function(source, options) {
-    var tokens;
-    tokens = typeof source === 'string' ? lexer.tokenize(source, options) : source;
+    if (typeof source === 'string') {
+      source = lexer.tokenize(source, options);
+    }
     parser.yy.backend = new ES5Backend(options, parser.yy); // Inject Solar backend
-    return parser.parse(tokens);
+    return parser.parse(source);
   });
 
   // This file used to export these methods; leave stubs that throw warnings
