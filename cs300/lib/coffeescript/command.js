@@ -63,7 +63,7 @@ export const buildCSOptionParser = function() {
 // Many flags cause us to divert before compiling anything. Flags passed after
 // `--` will be passed verbatim to your script as arguments in `process.argv`
 export const run = function() {
-  var err, i, len, literals, outputBasename, ref, replCliOpts, results, source;
+  let err, i, len, literals, outputBasename, ref, replCliOpts, results, source;
   optionParser = buildCSOptionParser();
   try {
     parseOptions();
@@ -155,7 +155,7 @@ with...
 
 makePrelude = function(requires) {
   return requires.map(function(module) {
-    var full, match, name;
+    let full, match, name;
     if (match = module.match(/^(.*)=(.*)$/)) {
       [full, name, module] = match;
     }
@@ -168,7 +168,7 @@ makePrelude = function(requires) {
 // is passed, recursively compile all '.coffee', '.litcoffee', and '.coffee.md'
 // extension source files in it and all subdirectories.
 compilePath = function(source, topLevel, base) {
-  var code, err, file, files, i, len, results, stats;
+  let code, err, file, files, i, len, results, stats;
   if (indexOf.call(sources, source) >= 0 || watchedDirs[source] || !topLevel && (notSources[source] || hidden(source))) {
     return;
   }
@@ -234,7 +234,7 @@ compilePath = function(source, topLevel, base) {
 };
 
 findDirectoryIndex = function(source) {
-  var err, ext, i, index, len, ref;
+  let err, ext, i, index, len, ref;
   ref = CoffeeScript.FILE_EXTENSIONS;
   for (i = 0, len = ref.length; i < len; i++) {
     ext = ref[i];
@@ -258,7 +258,7 @@ findDirectoryIndex = function(source) {
 // requested options. If evaluating the script directly, set `__filename`,
 // `__dirname` and `module.filename` to be correct relative to the script's path.
 compileScript = function(file, input, base = null) {
-  var compiled, err, message, options, saveTo, task;
+  let compiled, err, message, options, saveTo, task;
   options = compileOptions(file, base);
   try {
     task = {file, input, options};

@@ -3,7 +3,8 @@
 // nodes are created as the result of actions in the [grammar](grammar.html),
 // but some are created by other nodes as a method of code generation. To convert
 // the syntax tree into a string of JavaScript code, call `compile()` on the root.
-var HEREGEX_OMIT, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, NEGATE, NO, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, TAB, THIS, TRAILING_BLANK_LINE, UTILITIES, YES, astAsBlockIfNeeded, emptyExpressionLocationData, extractSameLineLocationDataFirst, extractSameLineLocationDataLast, fragmentsToText, greater, hasLineComments, indentInitial, isAstLocGreater, isLiteralArguments, isLiteralThis, isLocationDataEndGreater, isLocationDataStartGreater, lesser, makeDelimitedLiteral, moveComments, multident, shouldCacheOrIsAssignable, sniffDirectives, unfoldSoak, unshiftAfterComments, utility, zeroWidthLocationDataFromEndLocation, hasProp = {}.hasOwnProperty, indexOf = [].indexOf, splice = [].splice, slice = [].slice, slice1 = [].slice;
+let HEREGEX_OMIT, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, NEGATE, NO, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, TAB, THIS, TRAILING_BLANK_LINE, UTILITIES, YES, astAsBlockIfNeeded, emptyExpressionLocationData, extractSameLineLocationDataFirst, extractSameLineLocationDataLast, fragmentsToText, greater, hasLineComments, indentInitial, isAstLocGreater, isLiteralArguments, isLiteralThis, isLocationDataEndGreater, isLocationDataStartGreater, lesser, makeDelimitedLiteral, moveComments, multident, shouldCacheOrIsAssignable, sniffDirectives, unfoldSoak, unshiftAfterComments, utility, zeroWidthLocationDataFromEndLocation;
+const hasProp = {}.hasOwnProperty, indexOf = [].indexOf, splice = [].splice, slice = [].slice, slice1 = [].slice;
 Error.stackTraceLimit = 2e308;
 import { Scope } from './scope.js';
 import { isUnassignable, JS_FORBIDDEN } from './lexer.js';
@@ -31,7 +32,7 @@ NEGATE = function() {
 // all the CodeFragments' `code` snippets, in order.
 export class CodeFragment {
     constructor(parent, code) {
-      var ref1;
+      let ref1;
       this.code = `${code}`;
       this.type = (parent != null ? (ref1 = parent.constructor) != null ? ref1.name : void 0 : void 0) || 'unknown';
       this.locationData = parent != null ? parent.locationData : void 0;
@@ -44,7 +45,7 @@ export class CodeFragment {
 };
 // Convert an array of CodeFragments into a string.
 fragmentsToText = function(fragments) {
-    var fragment;
+    let fragment;
     return ((function() {
       var j, len1, results1;
       results1 = [];
@@ -2117,7 +2118,7 @@ export class LineComment extends Base {
       this.precededByBlankLine = precededByBlankLine;
     }
     compileNode(o) {
-      var fragment;
+      let fragment;
       fragment = this.makeCode(/^\s*$/.test(this.content) ? '' : `${this.precededByBlankLine ? `\n${o.indent}` : ''}//${this.content}`);
       fragment.newLine = this.newLine;
       fragment.unshift = this.unshift;
@@ -2198,7 +2199,7 @@ export const JSXAttribute = (function() {
           name: name1,
           value
         }) {
-        var ref1;
+        let ref1;
         super();
         this.name = name1;
         this.value = value != null ? (value = value.base, value instanceof StringLiteral && !value.shouldGenerateTemplateLiteral() ? value : new JSXExpressionContainer(value)) : null;
@@ -2527,7 +2528,7 @@ export const JSXElement = (function() {
 export const Call = (function() {
     class Call extends Base {
       constructor(variable1, args1 = [], soak1, token1) {
-        var ref1;
+        let ref1;
         super();
         this.variable = variable1;
         this.args = args1;
@@ -2700,7 +2701,7 @@ export const Call = (function() {
         }
       }
       containsSoak() {
-        var ref1;
+        let ref1;
         if (this.soak) {
           return true;
         }
@@ -2710,7 +2711,7 @@ export const Call = (function() {
         return false;
       }
       astNode(o) {
-        var ref1;
+        let ref1;
         if (this.soak && this.variable instanceof Super && ((ref1 = o.scope.namedMethod()) != null ? ref1.ctor : void 0)) {
           this.variable.error("Unsupported reference to 'super'");
         }
@@ -2757,7 +2758,7 @@ export const Call = (function() {
 export const SuperCall = (function() {
     class SuperCall extends Call {
       isStatement(o) {
-        var ref1;
+        let ref1;
         return ((ref1 = this.expressions) != null ? ref1.length : void 0) && o.level === LEVEL_TOP;
       }
       compileNode(o) {
@@ -2826,7 +2827,7 @@ export const Super = (function() {
         }
       }
       astNode(o) {
-        var ref1;
+        let ref1;
         this.checkInInstanceMethod(o);
         if (this.accessor != null) {
           return (new Value(new Super().withLocationDataFrom((ref1 = this.superLiteral) != null ? ref1 : this), [this.accessor]).withLocationDataFrom(this)).ast(o);
@@ -4252,7 +4253,7 @@ export const ModuleDeclaration = (function() {
         }
       }
       astAssertions(o) {
-        var ref1;
+        let ref1;
         if (((ref1 = this.assertions) != null ? ref1.properties : void 0) != null) {
           return this.assertions.properties.map((assertion) => {
             var end, left, loc, right, start;
@@ -4521,7 +4522,7 @@ export class ImportSpecifier extends ModuleSpecifier {
       super(imported, local, 'import');
     }
     addIdentifierToScope(o) {
-      var ref1;
+      let ref1;
       // Per the spec, symbols can’t be imported multiple times
       // (e.g. `import { foo, foo } from 'lib'` is invalid)
       if ((ref1 = this.identifier, indexOf.call(o.importedSymbols, ref1) >= 0) || o.scope.check(this.identifier)) {
@@ -4582,7 +4583,7 @@ export class DynamicImportCall extends Call {
       return super.compileNode(o);
     }
     checkArguments() {
-      var ref1;
+      let ref1;
       if (!((1 <= (ref1 = this.args.length) && ref1 <= 2))) {
         return this.error('import() accepts either one or two arguments');
       }
@@ -5180,7 +5181,7 @@ export const Assign = (function() {
         return this.variable.error(`the variable \"${name}\" can't be assigned with ${this.context} because it has not been declared before`);
       }
       isConditional() {
-        var ref1;
+        let ref1;
         return (ref1 = this.context) === '||=' || ref1 === '&&=' || ref1 === '?=';
       }
       astNode(o) {
@@ -5239,7 +5240,7 @@ export class FuncGlyph extends Base {
 export const Code = (function() {
     class Code extends Base {
       constructor(params, body, funcGlyph, paramStart) {
-        var ref1;
+        let ref1;
         super();
         this.funcGlyph = funcGlyph;
         this.paramStart = paramStart;
@@ -6166,7 +6167,7 @@ export const Expansion = (function() {
 export const Elision = (function() {
     class Elision extends Base {
       compileToFragments(o, level) {
-        var fragment;
+        let fragment;
         fragment = super.compileToFragments(o, level);
         fragment.isElision = true;
         return fragment;
@@ -6326,14 +6327,14 @@ export const Op = (function() {
         return this;
       }
       isNumber() {
-        var ref1;
+        let ref1;
         return this.isUnary() && ((ref1 = this.operator) === '+' || ref1 === '-') && this.first instanceof Value && this.first.isNumber();
       }
       isAwait() {
         return this.operator === 'await';
       }
       isYield() {
-        var ref1;
+        let ref1;
         return (ref1 = this.operator) === 'yield' || ref1 === 'yield*';
       }
       isUnary() {
@@ -6345,7 +6346,7 @@ export const Op = (function() {
       // Am I capable of
       // [Python-style comparison chaining](https://docs.python.org/3/reference/expressions.html#not-in)?
       isChainable() {
-        var ref1;
+        let ref1;
         return (ref1 = this.operator) === '<' || ref1 === '>' || ref1 === '>=' || ref1 === '<=' || ref1 === '===' || ref1 === '!==';
       }
       isChain() {
@@ -6389,7 +6390,7 @@ export const Op = (function() {
         }
       }
       unfoldSoak(o) {
-        var ref1;
+        let ref1;
         return ((ref1 = this.operator) === '++' || ref1 === '--' || ref1 === 'delete') && unfoldSoak(o, this, 'first');
       }
       generateDo(exp) {
@@ -6538,7 +6539,7 @@ export const Op = (function() {
         return this.joinFragmentArrays(parts, '');
       }
       checkContinuation(o) {
-        var ref1;
+        let ref1;
         if (o.scope.parent == null) {
           this.error(`${this.operator} can only occur inside functions`);
         }
@@ -6758,7 +6759,7 @@ export const Try = (function() {
         this.finallyTag = finallyTag;
       }
       jumps(o) {
-        var ref1;
+        let ref1;
         return this.attempt.jumps(o) || ((ref1 = this.catch) != null ? ref1.jumps(o) : void 0);
       }
       makeReturn(results, mark) {
@@ -6860,7 +6861,7 @@ export const Catch = (function() {
         }
       }
       astNode(o) {
-        var ref1;
+        let ref1;
         this.checkUnassignable();
         if ((ref1 = this.errorVariable) != null) {
           ref1.eachName(function(name) {
@@ -7259,7 +7260,7 @@ export const For = (function() {
         this.addSource(source);
       }
       isAwait() {
-        var ref1;
+        let ref1;
         return (ref1 = this.await) != null ? ref1 : false;
       }
       addBody(body) {
@@ -7746,11 +7747,11 @@ export const If = (function() {
         }
       }
       bodyNode() {
-        var ref1;
+        let ref1;
         return (ref1 = this.body) != null ? ref1.unwrap() : void 0;
       }
       elseBodyNode() {
-        var ref1;
+        let ref1;
         return (ref1 = this.elseBody) != null ? ref1.unwrap() : void 0;
       }
       // Rewrite a chain of **Ifs** to add a default case as the final *else*.
@@ -7771,11 +7772,11 @@ export const If = (function() {
       // The **If** only compiles into a statement if either of its bodies needs
       // to be a statement. Otherwise a conditional operator is safe.
       isStatement(o) {
-        var ref1;
+        let ref1;
         return (o != null ? o.level : void 0) === LEVEL_TOP || this.bodyNode().isStatement(o) || ((ref1 = this.elseBodyNode()) != null ? ref1.isStatement(o) : void 0);
       }
       jumps(o) {
-        var ref1;
+        let ref1;
         return this.body.jumps(o) || ((ref1 = this.elseBody) != null ? ref1.jumps(o) : void 0);
       }
       compileNode(o) {

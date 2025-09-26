@@ -84,10 +84,10 @@ CoffeeScript.runScripts = function() {
   coffeetypes = ['text/coffeescript', 'text/literate-coffeescript'];
   coffees = (function() {
     const results = [];
-    results = [];
-    for (j = 0, len = scripts.length; j < len; j++) {
+    for (let j = 0, len = scripts.length; j < len; j++) {
       s = scripts[j];
-      if (ref = s.type, indexOf.call(coffeetypes, ref) >= 0) {
+      let ref = s.type;
+      if (indexOf.call(coffeetypes, ref) >= 0) {
         results.push(s);
       }
     }
