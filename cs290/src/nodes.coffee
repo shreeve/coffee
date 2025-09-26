@@ -2129,6 +2129,20 @@ exports.SuperCall = class SuperCall extends Call
     @expressions?.length and o.level is LEVEL_TOP
 
   compileNode: (o) ->
+    # Fix @param arguments in super() calls for derived constructors
+    # Replace super(@name) with super(name)
+    if @args
+      @args = @args.map (arg) ->
+        # Check if this is a @param reference (Value with ThisLiteral base)
+        if arg instanceof Value and arg.base instanceof ThisLiteral and arg.properties.length is 1
+          propertyName = arg.properties[0].name.value
+          # Check if we're in a constructor context
+          method = o.scope.method or o.scope.parent?.method
+          if method?.ctor
+            # Replace with simple identifier
+            return new IdentifierLiteral propertyName
+        arg
+
     return super o unless @expressions?.length
 
     superCall   = new Literal fragmentsToText super o
@@ -2967,7 +2981,10 @@ exports.Class = class Class extends Base
           methodName.originalValue is 'constructor'
         else
           methodName.value is 'constructor'
-      method.ctor = (if @parent then 'derived' else 'base') if isConstructor
+      if isConstructor
+        method.ctor = (if @parent then 'derived' else 'base')
+        # Mark @params in super() calls for derived constructors
+        method.markThisParamsInSuper() if method.ctor is 'derived'
       method.error 'Cannot define a constructor as a bound (fat arrow) function' if method.bound and method.ctor
 
     method.operatorToken = operatorToken
@@ -3948,22 +3965,37 @@ exports.Code = class Code extends Base
     @disallowLoneExpansionAndMultipleSplats()
 
     # Separate `this` assignments.
+    isDerivedConstructor = @ctor is 'derived'
+
     @eachParamName (name, node, param, obj) ->
       if node.this
         name   = node.properties[0].name.value
         name   = "_#{name}" if name in JS_FORBIDDEN
-        target = new IdentifierLiteral o.scope.freeVariable name, reserve: no
-        # `Param` is object destructuring with a default value: ({@prop = 1}) ->
-        # In a case when the variable name is already reserved, we have to assign
-        # a new variable name to the destructured variable: ({prop:prop1 = 1}) ->
-        replacement =
-            if param.name instanceof Obj and obj instanceof Assign and
-                obj.operatorToken.value is '='
-              new Assign (new IdentifierLiteral name), target, 'object' #, operatorToken: new Literal ':'
-            else
-              target
-        param.renameParam node, replacement
-        thisAssignments.push new Assign node, target
+
+        if isDerivedConstructor
+          # For derived constructors, use simple parameter names
+          target = new IdentifierLiteral name
+          node.base.isFromParam = node.isFromParam = yes
+          param.renameParam node, target
+          thisNode = new Value(new ThisLiteral, [new Access(new PropertyName(name))])
+          thisNode.isFromParam = thisNode.base.isFromParam = yes
+          assignment = new Assign thisNode, target
+          assignment.isFromParam = yes
+          thisAssignments.push assignment
+        else
+          # For regular constructors, use freeVariable
+          target = new IdentifierLiteral o.scope.freeVariable name, reserve: no
+          # `Param` is object destructuring with a default value: ({@prop = 1}) ->
+          # In a case when the variable name is already reserved, we have to assign
+          # a new variable name to the destructured variable: ({prop:prop1 = 1}) ->
+          replacement =
+              if param.name instanceof Obj and obj instanceof Assign and
+                  obj.operatorToken.value is '='
+                new Assign (new IdentifierLiteral name), target, 'object' #, operatorToken: new Literal ':'
+              else
+                target
+          param.renameParam node, replacement
+          thisAssignments.push new Assign node, target
 
     # Parse the parameters, adding them to the list of parameters to put in the
     # function definition; and dealing with splats or expansions, including
@@ -4069,8 +4101,19 @@ exports.Code = class Code extends Base
     # Add new expressions to the function body
     wasEmpty = @body.isEmpty()
     @disallowSuperInParamDefaults()
-    @checkSuperCallsInConstructorBody()
+    
+    # Check if we have @params in a derived constructor
+    hasThisParams = isDerivedConstructor and thisAssignments.some (assignment) ->
+      assignment.isFromParam
+    
+    # Check super calls before expanding (skip for @params, they'll be handled specially)
+    @checkSuperCallsInConstructorBody() unless hasThisParams
+    
     @body.expressions.unshift thisAssignments... unless @expandCtorSuper thisAssignments
+    
+    # If we had @params, check super calls after expanding
+    @checkSuperCallsInConstructorBody() if hasThisParams
+    
     @body.expressions.unshift exprs...
     if @isMethod and @bound and not @isStatic and @classVariable
       boundMethodCheck = new Value new Literal utility 'boundMethodCheck', o
@@ -4165,6 +4208,33 @@ exports.Code = class Code extends Base
     else
       false
 
+  # Mark @params in super() calls so they don't trigger errors before transformation
+  markThisParamsInSuper: ->
+    return unless @ctor is 'derived'
+    
+    # Collect @param names
+    thisParamNames = []
+    @eachParamName (name, node, param) ->
+      if node?.this
+        thisParamNames.push node.properties[0].name.value
+    
+    return unless thisParamNames.length
+    
+    # Also mark the @param nodes themselves as special
+    @eachParamName (name, node, param) ->
+      if node?.this
+        node.base.isFromParam = node.isFromParam = yes if node.base
+    
+    # Mark @params in super() arguments as special
+    @eachSuperCall @body, (superCall) =>
+      return unless superCall.args
+      for arg in superCall.args
+        if arg instanceof Value and arg.base instanceof ThisLiteral and arg.properties.length is 1
+          paramName = arg.properties[0].name.value
+          if paramName in thisParamNames
+            arg.isFromParam = arg.base.isFromParam = yes
+    , checkForThisBeforeSuper: no
+
   disallowSuperInParamDefaults: ({forAst} = {}) ->
     return false unless @ctor
 
@@ -4203,13 +4273,16 @@ exports.Code = class Code extends Base
   expandCtorSuper: (thisAssignments) ->
     return false unless @ctor
 
+    # Move @param assignments after super() in derived constructors
     seenSuper = @eachSuperCall @body, (superCall) =>
       superCall.expressions = thisAssignments
+    , checkForThisBeforeSuper: no
 
     haveThisParam = thisAssignments.length and thisAssignments.length isnt @thisAssignments?.length
     if @ctor is 'derived' and not seenSuper and haveThisParam
       param = thisAssignments[0].variable
-      @flagThisParamInDerivedClassConstructorWithoutCallingSuper param
+      # Skip error for @params marked with isFromParam (they'll be handled correctly)
+      @flagThisParamInDerivedClassConstructorWithoutCallingSuper param unless thisAssignments[0].isFromParam
 
     seenSuper
 
@@ -4227,11 +4300,13 @@ exports.Code = class Code extends Base
           childArgs = child.args.filter (arg) ->
             arg not instanceof Class and (arg not instanceof Code or arg.bound)
           Block.wrap(childArgs).traverseChildren yes, (node) =>
-            node.error "Can't call super with @params in derived class constructors" if node.this
+            # Skip error for @params marked with isFromParam (they'll be handled correctly)
+            node.error "Can't call super with @params in derived class constructors" if node.this and not node.isFromParam
         seenSuper = yes
         iterator child
       else if checkForThisBeforeSuper and child instanceof ThisLiteral and @ctor is 'derived' and not seenSuper
-        child.error "Can't reference 'this' before calling super in derived class constructors"
+        # Skip error for @params marked with isFromParam (they'll be handled correctly)
+        child.error "Can't reference 'this' before calling super in derived class constructors" unless child.isFromParam
 
       # `super` has the same target in bound (arrow) functions, so check them too
       child not instanceof SuperCall and (child not instanceof Code or child.bound)
@@ -4256,10 +4331,23 @@ exports.Code = class Code extends Base
     @checkForDuplicateParams()
     @disallowSuperInParamDefaults forAst: yes
     @disallowLoneExpansionAndMultipleSplats()
-    seenSuper = @checkSuperCallsInConstructorBody()
-    if @ctor is 'derived' and not seenSuper
+    
+    # Mark @params in derived constructors as special (they'll move after super())
+    isDerivedConstructor = @ctor is 'derived'
+    hasThisParams = no
+    if isDerivedConstructor
       @eachParamName (name, node) =>
         if node.this
+          hasThisParams = yes
+          node.base.isFromParam = node.isFromParam = yes
+    
+    # Only check for super calls if we don't have @params (they get special handling)
+    seenSuper = @checkSuperCallsInConstructorBody() unless hasThisParams
+    seenSuper = yes if hasThisParams  # Assume super will be handled correctly for @params
+    
+    if @ctor is 'derived' and not seenSuper
+      @eachParamName (name, node) =>
+        if node.this and not node.isFromParam
           @flagThisParamInDerivedClassConstructorWithoutCallingSuper node
     @astAddParamsToScope o
     @body.makeReturn null, yes unless @body.isEmpty() or @noReturn

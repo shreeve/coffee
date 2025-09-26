@@ -356,6 +356,15 @@ class ES5Backend
           return false if arg? and typeof arg is 'object' and not (arg instanceof @ast.Base) and Object.keys(arg).length is 0
           true
         new @ast.Call @$(o.variable), args, @$(o.soak)
+      when 'SuperCall'
+        args = @$(o.args) or []
+        # Filter out empty objects like in Call
+        args = args.filter (arg) =>
+          return false if arg? and typeof arg is 'object' and not (arg instanceof @ast.Base) and Object.keys(arg).length is 0
+          true
+        new @ast.SuperCall @$(o.variable), args, @$(o.soak)
+      when 'Super'
+        new @ast.Super @$(o.accessor), @$(o.superLiteral)
       when 'Return' then new @ast.Return @$(o.expression)
       when 'Yield'  then new @ast.Yield  @$(o.expression) or new @ast.Value(new @ast.Literal '')
 

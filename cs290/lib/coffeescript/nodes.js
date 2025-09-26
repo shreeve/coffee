@@ -3158,6 +3158,24 @@
 
       compileNode(o) {
         var ref, ref1, replacement, superCall;
+        // Fix @param arguments in super() calls for derived constructors
+        // Replace super(@name) with super(name)
+        if (this.args) {
+          this.args = this.args.map(function(arg) {
+            var method, propertyName, ref1;
+            // Check if this is a @param reference (Value with ThisLiteral base)
+            if (arg instanceof Value && arg.base instanceof ThisLiteral && arg.properties.length === 1) {
+              propertyName = arg.properties[0].name.value;
+              // Check if we're in a constructor context
+              method = o.scope.method || ((ref1 = o.scope.parent) != null ? ref1.method : void 0);
+              if (method != null ? method.ctor : void 0) {
+                // Replace with simple identifier
+                return new IdentifierLiteral(propertyName);
+              }
+            }
+            return arg;
+          });
+        }
         if (!((ref1 = this.expressions) != null ? ref1.length : void 0)) {
           return super.compileNode(o);
         }
@@ -4427,6 +4445,10 @@
           isConstructor = methodName instanceof StringLiteral ? methodName.originalValue === 'constructor' : methodName.value === 'constructor';
           if (isConstructor) {
             method.ctor = (this.parent ? 'derived' : 'base');
+            if (method.ctor === 'derived') {
+              // Mark @params in super() calls for derived constructors
+              method.markThisParamsInSuper();
+            }
           }
           if (method.bound && method.ctor) {
             method.error('Cannot define a constructor as a bound (fat arrow) function');
@@ -5870,7 +5892,7 @@
       // parameters after the splat, they are declared via expressions in the
       // function body.
       compileNode(o) {
-        var answer, body, boundMethodCheck, comment, condition, exprs, generatedVariables, haveBodyParam, haveSplatParam, i, ifTrue, j, k, l, len1, len2, len3, m, methodScope, modifiers, name, param, paramToAddToScope, params, paramsAfterSplat, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, scopeVariablesCount, signature, splatParamName, thisAssignments, wasEmpty, yieldNode;
+        var answer, body, boundMethodCheck, comment, condition, exprs, generatedVariables, hasThisParams, haveBodyParam, haveSplatParam, i, ifTrue, isDerivedConstructor, j, k, l, len1, len2, len3, m, methodScope, modifiers, name, param, paramToAddToScope, params, paramsAfterSplat, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, scopeVariablesCount, signature, splatParamName, thisAssignments, wasEmpty, yieldNode;
         this.checkForAsyncOrGeneratorConstructor();
         if (this.bound) {
           if ((ref1 = o.scope.method) != null ? ref1.bound : void 0) {
@@ -5890,22 +5912,36 @@
         this.checkForDuplicateParams();
         this.disallowLoneExpansionAndMultipleSplats();
         // Separate `this` assignments.
+        isDerivedConstructor = this.ctor === 'derived';
         this.eachParamName(function(name, node, param, obj) {
-          var replacement, target;
+          var assignment, replacement, target, thisNode;
           if (node.this) {
             name = node.properties[0].name.value;
             if (indexOf.call(JS_FORBIDDEN, name) >= 0) {
               name = `_${name}`;
             }
-            target = new IdentifierLiteral(o.scope.freeVariable(name, {
-              reserve: false
-            }));
-            // `Param` is object destructuring with a default value: ({@prop = 1}) ->
-            // In a case when the variable name is already reserved, we have to assign
-            // a new variable name to the destructured variable: ({prop:prop1 = 1}) ->
-            replacement = param.name instanceof Obj && obj instanceof Assign && obj.operatorToken.value === '=' ? new Assign(new IdentifierLiteral(name), target, 'object') : target; //, operatorToken: new Literal ':'
-            param.renameParam(node, replacement);
-            return thisAssignments.push(new Assign(node, target));
+            if (isDerivedConstructor) {
+              // For derived constructors, use simple parameter names
+              target = new IdentifierLiteral(name);
+              node.base.isFromParam = node.isFromParam = true;
+              param.renameParam(node, target);
+              thisNode = new Value(new ThisLiteral(), [new Access(new PropertyName(name))]);
+              thisNode.isFromParam = thisNode.base.isFromParam = true;
+              assignment = new Assign(thisNode, target);
+              assignment.isFromParam = true;
+              return thisAssignments.push(assignment);
+            } else {
+              // For regular constructors, use freeVariable
+              target = new IdentifierLiteral(o.scope.freeVariable(name, {
+                reserve: false
+              }));
+              // `Param` is object destructuring with a default value: ({@prop = 1}) ->
+              // In a case when the variable name is already reserved, we have to assign
+              // a new variable name to the destructured variable: ({prop:prop1 = 1}) ->
+              replacement = param.name instanceof Obj && obj instanceof Assign && obj.operatorToken.value === '=' ? new Assign(new IdentifierLiteral(name), target, 'object') : target; //, operatorToken: new Literal ':'
+              param.renameParam(node, replacement);
+              return thisAssignments.push(new Assign(node, target));
+            }
           }
         });
         ref4 = this.params;
@@ -6041,9 +6077,23 @@
         // Add new expressions to the function body
         wasEmpty = this.body.isEmpty();
         this.disallowSuperInParamDefaults();
-        this.checkSuperCallsInConstructorBody();
+        
+        // Check if we have @params in a derived constructor
+        hasThisParams = isDerivedConstructor && thisAssignments.some(function(assignment) {
+          return assignment.isFromParam;
+        });
+        if (!hasThisParams) {
+          
+          // Check super calls before expanding (skip for @params, they'll be handled specially)
+          this.checkSuperCallsInConstructorBody();
+        }
         if (!this.expandCtorSuper(thisAssignments)) {
           this.body.expressions.unshift(...thisAssignments);
+        }
+        if (hasThisParams) {
+          
+          // If we had @params, check super calls after expanding
+          this.checkSuperCallsInConstructorBody();
         }
         this.body.expressions.unshift(...exprs);
         if (this.isMethod && this.bound && !this.isStatic && this.classVariable) {
@@ -6203,6 +6253,60 @@
         }
       }
 
+      // Mark @params in super() calls so they don't trigger errors before transformation
+      markThisParamsInSuper() {
+        var thisParamNames;
+        if (this.ctor !== 'derived') {
+          return;
+        }
+        
+        // Collect @param names
+        thisParamNames = [];
+        this.eachParamName(function(name, node, param) {
+          if (node != null ? node.this : void 0) {
+            return thisParamNames.push(node.properties[0].name.value);
+          }
+        });
+        if (!thisParamNames.length) {
+          return;
+        }
+        
+        // Also mark the @param nodes themselves as special
+        this.eachParamName(function(name, node, param) {
+          if (node != null ? node.this : void 0) {
+            if (node.base) {
+              return node.base.isFromParam = node.isFromParam = true;
+            }
+          }
+        });
+        
+        // Mark @params in super() arguments as special
+        return this.eachSuperCall(this.body, (superCall) => {
+          var arg, j, len1, paramName, ref1, results1;
+          if (!superCall.args) {
+            return;
+          }
+          ref1 = superCall.args;
+          results1 = [];
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            arg = ref1[j];
+            if (arg instanceof Value && arg.base instanceof ThisLiteral && arg.properties.length === 1) {
+              paramName = arg.properties[0].name.value;
+              if (indexOf.call(thisParamNames, paramName) >= 0) {
+                results1.push(arg.isFromParam = arg.base.isFromParam = true);
+              } else {
+                results1.push(void 0);
+              }
+            } else {
+              results1.push(void 0);
+            }
+          }
+          return results1;
+        }, {
+          checkForThisBeforeSuper: false
+        });
+      }
+
       disallowSuperInParamDefaults({forAst} = {}) {
         if (!this.ctor) {
           return false;
@@ -6270,13 +6374,19 @@
         if (!this.ctor) {
           return false;
         }
+        // Move @param assignments after super() in derived constructors
         seenSuper = this.eachSuperCall(this.body, (superCall) => {
           return superCall.expressions = thisAssignments;
+        }, {
+          checkForThisBeforeSuper: false
         });
         haveThisParam = thisAssignments.length && thisAssignments.length !== ((ref1 = this.thisAssignments) != null ? ref1.length : void 0);
         if (this.ctor === 'derived' && !seenSuper && haveThisParam) {
           param = thisAssignments[0].variable;
-          this.flagThisParamInDerivedClassConstructorWithoutCallingSuper(param);
+          if (!thisAssignments[0].isFromParam) {
+            // Skip error for @params marked with isFromParam (they'll be handled correctly)
+            this.flagThisParamInDerivedClassConstructorWithoutCallingSuper(param);
+          }
         }
         return seenSuper;
       }
@@ -6297,7 +6407,8 @@
                 return !(arg instanceof Class) && (!(arg instanceof Code) || arg.bound);
               });
               Block.wrap(childArgs).traverseChildren(true, (node) => {
-                if (node.this) {
+                if (node.this && !node.isFromParam) {
+                  // Skip error for @params marked with isFromParam (they'll be handled correctly)
                   return node.error("Can't call super with @params in derived class constructors");
                 }
               });
@@ -6305,7 +6416,10 @@
             seenSuper = true;
             iterator(child);
           } else if (checkForThisBeforeSuper && child instanceof ThisLiteral && this.ctor === 'derived' && !seenSuper) {
-            child.error("Can't reference 'this' before calling super in derived class constructors");
+            if (!child.isFromParam) {
+              // Skip error for @params marked with isFromParam (they'll be handled correctly)
+              child.error("Can't reference 'this' before calling super in derived class constructors");
+            }
           }
           // `super` has the same target in bound (arrow) functions, so check them too
           return !(child instanceof SuperCall) && (!(child instanceof Code) || child.bound);
@@ -6338,7 +6452,7 @@
       }
 
       astNode(o) {
-        var seenSuper;
+        var hasThisParams, isDerivedConstructor, seenSuper;
         this.updateOptions(o);
         this.checkForAsyncOrGeneratorConstructor();
         this.checkForDuplicateParams();
@@ -6346,10 +6460,29 @@
           forAst: true
         });
         this.disallowLoneExpansionAndMultipleSplats();
-        seenSuper = this.checkSuperCallsInConstructorBody();
-        if (this.ctor === 'derived' && !seenSuper) {
+        
+        // Mark @params in derived constructors as special (they'll move after super())
+        isDerivedConstructor = this.ctor === 'derived';
+        hasThisParams = false;
+        if (isDerivedConstructor) {
           this.eachParamName((name, node) => {
             if (node.this) {
+              hasThisParams = true;
+              return node.base.isFromParam = node.isFromParam = true;
+            }
+          });
+        }
+        if (!hasThisParams) {
+          
+          // Only check for super calls if we don't have @params (they get special handling)
+          seenSuper = this.checkSuperCallsInConstructorBody();
+        }
+        if (hasThisParams) { // Assume super will be handled correctly for @params
+          seenSuper = true;
+        }
+        if (this.ctor === 'derived' && !seenSuper) {
+          this.eachParamName((name, node) => {
+            if (node.this && !node.isFromParam) {
               return this.flagThisParamInDerivedClassConstructorWithoutCallingSuper(node);
             }
           });
