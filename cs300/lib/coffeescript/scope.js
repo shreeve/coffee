@@ -168,7 +168,7 @@ export class Scope {
       }
       return results;
     }
-    
+
     // ES6: Track when a variable is assigned to
     trackAssignment(name) {
       if (!this.assignments[name]) {
@@ -180,14 +180,14 @@ export class Scope {
         this.parent.trackAssignment(name);
       }
     }
-    
+
     // ES6: Check if a variable will be reassigned
     willBeReassigned(name) {
       // Check this scope and all parent scopes
       const totalAssignments = this.getTotalAssignments(name);
       return totalAssignments > 1;
     }
-    
+
     // ES6: Get total assignment count across all scopes
     getTotalAssignments(name) {
       let count = this.assignments[name] || 0;

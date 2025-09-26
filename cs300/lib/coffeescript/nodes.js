@@ -4707,16 +4707,16 @@ export const Assign = (function() {
         // ES6: Check if we need to declare the variable inline BEFORE adding to scope
         var needsDeclaration = false;
         var declarationKeyword = 'let'; // Default to let for safety
-        
+
         // Check if this is a simple identifier assignment
         var varName = null;
         if (this.variable.unwrapAll() instanceof IdentifierLiteral && !this.context && !this.moduleDeclaration) {
           varName = this.variable.unwrapAll().value;
-          
+
           // Check if variable needs declaration (first assignment)
           if (!o.scope.check(varName)) {
             needsDeclaration = true;
-            
+
             // Use const for functions, let for everything else (for now)
             if (this.value instanceof Code) {
               declarationKeyword = 'const';
