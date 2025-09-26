@@ -157,7 +157,7 @@ class ES5Backend
 
         # This shouldn't happen with current grammar
         console.warn "Unexpected $ops: 'if' without addElse"
-        null
+        new @ast.Literal "# Missing $ops: 'if' without addElse"
 
       when 'value'
         # Handle adding accessors to Values
@@ -169,7 +169,7 @@ class ES5Backend
             return @_toValue value, [accessor]
 
         console.warn "Unexpected $ops: 'value' without add"
-        null
+        new @ast.Literal "# Missing $ops: 'value' without add"
 
       when 'loop'
         # Handle different loop operations
@@ -200,11 +200,11 @@ class ES5Backend
           return loopNode
 
         console.warn "Unknown loop operation:", o
-        null
+        new @ast.Literal "# Missing loop operation: #{JSON.stringify(o)}"
 
       else
         console.warn "Unknown $ops:", o.$ops
-        null
+        new @ast.Literal "# Missing $ops: #{o.$ops}"
 
   # Process $ast directives - the main AST node creation
   processAst: (o) ->

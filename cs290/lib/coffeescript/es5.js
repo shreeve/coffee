@@ -249,7 +249,7 @@
           }
           // This shouldn't happen with current grammar
           console.warn("Unexpected $ops: 'if' without addElse");
-          return null;
+          return new this.ast.Literal("# Missing $ops: 'if' without addElse");
         case 'value':
           // Handle adding accessors to Values
           if (o.add != null) {
@@ -263,7 +263,7 @@
             }
           }
           console.warn("Unexpected $ops: 'value' without add");
-          return null;
+          return new this.ast.Literal("# Missing $ops: 'value' without add");
         case 'loop':
           // Handle different loop operations
           if (o.addSource != null) {
@@ -302,10 +302,10 @@
             return loopNode;
           }
           console.warn("Unknown loop operation:", o);
-          return null;
+          return new this.ast.Literal(`# Missing loop operation: ${JSON.stringify(o)}`);
         default:
           console.warn("Unknown $ops:", o.$ops);
-          return null;
+          return new this.ast.Literal(`# Missing $ops: ${o.$ops}`);
       }
     }
 
