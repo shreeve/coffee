@@ -95,7 +95,7 @@ class ES6Backend {
     this.currentDirective = directive;
     this.currentRule = directive;
     this.currentLookup = lookup; // Store lookup for use in $()
-    
+
     // Create smart proxy that auto-resolves properties
     handler = {
       get: function(target, prop) {
