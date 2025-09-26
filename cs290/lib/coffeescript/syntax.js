@@ -2220,13 +2220,13 @@
       {
         $ops: 'loop',
         addBody: [1,
-      'Body $2']
+      2]
       }),
       o('ForLineBody  Block',
       {
         $ops: 'loop',
         addBody: [1,
-      'Body $2']
+      2]
       })
     ],
     ForBody: [

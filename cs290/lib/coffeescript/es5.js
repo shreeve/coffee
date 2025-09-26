@@ -308,7 +308,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, condition, context, elseBody, expression, expressions, forNode, ifNode, index, invert, name, opValue, operator, options, params, ref, ref1, type, value, variable, whileNode;
+      var args, body, condition, context, elseBody, exclusive, expression, expressions, forNode, ifNode, index, invert, name, opValue, operator, options, params, ref, ref1, tag, type, value, variable, whileNode;
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
@@ -495,7 +495,10 @@
         case 'Arr':
           return new this.ast.Arr(this.$(o.objects) || []);
         case 'Range':
-          return new this.ast.Range(this.$(o.from), this.$(o.to), this.$(o.exclusive));
+          exclusive = this.$(o.exclusive);
+          // Range constructor expects string 'exclusive' or nothing
+          tag = exclusive ? 'exclusive' : void 0;
+          return new this.ast.Range(this.$(o.from), this.$(o.to), tag);
         // Functions
         case 'Code':
           params = this.$(o.params) || [];

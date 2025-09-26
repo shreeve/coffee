@@ -330,7 +330,11 @@ class ES5Backend
       # Collections
       when 'Obj'   then new @ast.Obj @$(o.properties) or [], @$(o.generated)
       when 'Arr'   then new @ast.Arr @$(o.objects) or []
-      when 'Range' then new @ast.Range @$(o.from), @$(o.to), @$(o.exclusive)
+      when 'Range'
+        exclusive = @$(o.exclusive)
+        # Range constructor expects string 'exclusive' or nothing
+        tag = if exclusive then 'exclusive' else undefined
+        new @ast.Range @$(o.from), @$(o.to), tag
 
       # Functions
       when 'Code'
