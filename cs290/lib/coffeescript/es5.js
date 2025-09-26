@@ -304,7 +304,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, condition, elseBody, exclusive, expressions, forNode, ifNode, name, options, params, ref, source, whileNode;
+      var arg, args, body, condition, elseBody, exclusive, expressions, forNode, i, ifNode, len, name, options, params, processed, ref, ref1, source, whileNode;
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
@@ -366,9 +366,20 @@
           return new this.ast.Index(this.$(o.index));
         // Operations
         case 'Op':
-          args = o.args.map((arg) => {
-            return this.$(arg);
-          });
+          // Process args, filtering out undefined values
+          args = [];
+          if (o.args) {
+            ref1 = o.args;
+            for (i = 0, len = ref1.length; i < len; i++) {
+              arg = ref1[i];
+              processed = this.$(arg);
+              if (processed != null) {
+                args.push(processed);
+              }
+            }
+          }
+          
+          // Add options if present
           if ((o.invertOperator != null) || (o.originalOperator != null)) {
             options = {};
             if (o.invertOperator != null) {
