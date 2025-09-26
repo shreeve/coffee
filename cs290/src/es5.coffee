@@ -8,6 +8,15 @@ class ES5Backend
     @currentDirective = null
     @currentRule = null
 
+  # Helper to strip quotes from string literals
+  _stripQuotes: (str) ->
+    return str unless str?
+    # Remove surrounding quotes if present
+    if (str[0] in ['"', "'"]) and str[0] == str[str.length - 1]
+      str.slice(1, -1)
+    else
+      str
+
   # Helper to ensure node has location data to avoid errors in AST operations
   _ensureLocationData: (node) ->
     if typeof node is 'object' and node isnt null
@@ -219,7 +228,7 @@ class ES5Backend
       # Literals
       when 'Literal'                  then new @ast.Literal                  @$(o.value)
       when 'NumberLiteral'            then new @ast.NumberLiteral            @$(o.value)
-      when 'StringLiteral'            then new @ast.StringLiteral            @$(o.value)
+      when 'StringLiteral'            then new @ast.StringLiteral            @_stripQuotes(@$(o.value))
       when 'StringWithInterpolations' then new @ast.StringWithInterpolations @$(o.body)
       when 'BooleanLiteral'           then new @ast.BooleanLiteral           @$(o.value)
       when 'IdentifierLiteral'        then new @ast.IdentifierLiteral        @$(o.value)

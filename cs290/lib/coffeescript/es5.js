@@ -15,6 +15,20 @@
       this.currentRule = null;
     }
 
+    // Helper to strip quotes from string literals
+    _stripQuotes(str) {
+      var ref;
+      if (str == null) {
+        return str;
+      }
+      // Remove surrounding quotes if present
+      if (((ref = str[0]) === '"' || ref === "'") && str[0] === str[str.length - 1]) {
+        return str.slice(1, -1);
+      } else {
+        return str;
+      }
+    }
+
     // Helper to ensure node has location data to avoid errors in AST operations
     _ensureLocationData(node) {
       if (typeof node === 'object' && node !== null) {
@@ -318,7 +332,7 @@
         case 'NumberLiteral':
           return new this.ast.NumberLiteral(this.$(o.value));
         case 'StringLiteral':
-          return new this.ast.StringLiteral(this.$(o.value));
+          return new this.ast.StringLiteral(this._stripQuotes(this.$(o.value)));
         case 'StringWithInterpolations':
           return new this.ast.StringWithInterpolations(this.$(o.body));
         case 'BooleanLiteral':
