@@ -894,34 +894,11 @@ export const Block = (function() {
         post = this.compileNode(o);
         ({scope} = o);
         if (scope.expressions === this) {
-          declars = o.scope.hasDeclarations();
-          assigns = scope.hasAssignments;
-          if (declars || assigns) {
-            if (i) {
-              fragments.push(this.makeCode('\n'));
-            }
-            fragments.push(this.makeCode(`${this.tab}var `));
-            if (declars) {
-              declaredVariables = scope.declaredVariables();
-              for (declaredVariablesIndex = k = 0, len2 = declaredVariables.length; k < len2; declaredVariablesIndex = ++k) {
-                declaredVariable = declaredVariables[declaredVariablesIndex];
-                fragments.push(this.makeCode(declaredVariable));
-                if (Object.prototype.hasOwnProperty.call(o.scope.comments, declaredVariable)) {
-                  fragments.push(...o.scope.comments[declaredVariable]);
-                }
-                if (declaredVariablesIndex !== declaredVariables.length - 1) {
-                  fragments.push(this.makeCode(', '));
-                }
-              }
-            }
-            if (assigns) {
-              if (declars) {
-                fragments.push(this.makeCode(`,\n${this.tab + TAB}`));
-              }
-              fragments.push(this.makeCode(scope.assignedVariables().join(`,\n${this.tab + TAB}`)));
-            }
-            fragments.push(this.makeCode(`;\n${this.spaced ? '\n' : ''}`));
-          } else if (fragments.length && post.length) {
+          // ES6: No hoisting - variables declared inline at first use
+          // declars = o.scope.hasDeclarations();
+          // assigns = scope.hasAssignments;
+          // Skip the old hoisting logic
+          if (fragments.length && post.length) {
             fragments.push(this.makeCode("\n"));
           }
         }
@@ -4380,7 +4357,7 @@ export class ExportDeclaration extends ModuleDeclaration {
         code.push(this.makeCode('default '));
       }
       if (!(this instanceof ExportDefaultDeclaration) && (this.clause instanceof Assign || this.clause instanceof Class)) {
-        code.push(this.makeCode('var '));
+        code.push(this.makeCode('let '));
         this.clause.moduleDeclaration = 'export';
       }
       if ((this.clause.body != null) && this.clause.body instanceof Block) {
@@ -4727,6 +4704,19 @@ export const Assign = (function() {
             return this.compileSpecialMath(o);
           }
         }
+        // ES6: Check if we need to declare the variable inline BEFORE adding to scope
+        var needsDeclaration = false;
+        var declarationKeyword = 'let'; // Default to let for now
+        
+        // Check if this is a simple identifier assignment
+        if (this.variable.unwrapAll() instanceof IdentifierLiteral && !this.context && !this.moduleDeclaration) {
+          var varName = this.variable.unwrapAll().value;
+          // Check if variable needs declaration (first assignment)
+          if (!o.scope.check(varName)) {
+            needsDeclaration = true;
+          }
+        }
+        
         this.addScopeVariables(o);
         if (this.value instanceof Code) {
           if (this.value.isStatic) {
@@ -4747,7 +4737,13 @@ export const Assign = (function() {
           }
           return compiledName.concat(this.makeCode(': '), val);
         }
+        
         answer = compiledName.concat(this.makeCode(` ${this.context || '='} `), val);
+        
+        // Prepend declaration if needed
+        if (needsDeclaration) {
+          answer.unshift(this.makeCode(`${declarationKeyword} `));
+        }
         // Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
         // if we’re destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
         // The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
