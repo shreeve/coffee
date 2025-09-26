@@ -127,9 +127,14 @@ class ES5Backend
   # Process $use directives
   processUse: (o) ->
     target = @$(o.$use)
-    return target?[o.method]?() ?  target  if o.method?
-    return target?[o.prop     ] ?  target  if o.prop?
-    return target?[@$(o.index)] if target? if o.index?
+    return target?[o.method]?() ? target if o.method?
+    return target?[o.prop] ? target if o.prop?
+
+    if o.index?
+      # Handle numeric index
+      idx = @$(o.index)
+      return target?[idx] if target?
+
     target
 
   # Process $ops directives
@@ -286,7 +291,7 @@ class ES5Backend
         whileNode
 
       when 'For'
-        # For loops are created and then extended via $ops: 'loop'
+        # For loops are created with empty body and source, then extended via $ops: 'loop'
         body = @$(o.body) or []
 
         # Filter out empty objects from body (similar to Call args fix)
@@ -299,18 +304,20 @@ class ES5Backend
         body = new @ast.Block body unless body instanceof @ast.Block
         @_ensureLocationData body
 
+        # Get name and index for the loop variable
         name = @$(o.name)
         index = @$(o.index)
 
-        # Create the For node with name/index (source will be added via addSource)
-        forNode = new @ast.For body, {name, index}
+        # Create the For node - source will be added via addSource in loop operation
+        # Pass initial source info with name/index
+        forNode = new @ast.For body, {name, index, source: @$(o.source)}
         forNode.await = @$(o.await) if o.await?
         forNode.own = @$(o.own) if o.own?
         forNode
 
-      when 'Switch'     then new @ast.Switch @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
-      when 'When'       then new @ast.When   @$(o.conditions), @$(o.body)
-      when 'SwitchWhen' then new @ast.When   @$(o.conditions), @$(o.body)
+      when 'Switch'     then new @ast.Switch     @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
+      when 'When'       then new @ast.SwitchWhen @$(o.conditions), @$(o.body)
+      when 'SwitchWhen' then new @ast.SwitchWhen @$(o.conditions), @$(o.body)
 
       # Collections
       when 'Obj'   then new @ast.Obj @$(o.properties) or [], @$(o.generated)

@@ -201,7 +201,7 @@
 
     // Process $use directives
     processUse(o) {
-      var name1, ref, ref1, target;
+      var idx, name1, ref, ref1, target;
       target = this.$(o.$use);
       if (o.method != null) {
         return (ref = target != null ? typeof target[name1 = o.method] === "function" ? target[name1]() : void 0 : void 0) != null ? ref : target;
@@ -210,8 +210,10 @@
         return (ref1 = target != null ? target[o.prop] : void 0) != null ? ref1 : target;
       }
       if (o.index != null) {
+        // Handle numeric index
+        idx = this.$(o.index);
         if (target != null) {
-          return target != null ? target[this.$(o.index)] : void 0;
+          return target != null ? target[idx] : void 0;
         }
       }
       return target;
@@ -431,7 +433,7 @@
           }
           return whileNode;
         case 'For':
-          // For loops are created and then extended via $ops: 'loop'
+          // For loops are created with empty body and source, then extended via $ops: 'loop'
           body = this.$(o.body) || [];
           // Filter out empty objects from body (similar to Call args fix)
           if (Array.isArray(body)) {
@@ -447,10 +449,16 @@
             body = new this.ast.Block(body);
           }
           this._ensureLocationData(body);
+          // Get name and index for the loop variable
           name = this.$(o.name);
           index = this.$(o.index);
-          // Create the For node with name/index (source will be added via addSource)
-          forNode = new this.ast.For(body, {name, index});
+          // Create the For node - source will be added via addSource in loop operation
+          // Pass initial source info with name/index
+          forNode = new this.ast.For(body, {
+            name,
+            index,
+            source: this.$(o.source)
+          });
           if (o.await != null) {
             forNode.await = this.$(o.await);
           }
@@ -461,9 +469,9 @@
         case 'Switch':
           return new this.ast.Switch(this.$(o.subject), this.$(o.cases) || [], this.$(o.otherwise));
         case 'When':
-          return new this.ast.When(this.$(o.conditions), this.$(o.body));
+          return new this.ast.SwitchWhen(this.$(o.conditions), this.$(o.body));
         case 'SwitchWhen':
-          return new this.ast.When(this.$(o.conditions), this.$(o.body));
+          return new this.ast.SwitchWhen(this.$(o.conditions), this.$(o.body));
         // Collections
         case 'Obj':
           return new this.ast.Obj(this.$(o.properties) || [], this.$(o.generated));
