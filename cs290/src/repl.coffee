@@ -66,6 +66,22 @@ replDefaults =
     catch err
       # AST's `compile` does not add source code information to syntax errors.
       updateSyntaxError err, input
+
+      # For REPL, trim the stack trace to only show the relevant parts
+      # Remove internal REPL/Node machinery from the stack
+      if err.stack
+        lines = err.stack.split('\n')
+        # Keep the error message and the REPL code location lines
+        relevantLines = []
+
+        for line in lines
+          relevantLines.push line
+          # Stop after we hit the vm context execution
+          # This keeps the error message and code location but removes the internal stack
+          break if line.includes('at Script.runInThisContext') or line.includes('at Object.runInThisContext')
+
+        err.stack = relevantLines.join('\n')
+
       cb err
 
 runInContext = (js, context, filename) ->
