@@ -212,13 +212,13 @@ grammar =
   # The **Code** node is the function literal. It’s defined by an indented block
   # of **Block** preceded by a function arrow, with an optional parameter list.
   Code: [
-    o 'PARAM_START ParamList PARAM_END FuncGlyph Block', $ast: '@', params: 2, body: 5, funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1, $pos: 1}
+    o 'PARAM_START ParamList PARAM_END FuncGlyph Block', $ast: '@', params: 2 , body: 5, funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1, $pos: 1}
     o 'FuncGlyph Block'                                , $ast: '@', params: [], body: 2, funcGlyph: 1
   ]
 
   # The Codeline is the **Code** node with **Line** instead of indented **Block**.
   CodeLine: [
-    o 'PARAM_START ParamList PARAM_END FuncGlyph Line', $ast: 'Code', params: 2, body: [5], funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1, $pos: 1}
+    o 'PARAM_START ParamList PARAM_END FuncGlyph Line', $ast: 'Code', params: 2 , body: [5], funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1, $pos: 1}
     o 'FuncGlyph Line'                                , $ast: 'Code', params: [], body: [2], funcGlyph: 1
   ]
 
@@ -489,11 +489,11 @@ grammar =
 
   # Array slice literals.
   Slice: [
-    o 'Expression RangeDots Expression'    , $ast: 'Range', from: 1, to: 3, exclusive: {$use: 2, prop: 'exclusive'}
-    o 'Expression RangeDots'               , $ast: 'Range', from: 1, to: null, exclusive: {$use: 2, prop: 'exclusive'}
-    o 'ExpressionLine RangeDots Expression', $ast: 'Range', from: 1, to: 3, exclusive: {$use: 2, prop: 'exclusive'}
-    o 'ExpressionLine RangeDots'           , $ast: 'Range', from: 1, to: null, exclusive: {$use: 2, prop: 'exclusive'}
-    o 'RangeDots Expression'               , $ast: 'Range', from: null, to: 2, exclusive: {$use: 1, prop: 'exclusive'}
+    o 'Expression RangeDots Expression'    , $ast: 'Range', from: 1   , to: 3   , exclusive: {$use: 2, prop: 'exclusive'}
+    o 'Expression RangeDots'               , $ast: 'Range', from: 1   , to: null, exclusive: {$use: 2, prop: 'exclusive'}
+    o 'ExpressionLine RangeDots Expression', $ast: 'Range', from: 1   , to: 3   , exclusive: {$use: 2, prop: 'exclusive'}
+    o 'ExpressionLine RangeDots'           , $ast: 'Range', from: 1   , to: null, exclusive: {$use: 2, prop: 'exclusive'}
+    o 'RangeDots Expression'               , $ast: 'Range', from: null, to: 2   , exclusive: {$use: 1, prop: 'exclusive'}
     o 'RangeDots'                          , $ast: 'Range', from: null, to: null, exclusive: {$use: 1, prop: 'exclusive'}
   ]
 
@@ -560,7 +560,7 @@ grammar =
     o 'TRY Block'                    , $ast: '@', attempt: 2
     o 'TRY Block Catch'              , $ast: '@', attempt: 2, catch: 3
     o 'TRY Block FINALLY Block'      , $ast: '@', attempt: 2, catch: null, ensure: 4, finallyTag: {$ast: 'Literal', value: 3}
-    o 'TRY Block Catch FINALLY Block', $ast: '@', attempt: 2, catch: 3, ensure: 5, finallyTag: {$ast: 'Literal', value: 4}
+    o 'TRY Block Catch FINALLY Block', $ast: '@', attempt: 2, catch: 3   , ensure: 5, finallyTag: {$ast: 'Literal', value: 4}
   ]
 
   # A catch clause names its error and runs a block of code.
@@ -640,8 +640,8 @@ grammar =
 
   ForStart: [
     o 'FOR ForVariables'      , $ast: 'For', body: {$ary: [{}]}, name: {$use: 2, index: 0}, index: {$use: 2, index: 1}
-    o 'FOR AWAIT ForVariables', $ast: 'For', body: {$ary: []}, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'FOR OWN ForVariables'  , $ast: 'For', body: {$ary: []}, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'FOR AWAIT ForVariables', $ast: 'For', body: {$ary:  [] }, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'FOR OWN ForVariables'  , $ast: 'For', body: {$ary:  [] }, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}
   ]
 
   # An array of all accepted values for a variable inside the loop.
@@ -667,23 +667,23 @@ grammar =
   ForSource: [
     o 'FORIN Expression'                                      , source: 2
     o 'FOROF Expression'                                      , source: 2, object: true
-    o 'FORIN Expression WHEN Expression'                      , source: 2, guard: 4
-    o 'FORIN ExpressionLine WHEN Expression'                  , source: 2, guard: 4
-    o 'FOROF Expression WHEN Expression'                      , source: 2, guard: 4, object: true
-    o 'FOROF ExpressionLine WHEN Expression'                  , source: 2, guard: 4, object: true
-    o 'FORIN Expression BY Expression'                        , source: 2, step: 4
-    o 'FORIN ExpressionLine BY Expression'                    , source: 2, step: 4
-    o 'FORIN Expression WHEN Expression BY Expression'        , source: 2, guard: 4, step: 6
-    o 'FORIN ExpressionLine WHEN Expression BY Expression'    , source: 2, guard: 4, step: 6
-    o 'FORIN Expression WHEN ExpressionLine BY Expression'    , source: 2, guard: 4, step: 6
-    o 'FORIN ExpressionLine WHEN ExpressionLine BY Expression', source: 2, guard: 4, step: 6
-    o 'FORIN Expression BY Expression WHEN Expression'        , source: 2, step: 4, guard: 6
-    o 'FORIN ExpressionLine BY Expression WHEN Expression'    , source: 2, step: 4, guard: 6
-    o 'FORIN Expression BY ExpressionLine WHEN Expression'    , source: 2, step: 4, guard: 6
-    o 'FORIN ExpressionLine BY ExpressionLine WHEN Expression', source: 2, step: 4, guard: 6
-    o 'FORFROM Expression'                                    , source: 2, from: true
-    o 'FORFROM Expression WHEN Expression'                    , source: 2, guard: 4, from: true
-    o 'FORFROM ExpressionLine WHEN Expression'                , source: 2, guard: 4, from: true
+    o 'FORIN Expression WHEN Expression'                      , source: 2, guard:  4
+    o 'FORIN ExpressionLine WHEN Expression'                  , source: 2, guard:  4
+    o 'FOROF Expression WHEN Expression'                      , source: 2, guard:  4, object: true
+    o 'FOROF ExpressionLine WHEN Expression'                  , source: 2, guard:  4, object: true
+    o 'FORIN Expression BY Expression'                        , source: 2, step:   4
+    o 'FORIN ExpressionLine BY Expression'                    , source: 2, step:   4
+    o 'FORIN Expression WHEN Expression BY Expression'        , source: 2, guard:  4, step:  6
+    o 'FORIN ExpressionLine WHEN Expression BY Expression'    , source: 2, guard:  4, step:  6
+    o 'FORIN Expression WHEN ExpressionLine BY Expression'    , source: 2, guard:  4, step:  6
+    o 'FORIN ExpressionLine WHEN ExpressionLine BY Expression', source: 2, guard:  4, step:  6
+    o 'FORIN Expression BY Expression WHEN Expression'        , source: 2, step:   4, guard: 6
+    o 'FORIN ExpressionLine BY Expression WHEN Expression'    , source: 2, step:   4, guard: 6
+    o 'FORIN Expression BY ExpressionLine WHEN Expression'    , source: 2, step:   4, guard: 6
+    o 'FORIN ExpressionLine BY ExpressionLine WHEN Expression', source: 2, step:   4, guard: 6
+    o 'FORFROM Expression'                                    , source: 2, from:   true
+    o 'FORFROM Expression WHEN Expression'                    , source: 2, guard:  4, from: true
+    o 'FORFROM ExpressionLine WHEN Expression'                , source: 2, guard:  4, from: true
   ]
 
   ForLineSource: [
@@ -693,26 +693,26 @@ grammar =
     o 'FORIN ExpressionLine WHEN ExpressionLine'                  , source: 2, guard: 4
     o 'FOROF Expression WHEN ExpressionLine'                      , source: 2, guard: 4, object: true
     o 'FOROF ExpressionLine WHEN ExpressionLine'                  , source: 2, guard: 4, object: true
-    o 'FORIN Expression BY ExpressionLine'                        , source: 2, step: 4
-    o 'FORIN ExpressionLine BY ExpressionLine'                    , source: 2, step: 4
-    o 'FORIN Expression WHEN Expression BY ExpressionLine'        , source: 2, guard: 4, step: 6
-    o 'FORIN ExpressionLine WHEN Expression BY ExpressionLine'    , source: 2, guard: 4, step: 6
-    o 'FORIN Expression WHEN ExpressionLine BY ExpressionLine'    , source: 2, guard: 4, step: 6
-    o 'FORIN ExpressionLine WHEN ExpressionLine BY ExpressionLine', source: 2, guard: 4, step: 6
-    o 'FORIN Expression BY Expression WHEN ExpressionLine'        , source: 2, step: 4, guard: 6
-    o 'FORIN ExpressionLine BY Expression WHEN ExpressionLine'    , source: 2, step: 4, guard: 6
-    o 'FORIN Expression BY ExpressionLine WHEN ExpressionLine'    , source: 2, step: 4, guard: 6
-    o 'FORIN ExpressionLine BY ExpressionLine WHEN ExpressionLine', source: 2, step: 4, guard: 6
-    o 'FORFROM ExpressionLine'                                    , source: 2, from: true
+    o 'FORIN Expression BY ExpressionLine'                        , source: 2, step:  4
+    o 'FORIN ExpressionLine BY ExpressionLine'                    , source: 2, step:  4
+    o 'FORIN Expression WHEN Expression BY ExpressionLine'        , source: 2, guard: 4, step:  6
+    o 'FORIN ExpressionLine WHEN Expression BY ExpressionLine'    , source: 2, guard: 4, step:  6
+    o 'FORIN Expression WHEN ExpressionLine BY ExpressionLine'    , source: 2, guard: 4, step:  6
+    o 'FORIN ExpressionLine WHEN ExpressionLine BY ExpressionLine', source: 2, guard: 4, step:  6
+    o 'FORIN Expression BY Expression WHEN ExpressionLine'        , source: 2, step:  4, guard: 6
+    o 'FORIN ExpressionLine BY Expression WHEN ExpressionLine'    , source: 2, step:  4, guard: 6
+    o 'FORIN Expression BY ExpressionLine WHEN ExpressionLine'    , source: 2, step:  4, guard: 6
+    o 'FORIN ExpressionLine BY ExpressionLine WHEN ExpressionLine', source: 2, step:  4, guard: 6
+    o 'FORFROM ExpressionLine'                                    , source: 2, from:  true
     o 'FORFROM Expression WHEN ExpressionLine'                    , source: 2, guard: 4, from: true
     o 'FORFROM ExpressionLine WHEN ExpressionLine'                , source: 2, guard: 4, from: true
   ]
 
   Switch: [
-    o 'SWITCH Expression INDENT Whens OUTDENT'               , $ast: '@', subject: 2, cases: 4
-    o 'SWITCH ExpressionLine INDENT Whens OUTDENT'           , $ast: '@', subject: 2, cases: 4
-    o 'SWITCH Expression INDENT Whens ELSE Block OUTDENT'    , $ast: '@', subject: 2, cases: 4, otherwise: 6, $pos: [5, 6]
-    o 'SWITCH ExpressionLine INDENT Whens ELSE Block OUTDENT', $ast: '@', subject: 2, cases: 4, otherwise: 6, $pos: [5, 6]
+    o 'SWITCH Expression INDENT Whens OUTDENT'               , $ast: '@', subject: 2   , cases: 4
+    o 'SWITCH ExpressionLine INDENT Whens OUTDENT'           , $ast: '@', subject: 2   , cases: 4
+    o 'SWITCH Expression INDENT Whens ELSE Block OUTDENT'    , $ast: '@', subject: 2   , cases: 4, otherwise: 6, $pos: [5, 6]
+    o 'SWITCH ExpressionLine INDENT Whens ELSE Block OUTDENT', $ast: '@', subject: 2   , cases: 4, otherwise: 6, $pos: [5, 6]
     o 'SWITCH INDENT Whens OUTDENT'                          , $ast: '@', subject: null, cases: 3
     o 'SWITCH INDENT Whens ELSE Block OUTDENT'               , $ast: '@', subject: null, cases: 3, otherwise: 5, $pos: [4, 5]
   ]
