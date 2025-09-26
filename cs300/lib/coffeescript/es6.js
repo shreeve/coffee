@@ -529,6 +529,18 @@ class ES6Backend {
           return true;
         });
         return new this.ast.Call(this.$(o.variable), args, this.$(o.soak));
+      case 'SuperCall':
+        args = this.$(o.args) || [];
+        // Filter out empty objects like in Call
+        args = args.filter((arg) => {
+          if ((arg != null) && typeof arg === 'object' && !(arg instanceof this.ast.Base) && Object.keys(arg).length === 0) {
+            return false;
+          }
+          return true;
+        });
+        return new this.ast.SuperCall(this.$(o.variable), args, this.$(o.soak));
+      case 'Super':
+        return new this.ast.Super(this.$(o.accessor), this.$(o.superLiteral));
       case 'Return':
         return new this.ast.Return(this.$(o.expression));
       case 'Yield':

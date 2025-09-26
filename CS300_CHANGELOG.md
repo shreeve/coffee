@@ -68,6 +68,36 @@ let x = 10;
 ```
 
 ### 4. **Arrow Functions** (Committed: 22bbd40)
+
+### 2025-09-26 04:57 US/Mountain  
+### 5. **ES6 Classes**
+- Native ES6 class syntax
+- Support for `extends`, `super()`, and static methods
+- Proper constructor generation
+
+### 2025-09-26 15:15 US/Mountain
+### 6. **@param in Derived Constructors** ✨
+- **REVOLUTIONARY FIX**: Enabled CoffeeScript's elegant `@param` syntax in derived class constructors
+- **Problem Solved**: ES6 requires `super()` before any `this` references in derived constructors
+- **Solution**: Automatically move `@param` assignments (`this.property = param`) to after `super()` call
+- **Example**:
+  ```coffeescript
+  class Dog extends Animal
+    constructor: (@breed, name) ->
+      super(name)
+  ```
+  Compiles to:
+  ```javascript
+  class Dog extends Animal {
+    constructor(breed, name) {
+      super(name);
+      this.breed = breed;  // Moved after super()!
+    }
+  }
+  ```
+- **Edison Quote Applied**: "I have not failed. I've just found 10,000 ways that won't work." - We found the right way!
+
+### 7. **Arrow Functions Improvements**
 - Concise syntax for single expressions
 - Block syntax for multi-line functions
 - Preserves fat arrow binding
