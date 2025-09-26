@@ -4706,7 +4706,7 @@ export const Assign = (function() {
             return this.compileSpecialMath(o);
           }
         }
-        // ES6: Check if we need to declare the variable inline BEFORE adding to scope
+        // ES6: Smart const/let analysis
         var needsDeclaration = false;
         var declarationKeyword = 'let'; // Default to let for safety
 
@@ -4719,11 +4719,14 @@ export const Assign = (function() {
           if (!o.scope.check(varName)) {
             needsDeclaration = true;
 
-            // Use const for functions and classes, let for everything else
+            // Smart const/let determination:
+            // 1. Functions and classes are always const (immutable by nature)
+            // 2. For other values, scan ahead to see if reassigned
             if (this.value instanceof Code || this.value instanceof Class) {
               declarationKeyword = 'const';
             } else {
-              declarationKeyword = 'let';  // Safe default until we add proper analysis
+              // Scan the current scope for reassignments to this variable
+              declarationKeyword = this.willBeReassignedInScope(o, varName) ? 'let' : 'const';
             }
           }
         }
@@ -4783,6 +4786,34 @@ export const Assign = (function() {
       }
       // Brief implementation of recursive pattern matching, when assigning array or
       // object literals to a value. Peeks at their properties to assign inner names.
+      // ES6: Scan scope to check if variable will be reassigned
+      willBeReassignedInScope(o, varName) {
+        // Look through the current scope's expressions for reassignments
+        const scope = o.scope;
+        let assignmentCount = 0;
+        
+        // Helper to check if a node is an assignment to our variable
+        const checkNode = (node) => {
+          if (node instanceof Assign && 
+              node.variable.unwrapAll() instanceof IdentifierLiteral &&
+              node.variable.unwrapAll().value === varName &&
+              !node.context) {
+            assignmentCount++;
+          }
+          // Recursively check child nodes
+          if (node.traverseChildren) {
+            node.traverseChildren(false, checkNode);
+          }
+        };
+        
+        // Check all expressions in the current scope
+        if (scope.expressions) {
+          scope.expressions.traverseChildren(false, checkNode);
+        }
+        
+        // If we find more than one assignment (including this one), use let
+        return assignmentCount > 1;
+      }
       compileDestructuring(o) {
         var assignObjects, assigns, code, compSlice, compSplice, complexObjects, expIdx, expans, fragments, hasObjAssigns, isExpans, isSplat, leftObjs, loopObjects, obj, objIsUnassignable, objects, olen, processObjects, pushAssign, ref, refExp, restVar, rightObjs, slicer, splatVar, splatVarAssign, splatVarRef, splats, splatsAndExpans, top, value, vvar, vvarText;
         top = o.level === LEVEL_TOP;
