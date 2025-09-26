@@ -7393,10 +7393,10 @@ export const For = (function() {
         guardPart = '';
         defPart = '';
         idt1 = this.tab + TAB;
-        
+
         // ES6: Use for...of loops for arrays (when not a range or object)
         const useForOf = !this.range && !this.object && !this.from && !this.step;
-        
+
         if (this.range) {
           forPartFragments = source.compileToFragments(merge(o, {
             index: ivar,
@@ -7411,7 +7411,7 @@ export const For = (function() {
             defPart += `${this.tab}const ${ref = scope.freeVariable('ref')} = ${svar};\n`;
             svar = ref;
           }
-          
+
           if (this.index && name) {
             // Need both index and value: for (const [i, item] of array.entries())
             forPartFragments = [this.makeCode(`const [${index}, ${name}] of ${svar}.entries()`)];
