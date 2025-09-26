@@ -1,17 +1,18 @@
 # CoffeeScript Solar Directive Compiler - Agent Handoff
 
-## Current Status: 176/326 tests passing (54%)
+## Current Status: 192/326 tests passing (59%)
 
 ### Recent Session Achievements
-1. **Simplified test runner** - Reduced from 213 to 106 lines, much cleaner
-2. **Added `_stripQuotes` helper** - Fixed string literals (+38 tests!)
-3. **Fixed `makeReturn` in Root** - Proper return statements in compiled output
-4. **Improved Op args filtering** - Better handling of undefined values
-5. **Fixed array indexing** - Changed `object:` to `index:` in IndexValue
-6. **Fixed object literals** - Assign nodes use `variable:` instead of `value:`
+1. **Fixed `not` operator** - Preserved undefined values in Op args (+2 tests)
+2. **Fixed empty Call arguments** - Filtered empty objects from method calls (+11 tests)
+3. **Fixed For loops** - They now compile without errors
+4. **Fixed StringWithInterpolations** - Wrapped body in Block properly
+5. **Added missing AST types** - SwitchWhen, Throw, Slice (+8 tests)
+6. **Renamed `$ary` to `$arr`** - Better naming consistency throughout
+7. **Code cleanup** - Simplified Op args with map, used switch expressions
 
 ### Current Architecture
-- **es5.coffee**: 345 lines (very clean!)
+- **es5.coffee**: 364 lines (very clean and well-organized!)
 - **Main entry**: `reduce()` method called by parser
 - **Smart proxy**: `$()` function for resolving directive properties
 - **Modular processing**: `processAst`, `processOps`, `processUse`, `processArr`
@@ -31,23 +32,21 @@ coffee test/runner.coffee test/es5/ast-NumberLiteral.coffee  # Run specific test
 
 ### Current Issues to Fix
 
-#### 1. **traverseChildren error with `not` operator**
-- Error: `child.traverseChildren is not a function`
-- Happens with unary operators like `not true`
-- The Op constructor is getting a non-AST node as a child
-- Need to ensure all Op arguments (except the operator string) are proper AST nodes
+#### 1. **Variable assignments not working**
+- `a = 5; a` returns "a is not defined"
+- Assignment statements aren't creating proper scope
 
-#### 2. **If-else branches not working correctly**
-- `if false then 1 else 2` returns 1 instead of 2
-- Compilation issue with else branches
+#### 2. **For loop bodies incomplete**
+- For loops compile but body isn't properly executed
+- `for x in [1,2,3] then x` doesn't iterate correctly
 
-#### 3. **For/While loops not implemented**
-- Getting "Unknown loop operation: undefined"
-- Need to implement `$ops: 'loop'` handlers
+#### 3. **String interpolation incomplete**
+- Compiles without error but output is incomplete
+- `"result: #{1 + 2}"` outputs `` `result: ` `` instead of full interpolation
 
-#### 4. **String interpolation not working**
-- StringWithInterpolations needs implementation
-- Getting `this.body.unwrap is not a function`
+#### 4. **Destructuring assignments failing**
+- `[x, y] = [10, 20]` errors with "cannot have implicit value"
+- Need to handle destructuring patterns
 
 ### What's Working Well
 - ✅ Numbers (all formats)
@@ -56,16 +55,21 @@ coffee test/runner.coffee test/es5/ast-NumberLiteral.coffee  # Run specific test
 - ✅ Arrays and indexing
 - ✅ Objects and property access
 - ✅ Functions with bodies
-- ✅ Most operators (+, -, *, /, %, **, >, <, >=, <=, ==, !=, and, or, in)
+- ✅ Most operators (+, -, *, /, %, **, >, <, >=, <=, ==, !=, and, or, in, not)
 - ✅ Math methods
-- ✅ Return statements (13/14 passing)
+- ✅ Return statements
 - ✅ Parentheses
+- ✅ Method calls with no arguments
+- ✅ Switch/case statements
+- ✅ Throw statements
+- ✅ Array slicing
 
 ### Quick Wins Available
-1. Fix the `not` operator (2 tests)
-2. Fix if-else branches (several tests)
-3. Implement basic loops
-4. Handle remaining missing AST types (Catch, RegexLiteral, etc.)
+1. Fix variable assignments and scoping
+2. Complete For loop body execution
+3. Finish string interpolation implementation
+4. Implement destructuring patterns
+5. Handle comprehensions properly
 
 ### Important Insights
 1. **makeReturn is crucial** - The Root node needs to call `makeReturn()` on its body
@@ -77,13 +81,14 @@ coffee test/runner.coffee test/es5/ast-NumberLiteral.coffee  # Run specific test
 - Repository: https://github.com/shreeve/coffee
 - Branch: main
 - All changes committed and pushed
-- Latest commit: "Fix Op args filtering: 176/326 tests passing (54%)"
+- Latest commit: "Renamed $ary to $arr throughout: 192/326 tests passing (59%)"
 
 ### Next Agent TODO
-1. Fix indentation issues in es5.coffee (lines 135-150)
-2. Resolve the `not` operator traverseChildren error
-3. Continue increasing test pass rate toward 100%
-4. Focus on simple fixes first for quick wins
+1. Fix variable assignment scoping issues
+2. Complete For loop body handling
+3. Implement full string interpolation
+4. Handle destructuring assignments
+5. Continue pushing toward 100% test compatibility
 
 ### Key Commands for Testing
 ```bash
