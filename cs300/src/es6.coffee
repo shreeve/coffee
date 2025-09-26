@@ -1,8 +1,8 @@
 # ==============================================================================
-# ES5 Backend - Converts Solar directives (pure data) to CoffeeScript AST nodes
+# ES6 Backend - Converts Solar directives (pure data) to CoffeeScript AST nodes
 # ==============================================================================
 
-class ES5Backend
+class ES6Backend
   constructor: (@options = {}, @ast = {}) ->
     @cache = new Map()
     @currentDirective = null
@@ -400,4 +400,5 @@ class ES5Backend
         console.warn "Unknown $ast type:", o.$ast
         new @ast.Literal "# Missing AST node: #{o.$ast}"
 
-module.exports = ES5Backend
+export default ES6Backend
+export { ES6Backend }
