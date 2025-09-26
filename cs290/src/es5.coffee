@@ -129,7 +129,7 @@ class ES5Backend
     target = @$(o.$use)
     return target?[o.method   ]?() if o.method?
     return target?[o.prop     ]    if o.prop?
-    return target?[@$(o.index)]    if o.index?
+    return target?[o.index]        if o.index?
 
     target
 
@@ -180,14 +180,6 @@ class ES5Backend
             console.log "[Solar] loop.addBody operation:", o.addBody
           # addBody: [1, 2] means loop is at position 1, body at position 2
           [loopNode, body] = o.addBody.map (item) => @$(item)
-
-          # Handle "Body $N" placeholder strings
-          if typeof body is 'string' and body.startsWith('Body $')
-            idx = parseInt(body.slice(6)) - 1
-            body = @currentDirective[idx + 1] if idx >= 0
-            if global.process?.env?.SOLAR_DEBUG
-              util = require 'util'
-              console.log "[Solar] loop.addBody resolved body from 'Body $#{idx+1}':", util.inspect(body, {depth: 2, colors: true})
 
           # Ensure body is a Block
           if not (body instanceof @ast.Block)

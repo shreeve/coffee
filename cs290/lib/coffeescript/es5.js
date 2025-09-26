@@ -210,14 +210,14 @@
         return target != null ? target[o.prop] : void 0;
       }
       if (o.index != null) {
-        return target != null ? target[this.$(o.index)] : void 0;
+        return target != null ? target[o.index] : void 0;
       }
       return target;
     }
 
     // Process $ops directives
     processOps(o) {
-      var accessor, body, elseBody, i, idx, ifNode, item, len, loopNode, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, resolved, result, sourceInfo, util, value;
+      var accessor, body, elseBody, i, ifNode, item, len, loopNode, ref, ref1, ref2, ref3, ref4, ref5, resolved, result, sourceInfo, util, value;
       switch (o.$ops) {
         case 'array':
           result = [];
@@ -283,27 +283,13 @@
             [loopNode, body] = o.addBody.map((item) => {
               return this.$(item);
             });
-            // Handle "Body $N" placeholder strings
-            if (typeof body === 'string' && body.startsWith('Body $')) {
-              idx = parseInt(body.slice(6)) - 1;
-              if (idx >= 0) {
-                body = this.currentDirective[idx + 1];
-              }
-              if ((ref3 = global.process) != null ? (ref4 = ref3.env) != null ? ref4.SOLAR_DEBUG : void 0 : void 0) {
-                util = require('util');
-                console.log(`[Solar] loop.addBody resolved body from 'Body $${idx + 1}':`, util.inspect(body, {
-                  depth: 2,
-                  colors: true
-                }));
-              }
-            }
             // Ensure body is a Block
             if (!(body instanceof this.ast.Block)) {
               body = new this.ast.Block((Array.isArray(body) ? body : [body]));
             }
-            if ((ref5 = global.process) != null ? (ref6 = ref5.env) != null ? ref6.SOLAR_DEBUG : void 0 : void 0) {
+            if ((ref3 = global.process) != null ? (ref4 = ref3.env) != null ? ref4.SOLAR_DEBUG : void 0 : void 0) {
               util = require('util');
-              console.log("[Solar] loop.addBody loopNode:", loopNode != null ? (ref7 = loopNode.constructor) != null ? ref7.name : void 0 : void 0);
+              console.log("[Solar] loop.addBody loopNode:", loopNode != null ? (ref5 = loopNode.constructor) != null ? ref5.name : void 0 : void 0);
               console.log("[Solar] loop.addBody body:", util.inspect(body, {
                 depth: 2,
                 colors: true

@@ -368,7 +368,7 @@ case 288: case 293:
 return r(2,{$ast:"While",condition:2,invert:true});
 case 289: case 294: case 295:
 return r(4,{$ast:"While",condition:2,invert:true,guard:4});
-case 296: case 297:
+case 296: case 297: case 305: case 306:
 return r(2,{$ops:"loop",addBody:[1,2]});
 case 298: case 299:
 return r(2,{$ops:"loop",addBody:[2,[1]],postfix:true});
@@ -378,8 +378,6 @@ case 302:
 return r(2,{$ast:"While",condition:{$ast:"BooleanLiteral",value:"true"},isLoop:true,body:[2]});
 case 303: case 304:
 return r(2,{$ops:"loop",addBody:[2,1],postfix:true});
-case 305: case 306:
-return r(2,{$ops:"loop",addBody:[1,"Body $2"]});
 case 307:
 return r(2,{$ast:"For",body:{$arr:[]},source:{$ast:"Value",base:2,$pos:2}});
 case 308: case 310:

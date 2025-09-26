@@ -623,8 +623,8 @@ grammar =
   For: [
     o 'Statement    ForBody', $ops: 'loop', addBody: [2, 1], postfix: true
     o 'Expression   ForBody', $ops: 'loop', addBody: [2, 1], postfix: true
-    o 'ForBody      Block'  , $ops: 'loop', addBody: [1, 'Body $2']
-    o 'ForLineBody  Block'  , $ops: 'loop', addBody: [1, 'Body $2']
+    o 'ForBody      Block'  , $ops: 'loop', addBody: [1, 2]
+    o 'ForLineBody  Block'  , $ops: 'loop', addBody: [1, 2]
   ]
 
   ForBody: [
