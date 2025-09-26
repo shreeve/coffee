@@ -29,11 +29,7 @@ global.test = (code, expected) ->
 
     # For if/else, control flow, and variable declarations, evaluate the whole thing
     # Wrap in a function and call it
-    # Skip while loops as they may have infinite loops
-    if compiled.includes('while (')
-      # Skip while loops for now to avoid hangs
-      throw new Error "While loop evaluation not supported yet"
-    else if compiled.includes('if (') or compiled.includes('try {') or compiled.includes('switch (') or compiled.includes('var ')
+    if /(?:if \(|try \{|switch \(|var |while \()/.test(compiled)
       actual = eval("(function() { #{compiled} })()")
     else
       # Extract return value: "return <expr>;"

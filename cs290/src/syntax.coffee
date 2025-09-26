@@ -605,8 +605,8 @@ grammar =
   # The while loop can either be normal, with a block of expressions to execute,
   # or postfix, with a single expression. There is no do..while.
   While: [
-    o 'WhileSource Block'     , $ops: 'loop', addBody: [1, 'Body $2']
-    o 'WhileLineSource Block' , $ops: 'loop', addBody: [1, 'Body $2']
+    o 'WhileSource Block'     , $ops: 'loop', addBody: [1, 2]
+    o 'WhileLineSource Block' , $ops: 'loop', addBody: [1, 2]
     o 'Statement  WhileSource', $ops: 'loop', addBody: [2, [1]], postfix: true
     o 'Expression WhileSource', $ops: 'loop', addBody: [2, [1]], postfix: true
     o 'Loop'                  , $use: 1
@@ -730,8 +730,8 @@ grammar =
 
   # The most basic form of *if* is a condition and an action. The followingare broken up like this to avoid ambiguity.
   IfBlock: [
-    o 'IF Expression Block'             , $ast: 'If', condition: 2, body: 3, type: 1
-    o 'IfBlock ELSE IF Expression Block', $ops: 'if', addElse: [1, {$ast: 'If', condition: 4, body: 5, type: 3, $pos: [3, 5]}]
+    o 'IF Expression Block'             , $ast: 'If', condition: 2, body: 3, type: 1, invert: {$use: 1, prop: 'invert'}
+    o 'IfBlock ELSE IF Expression Block', $ops: 'if', addElse: [1, {$ast: 'If', condition: 4, body: 5, type: 3, invert: {$use: 3, prop: 'invert'}, $pos: [3, 5]}]
   ]
 
   # The full complement of *if* expressions, including postfix one-liner *if* and *unless*.

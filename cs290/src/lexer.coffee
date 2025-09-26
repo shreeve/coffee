@@ -189,6 +189,7 @@ exports.Lexer = class Lexer
         @seenFor = {endsLength: @ends.length}
       else if tag is 'UNLESS'
         tag = 'IF'
+        tokenData.invert = true
       else if tag is 'IMPORT'
         @seenImport = yes
       else if tag is 'EXPORT'

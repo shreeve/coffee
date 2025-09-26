@@ -176,6 +176,8 @@ class ES5Backend
           return loopNode
 
         if o.addBody?
+          if global.process?.env?.SOLAR_DEBUG
+            console.log "[Solar] loop.addBody operation:", o.addBody
           # addBody: [1, 2] means loop is at position 1, body at position 2
           [loopNode, body] = o.addBody.map (item) => @$(item)
 
@@ -183,10 +185,18 @@ class ES5Backend
           if typeof body is 'string' and body.startsWith('Body $')
             idx = parseInt(body.slice(6)) - 1
             body = @currentDirective[idx + 1] if idx >= 0
+            if global.process?.env?.SOLAR_DEBUG
+              util = require 'util'
+              console.log "[Solar] loop.addBody resolved body from 'Body $#{idx+1}':", util.inspect(body, {depth: 2, colors: true})
 
           # Ensure body is a Block
           if not (body instanceof @ast.Block)
             body = new @ast.Block (if Array.isArray(body) then body else [body])
+
+          if global.process?.env?.SOLAR_DEBUG
+            util = require 'util'
+            console.log "[Solar] loop.addBody loopNode:", loopNode?.constructor?.name
+            console.log "[Solar] loop.addBody body:", util.inspect(body, {depth: 2, colors: true})
 
           @_ensureLocationData loopNode
           @_ensureLocationData body
@@ -257,15 +267,35 @@ class ES5Backend
         new @ast.Op args...
 
       when 'Assign'
-        options = {}
-        options.operatorToken = @$(o.operatorToken) if o.operatorToken
-        new @ast.Assign @$(o.variable), @$(o.value), @$(o.context), options
+        # Handle both simple and compound assignments
+        variable = @$(o.variable)
+        value = @$(o.value)
+        context = @$(o.context)
+
+        # Check for compound assignment (+=, -=, etc.)
+        if o.operator?
+          operator = @$(o.operator)
+          if operator and operator isnt '='
+            # Create an Op node for compound assignment
+            # e.g., x += 1 becomes x = x + 1
+            opValue = new @ast.Op operator.replace('=', ''), variable, value
+            new @ast.Assign variable, opValue, context
+          else
+            new @ast.Assign variable, value, context
+        else
+          # Simple assignment
+          options = {}
+          options.operatorToken = @$(o.operatorToken) if o.operatorToken
+          new @ast.Assign variable, value, context, options
 
       # Control Flow
       when 'If'
         condition = @_ensureLocationData @$(o.condition)
         body = @_ensureLocationData @$(o.body)
-        ifNode = new @ast.If condition, body, {soak: @$(o.soak), postfix: @$(o.postfix)}
+        # Handle `unless` by checking invert flag from lexer
+        invert = @$(o.invert)
+        type = if invert then 'unless' else @$(o.type)
+        ifNode = new @ast.If condition, body, {type, postfix: @$(o.postfix)}
         if o.elseBody?
           elseBody = @_ensureLocationData @$(o.elseBody)
           ifNode.addElse elseBody
@@ -348,7 +378,15 @@ class ES5Backend
       when 'PassthroughLiteral' then new @ast.Literal @$(o.value)
       when 'FuncGlyph'          then new @ast.Literal @$(o.value) or '->'
       when 'RegexLiteral'       then new @ast.Literal @$(o.value)
-      when 'Interpolation'      then new @ast.Literal @$(o.expression) or ''
+      when 'Interpolation'
+        # Create an actual Interpolation node for use in StringWithInterpolations
+        expression = @$(o.expression)
+        if expression?
+          # Expression might be a Block with multiple statements
+          new @ast.Interpolation expression
+        else
+          # Empty interpolation - use EmptyInterpolation class
+          new @ast.EmptyInterpolation()
 
       else
         console.warn "Unknown $ast type:", o.$ast
