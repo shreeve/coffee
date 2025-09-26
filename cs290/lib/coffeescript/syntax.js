@@ -1621,6 +1621,13 @@
         base: {
           $ast: 'ThisLiteral'
         }
+      }),
+      o('@',
+      {
+        $ast: 'Value',
+        base: {
+          $ast: 'ThisLiteral'
+        }
       })
     ],
     // A reference to a property on *this*
@@ -1638,45 +1645,6 @@
           }
         ],
         bareLiteral: {
-          $ast: 'ThisLiteral'
-        }
-      }),
-      o('@ . Property',
-      {
-        $ast: 'Value',
-        base: {
-          $ast: 'ThisLiteral'
-        },
-        properties: [
-          {
-            $ast: 'Access',
-            name: 3
-          }
-        ],
-        bareLiteral: {
-          $ast: 'ThisLiteral'
-        }
-      }),
-      o('@ [ Expression ]',
-      {
-        $ast: 'Value',
-        base: {
-          $ast: 'ThisLiteral'
-        },
-        properties: [
-          {
-            $ast: 'Index',
-            index: 3
-          }
-        ],
-        bareLiteral: {
-          $ast: 'ThisLiteral'
-        }
-      }),
-      o('@',
-      {
-        $ast: 'Value',
-        base: {
           $ast: 'ThisLiteral'
         }
       })

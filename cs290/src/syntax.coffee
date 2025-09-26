@@ -445,14 +445,12 @@ grammar =
   # A reference to the *this* current object.
   This: [
     o 'THIS', $ast: 'Value', base: {$ast: 'ThisLiteral'}
+    o '@'   , $ast: 'Value', base: {$ast: 'ThisLiteral'}
   ]
 
   # A reference to a property on *this*
   ThisProperty: [
-    o '@ Property'      , $ast: 'Value', base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 2 } ], bareLiteral: {$ast: 'ThisLiteral'}
-    o '@ . Property'    , $ast: 'Value', base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 3 } ], bareLiteral: {$ast: 'ThisLiteral'}
-    o '@ [ Expression ]', $ast: 'Value', base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Index', index: 3 } ], bareLiteral: {$ast: 'ThisLiteral'}
-    o '@'               , $ast: 'Value', base: {$ast: 'ThisLiteral'}
+    o '@ Property', $ast: 'Value', base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 2 } ], bareLiteral: {$ast: 'ThisLiteral'}
   ]
 
   # The array literal.
