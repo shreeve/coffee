@@ -15,7 +15,7 @@ grammar =
   ]
 
   Body: [
-    o 'Line'                , $ary: [1]
+    o 'Line'                , $arr: [1]
     o 'Body TERMINATOR Line', $ops: 'array', append: [1, 3]
     o 'Body TERMINATOR'
   ]
@@ -98,7 +98,7 @@ grammar =
   ]
 
   Interpolations: [
-    o 'InterpolationChunk'               , $ary: [1]
+    o 'InterpolationChunk'               , $arr: [1]
     o 'Interpolations InterpolationChunk', $ops: 'array', append: [1, 2]
   ]
 
@@ -229,8 +229,8 @@ grammar =
   ]
 
   ParamList: [
-    o ''                                                    , $ary: []
-    o 'Param'                                               , $ary: [1]
+    o ''                                                    , $arr: []
+    o 'Param'                                               , $arr: [1]
     o 'ParamList , Param'                                   , $ops: 'array', append: [1, 3]
     o 'ParamList OptComma TERMINATOR Param'                 , $ops: 'array', append: [1, 4]
     o 'ParamList OptComma INDENT ParamList OptComma OUTDENT', $ops: 'array', append: [1, 4]
@@ -302,8 +302,8 @@ grammar =
   Accessor: [
     o '.  Property' , $ast: 'Access', name: 2
     o '?. Property' , $ast: 'Access', name: 2, soak: true
-    o ':: Property' , $ary: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
-    o '?:: Property', $ary: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
+    o ':: Property' , $arr: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
+    o '?:: Property', $arr: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
     o '::'          , $ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true
     o '?::'         , $ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true
     o 'Index'
@@ -328,8 +328,8 @@ grammar =
   # Assignment of properties within an object literal can be separated by
   # comma, as in JavaScript, or simply by newline.
   AssignList: [
-    o ''                                                      , $ary: []
-    o 'AssignObj'                                             , $ary: [1]
+    o ''                                                      , $arr: []
+    o 'AssignObj'                                             , $arr: [1]
     o 'AssignList , AssignObj'                                , $ops: 'array', append: [1, 3]
     o 'AssignList OptComma TERMINATOR AssignObj'              , $ops: 'array', append: [1, 4]
     o 'AssignList OptComma INDENT AssignList OptComma OUTDENT', $ops: 'array', append: [1, 4]
@@ -366,7 +366,7 @@ grammar =
   ]
 
   ImportSpecifierList: [
-    o 'ImportSpecifier'                                                         , $ary: [1]
+    o 'ImportSpecifier'                                                         , $arr: [1]
     o 'ImportSpecifierList , ImportSpecifier'                                   , $ops: 'array', append: [1, 3]
     o 'ImportSpecifierList OptComma TERMINATOR ImportSpecifier'                 , $ops: 'array', append: [1, 4]
     o 'INDENT ImportSpecifierList OptComma OUTDENT'                             , $use: 2
@@ -408,7 +408,7 @@ grammar =
   ]
 
   ExportSpecifierList: [
-    o 'ExportSpecifier'                                                         , $ary: [1]
+    o 'ExportSpecifier'                                                         , $arr: [1]
     o 'ExportSpecifierList , ExportSpecifier'                                   , $ops: 'array', append: [1, 3]
     o 'ExportSpecifierList OptComma TERMINATOR ExportSpecifier'                 , $ops: 'array', append: [1, 4]
     o 'INDENT ExportSpecifierList OptComma OUTDENT'                             , $use: 2
@@ -439,8 +439,8 @@ grammar =
 
   # The list of arguments to a function call.
   Arguments: [
-    o 'CALL_START CALL_END'                 , $ary: [{}]
-    o 'CALL_START ArgList OptComma CALL_END', $ary: 2, implicit: {$use: 1, prop: 'generated'}
+    o 'CALL_START CALL_END'                 , $arr: [{}]
+    o 'CALL_START ArgList OptComma CALL_END', $arr: 2, implicit: {$use: 1, prop: 'generated'}
   ]
 
   # A reference to the *this* current object.
@@ -456,7 +456,7 @@ grammar =
 
   # The array literal.
   Array: [
-    o '[ ]'                           , $ast: 'Arr', value: {$ary: [{}]}
+    o '[ ]'                           , $ast: 'Arr', value: {$arr: [{}]}
     o '[ Elisions ]'                  , $ast: 'Arr', objects: 2
     o '[ ArgElisionList OptElisions ]', $ast: 'Arr', objects: {$ops: 'array', gather: [[], 2]}, elisions: 3
   ]
@@ -486,7 +486,7 @@ grammar =
   # The **ArgList** is the list of objects passed into a function call
   # (i.e. comma-separated expressions). Newlines work as well.
   ArgList: [
-    o 'Arg'                                             , $ary: [1]
+    o 'Arg'                                             , $arr: [1]
     o 'ArgList , Arg'                                   , $ops: 'array', append: [1, 3]
     o 'ArgList OptComma TERMINATOR Arg'                 , $ops: 'array', append: [1, 4]
     o 'INDENT ArgList OptComma OUTDENT'                 , $use: 2
@@ -512,17 +512,17 @@ grammar =
   ]
 
   ArgElision: [
-    o 'Arg'         , $ary: [1]
+    o 'Arg'         , $arr: [1]
     o 'Elisions Arg', $ops: 'array', append: [1, 2]
   ]
 
   OptElisions: [
-    o 'OptComma'  , $ary: [{}]
+    o 'OptComma'  , $arr: [{}]
     o ', Elisions', $ops: 'array', gather: [[], 2]
   ]
 
   Elisions: [
-    o 'Elision'         , $ary: [1]
+    o 'Elision'         , $arr: [1]
     o 'Elisions Elision', $ops: 'array', append: [1, 2]
   ]
 
@@ -614,20 +614,20 @@ grammar =
   ]
 
   ForBody: [
-    o 'FOR Range'              , $ast: 'For', body: {$ary: []}, source: {$ast: 'Value', val: 2, $pos: 2}
-    o 'FOR Range BY Expression', $ast: 'For', body: {$ary: []}, source: {$ast: 'Value', val: 2, $pos: 2}, step: 4
+    o 'FOR Range'              , $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', val: 2, $pos: 2}
+    o 'FOR Range BY Expression', $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', val: 2, $pos: 2}, step: 4
     o 'ForStart ForSource'     , $ops: 'loop', addSource: [1, 2]
   ]
 
   ForLineBody: [
-    o 'FOR Range BY ExpressionLine', $ast: 'For', body: {$ary: []}, source: {$ast: 'Value', val: 2, $pos: 2}, step: 4
+    o 'FOR Range BY ExpressionLine', $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', val: 2, $pos: 2}, step: 4
     o 'ForStart ForLineSource'     , $ops: 'loop', addSource: [1, 2]
   ]
 
   ForStart: [
-    o 'FOR ForVariables'      , $ast: 'For', body: {$ary: [{}]}, name: {$use: 2, index: 0}, index: {$use: 2, index: 1}
-    o 'FOR AWAIT ForVariables', $ast: 'For', body: {$ary: []}, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'FOR OWN ForVariables'  , $ast: 'For', body: {$ary: []}, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'FOR ForVariables'      , $ast: 'For', body: {$arr: [{}]}, name: {$use: 2, index: 0}, index: {$use: 2, index: 1}
+    o 'FOR AWAIT ForVariables', $ast: 'For', body: {$arr: []}, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'FOR OWN ForVariables'  , $ast: 'For', body: {$arr: []}, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}
   ]
 
   # An array of all accepted values for a variable inside the loop.
@@ -643,8 +643,8 @@ grammar =
   # and (optional) reference to the current index. Or, *key, value*, in the case
   # of object comprehensions.
   ForVariables: [
-    o 'ForValue'           , $ary: [1]
-    o 'ForValue , ForValue', $ary: [1, 3]
+    o 'ForValue'           , $arr: [1]
+    o 'ForValue , ForValue', $arr: [1, 3]
   ]
 
   # The source of a comprehension is an array or object with an optional guard
@@ -704,7 +704,7 @@ grammar =
   ]
 
   Whens: [
-    o 'When'      , $ary: [1]
+    o 'When'      , $arr: [1]
     o 'Whens When', $ops: 'array', append: [1, 2]
   ]
 

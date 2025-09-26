@@ -67,7 +67,7 @@ This produces a pure data structure:
 1. **`$ast`** - Specifies the AST node type to create
 2. **`$use`** - References and transforms values from the parse stack
 3. **`$ops`** - Performs operations (array manipulation, property setting)
-4. **`$ary`** - Creates filtered arrays from values
+4. **`$arr`** - Creates filtered arrays from values
 
 Every directive automatically includes:
 - **`$pos`** - Source position `[first_line, first_col, last_line, last_col]`

@@ -77,9 +77,9 @@ class ES6Backend
             console.warn "ES6Backend: Unimplemented AST node type:", nodeType
             new @ast.Literal "/* Unimplemented: #{nodeType} */"
 
-      # $ary directive - return array
-      else if directive.$ary?
-        items = @evaluateDirective directive.$ary, frame
+      # $arr directive - return array
+      else if directive.$arr?
+        items = @evaluateDirective directive.$arr, frame
         if Array.isArray(items) then items else [items]
 
       # $use directive - use existing value

@@ -145,8 +145,8 @@
       if (o.$ops != null) {
         return this.processOps(o);
       }
-      if (o.$ary != null) {
-        return this.processAry(o);
+      if (o.$arr != null) {
+        return this.processArr(o);
       }
       return this.$(o);
     }
@@ -172,7 +172,7 @@
       }
       // Objects with directives - process them
       if (typeof value === 'object') {
-        if (value.$ast || value.$ops || value.$use || value.$ary) {
+        if (value.$ast || value.$ops || value.$use || value.$arr) {
           return this.process(value);
         }
         // Regular objects - resolve properties
@@ -188,10 +188,10 @@
       return value;
     }
 
-    // Process $ary directives
-    processAry(o) {
+    // Process $arr directives
+    processArr(o) {
       var items;
-      items = this.$(o.$ary);
+      items = this.$(o.$arr);
       if (Array.isArray(items)) {
         return items;
       } else {
@@ -265,37 +265,44 @@
           console.warn("Unexpected $ops: 'value' without add");
           return null;
         case 'loop':
-          switch (o.type) {
-            case 'addSource':
-              loopNode = this.$(o.loop);
-              sourceInfo = this.$(o.source);
-              this._ensureLocationData(loopNode);
+          // Handle different loop operations
+          if (o.addSource != null) {
+            // addSource: [1, 2] means ForStart is at position 1, ForSource at position 2
+            [loopNode, sourceInfo] = o.addSource.map((item) => {
+              return this.$(item);
+            });
+            this._ensureLocationData(loopNode);
+            if (sourceInfo != null) {
               this._ensureLocationData(sourceInfo);
+            }
+            if ((loopNode != null ? loopNode.addSource : void 0) != null) {
               loopNode.addSource(sourceInfo);
-              return loopNode;
-            case 'addBody':
-              loopNode = this.$(o.loop);
-              body = this.$(o.body);
-              // Handle "Body $N" placeholder strings
-              if (typeof body === 'string' && body.startsWith('Body $')) {
-                idx = parseInt(body.slice(6)) - 1;
-                if (idx >= 0) {
-                  body = this.currentDirective[idx + 1];
-                }
-              }
-              // Ensure body is a Block
-              if (!(body instanceof this.ast.Block)) {
-                body = new this.ast.Block((Array.isArray(body) ? body : [body]));
-              }
-              this._ensureLocationData(loopNode);
-              this._ensureLocationData(body);
-              loopNode.addBody(body);
-              return loopNode;
-            default:
-              console.warn("Unknown loop operation:", o.type);
-              return null;
+            }
+            return loopNode;
           }
-          break;
+          if (o.addBody != null) {
+            // addBody: [1, 2] means loop is at position 1, body at position 2
+            [loopNode, body] = o.addBody.map((item) => {
+              return this.$(item);
+            });
+            // Handle "Body $N" placeholder strings
+            if (typeof body === 'string' && body.startsWith('Body $')) {
+              idx = parseInt(body.slice(6)) - 1;
+              if (idx >= 0) {
+                body = this.currentDirective[idx + 1];
+              }
+            }
+            // Ensure body is a Block
+            if (!(body instanceof this.ast.Block)) {
+              body = new this.ast.Block((Array.isArray(body) ? body : [body]));
+            }
+            this._ensureLocationData(loopNode);
+            this._ensureLocationData(body);
+            loopNode.addBody(body);
+            return loopNode;
+          }
+          console.warn("Unknown loop operation:", o);
+          return null;
         default:
           console.warn("Unknown $ops:", o.$ops);
           return null;
@@ -304,7 +311,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var arg, args, body, condition, elseBody, exclusive, expressions, forNode, i, ifNode, len, name, options, params, processed, ref, ref1, source, whileNode;
+      var args, body, condition, elseBody, expressions, forNode, ifNode, index, name, options, params, ref, ref1, whileNode;
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
@@ -334,7 +341,19 @@
         case 'StringLiteral':
           return new this.ast.StringLiteral(this._stripQuotes(this.$(o.value)));
         case 'StringWithInterpolations':
-          return new this.ast.StringWithInterpolations(this.$(o.body));
+          body = this.$(o.body);
+          return new this.ast.StringWithInterpolations((function() {
+            switch (false) {
+              case !Array.isArray(body):
+                return new this.ast.Block(body);
+              case !(body instanceof this.ast.Block):
+                return body;
+              case body == null:
+                return new this.ast.Block([body]);
+              default:
+                return new this.ast.Block([]);
+            }
+          }).call(this));
         case 'BooleanLiteral':
           return new this.ast.BooleanLiteral(this.$(o.value));
         case 'IdentifierLiteral':
@@ -364,21 +383,14 @@
           return new this.ast.Access(name, this.$(o.soak));
         case 'Index':
           return new this.ast.Index(this.$(o.index));
+        case 'Slice':
+          return new this.ast.Slice(this.$(o.range));
         // Operations
         case 'Op':
-          // Process args, filtering out undefined values
-          args = [];
-          if (o.args) {
-            ref1 = o.args;
-            for (i = 0, len = ref1.length; i < len; i++) {
-              arg = ref1[i];
-              processed = this.$(arg);
-              if (processed != null) {
-                args.push(processed);
-              }
-            }
-          }
-          // Add options if present
+          // Process args - preserve undefineds for proper positioning
+          args = ((ref1 = o.args) != null ? ref1.map((arg) => {
+            return this.$(arg);
+          }) : void 0) || [];
           if ((o.invertOperator != null) || (o.originalOperator != null)) {
             options = {};
             if (o.invertOperator != null) {
@@ -419,16 +431,38 @@
           }
           return whileNode;
         case 'For':
-          // For loops are complex and built via $ops: 'loop'
-          // This creates the initial For node
+          // For loops are created and then extended via $ops: 'loop'
           body = this.$(o.body) || [];
-          source = this.$(o.source);
-          forNode = new this.ast.For(null, null);
-          // Body and source will be added via loop operations
+          // Filter out empty objects from body (similar to Call args fix)
+          if (Array.isArray(body)) {
+            body = body.filter((item) => {
+              if ((item != null) && typeof item === 'object' && !(item instanceof this.ast.Base) && Object.keys(item).length === 0) {
+                return false;
+              }
+              return true;
+            });
+          }
+          if (!(body instanceof this.ast.Block)) {
+            // Ensure body is a Block with location data
+            body = new this.ast.Block(body);
+          }
+          this._ensureLocationData(body);
+          name = this.$(o.name);
+          index = this.$(o.index);
+          // Create the For node with name/index (source will be added via addSource)
+          forNode = new this.ast.For(body, {name, index});
+          if (o.await != null) {
+            forNode.await = this.$(o.await);
+          }
+          if (o.own != null) {
+            forNode.own = this.$(o.own);
+          }
           return forNode;
         case 'Switch':
           return new this.ast.Switch(this.$(o.subject), this.$(o.cases) || [], this.$(o.otherwise));
         case 'When':
+          return new this.ast.When(this.$(o.conditions), this.$(o.body));
+        case 'SwitchWhen':
           return new this.ast.When(this.$(o.conditions), this.$(o.body));
         // Collections
         case 'Obj':
@@ -436,8 +470,7 @@
         case 'Arr':
           return new this.ast.Arr(this.$(o.objects) || []);
         case 'Range':
-          exclusive = this.$(o.exclusive) ? 'exclusive' : null;
-          return new this.ast.Range(this.$(o.from), this.$(o.to), exclusive);
+          return new this.ast.Range(this.$(o.from), this.$(o.to), this.$(o.exclusive));
         // Functions
         case 'Code':
           params = this.$(o.params) || [];
@@ -450,7 +483,15 @@
         case 'Param':
           return new this.ast.Param(this.$(o.name), this.$(o.value), this.$(o.splat));
         case 'Call':
-          return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
+          args = this.$(o.args) || [];
+          // Filter out empty objects from Arguments rule (CALL_START CALL_END produces [{}])
+          args = args.filter((arg) => {
+            if ((arg != null) && typeof arg === 'object' && !(arg instanceof this.ast.Base) && Object.keys(arg).length === 0) {
+              return false;
+            }
+            return true;
+          });
+          return new this.ast.Call(this.$(o.variable), args, this.$(o.soak));
         case 'Return':
           return new this.ast.Return(this.$(o.expression));
         case 'Yield':
@@ -460,9 +501,13 @@
           return new this.ast.Class(this.$(o.variable), this.$(o.parent), this.$(o.body));
         case 'ClassProtoAssignOp':
           return new this.ast.ClassProtoAssignOp(this.$(o.variable), this.$(o.value));
-        // Try/Catch
+        // Try/Catch/Throw
         case 'Try':
           return new this.ast.Try(this.$(o.attempt), this.$(o.errorVariable), this.$(o.recovery), this.$(o.ensure));
+        case 'Catch':
+          return new this.ast.Literal('# catch'); //!# NOTE: Not implemented yet!
+        case 'Throw':
+          return new this.ast.Throw(this.$(o.expression));
         // Other
         case 'Existence':
           return new this.ast.Existence(this.$(o.expression));
@@ -481,8 +526,6 @@
           return new this.ast.Literal(this.$(o.value) || '->');
         case 'RegexLiteral':
           return new this.ast.Literal(this.$(o.value));
-        case 'Catch':
-          return new this.ast.Literal('# catch');
         case 'Interpolation':
           return new this.ast.Literal(this.$(o.expression) || '');
         default:

@@ -90,7 +90,7 @@ class ES5Backend
     return @processAst o if o.$ast?
     return @processUse o if o.$use?
     return @processOps o if o.$ops?
-    return @processAry o if o.$ary?
+    return @processArr o if o.$arr?
     @$ o
 
   # Smart resolver - handles all types of references
@@ -108,7 +108,7 @@ class ES5Backend
 
     # Objects with directives - process them
     if typeof value is 'object'
-      return @process value if value.$ast or value.$ops or value.$use or value.$ary
+      return @process value if value.$ast or value.$ops or value.$use or value.$arr
 
       # Regular objects - resolve properties
       result = {}
@@ -119,9 +119,9 @@ class ES5Backend
     # Everything else passes through
     value
 
-  # Process $ary directives
-  processAry: (o) ->
-    items = @$(o.$ary)
+  # Process $arr directives
+  processArr: (o) ->
+    items = @$(o.$arr)
     if Array.isArray(items) then items else [items]
 
   # Process $use directives
@@ -172,36 +172,35 @@ class ES5Backend
         null
 
       when 'loop'
-        switch o.type
-          when 'addSource'
-            loopNode = @$(o.loop)
-            sourceInfo = @$(o.source)
-            @_ensureLocationData loopNode
-            @_ensureLocationData sourceInfo
-            loopNode.addSource sourceInfo
-            loopNode
+        # Handle different loop operations
+        if o.addSource?
+          # addSource: [1, 2] means ForStart is at position 1, ForSource at position 2
+          [loopNode, sourceInfo] = o.addSource.map (item) => @$(item)
+          @_ensureLocationData loopNode
+          @_ensureLocationData sourceInfo if sourceInfo?
+          loopNode.addSource sourceInfo if loopNode?.addSource?
+          return loopNode
 
-          when 'addBody'
-            loopNode = @$(o.loop)
-            body = @$(o.body)
+        if o.addBody?
+          # addBody: [1, 2] means loop is at position 1, body at position 2
+          [loopNode, body] = o.addBody.map (item) => @$(item)
 
-            # Handle "Body $N" placeholder strings
-            if typeof body is 'string' and body.startsWith('Body $')
-              idx = parseInt(body.slice(6)) - 1
-              body = @currentDirective[idx + 1] if idx >= 0
+          # Handle "Body $N" placeholder strings
+          if typeof body is 'string' and body.startsWith('Body $')
+            idx = parseInt(body.slice(6)) - 1
+            body = @currentDirective[idx + 1] if idx >= 0
 
-            # Ensure body is a Block
-            if not (body instanceof @ast.Block)
-              body = new @ast.Block (if Array.isArray(body) then body else [body])
+          # Ensure body is a Block
+          if not (body instanceof @ast.Block)
+            body = new @ast.Block (if Array.isArray(body) then body else [body])
 
-            @_ensureLocationData loopNode
-            @_ensureLocationData body
-            loopNode.addBody body
-            loopNode
+          @_ensureLocationData loopNode
+          @_ensureLocationData body
+          loopNode.addBody body
+          return loopNode
 
-          else
-            console.warn "Unknown loop operation:", o.type
-            null
+        console.warn "Unknown loop operation:", o
+        null
 
       else
         console.warn "Unknown $ops:", o.$ops
@@ -253,6 +252,7 @@ class ES5Backend
         name = new @ast.PropertyName name.value if name instanceof @ast.IdentifierLiteral
         new @ast.Access name, @$(o.soak)
       when 'Index' then new @ast.Index @$(o.index)
+      when 'Slice' then new @ast.Slice @$(o.range)
 
       # Operations
       when 'Op'
@@ -286,23 +286,36 @@ class ES5Backend
         whileNode
 
       when 'For'
-        # For loops are complex and built via $ops: 'loop'
-        # This creates the initial For node
+        # For loops are created and then extended via $ops: 'loop'
         body = @$(o.body) or []
-        source = @$(o.source)
-        forNode = new @ast.For null, null
-        # Body and source will be added via loop operations
+
+        # Filter out empty objects from body (similar to Call args fix)
+        if Array.isArray(body)
+          body = body.filter (item) =>
+            return false if item? and typeof item is 'object' and not (item instanceof @ast.Base) and Object.keys(item).length is 0
+            true
+
+        # Ensure body is a Block with location data
+        body = new @ast.Block body unless body instanceof @ast.Block
+        @_ensureLocationData body
+
+        name = @$(o.name)
+        index = @$(o.index)
+
+        # Create the For node with name/index (source will be added via addSource)
+        forNode = new @ast.For body, {name, index}
+        forNode.await = @$(o.await) if o.await?
+        forNode.own = @$(o.own) if o.own?
         forNode
 
-      when 'Switch' then new @ast.Switch @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
-      when 'When'   then new @ast.When   @$(o.conditions), @$(o.body)
+      when 'Switch'     then new @ast.Switch @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
+      when 'When'       then new @ast.When   @$(o.conditions), @$(o.body)
+      when 'SwitchWhen' then new @ast.When   @$(o.conditions), @$(o.body)
 
       # Collections
-      when 'Obj' then new @ast.Obj @$(o.properties) or [], @$(o.generated)
-      when 'Arr' then new @ast.Arr @$(o.objects) or []
-      when 'Range'
-        exclusive = if @$(o.exclusive) then 'exclusive' else null
-        new @ast.Range @$(o.from), @$(o.to), exclusive
+      when 'Obj'   then new @ast.Obj @$(o.properties) or [], @$(o.generated)
+      when 'Arr'   then new @ast.Arr @$(o.objects) or []
+      when 'Range' then new @ast.Range @$(o.from), @$(o.to), @$(o.exclusive)
 
       # Functions
       when 'Code'
@@ -312,7 +325,13 @@ class ES5Backend
         body = new @ast.Block(if Array.isArray(body) then body else [body]) unless body instanceof @ast.Block
         new @ast.Code params, body
       when 'Param'  then new @ast.Param  @$(o.name), @$(o.value), @$(o.splat)
-      when 'Call'   then new @ast.Call   @$(o.variable), @$(o.args) or [], @$(o.soak)
+      when 'Call'
+        args = @$(o.args) or []
+        # Filter out empty objects from Arguments rule (CALL_START CALL_END produces [{}])
+        args = args.filter (arg) =>
+          return false if arg? and typeof arg is 'object' and not (arg instanceof @ast.Base) and Object.keys(arg).length is 0
+          true
+        new @ast.Call @$(o.variable), args, @$(o.soak)
       when 'Return' then new @ast.Return @$(o.expression)
       when 'Yield'  then new @ast.Yield  @$(o.expression) or new @ast.Value(new @ast.Literal '')
 
@@ -320,8 +339,10 @@ class ES5Backend
       when 'Class'              then new @ast.Class              @$(o.variable), @$(o.parent), @$(o.body)
       when 'ClassProtoAssignOp' then new @ast.ClassProtoAssignOp @$(o.variable), @$(o.value)
 
-      # Try/Catch
-      when 'Try' then new @ast.Try @$(o.attempt), @$(o.errorVariable), @$(o.recovery), @$(o.ensure)
+      # Try/Catch/Throw
+      when 'Try'   then new @ast.Try   @$(o.attempt), @$(o.errorVariable), @$(o.recovery), @$(o.ensure)
+      when 'Catch'              then new @ast.Literal '# catch' #!# NOTE: Not implemented yet!
+      when 'Throw' then new @ast.Throw @$(o.expression)
 
       # Other
       when 'Existence'         then new @ast.Existence         @$(o.expression)
@@ -334,7 +355,6 @@ class ES5Backend
       when 'PassthroughLiteral' then new @ast.Literal @$(o.value)
       when 'FuncGlyph'          then new @ast.Literal @$(o.value) or '->'
       when 'RegexLiteral'       then new @ast.Literal @$(o.value)
-      when 'Catch'              then new @ast.Literal '# catch'
       when 'Interpolation'      then new @ast.Literal @$(o.expression) or ''
 
       else

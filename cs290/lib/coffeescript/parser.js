@@ -15,7 +15,7 @@ return r(1,{$ast:"Root",body:{$ast:"Block",expressions:[]}});
 case 2:
 return r(1,{$ast:"Root",body:1});
 case 3:
-return r(1,{$ast:"Block",expressions:{$ary:[1]}});
+return r(1,{$ast:"Block",expressions:{$arr:[1]}});
 case 4:
 return r(3,{$ast:"Block",expressions:{$ops:"array",append:[{$use:1,prop:"expressions"},3]}});
 case 5: case 270:
@@ -47,7 +47,7 @@ return r(1,{$ast:"StringLiteral",value:{$use:1,method:"slice",args:[1,-1]},quote
 case 43:
 return r(3,{$ast:"StringWithInterpolations",body:2,quote:{$use:1,prop:"quote"},startQuote:{$ast:"Literal",value:{$use:1,method:"toString"},$pos:1}});
 case 44: case 107: case 158: case 184: case 211: case 249: case 263: case 267: case 319: case 365:
-return r(1,{$ary:[1]});
+return r(1,{$arr:[1]});
 case 45: case 264: case 268: case 366:
 return r(2,{$ops:"array",append:[1,2]});
 case 46:
@@ -135,7 +135,7 @@ return r(2,{$ast:"Code",params:[],body:[2],funcGlyph:1});
 case 102: case 103:
 return r(1,{$ast:"FuncGlyph",glyph:1});
 case 106: case 157:
-return r(1,{$ary:[]});
+return r(1,{$arr:[]});
 case 108: case 159: case 185: case 212: case 250: case 259:
 return r(3,{$ops:"array",append:[1,3]});
 case 109: case 160: case 186: case 213: case 251: case 260:
@@ -165,9 +165,9 @@ return r(2,{$ast:"Access",name:2});
 case 145:
 return r(2,{$ast:"Access",name:2,soak:true});
 case 146:
-return r(2,{$ary:[{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true,$pos:1},{$ast:"Access",name:2,$pos:2}]});
+return r(2,{$arr:[{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true,$pos:1},{$ast:"Access",name:2,$pos:2}]});
 case 147:
-return r(2,{$ary:[{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true,soak:true,$pos:1},{$ast:"Access",name:2,$pos:2}]});
+return r(2,{$arr:[{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true,soak:true,$pos:1},{$ast:"Access",name:2,$pos:2}]});
 case 148:
 return r(1,{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true});
 case 149:
@@ -291,9 +291,9 @@ return r(1,{soak:false});
 case 226:
 return r(1,{soak:true});
 case 227:
-return r(2,{$ary:[{}]});
+return r(2,{$arr:[{}]});
 case 228:
-return r(4,{$ary:2,implicit:{$use:1,prop:"generated"}});
+return r(4,{$arr:2,implicit:{$use:1,prop:"generated"}});
 case 229: case 235:
 return r(1,{$ast:"Value",base:{$ast:"ThisLiteral"}});
 case 230:
@@ -331,7 +331,7 @@ return r(4,{$ops:"array",append:[2,3]});
 case 262:
 return r(6,{$ops:"array",gather:[1,2,4,5]});
 case 265:
-return r(1,{$ary:[{}]});
+return r(1,{$arr:[{}]});
 case 266:
 return r(2,{$ops:"array",gather:[[],2]});
 case 269:
@@ -379,19 +379,19 @@ return r(2,{$ast:"While",condition:{$ast:"BooleanLiteral",value:"true"},isLoop:t
 case 303: case 304:
 return r(2,{$ops:"loop",addBody:[2,1],postfix:true});
 case 307:
-return r(2,{$ast:"For",body:{$ary:[]},source:{$ast:"Value",base:2,$pos:2}});
+return r(2,{$ast:"For",body:{$arr:[]},source:{$ast:"Value",base:2,$pos:2}});
 case 308: case 310:
-return r(4,{$ast:"For",body:{$ary:[]},source:{$ast:"Value",base:2,$pos:2},step:4});
+return r(4,{$ast:"For",body:{$arr:[]},source:{$ast:"Value",base:2,$pos:2},step:4});
 case 309: case 311:
 return r(2,{$ops:"loop",addSource:[1,2]});
 case 312:
-return r(2,{$ast:"For",body:{$ary:[{}]},name:{$use:2,index:0},index:{$use:2,index:1}});
+return r(2,{$ast:"For",body:{$arr:[{}]},name:{$use:2,index:0},index:{$use:2,index:1}});
 case 313:
-return r(3,{$ast:"For",body:{$ary:[]},name:{$use:3,index:0},index:{$use:3,index:1},await:true,awaitTag:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"For",body:{$arr:[]},name:{$use:3,index:0},index:{$use:3,index:1},await:true,awaitTag:{$ast:"Literal",value:2,$pos:2}});
 case 314:
-return r(3,{$ast:"For",body:{$ary:[]},name:{$use:3,index:0},index:{$use:3,index:1},own:true,ownTag:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"For",body:{$arr:[]},name:{$use:3,index:0},index:{$use:3,index:1},own:true,ownTag:{$ast:"Literal",value:2,$pos:2}});
 case 320:
-return r(3,{$ary:[1,3]});
+return r(3,{$arr:[1,3]});
 case 321: case 340:
 return r(2,{source:2});
 case 322: case 341:

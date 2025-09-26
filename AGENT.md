@@ -14,7 +14,7 @@
 - **es5.coffee**: 345 lines (very clean!)
 - **Main entry**: `reduce()` method called by parser
 - **Smart proxy**: `$()` function for resolving directive properties
-- **Modular processing**: `processAst`, `processOps`, `processUse`, `processAry`
+- **Modular processing**: `processAst`, `processOps`, `processUse`, `processArr`
 
 ### Key Files
 - `/Users/shreeve/Data/Code/coffee/cs290/src/es5.coffee` - Main ES5 backend
