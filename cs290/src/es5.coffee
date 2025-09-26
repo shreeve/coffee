@@ -203,7 +203,7 @@ class ES5Backend
     switch o.$ast
 
       # Root, Block, and Splat
-      when 'Root'  
+      when 'Root'
         body = @$(o.body)
         # Ensure body is a Block
         body = new @ast.Block [body] unless body instanceof @ast.Block

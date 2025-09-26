@@ -22,18 +22,18 @@ global.test = (code, expected) ->
   try
     # Compile the code in bare mode
     compiled = CoffeeScript.compile code, bare: true
-    
+
     # Extract the return value using a simple regex
     # Matches: return <value>;
     match = compiled.match(/^\s*return\s+(.*?);?\s*$/m)
-    
+
     if match
       # Evaluate the extracted value
       actual = eval(match[1])
     else
       # No return statement, try to eval the whole thing
       actual = eval(compiled)
-    
+
     # Compare
     if JSON.stringify(actual) == JSON.stringify(expected)
       passed++
