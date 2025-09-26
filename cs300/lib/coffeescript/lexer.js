@@ -1708,7 +1708,7 @@ isUnassignable = function(name, displayName = name) {
   }
 };
 
-exports.isUnassignable = isUnassignable;
+export { isUnassignable };
 
 // `from` isn’t a CoffeeScript keyword, but it behaves like one in `import` and
 // `export` statements (handled above) and in the declaration line of a `for`
@@ -1775,7 +1775,7 @@ STRICT_PROSCRIBED = ['arguments', 'eval'];
 
 // The superset of both JavaScript keywords and reserved words, none of which may
 // be used as identifiers or properties.
-exports.JS_FORBIDDEN = JS_KEYWORDS.concat(RESERVED).concat(STRICT_PROSCRIBED);
+export const JS_FORBIDDEN = JS_KEYWORDS.concat(RESERVED).concat(STRICT_PROSCRIBED);
 
 // The character code of the nasty Microsoft madness otherwise known as the BOM.
 BOM = 65279;
@@ -1936,3 +1936,6 @@ LINE_BREAK = ['INDENT', 'OUTDENT', 'TERMINATOR'];
 
 // Additional indent in front of these is ignored.
 INDENTABLE_CLOSERS = [')', '}', ']'];
+
+
+export default Lexer;

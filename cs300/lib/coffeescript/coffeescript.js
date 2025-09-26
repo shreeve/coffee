@@ -283,7 +283,7 @@ parser.lexer = {
 
 // Make all the AST nodes visible to the parser.
 const nodesModule = await import('./nodes.js');
-parser.yy = nodesModule;
+parser.yy = { ...nodesModule };
 
 // Override Jison's default error handling function.
 parser.yy.parseError = function(message, {token}) {
