@@ -9,12 +9,12 @@ o = (pattern, action, options) ->
 grammar =
   Root: [
     o ''    , $ast: '@', body: {$ast: 'Block', expressions: []}
-    o 'Body', $ast: '@', body: {$ast: 'Block', expressions: 1}
+    o 'Body', $ast: '@', body: 1
   ]
 
   Body: [
-    o 'Line'                , $arr: [1]
-    o 'Body TERMINATOR Line', $ops: 'array', append: [1, 3]
+    o 'Line'                , $ast: 'Block', expressions: {$arr: [1]}
+    o 'Body TERMINATOR Line', $ast: 'Block', expressions: {$ops: 'array', append: [{$use: 1, prop: 'expressions'}, 3]}
     o 'Body TERMINATOR'     , $use: 1
   ]
 
