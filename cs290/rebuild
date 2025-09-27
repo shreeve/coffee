@@ -21,7 +21,7 @@ rm -rf \
   lib/coffeescript/syntax.js       \
 
 # generate parser.js from syntax.coffee
-./solar.coffee -o lib/coffeescript/parser.js src/syntax.coffee
+../solar-es5.coffee -o lib/coffeescript/parser.js src/syntax.coffee
 
 # processGrammar: 2.256ms
 # buildLRAutomaton: 54.61ms
