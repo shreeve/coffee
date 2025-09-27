@@ -15,7 +15,7 @@ grammar =
   Body: [
     o 'Line'                , $ast: 'Block', expressions: {$arr: [1]}
     o 'Body TERMINATOR Line', $ast: 'Block', expressions: {$ops: 'array', append: [{$use: 1, prop: 'expressions'}, 3]}
-    o 'Body TERMINATOR'     , $use: 1
+    o 'Body TERMINATOR'
   ]
 
   Line: [
