@@ -342,12 +342,7 @@ class ES5Backend
         new @ast.Range @$(o.from), @$(o.to), tag
 
       # Functions
-      when 'Code'
-        params = @$(o.params) or []
-        body = @$(o.body)
-        # Wrap body in Block if needed
-        body = new @ast.Block(if Array.isArray(body) then body else [body]) unless body instanceof @ast.Block
-        new @ast.Code params, body
+      when 'Code'  then new @ast.Code  @$(o.params) or [], @$(o.body) or new @ast.Block([])
       when 'Param'  then new @ast.Param  @$(o.name), @$(o.value), @$(o.splat)
       when 'Call'
         args = @$(o.args) or []
