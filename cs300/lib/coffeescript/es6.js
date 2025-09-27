@@ -5,7 +5,7 @@ const require = createRequire(import.meta.url);
 
 const hasProp = {}.hasOwnProperty;
 
-const ES6Backend = class ES6Backend {
+class ES6Backend {
   constructor(options1 = {}, ast = {}) {
     this.options = options1;
     this.ast = ast;
@@ -523,6 +523,6 @@ const ES6Backend = class ES6Backend {
     }
   }
 
-};
+}
 
 export default ES6Backend;
