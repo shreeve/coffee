@@ -8,8 +8,8 @@ o = (pattern, action, options) ->
 
 grammar =
   Root: [
-    o ''    , $ast: 'Root', body: {$ast: 'Block', expressions: []}
-    o 'Body', $ast: 'Root', body: {$ast: 'Block', expressions: 1}
+    o ''    , $ast: '@', body: {$ast: 'Block', expressions: []}
+    o 'Body', $ast: '@', body: {$ast: 'Block', expressions: 1}
   ]
 
   Body: [
