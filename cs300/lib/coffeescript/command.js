@@ -13,6 +13,9 @@ import * as optparse from './optparse.js';
 import CoffeeScript from './index.js';
 import { spawn, exec } from 'child_process';
 import { EventEmitter } from 'events';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 let BANNER, SWITCHES, compileJoin, compileOptions, compilePath, compileScript, compileStdio, findDirectoryIndex, forkNode, hidden, joinTimeout, makePrelude, mkdirp, notSources, optionParser, opts, outputPath, parseOptions, printLine, printTokens, printWarn, removeSource, removeSourceDir, silentUnlink, sourceCode, sources, timeLog, usage, version, wait, watch, watchDir, watchedDirs, writeJs;
 const indexOf = [].indexOf;

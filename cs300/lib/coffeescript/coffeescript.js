@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 
 const require = createRequire(import.meta.url);
 
-// Require `package.json`, which is two levels above this file, as this file is
+// Import `package.json`, which is two levels above this file, as this file is
 // evaluated from `lib/coffeescript`.
 const packageJson = require('../../package.json');
 

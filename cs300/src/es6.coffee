@@ -379,7 +379,14 @@ class ES6Backend
       when 'Existence'         then new @ast.Existence         @$(o.expression)
       when 'Parens'            then new @ast.Parens            @$(o.body)
       when 'Expansion'         then new @ast.Expansion
-      when 'ImportDeclaration' then new @ast.ImportDeclaration @$(o.clause), @$(o.source)
+      when 'ImportDeclaration' then new @ast.ImportDeclaration @$(o.clause), @$(o.source), @$(o.assertions)
+      when 'ImportClause' then new @ast.ImportClause @$(o.defaultBinding), @$(o.namedImports)
+      when 'ImportDefaultSpecifier' then new @ast.ImportDefaultSpecifier @$(o.value)
+      when 'ImportNamespaceSpecifier' then new @ast.ImportNamespaceSpecifier @$(o.star), @$(o.local)
+      when 'ImportSpecifierList' then new @ast.ImportSpecifierList @$(o.specifiers) or []
+      when 'ImportSpecifier' then new @ast.ImportSpecifier @$(o.imported), @$(o.local)
+      when 'DynamicImportCall' then new @ast.DynamicImportCall @$(o.variable), @$(o.args)
+      when 'DynamicImport' then new @ast.DynamicImport
       when 'ExportDeclaration' then new @ast.ExportDeclaration @$(o.clause), @$(o.source), @$(o.default)
 
       # Additional types (temporary implementations)

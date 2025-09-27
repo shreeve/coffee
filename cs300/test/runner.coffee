@@ -1,4 +1,4 @@
-#!/usr/bin/env ../bin/coffee
+#!/usr/bin/env ../bin/coffee.js
 
 ###
 Clean Test Runner for Solar CoffeeScript
@@ -6,19 +6,19 @@ Clean Test Runner for Solar CoffeeScript
 Simple, straightforward test runner that just works
 ###
 
-fs = require 'fs'
-path = require 'path'
-CoffeeScript = require '../lib/coffeescript'
+import fs from 'fs'
+import path from 'path'
+import CoffeeScript from '../lib/coffeescript/index.js'
 
 # ANSI colors
 green = '\x1B[0;32m'
-red = '\x1B[0;31m'
-bold = '\x1B[0;1m'
+red   = '\x1B[0;31m'
+bold  = '\x1B[0;1m'
 reset = '\x1B[0m'
 
 # Test tracking
-passed = 0
-failed = 0
+passed     = 0
+failed     = 0
 totalFiles = 0
 
 # Simple test function: test "code", expected_value
@@ -93,34 +93,45 @@ for arg in args
   else if arg.endsWith('.coffee')
     testFiles.push arg
 
-# Run each test file
-for file in testFiles
-  totalFiles++
-  console.log "\n#{bold}[#{totalFiles}/#{testFiles.length}] #{path.basename(file)}#{reset}"
+# Run each test file (async for dynamic imports)
+runTests = ->
+  for file in testFiles
+    totalFiles++
+    console.log "\n#{bold}[#{totalFiles}/#{testFiles.length}] #{path.basename(file)}#{reset}"
 
-  # Reset test counts for this file
-  filePassed = passed
-  fileFailed = failed
+    # Reset test counts for this file
+    filePassed = passed
+    fileFailed = failed
 
-  # Load and run the test file
-  require path.resolve(file)
+    # Load and compile the test file, then execute it
+    code = fs.readFileSync(file, 'utf8')
+    compiledTest = CoffeeScript.compile code,
+      filename: file
+      bare: true
 
-  # Show file summary
-  filePassCount = passed - filePassed
-  fileFailCount = failed - fileFailed
-  if fileFailCount == 0
-    console.log "#{green}File: #{filePassCount} passed#{reset}"
-  else
-    console.log "#{red}File: #{filePassCount} passed, #{fileFailCount} failed#{reset}"
+    # Execute the compiled test in the global context
+    eval(compiledTest)
 
-# Final summary
-console.log "\n#{bold}Summary:#{reset}"
-console.log "#{green}Passed: #{passed}#{reset}"
-console.log "#{red}Failed: #{failed}#{reset}"
-total = passed + failed
-if total > 0
-  percentage = Math.round(passed * 100 / total)
-  console.log "Success rate: #{percentage}%"
+    # Show file summary
+    filePassCount = passed - filePassed
+    fileFailCount = failed - fileFailed
+    if fileFailCount == 0
+      console.log "#{green}File: #{filePassCount} passed#{reset}"
+    else
+      console.log "#{red}File: #{filePassCount} passed, #{fileFailCount} failed#{reset}"
 
-# Exit with error if any tests failed
-process.exit(if failed > 0 then 1 else 0)
+# Run all tests and show summary
+do ->
+  await runTests()
+
+  # Final summary
+  console.log "\n#{bold}Summary:#{reset}"
+  console.log "#{green}Passed: #{passed}#{reset}"
+  console.log "#{red}Failed: #{failed}#{reset}"
+  total = passed + failed
+  if total > 0
+    percentage = Math.round(passed * 100 / total)
+    console.log "Success rate: #{percentage}%"
+
+  # Exit with error if any tests failed
+  process.exit(if failed > 0 then 1 else 0)
