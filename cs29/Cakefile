@@ -52,10 +52,10 @@ run = (args, callback) ->
 # Build the CoffeeScript language from source.
 buildParser = ->
   helpers.extend global, require 'util'
-  syntax = require('./src/syntax')
+  grammar = require('./src/syntax')
   language =
-    grammar: syntax.grammar
-    operators: syntax.operators
+    grammar: grammar.grammar
+    operators: grammar.operators
   {Generator} = require '../solar-es5.coffee'
   parser = Generator(language).generate(compress: !true)
   fs.writeFileSync 'lib/coffeescript/parser.js', parser
