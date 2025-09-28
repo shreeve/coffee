@@ -4,24 +4,24 @@
 # Tests that verify class features work correctly
 
 # Basic class definition and instantiation
-test "class A then constructor: -> @x = 1; (new A).x", 1
-test "class B then method: -> 'hello'; (new B).method()", 'hello'
+test "class A then constructor: -> @x = 1\n(new A).x", 1
+test "class B then method: -> 'hello'\n(new B).method()", 'hello'
 
 # Class with constructor parameters
-test "class C then constructor: (@name) ->; (new C('test')).name", 'test'
-test "class D then constructor: (a, @b) -> @a = a; d = new D(1, 2); d.a + d.b", 3
+test "class C then constructor: (@name) ->\n(new C('test')).name", 'test'
+test "class D then constructor: (a, @b) -> @a = a\nd = new D(1, 2)\nd.a + d.b", 3
 
 # Static methods
-test "class E then @staticMethod: -> 'static'; E.staticMethod()", 'static'
-test "class F then @value: 42; F.value", 42
+test "class E then @staticMethod: -> 'static'\nE.staticMethod()", 'static'
+test "class F then @value: 42\nF.value", 42
 
 # Instance methods
-test "class G then method: -> @value = 10; g = new G; g.method(); g.value", 10
-test "class H then greet: (name) -> 'Hello ' + name; (new H).greet('World')", 'Hello World'
+test "class G then method: -> @value = 10\ng = new G\ng.method()\ng.value", 10
+test "class H then greet: (name) -> 'Hello ' + name\n(new H).greet('World')", 'Hello World'
 
 # Inheritance with extends
-test "class Base then method: -> 'base'; class Child extends Base; (new Child).method()", 'base'
-test "class A then x: 1; class B extends A then y: 2; b = new B; b.x + b.y", 3
+test "class Base then method: -> 'base'\nclass Child extends Base\n(new Child).method()", 'base'
+test "class A then x: 1\nclass B extends A then y: 2\nb = new B\nb.x + b.y", 3
 
 # Super calls in methods
 test """
@@ -42,28 +42,26 @@ test """
   (new Extended(5)).value
 """, 10
 
-# Bound methods (fat arrow)
-test """
-  class Button
-    constructor: (@label) ->
-    click: =>
-      @label
-  btn = new Button('OK')
-  click = btn.click
-  click()
-""", 'OK'
+class Button
+  constructor: (@label) ->
+  click: =>
+    @label
+btn = new Button('OK')
+click = btn.click
+x = click()
+test "'OK'", x
 
 # Class expressions
-test "C = class then method: -> 'expr'; (new C).method()", 'expr'
-test "obj = {Klass: class then value: -> 99}; (new obj.Klass).value()", 99
+test "C = class then method: -> 'expr'\n(new C).method()", 'expr'
+test "obj = {Klass: class then value: -> 99}\n(new obj.Klass).value()", 99
 
 # Anonymous classes
 test "(new class then constructor: -> @x = 7).x", 7
 test "typeof class", "function"
 
 # Constructor with default parameters
-test "class A then constructor: (@x = 5) ->; (new A).x", 5
-test "class B then constructor: (@x = 10) ->; (new B(20)).x", 20
+test "class A then constructor: (@x = 5) ->\n(new A).x", 5
+test "class B then constructor: (@x = 10) ->\n(new B(20)).x", 20
 
 # Multiple inheritance levels
 test """
@@ -85,8 +83,8 @@ test """
 """, 'base'
 
 # Property initialization in class body
-test "class A then prop: 'initialized'; (new A).prop", 'initialized'
-test "class B then x: 1; y: 2; b = new B; b.x + b.y", 3
+test "class A then prop: 'initialized'\n(new A).prop", 'initialized'
+test "class B then x: 1; y: 2\nb = new B\nb.x + b.y", 3
 
 # Methods with arguments
 test """
@@ -108,12 +106,12 @@ test """
 """, 3
 
 # Computed property names
-test """
+test '''
   name = 'dynamic'
   class A
     "#{name}Method": -> 'computed'
   (new A).dynamicMethod()
-""", 'computed'
+''', 'computed'
 
 # Class with both static and instance methods
 test """
@@ -131,8 +129,8 @@ test """
 """, true
 
 # Class prototype access
-test "class A then method: ->; typeof A.prototype.method", "function"
-test "class B then method: -> 'proto'; B::method.call({})", 'proto'
+test "class A then method: ->\ntypeof A.prototype.method", "function"
+test "class B then method: -> 'proto'\nB::method.call({})", 'proto'
 
 # Executable class body
 test """
