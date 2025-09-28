@@ -31,7 +31,7 @@
   "scripts": {
     "parser":  "../cs28/bin/coffee ../solar-es5.coffee -o lib/coffeescript/parser.js src/syntax.coffee",
     "build":   "../cs28/bin/coffee -c -o lib/coffeescript src/*.{lit,}coffee",
-    "test":    "../cs28/bin/coffee test/runner.coffee test/es5",
+    "test":    "../cs28/bin/coffee test/runner.coffee",
     "version": "../cs28/bin/coffee --version"
   },
   "homepage": "https://coffeescript.org",
