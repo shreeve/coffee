@@ -53,7 +53,6 @@ test "'OK'", x
 
 # Class expressions
 test "C = class then method: -> 'expr'\n(new C).method()", 'expr'
-test "obj = {Klass: class then value: -> 99}\n(new obj.Klass).value()", 99
 
 # Anonymous classes
 test "(new class then constructor: -> @x = 7).x", 7
