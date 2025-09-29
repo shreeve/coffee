@@ -59,10 +59,14 @@ global.test = (code, expected) ->
 
     if testPassed
       passed++
-      console.log "#{green}✓#{reset} #{code}"
+      # Indent continuation lines for multi-line code display
+      displayCode = code.replace(/\n/g, '\n  ')
+      console.log "#{green}✓#{reset} #{displayCode}"
     else
       failed++
-      console.log "#{red}✗#{reset} #{code}"
+      # Indent continuation lines for multi-line code display
+      displayCode = code.replace(/\n/g, '\n  ')
+      console.log "#{red}✗#{reset} #{displayCode}"
       if typeof expected != 'function'
         console.log "    Expected: #{expectedStr}"
         console.log "    Got:      #{actualStr}"
@@ -70,7 +74,9 @@ global.test = (code, expected) ->
         console.log "    Validation function returned false"
   catch e
     failed++
-    console.log "#{red}✗#{reset} #{code}"
+    # Indent continuation lines for multi-line code display
+    displayCode = code.replace(/\n/g, '\n  ')
+    console.log "#{red}✗#{reset} #{displayCode}"
     console.log "    Error: #{e.message}"
 
 # Process command line arguments
