@@ -1576,7 +1576,7 @@
     Arguments: [
       o('CALL_START CALL_END',
       {
-        $arr: [{}]
+        $arr: []
       }),
       o('CALL_START ArgList OptComma CALL_END',
       {

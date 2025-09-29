@@ -287,7 +287,7 @@ return r(1,{soak:false});
 case 222:
 return r(1,{soak:true});
 case 223:
-return r(2,{$arr:[{}]});
+return r(2,{$arr:[]});
 case 224:
 return r(4,{$arr:2,implicit:{$use:1,prop:"generated"}});
 case 225: case 226:

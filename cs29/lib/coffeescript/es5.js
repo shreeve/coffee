@@ -446,19 +446,8 @@
           whileNode.body = this.$(o.body) || new this.ast.Block([]);
           return whileNode;
         case 'For':
-          // For loops are created with empty body and source, then extended via $ops: 'loop'
           body = this.$(o.body) || [];
-          // Filter out empty objects from body (similar to Call args fix)
-          if (Array.isArray(body)) {
-            body = body.filter((item) => {
-              if ((item != null) && typeof item === 'object' && !(item instanceof this.ast.Base) && Object.keys(item).length === 0) {
-                return false;
-              }
-              return true;
-            });
-          }
           if (!(body instanceof this.ast.Block)) {
-            // Ensure body is a Block with location data
             body = new this.ast.Block(body);
           }
           this._ensureLocationData(body);
@@ -499,13 +488,9 @@
         case 'Yield':
           return new this.ast.Yield(this.$(o.expression) || new this.ast.Value(new this.ast.Literal('')));
         case 'Call':
-          return new this.ast.Call(this.$(o.variable), (this.$(o.args) || []).filter((arg) => {
-            return !((arg != null) && typeof arg === 'object' && !(arg instanceof this.ast.Base) && Object.keys(arg).length === 0);
-          }), this.$(o.soak));
+          return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
         case 'SuperCall':
-          return new this.ast.SuperCall(this.$(o.variable), (this.$(o.args) || []).filter((arg) => {
-            return !((arg != null) && typeof arg === 'object' && !(arg instanceof this.ast.Base) && Object.keys(arg).length === 0);
-          }), this.$(o.soak));
+          return new this.ast.SuperCall(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
         case 'Param':
           name = this.$(o.name);
           if (name instanceof this.ast.Value && name.base instanceof this.ast.ThisLiteral) {
