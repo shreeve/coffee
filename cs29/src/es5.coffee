@@ -286,16 +286,7 @@ class ES5Backend
         whileNode
 
       when 'For'
-        # For loops are created with empty body and source, then extended via $ops: 'loop'
         body = @$(o.body) or []
-
-        # Filter out empty objects from body (similar to Call args fix)
-        if Array.isArray(body)
-          body = body.filter (item) =>
-            return false if item? and typeof item is 'object' and not (item instanceof @ast.Base) and Object.keys(item).length is 0
-            true
-
-        # Ensure body is a Block with location data
         body = new @ast.Block body unless body instanceof @ast.Block
         @_ensureLocationData body
         forNode = new @ast.For body, {name: @$(o.name), index: @$(o.index), source: @$(o.source)}
@@ -318,12 +309,8 @@ class ES5Backend
       when 'Super'     then new @ast.Super       @$(o.accessor), @$(o.superLiteral)
       when 'Return'    then new @ast.Return      @$(o.expression)
       when 'Yield'     then new @ast.Yield       @$(o.expression) or new @ast.Value(new @ast.Literal '')
-      when 'Call'      then new @ast.Call        @$(o.variable), (@$(o.args) or []).filter((arg) =>
-          not (arg? and typeof arg is 'object' and not (arg instanceof @ast.Base) and Object.keys(arg).length is 0)
-        ), @$(o.soak)
-      when 'SuperCall' then new @ast.SuperCall @$(o.variable), (@$(o.args) or []).filter((arg) =>
-          not (arg? and typeof arg is 'object' and not (arg instanceof @ast.Base) and Object.keys(arg).length is 0)
-        ), @$(o.soak)
+      when 'Call'      then new @ast.Call      @$(o.variable), @$(o.args) or [], @$(o.soak)
+      when 'SuperCall' then new @ast.SuperCall @$(o.variable), @$(o.args) or [], @$(o.soak)
       when 'Param'
         name = @$(o.name)
         name.this = true if name instanceof @ast.Value and name.base instanceof @ast.ThisLiteral
