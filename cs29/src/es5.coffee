@@ -178,12 +178,8 @@ class ES5Backend
         if o.addBody?
           if global.process?.env?.SOLAR_DEBUG
             console.log "[Solar] loop.addBody operation:", o.addBody
-          # addBody: [1, 2] means loop is at position 1, body at position 2
           [loopNode, body] = o.addBody.map (item) => @$(item)
-
-          # Ensure body is a Block
-          if not (body instanceof @ast.Block)
-            body = new @ast.Block (if Array.isArray(body) then body else [body])
+          body = @ast.Block.wrap body
 
           if global.process?.env?.SOLAR_DEBUG
             util = require 'util'
@@ -205,42 +201,32 @@ class ES5Backend
 
       # Root, Block, and Splat
       when 'Root'
-        body = @$(o.body)
-        # Ensure body is a Block
-        body = new @ast.Block [body] unless body instanceof @ast.Block
-        # Add makeReturn if requested via compile options
+        body = @ast.Block.wrap @$(o.body)
         body.makeReturn() if @options.makeReturn
         new @ast.Root body
       when 'Block'
-        expressions = @$(o.expressions)
-        # Flatten if expressions is already a Block (from Body)
+        expressions = @$(o.expressions) # May be nested... if so, extract below
         expressions = expressions.expressions if expressions instanceof @ast.Block
-        new @ast.Block expressions ? []
+        new @ast.Block expressions or []
       when 'Splat' then new @ast.Splat @$(o.name), {postfix: @$(o.postfix)}
 
       # Literals
-      when 'Literal'              then new @ast.Literal              @$(o.value)
-      when 'NumberLiteral'        then new @ast.NumberLiteral        @$(o.value)
-      when 'StringLiteral'        then new @ast.StringLiteral        @_stripQuotes(@$(o.value))
-      when 'RegexLiteral'         then new @ast.RegexLiteral         @$(o.value)
-      when 'PassthroughLiteral'   then new @ast.PassthroughLiteral   @$(o.value)
-      when 'BooleanLiteral'       then new @ast.BooleanLiteral       @$(o.value)
-      when 'IdentifierLiteral'    then new @ast.IdentifierLiteral    @$(o.value)
-      when 'PropertyName'         then new @ast.PropertyName         @$(o.value)
-      when 'ComputedPropertyName' then new @ast.ComputedPropertyName @$(o.expression) or @$(o.name) or @$(o.value)
-      when 'StatementLiteral'     then new @ast.StatementLiteral     @$(o.value)
-      when 'ThisLiteral'          then new @ast.ThisLiteral
-      when 'UndefinedLiteral'     then new @ast.UndefinedLiteral
-      when 'NullLiteral'          then new @ast.NullLiteral
-      when 'InfinityLiteral'      then new @ast.InfinityLiteral
-      when 'NaNLiteral'           then new @ast.NaNLiteral
-      when 'StringWithInterpolations'
-        body = @$(o.body)
-        new @ast.StringWithInterpolations switch
-          when Array.isArray(body)        then new @ast.Block  body
-          when body instanceof @ast.Block then body
-          when body?                      then new @ast.Block [body]
-          else                                 new @ast.Block []
+      when 'Literal'                  then new @ast.Literal              @$(o.value)
+      when 'NumberLiteral'            then new @ast.NumberLiteral        @$(o.value)
+      when 'StringLiteral'            then new @ast.StringLiteral        @_stripQuotes(@$(o.value))
+      when 'RegexLiteral'             then new @ast.RegexLiteral         @$(o.value)
+      when 'PassthroughLiteral'       then new @ast.PassthroughLiteral   @$(o.value)
+      when 'BooleanLiteral'           then new @ast.BooleanLiteral       @$(o.value)
+      when 'IdentifierLiteral'        then new @ast.IdentifierLiteral    @$(o.value)
+      when 'PropertyName'             then new @ast.PropertyName         @$(o.value)
+      when 'ComputedPropertyName'     then new @ast.ComputedPropertyName @$(o.expression) or @$(o.name) or @$(o.value)
+      when 'StatementLiteral'         then new @ast.StatementLiteral     @$(o.value)
+      when 'ThisLiteral'              then new @ast.ThisLiteral
+      when 'UndefinedLiteral'         then new @ast.UndefinedLiteral
+      when 'NullLiteral'              then new @ast.NullLiteral
+      when 'InfinityLiteral'          then new @ast.InfinityLiteral
+      when 'NaNLiteral'               then new @ast.NaNLiteral
+      when 'StringWithInterpolations' then new @ast.StringWithInterpolations @ast.Block.wrap(@$(o.body))
 
       # Value, Access, and Index
       when 'Value' then @_toValue @$(o.base), @$(o.properties) ? []
@@ -281,17 +267,16 @@ class ES5Backend
         ifNode
 
       when 'While'
-        whileNode = new @ast.While @$(o.condition), {invert: @$(o.invert), guard: @$(o.guard), isLoop: @$(o.isLoop)}
-        whileNode.body = @$(o.body) or new @ast.Block []
+        whileNode      = new @ast.While @$(o.condition), {invert: @$(o.invert), guard: @$(o.guard), isLoop: @$(o.isLoop)}
+        whileNode.body = @ast.Block.wrap @$(o.body)
         whileNode
 
       when 'For'
-        body = @$(o.body) or []
-        body = new @ast.Block body unless body instanceof @ast.Block
+        body = @ast.Block.wrap @$(o.body)
         @_ensureLocationData body
-        forNode = new @ast.For body, {name: @$(o.name), index: @$(o.index), source: @$(o.source)}
+        forNode       = new @ast.For body, {name: @$(o.name), index: @$(o.index), source: @$(o.source)}
         forNode.await = @$(o.await) if o.await?
-        forNode.own = @$(o.own) if o.own?
+        forNode.own   = @$(o.own) if o.own?
         forNode
 
       when 'Switch'     then new @ast.Switch     @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
@@ -304,13 +289,13 @@ class ES5Backend
       when 'Range'      then new @ast.Range      @$(o.from), @$(o.to), if @$(o.exclusive) then 'exclusive'
 
       # Functions
-      when 'Code'      then new @ast.Code        @$(o.params) or [], @$(o.body) or new @ast.Block([])
+      when 'Code'      then new @ast.Code        @$(o.params) or [], @ast.Block.wrap(@$(o.body))
       when 'FuncGlyph' then new @ast.FuncGlyph   @$(o.value) or '->'
       when 'Super'     then new @ast.Super       @$(o.accessor), @$(o.superLiteral)
       when 'Return'    then new @ast.Return      @$(o.expression)
       when 'Yield'     then new @ast.Yield       @$(o.expression) or new @ast.Value(new @ast.Literal '')
-      when 'Call'      then new @ast.Call      @$(o.variable), @$(o.args) or [], @$(o.soak)
-      when 'SuperCall' then new @ast.SuperCall @$(o.variable), @$(o.args) or [], @$(o.soak)
+      when 'Call'      then new @ast.Call        @$(o.variable), @$(o.args) or [], @$(o.soak)
+      when 'SuperCall' then new @ast.SuperCall   @$(o.variable), @$(o.args) or [], @$(o.soak)
       when 'Param'
         name = @$(o.name)
         name.this = true if name instanceof @ast.Value and name.base instanceof @ast.ThisLiteral
