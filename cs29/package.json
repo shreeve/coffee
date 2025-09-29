@@ -29,10 +29,10 @@
     "repl.js"
   ],
   "scripts": {
-    "parser":  "../cs28/bin/coffee ../solar-es5.coffee -o lib/coffeescript/parser.js src/syntax.coffee",
-    "build":   "../cs28/bin/coffee -c -o lib/coffeescript src/*.{lit,}coffee",
+    "parser":  "coffee ../solar-es5.coffee -o lib/coffeescript/parser.js src/syntax.coffee",
+    "build":   "coffee -c -o lib/coffeescript src/*.{lit,}coffee",
     "test":    "coffee test/runner.coffee",
-    "version": "../cs28/bin/coffee --version"
+    "version": "coffee --version"
   },
   "homepage": "https://coffeescript.org",
   "bugs": "https://github.com/jashkenas/coffeescript/issues",
