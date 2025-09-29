@@ -263,42 +263,21 @@ class ES5Backend
         new @ast.Op args...
 
       when 'Assign'
-        # Handle both simple and compound assignments
         variable = @$(o.variable)
         value = @$(o.value)
         context = @$(o.context)
-
         # Mark @-based object-context assignments as static (for class bodies)
-        if context is 'object' and variable instanceof @ast.Value and variable.base instanceof @ast.ThisLiteral
-          variable.this = true
-
-        # Check for compound assignment (+=, -=, etc.)
-        if o.operator?
-          operator = @$(o.operator)
-          if operator and operator isnt '='
-            # Create an Op node for compound assignment
-            # e.g., x += 1 becomes x = x + 1
-            opValue = new @ast.Op operator.replace('=', ''), variable, value
-            new @ast.Assign variable, opValue, context
-          else
-            new @ast.Assign variable, value, context
-        else
-          # Simple assignment
-          options = {}
-          options.operatorToken = @$(o.operatorToken) if o.operatorToken
-          new @ast.Assign variable, value, context, options
+        variable.this = true if context is 'object' and variable instanceof @ast.Value and variable.base instanceof @ast.ThisLiteral
+        # Handle compound assignment (+=, -=, etc.)
+        operator = @$(o.operator) if o.operator?
+        value = new @ast.Op operator.replace('=', ''), variable, value if operator and operator isnt '='
+        options = if o.operatorToken then {operatorToken: @$(o.operatorToken)} else {}
+        new @ast.Assign variable, value, context, options
 
       # Control Flow
       when 'If'
-        condition = @_ensureLocationData @$(o.condition)
-        body = @_ensureLocationData @$(o.body)
-        # Handle `unless` by checking invert flag from lexer
-        invert = @$(o.invert)
-        type = if invert then 'unless' else @$(o.type)
-        ifNode = new @ast.If condition, body, {type, postfix: @$(o.postfix)}
-        if o.elseBody?
-          elseBody = @_ensureLocationData @$(o.elseBody)
-          ifNode.addElse elseBody
+        ifNode = new @ast.If @_ensureLocationData(@$(o.condition)), @_ensureLocationData(@$(o.body)), {type: (if @$(o.invert) then 'unless' else @$(o.type)), postfix: @$(o.postfix)}
+        ifNode.addElse @_ensureLocationData(@$(o.elseBody)) if o.elseBody?
         ifNode
 
       when 'While'
@@ -319,14 +298,7 @@ class ES5Backend
         # Ensure body is a Block with location data
         body = new @ast.Block body unless body instanceof @ast.Block
         @_ensureLocationData body
-
-        # Get name and index for the loop variable
-        name = @$(o.name)
-        index = @$(o.index)
-
-        # Create the For node - source will be added via addSource in loop operation
-        # Pass initial source info with name/index
-        forNode = new @ast.For body, {name, index, source: @$(o.source)}
+        forNode = new @ast.For body, {name: @$(o.name), index: @$(o.index), source: @$(o.source)}
         forNode.await = @$(o.await) if o.await?
         forNode.own = @$(o.own) if o.own?
         forNode
@@ -336,58 +308,35 @@ class ES5Backend
       when 'SwitchWhen' then new @ast.SwitchWhen @$(o.conditions), @$(o.body)
 
       # Collections
-      when 'Obj'   then new @ast.Obj @$(o.properties) or [], @$(o.generated)
-      when 'Arr'   then new @ast.Arr @$(o.objects) or []
-      when 'Range'
-        exclusive = @$(o.exclusive)
-        # Range constructor expects string 'exclusive' or nothing
-        tag = if exclusive then 'exclusive' else undefined
-        new @ast.Range @$(o.from), @$(o.to), tag
+      when 'Obj'        then new @ast.Obj        @$(o.properties) or [], @$(o.generated)
+      when 'Arr'        then new @ast.Arr        @$(o.objects) or []
+      when 'Range'      then new @ast.Range      @$(o.from), @$(o.to), if @$(o.exclusive) then 'exclusive'
 
       # Functions
-      when 'Code'  then new @ast.Code  @$(o.params) or [], @$(o.body) or new @ast.Block([])
-      when 'FuncGlyph' then new @ast.FuncGlyph @$(o.value) or '->'
+      when 'Code'      then new @ast.Code        @$(o.params) or [], @$(o.body) or new @ast.Block([])
+      when 'FuncGlyph' then new @ast.FuncGlyph   @$(o.value) or '->'
+      when 'Super'     then new @ast.Super       @$(o.accessor), @$(o.superLiteral)
+      when 'Return'    then new @ast.Return      @$(o.expression)
+      when 'Yield'     then new @ast.Yield       @$(o.expression) or new @ast.Value(new @ast.Literal '')
+      when 'Call'      then new @ast.Call        @$(o.variable), (@$(o.args) or []).filter((arg) =>
+          not (arg? and typeof arg is 'object' and not (arg instanceof @ast.Base) and Object.keys(arg).length is 0)
+        ), @$(o.soak)
+      when 'SuperCall' then new @ast.SuperCall @$(o.variable), (@$(o.args) or []).filter((arg) =>
+          not (arg? and typeof arg is 'object' and not (arg instanceof @ast.Base) and Object.keys(arg).length is 0)
+        ), @$(o.soak)
       when 'Param'
         name = @$(o.name)
-        # Check if this is an @param (like @x or @x = 10)
-        if name instanceof @ast.Value and name.base instanceof @ast.ThisLiteral
-          # Mark the Value node with this = true so nodes.coffee recognizes it
-          name.this = true
+        name.this = true if name instanceof @ast.Value and name.base instanceof @ast.ThisLiteral
         new @ast.Param name, @$(o.value), @$(o.splat)
-      when 'Call'
-        args = @$(o.args) or []
-        # Filter out empty objects from Arguments rule (CALL_START CALL_END produces [{}])
-        args = args.filter (arg) =>
-          return false if arg? and typeof arg is 'object' and not (arg instanceof @ast.Base) and Object.keys(arg).length is 0
-          true
-        new @ast.Call @$(o.variable), args, @$(o.soak)
-      when 'SuperCall'
-        args = @$(o.args) or []
-        # Filter out empty objects like in Call
-        args = args.filter (arg) =>
-          return false if arg? and typeof arg is 'object' and not (arg instanceof @ast.Base) and Object.keys(arg).length is 0
-          true
-        new @ast.SuperCall @$(o.variable), args, @$(o.soak)
-      when 'Super'
-        new @ast.Super @$(o.accessor), @$(o.superLiteral)
-      when 'Return' then new @ast.Return @$(o.expression)
-      when 'Yield'  then new @ast.Yield  @$(o.expression) or new @ast.Value(new @ast.Literal '')
 
       # Classes
-      when 'Class'              then new @ast.Class              @$(o.variable), @$(o.parent), @$(o.body)
-      when 'ClassProtoAssignOp' then new @ast.ClassProtoAssignOp @$(o.variable), @$(o.value)
+      when 'Class'                  then new @ast.Class              @$(o.variable), @$(o.parent), @$(o.body)
+      when 'ClassProtoAssignOp'     then new @ast.ClassProtoAssignOp @$(o.variable), @$(o.value)
 
       # Try/Catch/Throw
-      when 'Try'
-        # The catch directive should be a Catch AST node
-        catchNode = @$(o.catch)
-        new @ast.Try @$(o.attempt), catchNode, @$(o.ensure)
-      when 'Catch'
-        # Create a proper Catch AST node
-        recovery = @$(o.recovery) or @$(o.body)
-        errorVariable = @$(o.variable) or @$(o.errorVariable)
-        new @ast.Catch recovery, errorVariable
-      when 'Throw' then new @ast.Throw @$(o.expression)
+      when 'Try'                    then new @ast.Try @$(o.attempt), @$(o.catch), @$(o.ensure)
+      when 'Catch'                  then new @ast.Catch @$(o.recovery) or @$(o.body), @$(o.variable) or @$(o.errorVariable)
+      when 'Throw'                  then new @ast.Throw @$(o.expression)
 
       # Other
       when 'Elision'                then new @ast.Elision
@@ -403,14 +352,8 @@ class ES5Backend
 
       # String Interpolation
       when 'Interpolation'
-        # Create an actual Interpolation node for use in StringWithInterpolations
         expression = @$(o.expression)
-        if expression?
-          # Expression might be a Block with multiple statements
-          new @ast.Interpolation expression
-        else
-          # Empty interpolation - use EmptyInterpolation class
-          new @ast.EmptyInterpolation()
+        if expression? then new @ast.Interpolation expression else new @ast.EmptyInterpolation()
 
       else
         console.warn "Unknown $ast type:", o.$ast
