@@ -836,7 +836,10 @@ exports.Block = class Block extends Base
   # Wrap up the given nodes as a **Block**, unless it already happens
   # to be one.
   @wrap: (nodes) ->
-    return nodes[0] if nodes.length is 1 and nodes[0] instanceof Block
+    return nodes             if nodes instanceof Block
+    return new Block []      unless nodes?
+    return new Block [nodes] unless Array.isArray nodes
+    return nodes[0]          if nodes.length is 1 and nodes[0] instanceof Block
     new Block nodes
 
   astNode: (o) ->
