@@ -308,7 +308,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, catchNode, condition, context, elseBody, errorVariable, exclusive, expression, expressions, forNode, ifNode, index, invert, name, opValue, operator, options, recovery, ref, ref1, tag, type, value, variable, whileNode;
+      var args, body, context, expression, expressions, forNode, ifNode, name, operator, options, ref, ref1, value, variable, whileNode;
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
@@ -340,20 +340,10 @@
           return new this.ast.NumberLiteral(this.$(o.value));
         case 'StringLiteral':
           return new this.ast.StringLiteral(this._stripQuotes(this.$(o.value)));
-        case 'StringWithInterpolations':
-          body = this.$(o.body);
-          return new this.ast.StringWithInterpolations((function() {
-            switch (false) {
-              case !Array.isArray(body):
-                return new this.ast.Block(body);
-              case !(body instanceof this.ast.Block):
-                return body;
-              case body == null:
-                return new this.ast.Block([body]);
-              default:
-                return new this.ast.Block([]);
-            }
-          }).call(this));
+        case 'RegexLiteral':
+          return new this.ast.RegexLiteral(this.$(o.value));
+        case 'PassthroughLiteral':
+          return new this.ast.PassthroughLiteral(this.$(o.value));
         case 'BooleanLiteral':
           return new this.ast.BooleanLiteral(this.$(o.value));
         case 'IdentifierLiteral':
@@ -374,6 +364,20 @@
           return new this.ast.InfinityLiteral();
         case 'NaNLiteral':
           return new this.ast.NaNLiteral();
+        case 'StringWithInterpolations':
+          body = this.$(o.body);
+          return new this.ast.StringWithInterpolations((function() {
+            switch (false) {
+              case !Array.isArray(body):
+                return new this.ast.Block(body);
+              case !(body instanceof this.ast.Block):
+                return body;
+              case body == null:
+                return new this.ast.Block([body]);
+              default:
+                return new this.ast.Block([]);
+            }
+          }).call(this));
         // Value, Access, and Index
         case 'Value':
           return this._toValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : []);
@@ -405,48 +409,32 @@
           }
           return new this.ast.Op(...args);
         case 'Assign':
-          // Handle both simple and compound assignments
           variable = this.$(o.variable);
           value = this.$(o.value);
           context = this.$(o.context);
-          // Mark @-based object-context assignments as static (for class bodies)
           if (context === 'object' && variable instanceof this.ast.Value && variable.base instanceof this.ast.ThisLiteral) {
+            // Mark @-based object-context assignments as static (for class bodies)
             variable.this = true;
           }
-          // Check for compound assignment (+=, -=, etc.)
           if (o.operator != null) {
+            // Handle compound assignment (+=, -=, etc.)
             operator = this.$(o.operator);
-            if (operator && operator !== '=') {
-              // Create an Op node for compound assignment
-              // e.g., x += 1 becomes x = x + 1
-              opValue = new this.ast.Op(operator.replace('=', ''), variable, value);
-              return new this.ast.Assign(variable, opValue, context);
-            } else {
-              return new this.ast.Assign(variable, value, context);
-            }
-          } else {
-            // Simple assignment
-            options = {};
-            if (o.operatorToken) {
-              options.operatorToken = this.$(o.operatorToken);
-            }
-            return new this.ast.Assign(variable, value, context, options);
           }
-          break;
+          if (operator && operator !== '=') {
+            value = new this.ast.Op(operator.replace('=', ''), variable, value);
+          }
+          options = o.operatorToken ? {
+            operatorToken: this.$(o.operatorToken)
+          } : {};
+          return new this.ast.Assign(variable, value, context, options);
         // Control Flow
         case 'If':
-          condition = this._ensureLocationData(this.$(o.condition));
-          body = this._ensureLocationData(this.$(o.body));
-          // Handle `unless` by checking invert flag from lexer
-          invert = this.$(o.invert);
-          type = invert ? 'unless' : this.$(o.type);
-          ifNode = new this.ast.If(condition, body, {
-            type,
+          ifNode = new this.ast.If(this._ensureLocationData(this.$(o.condition)), this._ensureLocationData(this.$(o.body)), {
+            type: (this.$(o.invert) ? 'unless' : this.$(o.type)),
             postfix: this.$(o.postfix)
           });
           if (o.elseBody != null) {
-            elseBody = this._ensureLocationData(this.$(o.elseBody));
-            ifNode.addElse(elseBody);
+            ifNode.addElse(this._ensureLocationData(this.$(o.elseBody)));
           }
           return ifNode;
         case 'While':
@@ -474,14 +462,9 @@
             body = new this.ast.Block(body);
           }
           this._ensureLocationData(body);
-          // Get name and index for the loop variable
-          name = this.$(o.name);
-          index = this.$(o.index);
-          // Create the For node - source will be added via addSource in loop operation
-          // Pass initial source info with name/index
           forNode = new this.ast.For(body, {
-            name,
-            index,
+            name: this.$(o.name),
+            index: this.$(o.index),
             source: this.$(o.source)
           });
           if (o.await != null) {
@@ -503,47 +486,32 @@
         case 'Arr':
           return new this.ast.Arr(this.$(o.objects) || []);
         case 'Range':
-          exclusive = this.$(o.exclusive);
-          // Range constructor expects string 'exclusive' or nothing
-          tag = exclusive ? 'exclusive' : void 0;
-          return new this.ast.Range(this.$(o.from), this.$(o.to), tag);
+          return new this.ast.Range(this.$(o.from), this.$(o.to), this.$(o.exclusive) ? 'exclusive' : void 0);
         // Functions
         case 'Code':
           return new this.ast.Code(this.$(o.params) || [], this.$(o.body) || new this.ast.Block([]));
-        case 'Param':
-          name = this.$(o.name);
-          // Check if this is an @param (like @x or @x = 10)
-          if (name instanceof this.ast.Value && name.base instanceof this.ast.ThisLiteral) {
-            // Mark the Value node with this = true so nodes.coffee recognizes it
-            name.this = true;
-          }
-          return new this.ast.Param(name, this.$(o.value), this.$(o.splat));
-        case 'Call':
-          args = this.$(o.args) || [];
-          // Filter out empty objects from Arguments rule (CALL_START CALL_END produces [{}])
-          args = args.filter((arg) => {
-            if ((arg != null) && typeof arg === 'object' && !(arg instanceof this.ast.Base) && Object.keys(arg).length === 0) {
-              return false;
-            }
-            return true;
-          });
-          return new this.ast.Call(this.$(o.variable), args, this.$(o.soak));
-        case 'SuperCall':
-          args = this.$(o.args) || [];
-          // Filter out empty objects like in Call
-          args = args.filter((arg) => {
-            if ((arg != null) && typeof arg === 'object' && !(arg instanceof this.ast.Base) && Object.keys(arg).length === 0) {
-              return false;
-            }
-            return true;
-          });
-          return new this.ast.SuperCall(this.$(o.variable), args, this.$(o.soak));
+        case 'FuncGlyph':
+          return new this.ast.FuncGlyph(this.$(o.value) || '->');
         case 'Super':
           return new this.ast.Super(this.$(o.accessor), this.$(o.superLiteral));
         case 'Return':
           return new this.ast.Return(this.$(o.expression));
         case 'Yield':
           return new this.ast.Yield(this.$(o.expression) || new this.ast.Value(new this.ast.Literal('')));
+        case 'Call':
+          return new this.ast.Call(this.$(o.variable), (this.$(o.args) || []).filter((arg) => {
+            return !((arg != null) && typeof arg === 'object' && !(arg instanceof this.ast.Base) && Object.keys(arg).length === 0);
+          }), this.$(o.soak));
+        case 'SuperCall':
+          return new this.ast.SuperCall(this.$(o.variable), (this.$(o.args) || []).filter((arg) => {
+            return !((arg != null) && typeof arg === 'object' && !(arg instanceof this.ast.Base) && Object.keys(arg).length === 0);
+          }), this.$(o.soak));
+        case 'Param':
+          name = this.$(o.name);
+          if (name instanceof this.ast.Value && name.base instanceof this.ast.ThisLiteral) {
+            name.this = true;
+          }
+          return new this.ast.Param(name, this.$(o.value), this.$(o.splat));
         // Classes
         case 'Class':
           return new this.ast.Class(this.$(o.variable), this.$(o.parent), this.$(o.body));
@@ -551,14 +519,9 @@
           return new this.ast.ClassProtoAssignOp(this.$(o.variable), this.$(o.value));
         // Try/Catch/Throw
         case 'Try':
-          // The catch directive should be a Catch AST node
-          catchNode = this.$(o.catch);
-          return new this.ast.Try(this.$(o.attempt), catchNode, this.$(o.ensure));
+          return new this.ast.Try(this.$(o.attempt), this.$(o.catch), this.$(o.ensure));
         case 'Catch':
-          // Create a proper Catch AST node
-          recovery = this.$(o.recovery) || this.$(o.body);
-          errorVariable = this.$(o.variable) || this.$(o.errorVariable);
-          return new this.ast.Catch(recovery, errorVariable);
+          return new this.ast.Catch(this.$(o.recovery) || this.$(o.body), this.$(o.variable) || this.$(o.errorVariable));
         case 'Throw':
           return new this.ast.Throw(this.$(o.expression));
         // Other
@@ -582,21 +545,12 @@
           return new this.ast.ImportSpecifierList(this.$(o.specifiers) || []);
         case 'Parens':
           return new this.ast.Parens(this.$(o.body));
-        // Additional types (temporary implementations)
-        case 'PassthroughLiteral':
-          return new this.ast.Literal(this.$(o.value));
-        case 'FuncGlyph':
-          return new this.ast.Literal(this.$(o.value) || '->');
-        case 'RegexLiteral':
-          return new this.ast.Literal(this.$(o.value));
+        // String Interpolation
         case 'Interpolation':
-          // Create an actual Interpolation node for use in StringWithInterpolations
           expression = this.$(o.expression);
           if (expression != null) {
-            // Expression might be a Block with multiple statements
             return new this.ast.Interpolation(expression);
           } else {
-            // Empty interpolation - use EmptyInterpolation class
             return new this.ast.EmptyInterpolation();
           }
           break;
