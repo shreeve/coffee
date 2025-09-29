@@ -4,9 +4,9 @@
 
 class ES5Backend
   constructor: (@options = {}, @ast = {}) ->
-    @cache = new Map()
     @currentDirective = null
-    @currentRule = null
+    @currentRule      = null
+    @currentLookup    = null
 
   # Helper to ensure node has location data to avoid errors in AST operations
   _ensureLocationData: (node) ->
@@ -51,8 +51,8 @@ class ES5Backend
     lookup = (index) -> values[stackTop - symbolCount + 1 + index]
 
     @currentDirective = directive
-    @currentRule = directive
-    @currentLookup = lookup  # Store lookup for use in $()
+    @currentRule      = directive
+    @currentLookup    = lookup  # Store lookup for use in $()
 
     # Create smart proxy that auto-resolves properties
     handler =

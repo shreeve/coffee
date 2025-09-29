@@ -10,9 +10,9 @@
     constructor(options1 = {}, ast = {}) {
       this.options = options1;
       this.ast = ast;
-      this.cache = new Map();
       this.currentDirective = null;
       this.currentRule = null;
+      this.currentLookup = null;
     }
 
     // Helper to ensure node has location data to avoid errors in AST operations
