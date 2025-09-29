@@ -299,8 +299,8 @@ class ES5Backend
         ifNode
 
       when 'While'
-        whileNode = new @ast.While @$(o.condition), {invert: @$(o.invert), guard: @$(o.guard)}
-        whileNode.body ?= new @ast.Block []
+        whileNode = new @ast.While @$(o.condition), {invert: @$(o.invert), guard: @$(o.guard), isLoop: @$(o.isLoop)}
+        whileNode.body = @$(o.body) or new @ast.Block []
         whileNode
 
       when 'For'
@@ -389,6 +389,7 @@ class ES5Backend
       when 'Existence'         then new @ast.Existence         @$(o.expression)
       when 'Parens'            then new @ast.Parens            @$(o.body)
       when 'Expansion'         then new @ast.Expansion
+      when 'Elision'           then new @ast.Elision
       when 'ImportDeclaration' then new @ast.ImportDeclaration @$(o.clause), @$(o.source)
       when 'ExportDeclaration' then new @ast.ExportDeclaration @$(o.clause), @$(o.source), @$(o.default)
 

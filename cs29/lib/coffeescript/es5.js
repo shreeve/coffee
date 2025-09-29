@@ -450,11 +450,10 @@
         case 'While':
           whileNode = new this.ast.While(this.$(o.condition), {
             invert: this.$(o.invert),
-            guard: this.$(o.guard)
+            guard: this.$(o.guard),
+            isLoop: this.$(o.isLoop)
           });
-          if (whileNode.body == null) {
-            whileNode.body = new this.ast.Block([]);
-          }
+          whileNode.body = this.$(o.body) || new this.ast.Block([]);
           return whileNode;
         case 'For':
           // For loops are created with empty body and source, then extended via $ops: 'loop'
