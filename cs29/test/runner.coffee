@@ -1,10 +1,8 @@
 #!/usr/bin/env ../bin/coffee
 
-###
-Clean Test Runner for Solar CoffeeScript
-=========================================
-Simple, straightforward test runner that just works
-###
+# ==============================================================================
+# runner.coffee - A simple, straightforward test runner that just works
+# ==============================================================================
 
 fs = require 'fs'
 path = require 'path'
