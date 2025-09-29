@@ -562,18 +562,26 @@
         case 'Throw':
           return new this.ast.Throw(this.$(o.expression));
         // Other
-        case 'Existence':
-          return new this.ast.Existence(this.$(o.expression));
-        case 'Parens':
-          return new this.ast.Parens(this.$(o.body));
-        case 'Expansion':
-          return new this.ast.Expansion();
         case 'Elision':
           return new this.ast.Elision();
-        case 'ImportDeclaration':
-          return new this.ast.ImportDeclaration(this.$(o.clause), this.$(o.source));
+        case 'Existence':
+          return new this.ast.Existence(this.$(o.expression));
+        case 'Expansion':
+          return new this.ast.Expansion();
         case 'ExportDeclaration':
           return new this.ast.ExportDeclaration(this.$(o.clause), this.$(o.source), this.$(o.default));
+        case 'ImportClause':
+          return new this.ast.ImportClause(this.$(o.defaultBinding), this.$(o.namedImports));
+        case 'ImportDeclaration':
+          return new this.ast.ImportDeclaration(this.$(o.clause), this.$(o.source));
+        case 'ImportDefaultSpecifier':
+          return new this.ast.ImportDefaultSpecifier(this.$(o.name) || this.$(o.value) || this.$(o));
+        case 'ImportSpecifier':
+          return new this.ast.ImportSpecifier(this.$(o.imported), this.$(o.local));
+        case 'ImportSpecifierList':
+          return new this.ast.ImportSpecifierList(this.$(o.specifiers) || []);
+        case 'Parens':
+          return new this.ast.Parens(this.$(o.body));
         // Additional types (temporary implementations)
         case 'PassthroughLiteral':
           return new this.ast.Literal(this.$(o.value));

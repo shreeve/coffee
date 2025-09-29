@@ -387,12 +387,16 @@ class ES5Backend
       when 'Throw' then new @ast.Throw @$(o.expression)
 
       # Other
-      when 'Existence'         then new @ast.Existence         @$(o.expression)
-      when 'Parens'            then new @ast.Parens            @$(o.body)
-      when 'Expansion'         then new @ast.Expansion
-      when 'Elision'           then new @ast.Elision
-      when 'ImportDeclaration' then new @ast.ImportDeclaration @$(o.clause), @$(o.source)
-      when 'ExportDeclaration' then new @ast.ExportDeclaration @$(o.clause), @$(o.source), @$(o.default)
+      when 'Elision'                then new @ast.Elision
+      when 'Existence'              then new @ast.Existence @$(o.expression)
+      when 'Expansion'              then new @ast.Expansion
+      when 'ExportDeclaration'      then new @ast.ExportDeclaration @$(o.clause), @$(o.source), @$(o.default)
+      when 'ImportClause'           then new @ast.ImportClause @$(o.defaultBinding), @$(o.namedImports)
+      when 'ImportDeclaration'      then new @ast.ImportDeclaration @$(o.clause), @$(o.source)
+      when 'ImportDefaultSpecifier' then new @ast.ImportDefaultSpecifier @$(o.name) or @$(o.value) or @$(o)
+      when 'ImportSpecifier'        then new @ast.ImportSpecifier @$(o.imported), @$(o.local)
+      when 'ImportSpecifierList'    then new @ast.ImportSpecifierList @$(o.specifiers) or []
+      when 'Parens'                 then new @ast.Parens @$(o.body)
 
       # Additional types (temporary implementations)
       when 'PassthroughLiteral' then new @ast.Literal @$(o.value)
