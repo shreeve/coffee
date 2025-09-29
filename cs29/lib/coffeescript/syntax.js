@@ -3,8 +3,7 @@
   // ==============================================================================
   // Solar Syntax - Data-Oriented Grammar for CoffeeScript
   // ==============================================================================
-  var alt, alternatives, grammar, name, o, operators,
-    hasProp = {}.hasOwnProperty;
+  var grammar, o, operators;
 
   o = function(pattern, action, options) {
     pattern = pattern.trim().replace(/\s{2,}/g, ' ');
@@ -462,7 +461,6 @@
     ],
     // Object literal spread properties.
     ObjRestValue: [
-      // Shorthand rest: `r...` — ensure identifier is captured
       o('SimpleObjAssignable ...',
       {
         $ast: 'Splat',
@@ -741,16 +739,8 @@
         $ast: 'Expansion'
       })
     ],
-    ParamVar: [
-      o('Identifier'),
-      // Treat @ inside destructuring params as a name to be lowered later,
-      // not as assignment to `this` during parsing.
-      o('ThisProperty'),
-      o('Array'),
-      o('Object')
-    ],
+    ParamVar: [o('Identifier'), o('ThisProperty'), o('Array'), o('Object')],
     Splat: [
-      // Keep original behavior for general splats
       o('Expression ...',
       {
         $ast: '@',
@@ -824,7 +814,6 @@
         $ast: '@',
         base: 1
       }),
-      o('ThisProperty'), // ThisProperty first for precedence
       o('This'),
       o('Super',
       {
@@ -1119,7 +1108,7 @@
         clause: null,
         source: 2
       }),
-      o('IMPORT String WITH Object',
+      o('IMPORT String ASSERT Object',
       {
         $ast: 'ImportDeclaration',
         clause: null,
@@ -1136,7 +1125,7 @@
         },
         source: 4
       }),
-      o('IMPORT ImportDefaultSpecifier FROM String WITH Object',
+      o('IMPORT ImportDefaultSpecifier FROM String ASSERT Object',
       {
         $ast: 'ImportDeclaration',
         clause: {
@@ -1157,7 +1146,7 @@
         },
         source: 4
       }),
-      o('IMPORT ImportNamespaceSpecifier FROM String WITH Object',
+      o('IMPORT ImportNamespaceSpecifier FROM String ASSERT Object',
       {
         $ast: 'ImportDeclaration',
         clause: {
@@ -1180,7 +1169,7 @@
         },
         source: 5
       }),
-      o('IMPORT { } FROM String WITH Object',
+      o('IMPORT { } FROM String ASSERT Object',
       {
         $ast: 'ImportDeclaration',
         clause: {
@@ -1206,7 +1195,7 @@
         },
         source: 7
       }),
-      o('IMPORT { ImportSpecifierList OptComma } FROM String WITH Object',
+      o('IMPORT { ImportSpecifierList OptComma } FROM String ASSERT Object',
       {
         $ast: 'ImportDeclaration',
         clause: {
@@ -1230,7 +1219,7 @@
         },
         source: 6
       }),
-      o('IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String WITH Object',
+      o('IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String ASSERT Object',
       {
         $ast: 'ImportDeclaration',
         clause: {
@@ -1254,7 +1243,7 @@
         },
         source: 9
       }),
-      o('IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String WITH Object',
+      o('IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String ASSERT Object',
       {
         $ast: 'ImportDeclaration',
         clause: {
@@ -1415,7 +1404,7 @@
         },
         source: 4
       }),
-      o('EXPORT EXPORT_ALL FROM String WITH Object',
+      o('EXPORT EXPORT_ALL FROM String ASSERT Object',
       {
         $ast: 'ExportAllDeclaration',
         exported: {
@@ -1425,21 +1414,6 @@
         source: 4,
         assertions: 6
       }),
-      o('EXPORT EXPORT_ALL AS Identifier FROM String',
-      {
-        $ast: 'ExportAllDeclaration',
-        exported: 4,
-        source: 6,
-        exportedNs: true
-      }),
-      o('EXPORT EXPORT_ALL AS Identifier FROM String WITH Object',
-      {
-        $ast: 'ExportAllDeclaration',
-        exported: 4,
-        source: 6,
-        assertions: 8,
-        exportedNs: true
-      }),
       o('EXPORT { } FROM String',
       {
         $ast: 'ExportNamedDeclaration',
@@ -1448,7 +1422,7 @@
         },
         source: 5
       }),
-      o('EXPORT { } FROM String WITH Object',
+      o('EXPORT { } FROM String ASSERT Object',
       {
         $ast: 'ExportNamedDeclaration',
         clause: {
@@ -1466,7 +1440,7 @@
         },
         source: 7
       }),
-      o('EXPORT { ExportSpecifierList OptComma } FROM String WITH Object',
+      o('EXPORT { ExportSpecifierList OptComma } FROM String ASSERT Object',
       {
         $ast: 'ExportNamedDeclaration',
         clause: {
@@ -3022,23 +2996,8 @@ left        POST_IF`.trim().split('\n').reverse().map(function(line) {
     return line.trim().split(/\s+/);
   });
 
-  for (name in grammar) {
-    if (!hasProp.call(grammar, name)) continue;
-    alternatives = grammar[name];
-    grammar[name] = (function() {
-      var i, len, results;
-      results = [];
-      for (i = 0, len = alternatives.length; i < len; i++) {
-        alt = alternatives[i];
-        // Only add 'return' if it's a string action (not a Solar directive)
-        if (name === 'Root' && typeof alt[1] === 'string') {
-          alt[1] = `return ${alt[1]}`;
-        }
-        results.push(alt);
-      }
-      return results;
-    })();
-  }
+  // Wrapping Up
+  // -----------
 
   // Export the processed grammar and operators for the parser generator. Unlike
   // the original implementation, we no longer extract and pass tokens separately,
