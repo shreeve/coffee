@@ -160,7 +160,6 @@ grammar =
 
   # Object literal spread properties.
   ObjRestValue: [
-    # Shorthand rest: `r...` — ensure identifier is captured
     o 'SimpleObjAssignable ...', $ast: 'Splat', name: {$ast: 'Value', base: 1}, postfix: false
     o '... SimpleObjAssignable', $ast: 'Splat', name: {$ast: 'Value', base: 2}, postfix: false
     o 'ObjSpreadExpr ...'      , $ast: 'Splat', name: 1
@@ -244,15 +243,12 @@ grammar =
 
   ParamVar: [
     o 'Identifier'
-    # Treat @ inside destructuring params as a name to be lowered later,
-    # not as assignment to `this` during parsing.
     o 'ThisProperty'
     o 'Array'
     o 'Object'
   ]
 
   Splat: [
-    # Keep original behavior for general splats
     o 'Expression ...', $ast: '@', name: 1
     o '... Expression', $ast: '@', name: 2, postfix: false
   ]
@@ -278,7 +274,6 @@ grammar =
     o 'Range'        , $ast: '@', base: 1
     o 'Invocation'   , $ast: '@', base: 1
     o 'DoIife'       , $ast: '@', base: 1
-    o 'ThisProperty' # ThisProperty first for precedence
     o 'This'
     o 'Super'        , $ast: '@', base: 1
     o 'MetaProperty' , $ast: '@', base: 1
@@ -349,19 +344,19 @@ grammar =
 
   Import: [
     o 'IMPORT String'                                                                             , $ast: 'ImportDeclaration', clause: null, source: 2
-    o 'IMPORT String WITH Object'                                                                 , $ast: 'ImportDeclaration', clause: null, source: 2, assertions: 4
+    o 'IMPORT String ASSERT Object'                                                               , $ast: 'ImportDeclaration', clause: null, source: 2, assertions: 4
     o 'IMPORT ImportDefaultSpecifier FROM String'                                                 , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: null}, source: 4
-    o 'IMPORT ImportDefaultSpecifier FROM String WITH Object'                                     , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: null}, source: 4, assertions: 6
+    o 'IMPORT ImportDefaultSpecifier FROM String ASSERT Object'                                   , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: null}, source: 4, assertions: 6
     o 'IMPORT ImportNamespaceSpecifier FROM String'                                               , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: 2}, source: 4
-    o 'IMPORT ImportNamespaceSpecifier FROM String WITH Object'                                   , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: 2}, source: 4, assertions: 6
+    o 'IMPORT ImportNamespaceSpecifier FROM String ASSERT Object'                                 , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: 2}, source: 4, assertions: 6
     o 'IMPORT { } FROM String'                                                                    , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: {$ast: 'ImportSpecifierList'}}, source: 5
-    o 'IMPORT { } FROM String WITH Object'                                                        , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: {$ast: 'ImportSpecifierList'}}, source: 5, assertions: 7
+    o 'IMPORT { } FROM String ASSERT Object'                                                      , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: {$ast: 'ImportSpecifierList'}}, source: 5, assertions: 7
     o 'IMPORT { ImportSpecifierList OptComma } FROM String'                                       , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: {$ast: 'ImportSpecifierList', specifiers: 3}}, source: 7
-    o 'IMPORT { ImportSpecifierList OptComma } FROM String WITH Object'                           , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: {$ast: 'ImportSpecifierList', specifiers: 3}}, source: 7, assertions: 9
+    o 'IMPORT { ImportSpecifierList OptComma } FROM String ASSERT Object'                         , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: null, namedImports: {$ast: 'ImportSpecifierList', specifiers: 3}}, source: 7, assertions: 9
     o 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String'                      , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: 4}, source: 6
-    o 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String WITH Object'          , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: 4}, source: 6, assertions: 8
+    o 'IMPORT ImportDefaultSpecifier , ImportNamespaceSpecifier FROM String ASSERT Object'        , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: 4}, source: 6, assertions: 8
     o 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String'              , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: {$ast: 'ImportSpecifierList', specifiers: 5}}, source: 9
-    o 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String WITH Object'  , $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: {$ast: 'ImportSpecifierList', specifiers: 5}}, source: 9, assertions: 11
+    o 'IMPORT ImportDefaultSpecifier , { ImportSpecifierList OptComma } FROM String ASSERT Object', $ast: 'ImportDeclaration', clause: {$ast: 'ImportClause', defaultBinding: 2, namedImports: {$ast: 'ImportSpecifierList', specifiers: 5}}, source: 9, assertions: 11
   ]
 
   ImportSpecifierList: [
@@ -397,13 +392,11 @@ grammar =
     o 'EXPORT DEFAULT Expression'                                        , $ast: 'ExportDefaultDeclaration', declaration: 3
     o 'EXPORT DEFAULT INDENT Object OUTDENT'                             , $ast: 'ExportDefaultDeclaration', value: {$ast: 'Value'}
     o 'EXPORT EXPORT_ALL FROM String'                                    , $ast: 'ExportAllDeclaration', exported: {$ast: 'Literal', value: 2}, source: 4
-    o 'EXPORT EXPORT_ALL FROM String WITH Object'                        , $ast: 'ExportAllDeclaration', exported: {$ast: 'Literal', value: 2}, source: 4, assertions: 6
-    o 'EXPORT EXPORT_ALL AS Identifier FROM String'                      , $ast: 'ExportAllDeclaration', exported: 4, source: 6, exportedNs: true
-    o 'EXPORT EXPORT_ALL AS Identifier FROM String WITH Object'          , $ast: 'ExportAllDeclaration', exported: 4, source: 6, assertions: 8, exportedNs: true
+    o 'EXPORT EXPORT_ALL FROM String ASSERT Object'                      , $ast: 'ExportAllDeclaration', exported: {$ast: 'Literal', value: 2}, source: 4, assertions: 6
     o 'EXPORT { } FROM String'                                           , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList'}, source: 5
-    o 'EXPORT { } FROM String WITH Object'                               , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList'}, source: 5, assertions: 7
+    o 'EXPORT { } FROM String ASSERT Object'                             , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList'}, source: 5, assertions: 7
     o 'EXPORT { ExportSpecifierList OptComma } FROM String'              , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList', specifiers: 3}, source: 7
-    o 'EXPORT { ExportSpecifierList OptComma } FROM String WITH Object'  , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList', specifiers: 3}, source: 7, assertions: 9
+    o 'EXPORT { ExportSpecifierList OptComma } FROM String ASSERT Object', $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList', specifiers: 3}, source: 7, assertions: 9
   ]
 
   ExportSpecifierList: [
@@ -824,15 +817,6 @@ operators = """
 
 # Wrapping Up
 # -----------
-
-# Add return statements to Root rule actions for proper parser behavior
-# (Only for string actions, not Solar directives)
-for own name, alternatives of grammar
-  grammar[name] = for alt in alternatives
-    # Only add 'return' if it's a string action (not a Solar directive)
-    if name is 'Root' and typeof alt[1] is 'string'
-      alt[1] = "return #{alt[1]}"
-    alt
 
 # Export the processed grammar and operators for the parser generator. Unlike
 # the original implementation, we no longer extract and pass tokens separately,
