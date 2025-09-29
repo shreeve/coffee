@@ -1191,6 +1191,15 @@
       // Wrap up the given nodes as a **Block**, unless it already happens
       // to be one.
       static wrap(nodes) {
+        if (nodes instanceof Block) {
+          return nodes;
+        }
+        if (nodes == null) {
+          return new Block([]);
+        }
+        if (!Array.isArray(nodes)) {
+          return new Block([nodes]);
+        }
         if (nodes.length === 1 && nodes[0] instanceof Block) {
           return nodes[0];
         }

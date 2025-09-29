@@ -279,14 +279,10 @@
             if ((ref1 = global.process) != null ? (ref2 = ref1.env) != null ? ref2.SOLAR_DEBUG : void 0 : void 0) {
               console.log("[Solar] loop.addBody operation:", o.addBody);
             }
-            // addBody: [1, 2] means loop is at position 1, body at position 2
             [loopNode, body] = o.addBody.map((item) => {
               return this.$(item);
             });
-            // Ensure body is a Block
-            if (!(body instanceof this.ast.Block)) {
-              body = new this.ast.Block((Array.isArray(body) ? body : [body]));
-            }
+            body = this.ast.Block.wrap(body);
             if ((ref3 = global.process) != null ? (ref4 = ref3.env) != null ? ref4.SOLAR_DEBUG : void 0 : void 0) {
               util = require('util');
               console.log("[Solar] loop.addBody loopNode:", loopNode != null ? (ref5 = loopNode.constructor) != null ? ref5.name : void 0 : void 0);
@@ -312,23 +308,17 @@
       switch (o.$ast) {
         // Root, Block, and Splat
         case 'Root':
-          body = this.$(o.body);
-          if (!(body instanceof this.ast.Block)) {
-            // Ensure body is a Block
-            body = new this.ast.Block([body]);
-          }
+          body = this.ast.Block.wrap(this.$(o.body));
           if (this.options.makeReturn) {
-            // Add makeReturn if requested via compile options
             body.makeReturn();
           }
           return new this.ast.Root(body);
         case 'Block':
-          expressions = this.$(o.expressions);
+          expressions = this.$(o.expressions); // May be nested... if so, extract below
           if (expressions instanceof this.ast.Block) {
-            // Flatten if expressions is already a Block (from Body)
             expressions = expressions.expressions;
           }
-          return new this.ast.Block(expressions != null ? expressions : []);
+          return new this.ast.Block(expressions || []);
         case 'Splat':
           return new this.ast.Splat(this.$(o.name), {
             postfix: this.$(o.postfix)
@@ -365,19 +355,7 @@
         case 'NaNLiteral':
           return new this.ast.NaNLiteral();
         case 'StringWithInterpolations':
-          body = this.$(o.body);
-          return new this.ast.StringWithInterpolations((function() {
-            switch (false) {
-              case !Array.isArray(body):
-                return new this.ast.Block(body);
-              case !(body instanceof this.ast.Block):
-                return body;
-              case body == null:
-                return new this.ast.Block([body]);
-              default:
-                return new this.ast.Block([]);
-            }
-          }).call(this));
+          return new this.ast.StringWithInterpolations(this.ast.Block.wrap(this.$(o.body)));
         // Value, Access, and Index
         case 'Value':
           return this._toValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : []);
@@ -443,13 +421,10 @@
             guard: this.$(o.guard),
             isLoop: this.$(o.isLoop)
           });
-          whileNode.body = this.$(o.body) || new this.ast.Block([]);
+          whileNode.body = this.ast.Block.wrap(this.$(o.body));
           return whileNode;
         case 'For':
-          body = this.$(o.body) || [];
-          if (!(body instanceof this.ast.Block)) {
-            body = new this.ast.Block(body);
-          }
+          body = this.ast.Block.wrap(this.$(o.body));
           this._ensureLocationData(body);
           forNode = new this.ast.For(body, {
             name: this.$(o.name),
@@ -478,7 +453,7 @@
           return new this.ast.Range(this.$(o.from), this.$(o.to), this.$(o.exclusive) ? 'exclusive' : void 0);
         // Functions
         case 'Code':
-          return new this.ast.Code(this.$(o.params) || [], this.$(o.body) || new this.ast.Block([]));
+          return new this.ast.Code(this.$(o.params) || [], this.ast.Block.wrap(this.$(o.body)));
         case 'FuncGlyph':
           return new this.ast.FuncGlyph(this.$(o.value) || '->');
         case 'Super':
