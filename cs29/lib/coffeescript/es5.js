@@ -314,11 +314,8 @@
           }
           return new this.ast.Root(body);
         case 'Block':
-          expressions = this.$(o.expressions); // May be nested... if so, extract below
-          if (expressions instanceof this.ast.Block) {
-            expressions = expressions.expressions;
-          }
-          return new this.ast.Block(expressions || []);
+          expressions = this.$(o.expressions);
+          return new this.ast.Block((expressions instanceof this.ast.Block ? expressions.expressions : expressions) || []);
         case 'Splat':
           return new this.ast.Splat(this.$(o.name), {
             postfix: this.$(o.postfix)
