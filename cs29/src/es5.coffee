@@ -219,9 +219,21 @@ class ES5Backend
       when 'Splat' then new @ast.Splat @$(o.name), {postfix: @$(o.postfix)}
 
       # Literals
-      when 'Literal'       then new @ast.Literal       @$(o.value)
-      when 'NumberLiteral' then new @ast.NumberLiteral @$(o.value)
-      when 'StringLiteral' then new @ast.StringLiteral @_stripQuotes(@$(o.value))
+      when 'Literal'              then new @ast.Literal              @$(o.value)
+      when 'NumberLiteral'        then new @ast.NumberLiteral        @$(o.value)
+      when 'StringLiteral'        then new @ast.StringLiteral        @_stripQuotes(@$(o.value))
+      when 'RegexLiteral'         then new @ast.RegexLiteral         @$(o.value)
+      when 'PassthroughLiteral'   then new @ast.PassthroughLiteral   @$(o.value)
+      when 'BooleanLiteral'       then new @ast.BooleanLiteral       @$(o.value)
+      when 'IdentifierLiteral'    then new @ast.IdentifierLiteral    @$(o.value)
+      when 'PropertyName'         then new @ast.PropertyName         @$(o.value)
+      when 'ComputedPropertyName' then new @ast.ComputedPropertyName @$(o.expression) or @$(o.name) or @$(o.value)
+      when 'StatementLiteral'     then new @ast.StatementLiteral     @$(o.value)
+      when 'ThisLiteral'          then new @ast.ThisLiteral
+      when 'UndefinedLiteral'     then new @ast.UndefinedLiteral
+      when 'NullLiteral'          then new @ast.NullLiteral
+      when 'InfinityLiteral'      then new @ast.InfinityLiteral
+      when 'NaNLiteral'           then new @ast.NaNLiteral
       when 'StringWithInterpolations'
         body = @$(o.body)
         new @ast.StringWithInterpolations switch
@@ -229,16 +241,6 @@ class ES5Backend
           when body instanceof @ast.Block then body
           when body?                      then new @ast.Block [body]
           else                                 new @ast.Block []
-      when 'BooleanLiteral'    then new @ast.BooleanLiteral    @$(o.value)
-      when 'IdentifierLiteral' then new @ast.IdentifierLiteral @$(o.value)
-      when 'PropertyName'      then new @ast.PropertyName      @$(o.value)
-      when 'ComputedPropertyName' then new @ast.ComputedPropertyName @$(o.expression) or @$(o.name) or @$(o.value)
-      when 'StatementLiteral'  then new @ast.StatementLiteral  @$(o.value)
-      when 'ThisLiteral'       then new @ast.ThisLiteral
-      when 'UndefinedLiteral'  then new @ast.UndefinedLiteral
-      when 'NullLiteral'       then new @ast.NullLiteral
-      when 'InfinityLiteral'   then new @ast.InfinityLiteral
-      when 'NaNLiteral'        then new @ast.NaNLiteral
 
       # Value, Access, and Index
       when 'Value' then @_toValue @$(o.base), @$(o.properties) ? []
@@ -344,6 +346,7 @@ class ES5Backend
 
       # Functions
       when 'Code'  then new @ast.Code  @$(o.params) or [], @$(o.body) or new @ast.Block([])
+      when 'FuncGlyph' then new @ast.FuncGlyph @$(o.value) or '->'
       when 'Param'
         name = @$(o.name)
         # Check if this is an @param (like @x or @x = 10)
@@ -398,10 +401,7 @@ class ES5Backend
       when 'ImportSpecifierList'    then new @ast.ImportSpecifierList @$(o.specifiers) or []
       when 'Parens'                 then new @ast.Parens @$(o.body)
 
-      # Additional types (temporary implementations)
-      when 'PassthroughLiteral' then new @ast.Literal @$(o.value)
-      when 'FuncGlyph'          then new @ast.Literal @$(o.value) or '->'
-      when 'RegexLiteral'       then new @ast.Literal @$(o.value)
+      # String Interpolation
       when 'Interpolation'
         # Create an actual Interpolation node for use in StringWithInterpolations
         expression = @$(o.expression)
