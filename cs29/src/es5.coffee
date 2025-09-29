@@ -232,6 +232,7 @@ class ES5Backend
       when 'BooleanLiteral'    then new @ast.BooleanLiteral    @$(o.value)
       when 'IdentifierLiteral' then new @ast.IdentifierLiteral @$(o.value)
       when 'PropertyName'      then new @ast.PropertyName      @$(o.value)
+      when 'ComputedPropertyName' then new @ast.ComputedPropertyName @$(o.expression) or @$(o.name) or @$(o.value)
       when 'StatementLiteral'  then new @ast.StatementLiteral  @$(o.value)
       when 'ThisLiteral'       then new @ast.ThisLiteral
       when 'UndefinedLiteral'  then new @ast.UndefinedLiteral

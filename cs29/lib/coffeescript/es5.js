@@ -360,6 +360,8 @@
           return new this.ast.IdentifierLiteral(this.$(o.value));
         case 'PropertyName':
           return new this.ast.PropertyName(this.$(o.value));
+        case 'ComputedPropertyName':
+          return new this.ast.ComputedPropertyName(this.$(o.expression) || this.$(o.name) || this.$(o.value));
         case 'StatementLiteral':
           return new this.ast.StatementLiteral(this.$(o.value));
         case 'ThisLiteral':
@@ -566,6 +568,8 @@
           return new this.ast.Parens(this.$(o.body));
         case 'Expansion':
           return new this.ast.Expansion();
+        case 'Elision':
+          return new this.ast.Elision();
         case 'ImportDeclaration':
           return new this.ast.ImportDeclaration(this.$(o.clause), this.$(o.source));
         case 'ExportDeclaration':
