@@ -510,7 +510,13 @@
         case 'Code':
           return new this.ast.Code(this.$(o.params) || [], this.$(o.body) || new this.ast.Block([]));
         case 'Param':
-          return new this.ast.Param(this.$(o.name), this.$(o.value), this.$(o.splat));
+          name = this.$(o.name);
+          // Check if this is an @param (like @x or @x = 10)
+          if (name instanceof this.ast.Value && name.base instanceof this.ast.ThisLiteral) {
+            // Mark the Value node with this = true so nodes.coffee recognizes it
+            name.this = true;
+          }
+          return new this.ast.Param(name, this.$(o.value), this.$(o.splat));
         case 'Call':
           args = this.$(o.args) || [];
           // Filter out empty objects from Arguments rule (CALL_START CALL_END produces [{}])

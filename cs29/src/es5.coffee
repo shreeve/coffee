@@ -343,7 +343,13 @@ class ES5Backend
 
       # Functions
       when 'Code'  then new @ast.Code  @$(o.params) or [], @$(o.body) or new @ast.Block([])
-      when 'Param'  then new @ast.Param  @$(o.name), @$(o.value), @$(o.splat)
+      when 'Param'
+        name = @$(o.name)
+        # Check if this is an @param (like @x or @x = 10)
+        if name instanceof @ast.Value and name.base instanceof @ast.ThisLiteral
+          # Mark the Value node with this = true so nodes.coffee recognizes it
+          name.this = true
+        new @ast.Param name, @$(o.value), @$(o.splat)
       when 'Call'
         args = @$(o.args) or []
         # Filter out empty objects from Arguments rule (CALL_START CALL_END produces [{}])
