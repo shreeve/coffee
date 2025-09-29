@@ -172,7 +172,7 @@ class ES5Backend
           [loopNode, sourceInfo] = o.addSource.map (item) => @$(item)
           @_ensureLocationData loopNode
           @_ensureLocationData sourceInfo if sourceInfo?
-          loopNode.addSource sourceInfo if loopNode?.addSource?
+          loopNode.addSource   sourceInfo if loopNode?.addSource?
           return loopNode
 
         if o.addBody?
@@ -205,9 +205,8 @@ class ES5Backend
         body.makeReturn() if @options.makeReturn
         new @ast.Root body
       when 'Block'
-        expressions = @$(o.expressions) # May be nested... if so, extract below
-        expressions = expressions.expressions if expressions instanceof @ast.Block
-        new @ast.Block expressions or []
+        expressions = @$(o.expressions)
+        new @ast.Block (if expressions instanceof @ast.Block then expressions.expressions else expressions) or []
       when 'Splat' then new @ast.Splat @$(o.name), {postfix: @$(o.postfix)}
 
       # Literals
@@ -243,7 +242,7 @@ class ES5Backend
         args = o.args?.map((arg) => @$(arg)) or []
         if o.invertOperator? or o.originalOperator?
           options = {}
-          options.invertOperator   = @$(o.invertOperator) if o.invertOperator?
+          options.invertOperator   = @$(o.invertOperator  ) if o.invertOperator?
           options.originalOperator = @$(o.originalOperator) if o.originalOperator?
           args.push options
         new @ast.Op args...
@@ -276,7 +275,7 @@ class ES5Backend
         @_ensureLocationData body
         forNode       = new @ast.For body, {name: @$(o.name), index: @$(o.index), source: @$(o.source)}
         forNode.await = @$(o.await) if o.await?
-        forNode.own   = @$(o.own) if o.own?
+        forNode.own   = @$(o.own  ) if o.own?
         forNode
 
       when 'Switch'     then new @ast.Switch     @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
