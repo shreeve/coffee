@@ -6,15 +6,52 @@ Modern test suite for CoffeeScript 3.0 Solar directive processing.
 
 **Test Runner:** `coffee runner.coffee` (uses global CoffeeScript 2.7.0)
 **Test Format:** CoffeeScript files with `.test.coffee` extension
-**Testing Target:** Our cs290 Solar directive implementation
+**Testing Target:** Local CoffeeScript implementation under test
+
+## The Dual-Version System
+
+This test suite uses two different CoffeeScript versions with distinct roles:
+
+1. **Global CoffeeScript (2.7.0)** - The test runner environment
+   - Interprets and executes the test runner script
+   - Runs throughout the entire test process
+   - Acts as the runtime environment for the test infrastructure
+
+2. **Implementation Under Test** - The version being tested (e.g., cs29's 2.9.0)
+   - Loaded as a library module via `require '../lib/coffeescript'`
+   - Used only for compiling test code snippets
+   - This is what we're actually testing
+
+3. **Node.js Runtime** - Executes the compiled JavaScript
+   - The compiled JavaScript from step 2 is executed via `eval()`
+   - Runs in the neutral Node.js V8 engine
+
+### Visual Flow
+
+```
+npm run test ../test/es5
+    ↓
+[Global Coffee 2.7.0] → Runs test/runner.coffee
+    ↓
+[Test Runner] → Loads ../lib/coffeescript (e.g., 2.9.0)
+    ↓
+[Test Code] → "class A then @x: 1"
+    ↓
+[Implementation 2.9.0] → Compiles to JavaScript
+    ↓
+[Node.js V8] → Executes: eval("(function() { ... })()")
+    ↓
+[Test Result] → Pass ✓ or Fail ✗
+```
 
 ## How It Works
 
-1. **Global CoffeeScript** compiles and runs test files
-2. **Test files** import our cs290 implementation
-3. **Tests call** `CoffeeScript.compile()` on our implementation
-4. **Results compared** against expected behavior
-5. **Console shows** which Solar directives need implementation
+1. **Global CoffeeScript 2.7.0** runs the test runner script
+2. **Test runner loads** the local implementation as a library
+3. **Tests call** `CoffeeScript.compile()` on the implementation under test
+4. **Compiled JavaScript** is executed via Node.js `eval()`
+5. **Results compared** against expected behavior
+6. **Console shows** test results and any failing directives
 
 ## Test Categories
 
@@ -56,14 +93,17 @@ Modern test suite for CoffeeScript 3.0 Solar directive processing.
 
 ## Usage
 
-### Run All Tests
+### Run Tests from Local Test Directory
 ```bash
-cd test && coffee runner.coffee
+npm run test test/                    # Run all local tests
+npm run test test/01-basic.test.coffee  # Run single test file
 ```
 
-### Run Single Category (Future)
+### Run Shared Test Suite
 ```bash
-cd test && coffee runner.coffee 01-basic.test.coffee
+npm run test ../test/es5               # Run all ES5 AST tests
+npm run test ../test/es5/ast-Class.coffee  # Run specific test
+npm run test ../test/old               # Run legacy test suite
 ```
 
 ### Add New Test
@@ -78,9 +118,9 @@ test "description of what you're testing", ->
 ## Development Workflow
 
 1. **Add test** for new feature (test fails)
-2. **See console output** showing missing Solar directives
-3. **Implement directive** in `src/es6.coffee`
-4. **Recompile:** `coffee -c -o lib/coffeescript src/es6.coffee`
+2. **See console output** showing test failures
+3. **Implement/fix feature** in the implementation's source
+4. **Recompile** the implementation
 5. **Run test** again → closer to passing
 6. **Repeat** until test passes
 
@@ -93,7 +133,8 @@ test "description of what you're testing", ->
 
 ## Notes
 
-- Tests use global CoffeeScript to run themselves
-- Our cs290 implementation gets tested through require
+- Tests use global CoffeeScript (2.7.0) to run themselves
+- The implementation under test gets loaded as a library via require
 - Focus on **behavior**, not implementation details
-- Perfect for test-driven Solar directive development
+- Perfect for test-driven development and regression testing
+- The same test suite can be used across different implementations (cs29, cs290, etc.)
