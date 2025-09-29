@@ -22,7 +22,7 @@ test "(i for i in [10...10]).length", 0
 
 # Comprehensions with index
 test "(i for x, i in ['a', 'b', 'c']).join(',')", "0,1,2"
-test "(\"#{i}:#{v}\" for v, i in ['a', 'b', 'c']).join(',')", "0:a,1:b,2:c"
+test '("#{i}:#{v}" for v, i in ["a", "b", "c"]).join(",")', "0:a,1:b,2:c"
 test "(i + v for v, i in [10, 20, 30]).join(',')", "10,21,32"
 
 # Object comprehensions (for-of)
@@ -37,7 +37,7 @@ test "obj = {x: 5, y: 10, z: 15}; (k for k, v of obj when v >= 10).sort().join('
 # Nested comprehensions
 test "(x + y for x in [1, 2] for y in [10, 20]).join(',')", "11,21,12,22"
 test "(x * y for x in [1, 2, 3] for y in [1, 2]).join(',')", "1,2,2,4,3,6"
-test "(\"#{i},#{j}\" for i in [0..1] for j in [0..1]).join(' ')", "0,0 0,1 1,0 1,1"
+test '("#{i},#{j}" for i in [0..1] for j in [0..1]).join(" ")', "0,0 0,1 1,0 1,1"
 
 # Comprehensions with by (step)
 test "(i for i in [0..10] by 2).join(',')", "0,2,4,6,8,10"
@@ -115,7 +115,7 @@ test """
 """, 3
 
 # Comprehension with guard and index
-test "(\"#{i}:#{v}\" for v, i in [10, 20, 30] when i > 0).join(',')", "1:20,2:30"
+test '("#{i}:#{v}" for v, i in [10, 20, 30] when i > 0).join(",")', "1:20,2:30"
 
 # Multiple filters
 test "(x for x in [1..10] when x > 3 when x < 8).join(',')", "4,5,6,7"

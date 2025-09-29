@@ -90,7 +90,7 @@ test "obj = {a: 1, b: 2}; (k for k of obj).sort().join(',')", "a,b"
 test "obj = {x: 10, y: 20}; (v for k, v of obj).sort().join(',')", "10,20"
 
 # For-in with index
-test "(\"#{i}:#{v}\" for v, i in ['a', 'b', 'c']).join(',')", "0:a,1:b,2:c"
+test '("#{i}:#{v}" for v, i in ["a", "b", "c"]).join(",")', "0:a,1:b,2:c"
 
 # While loops
 test """
