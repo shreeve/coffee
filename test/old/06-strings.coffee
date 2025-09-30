@@ -135,9 +135,9 @@ test '\'#{5}\'', '#{5}'
 test '\'value: #{x}\'', 'value: #{x}'
 
 # Escape sequences
-test '"\\n".length", 1
-test '"\\t".length", 1
-test '"\\\\".length", 1
+test '"\\n".length', 1
+test '"\\t".length', 1
+test '"\\\\".length', 1
 test '"\\u0048"', "H"
 
 # Block strings preserve indentation
