@@ -103,11 +103,11 @@ test "'string' instanceof String", false
 test "5 instanceof Number", false
 test "new Date() instanceof Date", true
 
-# in operator (for objects)
-test "'length' in []", true
-test "'push' in []", true
-test "'x' in {x: 1}", true
-test "'y' in {x: 1}", false
+# in operator (for objects) - use 'of' in CoffeeScript
+test "'length' of []", true
+test "'push' of []", true
+test "'x' of {x: 1}", true
+test "'y' of {x: 1}", false
 
 # in operator (for arrays in CoffeeScript)
 test "2 in [1, 2, 3]", true

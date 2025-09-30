@@ -1,7 +1,4 @@
-test '''
-  ///
-    [a-z]+  # Lowercase letters
-    \\s+     # Whitespace (escaped backslash)
-    [0-9]+  # Digits
-  ///.test('hello 123')
-''', true
+test "'length' of []", true
+test "'push' of []", true
+test "'x' of {x: 1}", true
+test "'y' of {x: 1}", false
