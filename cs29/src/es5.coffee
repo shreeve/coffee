@@ -15,15 +15,6 @@ class ES5Backend
       node.updateLocationDataIfMissing?(node.locationData)
     node
 
-  # Helper to strip quotes from string literals
-  _stripQuotes: (str) ->
-    return str unless str?
-    # Remove surrounding quotes if present
-    if (str[0] in ['"', "'"]) and str[0] == str[str.length - 1]
-      str.slice(1, -1)
-    else
-      str
-
   # Helper to convert primitive values to AST nodes
   _toNode: (value) ->
     return value if value instanceof @ast.Base
@@ -205,7 +196,13 @@ class ES5Backend
       when 'IdentifierLiteral'  then new @ast.IdentifierLiteral @$(o.value)
       when 'Literal'            then new @ast.Literal          @$(o.value)
       when 'NumberLiteral'      then new @ast.NumberLiteral    @$(o.value)
-      when 'StringLiteral'      then new @ast.StringLiteral    @_stripQuotes(@$(o.value))
+      when 'StringLiteral'
+        stringLiteral = new @ast.StringLiteral @$(o.value), {
+          quote: @$(o.quote), initialChunk: @$(o.initialChunk), finalChunk: @$(o.finalChunk),
+          indent: @$(o.indent), double: @$(o.double), heregex: @$(o.heregex)
+        }
+        stringLiteral.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0, range: [0, 0]}
+        stringLiteral
 
       # Basic operations - assignments, calls, operators
       when 'Assign'
