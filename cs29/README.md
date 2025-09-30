@@ -8,7 +8,7 @@ This version of CoffeeScript (CS29) uses the Solar parser generator in "Solar mo
 
 CS29 employs a clean two-stage compilation process:
 
-1. **Parser Stage**: Solar parser generator processes `src/syntax.coffee` to create a parser that outputs pure data directives
+1. **Parser Stage**: Solar parser generator processes `src/grammar.coffee` to create a parser that outputs pure data directives
 2. **ES5 Backend**: `src/es5.coffee` transforms these directives into CoffeeScript AST nodes
 
 ### Grammar to AST Mapping
@@ -75,7 +75,7 @@ CS29 has achieved 100% functional parity with CS28 (excluding JSX):
 
 ### Key Files
 
-- `src/syntax.coffee`: Grammar definition with Solar directives (97 types, 404 rules)
+- `src/grammar.coffee`: Grammar definition with Solar directives (97 types, 404 rules)
 - `src/es5.coffee`: ES5 backend with 68 optimized AST handlers
 - `src/nodes.coffee`: AST node class definitions (97 classes total)
 - `lib/coffeescript/parser.js`: Generated parser from Solar

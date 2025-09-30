@@ -29,7 +29,7 @@
     "repl.js"
   ],
   "scripts": {
-    "parser":  "coffee ../solar-es5.coffee -o lib/coffeescript/parser.js src/syntax.coffee",
+    "parser":  "coffee ../solar-es5.coffee -o lib/coffeescript/parser.js src/grammar.coffee",
     "build":   "coffee -c -o lib/coffeescript src/*.{lit,}coffee",
     "test":    "coffee test/runner.coffee",
     "version": "coffee --version"
