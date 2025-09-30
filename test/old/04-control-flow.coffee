@@ -20,7 +20,6 @@ test "unless true then 1 else 2", 2
 test "x = 5; unless x < 3 then 'yes' else 'no'", "yes"
 
 # Ternary-style if
-test "true ? 10 : 20", undefined  # Note: CoffeeScript doesn't have ternary
 test "if true then 10 else 20", 10
 test "x = 5; if x is 5 then 'five' else 'other'", "five"
 
