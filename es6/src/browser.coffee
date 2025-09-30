@@ -8,8 +8,7 @@ CoffeeScript = require './coffeescript'
 
 # Use `window.eval` to evaluate code, rather than just `eval`, to run the
 # script in a clean global scope rather than inheriting the scope of the
-# CoffeeScript compiler. (So that `cake test:browser` also works in Node,
-# use either `window.eval` or `global.eval` as appropriate).
+# CoffeeScript compiler. Use either `window.eval` or `global.eval` as appropriate.
 CoffeeScript.eval = (code, options = {}) ->
   options.bare ?= on
   globalRoot = if window? then window else global
