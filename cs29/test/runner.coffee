@@ -19,6 +19,24 @@ passed = 0
 failed = 0
 totalFiles = 0
 
+# Test that code should fail to compile
+global.fail = (code) ->
+  try
+    # Try to compile the CoffeeScript code
+    CoffeeScript.compile code, bare: true
+    # If it compiles without error, the test fails
+    failed++
+    displayCode = code.replace(/\n/g, '\n  ')
+    console.log "#{red}✗#{reset} #{displayCode}"
+    console.log "    Expected: compilation error"
+    console.log "    Got:      compiled successfully"
+  catch e
+    # If it throws an error, the test passes (as expected)
+    passed++
+    displayCode = code.replace(/\n/g, '\n  ')
+    console.log "#{green}✓#{reset} #{displayCode} (expected to fail)"
+  return
+
 # Simple test function: test "code", expected_value
 global.test = (code, expected) ->
   try
