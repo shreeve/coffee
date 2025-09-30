@@ -9,15 +9,10 @@ class ES5Backend
     @currentLookup    = null
 
   # Helper to ensure node has location data to avoid errors in AST operations
-  _ensureLocationData: (node) ->
+  _ensureLocation: (node) ->
     if typeof node is 'object' and node isnt null
       node.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0, range: [0, 0]}
       node.updateLocationDataIfMissing?(node.locationData)
-    node
-
-  # Shorthand for adding dummy location data
-  _ensureLocation: (node) ->
-    node?.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0, range: [0, 0]}
     node
 
   # Helper to convert primitive values to AST nodes
@@ -150,8 +145,8 @@ class ES5Backend
         # Handle addElse operation for if-else chains
         if o.addElse?
           [ifNode, elseBody] = o.addElse.map (item) => @$(item)
-          @_ensureLocationData ifNode
-          @_ensureLocationData elseBody
+          @_ensureLocation ifNode
+          @_ensureLocation elseBody
           ifNode.addElse elseBody
           return ifNode
 
@@ -169,8 +164,8 @@ class ES5Backend
         if o.addSource?
           # addSource: [1, 2] means ForStart is at position 1, ForSource at position 2
           [loopNode, sourceInfo] = o.addSource.map (item) => @$(item)
-          @_ensureLocationData loopNode
-          @_ensureLocationData sourceInfo if sourceInfo?
+          @_ensureLocation loopNode
+          @_ensureLocation sourceInfo if sourceInfo?
           loopNode.addSource   sourceInfo if loopNode?.addSource?
           return loopNode
 
@@ -185,8 +180,8 @@ class ES5Backend
             console.log "[Solar] loop.addBody loopNode:", loopNode?.constructor?.name
             console.log "[Solar] loop.addBody body:", util.inspect(body, {depth: 2, colors: true})
 
-          @_ensureLocationData loopNode
-          @_ensureLocationData body
+          @_ensureLocation loopNode
+          @_ensureLocation body
           loopNode.addBody body
           return loopNode
 

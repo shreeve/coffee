@@ -16,7 +16,7 @@
     }
 
     // Helper to ensure node has location data to avoid errors in AST operations
-    _ensureLocationData(node) {
+    _ensureLocation(node) {
       if (typeof node === 'object' && node !== null) {
         if (node.locationData == null) {
           node.locationData = {
@@ -29,22 +29,6 @@
         }
         if (typeof node.updateLocationDataIfMissing === "function") {
           node.updateLocationDataIfMissing(node.locationData);
-        }
-      }
-      return node;
-    }
-
-    // Shorthand for adding dummy location data
-    _ensureLocation(node) {
-      if (node != null) {
-        if (node.locationData == null) {
-          node.locationData = {
-            first_line: 0,
-            first_column: 0,
-            last_line: 0,
-            last_column: 0,
-            range: [0, 0]
-          };
         }
       }
       return node;
@@ -248,8 +232,8 @@
             [ifNode, elseBody] = o.addElse.map((item) => {
               return this.$(item);
             });
-            this._ensureLocationData(ifNode);
-            this._ensureLocationData(elseBody);
+            this._ensureLocation(ifNode);
+            this._ensureLocation(elseBody);
             ifNode.addElse(elseBody);
             return ifNode;
           }
@@ -274,9 +258,9 @@
             [loopNode, sourceInfo] = o.addSource.map((item) => {
               return this.$(item);
             });
-            this._ensureLocationData(loopNode);
+            this._ensureLocation(loopNode);
             if (sourceInfo != null) {
-              this._ensureLocationData(sourceInfo);
+              this._ensureLocation(sourceInfo);
             }
             if ((loopNode != null ? loopNode.addSource : void 0) != null) {
               loopNode.addSource(sourceInfo);
@@ -299,8 +283,8 @@
                 colors: true
               }));
             }
-            this._ensureLocationData(loopNode);
-            this._ensureLocationData(body);
+            this._ensureLocation(loopNode);
+            this._ensureLocation(body);
             loopNode.addBody(body);
             return loopNode;
           }
