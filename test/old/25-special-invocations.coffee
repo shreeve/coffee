@@ -132,3 +132,6 @@ test """
   func (x) ->
     x * 2
 """, 20
+
+# Compilation output tests
+code "f(...args)", "f(...args);"

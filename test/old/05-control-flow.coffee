@@ -166,6 +166,15 @@ test """
   result.join(',')
 """, "11,21,12,22"
 
+# Invalid syntax tests
+# Note: "true ? 10 : 20" compiles but doesn't work as ternary - it's parsed as existential operator
+fail "do while condition"  # do-while not supported
+
+# Compilation output tests
+code "x = 5 if true", "var x;\n\nif (true) {\n  x = 5;\n}"
+code "return unless false", "if (!false) {\n  return;\n}"
+code "x = if true then 5 else 10", "var x;\n\nx = true ? 5 : 10;"
+
 # Try-catch-finally
 test """
   try

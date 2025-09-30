@@ -198,3 +198,6 @@ test """
     fact
   factorial(5)
 """, 120
+
+# Compilation output tests
+code "do -> x", "(function() {\n  return x;\n})();"

@@ -90,6 +90,9 @@ test "(parseInt(s) for s in ['1', '2', '3']).join(',')", "1,2,3"
 test "Math.max(...(x for x in [1, 5, 3, 2]))", 5
 test "[].concat(...([i, i] for i in [1, 2])).join(',')", "1,1,2,2"
 
+# Compilation output tests (simplified to avoid long output)
+code "x * 2 for x in [1,2]", "(function() {\n  var i, len, ref, results;\n\n  ref = [1, 2];\n  results = [];\n  for (i = 0, len = ref.length; i < len; i++) {\n    x = ref[i];\n    results.push(x * 2);\n  }\n  return results;\n\n})();"
+
 # Do notation with comprehensions
 test "(do (x) -> x * 2 for x in [1, 2, 3]).join(',')", "2,4,6"
 

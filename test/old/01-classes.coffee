@@ -190,3 +190,13 @@ test """
   c = new Child
   c.method(5) + c.method(20)
 """, 45
+
+# Compilation output tests
+code "class A", "var A;\n\nA = class A {};"
+code "class B extends A", "var B;\n\nB = class B extends A {};"
+code "class C then x: 1", "var C;\n\nC = (function() {\n  class C {};\n\n  C.prototype.x = 1;\n\n  return C;\n\n}).call(this);"
+
+# Invalid syntax tests
+fail "class 123"  # class name must be valid identifier
+fail "class A extends"  # extends needs a base class
+# Note: "class extends Base" actually compiles to an anonymous class

@@ -144,3 +144,6 @@ test """
   'use strict'
   5
 """, 5
+
+# Compilation output tests
+code '"use strict"', '"use strict";'

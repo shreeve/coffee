@@ -137,3 +137,9 @@ test "Array(3).fill(7).join(',')", "7,7,7"
 test "[1, 2, 3].at(0)", 1
 test "[1, 2, 3].at(-1)", 3
 test "[1, 2, 3].at(-2)", 2
+
+# Compilation output tests
+code "[1..3]", "[1, 2, 3];"
+code "[1, 2, 3][0..]", "[1, 2, 3].slice(0);"
+code "[1, 2, 3][..2]", "[1, 2, 3].slice(0, 3);"  # ..2 is inclusive
+code "[1, 2, 3][1..2]", "[1, 2, 3].slice(1, 3);"

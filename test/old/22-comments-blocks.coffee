@@ -144,3 +144,7 @@ test "x = ### just a comment ###; x", undefined
 # Comments in destructuring
 test "[a, ### comment ### b] = [1, 2]; b", 2
 test "{x ### comment ###} = {x: 5}; x", 5
+
+# Compilation output tests - comments are stripped
+code "# comment\nx = 1", "var x;\n\nx = 1;"
+code "### block ###\ny = 2", "var y;\n\ny = 2;"

@@ -153,3 +153,7 @@ test "/]/.test(']')", true  # Closing bracket doesn't need escaping
 test "/[\\]]/.test(']')", true  # But can be escaped
 test "/{/.test('{')", true  # Curly braces
 test "/}/.test('}')", true
+
+# Compilation output tests
+code "/test/", "/test/;"
+code "///a b c///", "/abc/;"

@@ -166,6 +166,14 @@ test """
   safeDivide(10, 2)
 """, 5
 
+# Compilation output tests
+code "->", "(function() {});"
+code "(x) -> x", "(function(x) {\n  return x;\n});"
+
+# Invalid syntax tests
+fail "function foo() {}"  # function keyword not allowed
+fail "new function() {}"  # anonymous function with new
+
 # Higher-order functions
 test """
   applyTwice = (f, x) -> f(f(x))

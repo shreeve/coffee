@@ -7,7 +7,7 @@ test "typeof 123n", "bigint"
 test "typeof 0n", "bigint"
 test "456n > 400n", true
 test "100n < 200n", true
-test "50n === 50n", true
+test "50n is 50n", true
 
 # BigInt arithmetic
 test "10n + 20n", 30n
@@ -33,8 +33,8 @@ test "100n > 50n", true
 test "50n < 100n", true
 test "100n >= 100n", true
 test "100n <= 100n", true
-test "100n === 100n", true
-test "100n !== 200n", true
+test "100n is 100n", true
+test "100n isnt 200n", true
 
 # BigInt with Math operations (should fail for most)
 # test "Math.abs(-100n)", "should throw"
@@ -89,10 +89,10 @@ test "0xFF", 255
 test "0x100", 256
 test "0xFFFF", 65535
 
-# Case insensitive hex
-test "0XFF", 255
+# Hex case sensitivity
+fail "0XFF"  # uppercase X not allowed in CoffeeScript
 test "0xfF", 255
-test "0XfF", 255
+fail "0XfF"  # uppercase X not allowed in CoffeeScript
 
 # Special numeric values
 test "Number.MAX_SAFE_INTEGER", 9007199254740991
@@ -112,6 +112,11 @@ test "Number.isNaN(100)", false
 
 # Underscores in various positions
 test "1_2_3_4_5", 12345
-test "1__000", undefined # double underscore should be invalid
-test "_100", undefined # leading underscore should be invalid
-test "100_", undefined # trailing underscore should be invalid
+fail "1__000"  # double underscore should be invalid
+test "_100 = 100; _100", 100  # leading underscore is valid variable name
+fail "100_"    # trailing underscore should be invalid
+
+# Compilation output tests
+code "123n", "123n;"
+code "0b1010n", "0b1010n;"
+code "1_000_000", "1_000_000;"  # CS29 preserves underscores

@@ -107,6 +107,14 @@ test """
 test "a = 1; b = 2; [a, b] = [b, a]; a", 2
 test "x = 'first'; y = 'second'; [x, y] = [y, x]; x", "second"
 
+# Compilation output tests
+code "[a, b] = [1, 2]", "var a, b;\n\n[a, b] = [1, 2];"
+code "[x, ...rest] = [1,2,3]", "var rest, x;\n\n[x, ...rest] = [1, 2, 3];"
+code "{name, age} = {name: 'Bob', age: 30}", "var age, name;\n\n({\n  name,\n  age\n} = {\n  name: 'Bob',\n  age: 30\n});"
+
+# Invalid syntax tests
+fail "[a, b, ...c, d] = arr"  # rest must be last
+
 # Destructuring with null/undefined
 test "[a] = [null]; a", null
 test "{x} = {x: undefined}; x", undefined

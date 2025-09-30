@@ -104,3 +104,8 @@ test """
     import('./dynamic')
   true
 """, true
+
+# Compilation output tests
+code "import x from 'y'", "import x from 'y';"
+code "export default class A", "export default A = class A {};"
+code "export {a, b}", "export {\n  a,\n  b\n};"

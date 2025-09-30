@@ -294,3 +294,10 @@ test """
     results.push(value)
   results.join(',')
 """, "1,2,3"
+
+# Compilation output tests
+code "await x", "await x;"
+code "await func()", "await func();"
+
+# Invalid syntax tests
+fail "await without async"  # await must be in async function

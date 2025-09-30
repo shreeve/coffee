@@ -127,3 +127,8 @@ test """
 # Parallel assignment
 test "[a, b] = [b, a] = [1, 2]; a + b", 3
 test "x = y = z = 0; [x, y, z] = [1, 2, 3]; x + y + z", 6
+
+# Compilation output tests
+code "a = b = 5", "var a, b;\n\na = b = 5;"
+code "x ||= 10", "var x;\n\nx || (x = 10);"
+code "y &&= 20", "var y;\n\ny && (y = 20);"

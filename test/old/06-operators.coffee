@@ -191,3 +191,17 @@ test "'test' + 123", "test123"
 fail "void 0"
 fail "void 42"
 fail "void 'test'"
+
+# More invalid syntax tests
+fail "x === y"  # triple equals not supported
+fail "x !== y"  # strict inequality not supported
+fail "var x = 5"  # var keyword not allowed
+fail "let x = 5"  # let keyword not allowed
+fail "const x = 5"  # const keyword not allowed
+
+# Compilation output tests (simplified to avoid variable declaration issues)
+test "x = 5; ++x", 6  # prefix increment actually works
+test "x = 5; --x", 4  # prefix decrement actually works
+test "a = null; a ? 'default'", "default"
+test "a = null; a?.b", undefined
+test "a = null; a ?= 5; a", 5

@@ -166,3 +166,8 @@ test "'' + [1, 2]", "1,2"
 test '"😀".length', 2  # Emoji is 2 code units
 test '"café".length', 4
 test '"日本語"[0]', "日"
+
+# String interpolation compilation
+code '"hello #{name}"', '`hello ${name}`;'
+code '"a #{b} c"', '`a ${b} c`;'
+code '"""x #{y} z"""', '`x ${y} z`;'

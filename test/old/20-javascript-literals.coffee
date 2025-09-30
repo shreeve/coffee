@@ -142,3 +142,7 @@ test "`undefined`", undefined
 test "`NaN`", NaN
 test "`Infinity`", Infinity
 test "`-Infinity`", -Infinity
+
+# Compilation output tests  
+code "`console.log(1)`", "console.log(1);"
+code "```js\n1 + 1\n```", "1 + 1;"

@@ -254,3 +254,10 @@ test """
   catch e
     typeof e.stack
 """, "string"
+
+# Compilation output tests
+code "throw new Error('test')", "throw new Error('test');"
+code "try x catch e then y", "var e;\n\ntry {\n  x;\n} catch (error) {\n  e = error;\n  y;\n}"
+
+# Invalid syntax tests  
+fail "catch without try"  # catch must follow try

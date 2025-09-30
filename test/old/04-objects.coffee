@@ -155,6 +155,13 @@ test "{x: [y, z]} = {x: [1, 2]}; y + z", 3
 test "obj = Object.create(null); obj.x = 1; obj.x", 1
 test "proto = {x: 1}; obj = Object.create(proto); obj.x", 1
 
+# Invalid syntax tests
+fail "obj.constructor === Object"  # triple equals not supported
+
+# Compilation output tests
+code "{a, b} = {a: 1, b: 2}", "var a, b;\n\n({a, b} = {\n  a: 1,\n  b: 2\n});"
+code "{a: x} = {a: 5}", "var x;\n\n({\n  a: x\n} = {\n  a: 5\n});"
+
 # Object comparison
 test "a = {x: 1}; b = a; a is b", true
 test "a = {x: 1}; b = {x: 1}; a is b", false

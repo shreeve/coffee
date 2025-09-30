@@ -253,3 +253,6 @@ test """
 # Empty statements
 test ";", undefined
 test ";;;", undefined
+
+# Compilation output tests
+code "1 + \\\n2", "1 + 2;"

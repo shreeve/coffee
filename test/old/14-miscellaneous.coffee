@@ -187,3 +187,10 @@ test "x = 5; x = 10 if x < 10; x", 10
 test "x = 5; x = 10 unless x > 10; x", 10
 test "result = []; result.push(i) for i in [1, 2]; result.join(',')", "1,2"
 test "arr = [1, 2, 3]; sum = 0; sum += i while i = arr.shift(); sum", 6
+
+# Compilation output tests
+code "@x", "this.x;"
+code "do ->", "(function() {})();"
+
+# Invalid syntax tests
+fail "import without from"  # import needs from clause

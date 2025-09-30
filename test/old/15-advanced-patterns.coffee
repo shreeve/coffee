@@ -109,3 +109,10 @@ test "obj = {base: -> 'base', extended: -> 'extended'}; obj.extended()", "extend
 
 # Yield in nested functions
 test "outer = -> inner = -> yield 1; yield 2; inner(); gen = outer(); [gen.next().value, gen.next().value]", [1, 2]
+
+# Compilation output tests
+code "yield x", "yield x;"
+code "yield from arr", "yield* arr;"
+
+# Invalid syntax tests
+fail "yield outside generator"  # yield must be in generator

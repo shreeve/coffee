@@ -116,3 +116,7 @@ test "(do (x) -> x * x for x in [1, 2, 3]).join(',')", "1,4,9"
 
 # By clause with negative step
 test "(i for i in [10..1] by -2).join(',')", "10,8,6,4,2"
+
+# Compilation output tests
+code "break", "break;"
+code "continue", "continue;"

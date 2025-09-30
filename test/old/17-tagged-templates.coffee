@@ -134,3 +134,7 @@ test '''
 #   a = (s) -> (s2) -> s[0] + s2[0]
 #   a"first""second"
 # """, "firstsecond"
+
+# Compilation output tests
+code 'tag"test"', 'tag`test`;'
+code 'tag"hello #{name}"', 'tag`hello ${name}`;'

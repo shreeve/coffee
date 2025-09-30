@@ -170,3 +170,7 @@ test """
   Object.assign(target, source)
   target.inherited
 """, undefined
+
+# Compilation output tests
+code "for own k of obj", "var k;\n\nfor (k in obj) {\n  if (Object.prototype.hasOwnProperty.call(obj, k)) {\n\n  }\n}"
+code "k for own k of obj", "(function() {\n  var k, results;\n\n  results = [];\n  for (k in obj) {\n    if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;\n    results.push(k);\n  }\n  return results;\n\n})();"

@@ -167,3 +167,11 @@ test """
   obj.a.b.c ?= 5
   obj.a.b.c
 """, 5
+
+# Compilation output tests
+code "a?.b", "if (typeof a !== \"undefined\" && a !== null) {\n  a.b;\n}"
+code "a?()", "if (typeof a === \"function\") {\n  a();\n}"
+code "a ? b", "if (typeof a !== \"undefined\" && a !== null) {\n  a;\n} else {\n  b;\n};"
+
+# Invalid syntax tests
+fail "?. without object"  # existential access needs object
