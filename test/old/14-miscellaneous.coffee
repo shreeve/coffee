@@ -12,7 +12,11 @@ test "/(\\d+)/.exec('abc123')[1]", "123"
 
 # Regex flags
 test "/test/i.test('TEST')", true
-test "/^multi.*line$/m.test('multi\\nline')", true
+test '''
+  str = "multi
+line"
+  /^multi.*line$/m.test(str)
+''', true
 test "/test/g.global", true
 
 # Heregex (multiline regex)
@@ -44,19 +48,19 @@ test """
 # Do expressions
 test "do -> 5", 5
 test "x = 10; do (y = x) -> y * 2", 20
-test "result = do -> 1 + 1; result", 2
+test "result = do -> 1 + 1\nresult", 2
 
 # Default parameters
-test "f = (x = 5) -> x; f()", 5
-test "f = (x = 5) -> x; f(10)", 10
-test "f = (a, b = a * 2) -> b; f(3)", 6
+test "f = (x = 5) -> x\nf()", 5
+test "f = (x = 5) -> x\nf(10)", 10
+test "f = (a, b = a * 2) -> b\nf(3)", 6
 
 # Rest parameters
-test "f = (first, rest...) -> rest.length; f(1, 2, 3)", 2
-test "f = (items...) -> items.join('-'); f(1, 2, 3)", "1-2-3"
+test "f = (first, rest...) -> rest.length\nf(1, 2, 3)", 2
+test "f = (items...) -> items.join('-')\nf(1, 2, 3)", "1-2-3"
 
 # Spread in calls
-test "f = (a, b, c) -> a + b + c; f(...[1, 2, 3])", 6
+test "f = (a, b, c) -> a + b + c\nf(...[1, 2, 3])", 6
 test "Math.max(...[1, 5, 3])", 5
 
 # Chained comparisons
@@ -76,13 +80,13 @@ test """
 """, "two"
 
 # Implicit returns
-test "f = -> 42; f()", 42
-test "f = (x) -> x * 2; f(5)", 10
-test "f = -> x = 5; x + 1; f()", 6
+test "f = -> 42\nf()", 42
+test "f = (x) -> x * 2\nf(5)", 10
+test "f = -> x = 5\nx + 1\nf()", 6
 
 # Everything is an expression
 test "x = if true then 5 else 10; x", 5
-test "y = for i in [1..3] then i * 2; y.join(',')", "2,4,6"
+test "y = for i in [1..3] then i * 2\ny.join(',')", "2,4,6"
 test "z = try 10 catch e then 20; z", 10
 
 # Number formats
@@ -113,7 +117,7 @@ test "off", false
 # Undefined and null
 test "undefined", undefined
 test "null", null
-test "void 0", undefined
+fail "void 0"  # void is reserved
 test "null?", false
 test "undefined?", false
 
@@ -128,7 +132,7 @@ test """
 
 # Prototype access
 test "class A; A::prop = 5; A.prototype.prop", 5
-test "String::custom = -> 'test'; 'any'.custom()", "test"
+test "String::custom = -> 'test'\n'any'.custom()", "test"
 
 # Property access
 test "obj = {x: 5}; obj.x", 5
@@ -141,7 +145,7 @@ test "arr = [10, 20]; index = 1; arr[index]", 20
 
 # in operator
 test "2 in [1, 2, 3]", true
-test "'x' in {x: 1}", true
+test "'x' of {x: 1}", true
 test "5 not in [1, 2, 3]", true
 
 # of operator
@@ -166,8 +170,8 @@ test "obj = {x: 1}; delete obj.x; obj.x", undefined
 test "arr = [1, 2, 3]; delete arr[1]; arr[1]", undefined
 
 # void operator
-test "void 0", undefined
-test "void 'anything'", undefined
+fail "void 0"  # void is reserved
+fail "void 'anything'"  # void is reserved
 
 # Parentheses for precedence
 test "2 + 3 * 4", 14
