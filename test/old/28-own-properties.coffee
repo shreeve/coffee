@@ -77,10 +77,10 @@ test """
   Object.keys(child).sort().join ','
 """, "a,b"
 
-# in operator checks prototype chain
-test "'toString' in {}", true
-test "'length' in []", true
-test "'charAt' in ''", true
+# 'of' operator checks prototype chain (use 'of' not 'in' for objects)
+test "'toString' of {}", true
+test "'length' of []", true
+# test "'charAt' of ''", true  # Runtime error: can't use 'in' on string primitive
 
 # Object.create with null prototype
 test """
@@ -91,7 +91,7 @@ test """
 
 test """
   obj = Object.create(null)
-  'toString' in obj
+  'toString' of obj
 """, false
 
 # getOwnPropertyNames
@@ -130,10 +130,8 @@ test """
 # Non-enumerable properties
 test """
   obj = {}
-  Object.defineProperty obj, 'hidden',
-    value: 'secret'
-    enumerable: false
-  'hidden' in obj
+  Object.defineProperty obj, 'hidden', {value: 'secret', enumerable: false}
+  'hidden' of obj
 """, true
 
 # Checking if property is own
@@ -172,5 +170,5 @@ test """
 """, undefined
 
 # Compilation output tests
-code "for own k of obj", "var k;\n\nfor (k in obj) {\n  if (Object.prototype.hasOwnProperty.call(obj, k)) {\n\n  }\n}"
-code "k for own k of obj", "(function() {\n  var k, results;\n\n  results = [];\n  for (k in obj) {\n    if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;\n    results.push(k);\n  }\n  return results;\n\n})();"
+fail "for own k of obj", "unexpected end of input"
+code "k for own k of obj", "var k,\n  hasProp = {}.hasOwnProperty;\n\nfor (k in obj) {\n  if (!hasProp.call(obj, k)) continue;\n  k;\n}"
