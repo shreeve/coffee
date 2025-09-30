@@ -12,14 +12,16 @@
 #   obj.a + obj.b
 # """, 3
 
-# test """
-#   obj = {doAssign: ->
-#     [@x, @y] = [10, 20]
-#     @
-#   }
-#   obj.doAssign()
-#   obj.x + obj.y
-# """, 30
+# Array destructuring with @ properties works correctly
+# [@x, @y] compiles to [this.x, this.y] = [10, 20]
+test """
+  obj = {doAssign: ->
+    [@x, @y] = [10, 20]
+    @
+  }
+  obj.doAssign()
+  obj.x + obj.y
+""", 30
 
 # Expansion patterns (...) in destructuring
 test "[first, ..., last] = [1, 2, 3, 4, 5]; first + last", 6
