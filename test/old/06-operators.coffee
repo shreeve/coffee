@@ -59,9 +59,9 @@ test "5 is '5'", false
 test "5 isnt 5", false
 test "5 isnt '5'", true
 test "5 == 5", true
-test "5 == '5'", true
+test "5 == '5'", false  # CoffeeScript's == is strict equality
 test "5 != 5", false
-test "5 != '5'", false
+test "5 != '5'", true   # CoffeeScript's != is strict inequality
 
 # Strict equality (is/isnt in CoffeeScript)
 test "null is null", true
@@ -151,7 +151,7 @@ test "5 > 4 > 3", true
 test "x = 5; 0 < x <= 10", true
 
 # Range creation
-test "1..5", undefined  # Ranges are special, not operators
+fail "1..5"  # Range without brackets is a syntax error
 test "[1..3].join(',')", "1,2,3"
 test "[1...4].join(',')", "1,2,3"
 
@@ -187,7 +187,7 @@ test "Infinity - Infinity", NaN
 test "'hello' + ' ' + 'world'", "hello world"
 test "'test' + 123", "test123"
 
-# Void operator
-test "void 0", undefined
-test "void 42", undefined
-test "void 'test'", undefined
+# Void operator (not supported in CoffeeScript - reserved word)
+fail "void 0"
+fail "void 42"
+fail "void 'test'"
