@@ -235,7 +235,7 @@ class ES5Backend
       when 'Access'
         name = @$(o.name)
         name = new @ast.PropertyName name.value if name instanceof @ast.IdentifierLiteral
-        new @ast.Access name, @$(o.soak)
+        new @ast.Access name, {soak: @$(o.soak), shorthand: @$(o.shorthand)}
       when 'Index'        then new @ast.Index        @$(o.index)
       when 'PropertyName' then new @ast.PropertyName @$(o.value)
 

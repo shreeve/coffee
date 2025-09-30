@@ -34,6 +34,22 @@
       return node;
     }
 
+    // Shorthand for adding dummy location data
+    _ensureLocation(node) {
+      if (node != null) {
+        if (node.locationData == null) {
+          node.locationData = {
+            first_line: 0,
+            first_column: 0,
+            last_line: 0,
+            last_column: 0,
+            range: [0, 0]
+          };
+        }
+      }
+      return node;
+    }
+
     // Helper to convert primitive values to AST nodes
     _toNode(value) {
       if (value instanceof this.ast.Base) {
@@ -290,7 +306,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, context, expression, expressions, forNode, ifNode, name, operator, options, ref, ref1, stringLiteral, value, variable, whileNode;
+      var args, body, context, expression, expressions, forNode, ifNode, name, operator, options, ref, ref1, value, variable, whileNode;
       switch (o.$ast) {
         // === CORE EXPRESSIONS (Very High Frequency) ===
 
@@ -304,24 +320,14 @@
         case 'NumberLiteral':
           return new this.ast.NumberLiteral(this.$(o.value));
         case 'StringLiteral':
-          stringLiteral = new this.ast.StringLiteral(this.$(o.value), {
+          return this._ensureLocation(new this.ast.StringLiteral(this.$(o.value), {
             quote: this.$(o.quote),
             initialChunk: this.$(o.initialChunk),
             finalChunk: this.$(o.finalChunk),
             indent: this.$(o.indent),
             double: this.$(o.double),
             heregex: this.$(o.heregex)
-          });
-          if (stringLiteral.locationData == null) {
-            stringLiteral.locationData = {
-              first_line: 0,
-              first_column: 0,
-              last_line: 0,
-              last_column: 0,
-              range: [0, 0]
-            };
-          }
-          return stringLiteral;
+          }));
         // Basic operations - assignments, calls, operators
         case 'Assign':
           variable = this.$(o.variable);
@@ -366,7 +372,10 @@
           if (name instanceof this.ast.IdentifierLiteral) {
             name = new this.ast.PropertyName(name.value);
           }
-          return new this.ast.Access(name, this.$(o.soak));
+          return new this.ast.Access(name, {
+            soak: this.$(o.soak),
+            shorthand: this.$(o.shorthand)
+          });
         case 'Index':
           return new this.ast.Index(this.$(o.index));
         case 'PropertyName':
@@ -402,7 +411,7 @@
           whileNode.body = this.ast.Block.wrap(this.$(o.body));
           return whileNode;
         case 'For':
-          body = this.ast.Block.wrap(this.$(o.body));
+          body = this._ensureLocation(this.ast.Block.wrap(this.$(o.body)));
           forNode = new this.ast.For(body, {
             name: this.$(o.name),
             index: this.$(o.index),
@@ -414,7 +423,7 @@
           if (o.own != null) {
             forNode.own = this.$(o.own);
           }
-          return forNode;
+          return this._ensureLocation(forNode);
         case 'Return':
           return new this.ast.Return(this.$(o.expression));
         // === FUNCTIONS & CLASSES (Medium-High Frequency) ===
