@@ -30,9 +30,7 @@
   },
   "files": [
     "bin",
-    "lib",
-    "register.js",
-    "repl.js"
+    "lib"
   ],
   "scripts": {
     "parser":  "coffee ../solar-es6.coffee -o lib/coffeescript/parser.js src/grammar.coffee",

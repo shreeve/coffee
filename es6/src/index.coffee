@@ -62,7 +62,6 @@ CoffeeScript.run = (code, options = {}) ->
   mainModule._compile code, mainModule.filename
 
 # Compile and evaluate a string of CoffeeScript (in a Node.js-like environment).
-# The CoffeeScript REPL uses this to run the input.
 CoffeeScript.eval = (code, options = {}) ->
   return unless code = code.trim()
   createContext = vm.Script.createContext ? vm.createContext
@@ -90,7 +89,7 @@ CoffeeScript.eval = (code, options = {}) ->
       _module.filename = sandbox.__filename
       for r in Object.getOwnPropertyNames require when r not in ['paths', 'arguments', 'caller']
         _require[r] = require[r]
-      # use the same hack node currently uses for their own REPL
+      # use the same hack node uses for module resolution
       _require.paths = _module.paths = Module._nodeModulePaths process.cwd()
       _require.resolve = (request) -> Module._resolveFilename request, _module
   o = {}
@@ -102,14 +101,13 @@ CoffeeScript.eval = (code, options = {}) ->
   else
     vm.runInContext js, sandbox
 
-CoffeeScript.register = -> require './register'
 
 # Throw error with deprecation warning when depending upon implicit `require.extensions` registration
 if require.extensions
   for ext in CoffeeScript.FILE_EXTENSIONS then do (ext) ->
     require.extensions[ext] ?= ->
       throw new Error """
-      Use CoffeeScript.register() or require the coffeescript/register module to require #{ext} files.
+      ES6 modules do not support runtime .coffee file loading. Please compile .coffee files to .js first.
       """
 
 CoffeeScript._compileRawFileContent = (raw, filename, options = {}) ->
@@ -151,7 +149,6 @@ module.exports.registerCompiled = CoffeeScript.registerCompiled
 module.exports.compile = CoffeeScript.compile
 module.exports.tokens = CoffeeScript.tokens
 module.exports.nodes = CoffeeScript.nodes
-module.exports.register = CoffeeScript.register
 module.exports.eval = CoffeeScript.eval
 module.exports.run = CoffeeScript.run
 module.exports.transpile = CoffeeScript.transpile

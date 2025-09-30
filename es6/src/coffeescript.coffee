@@ -199,7 +199,7 @@ exports.nodes = withPrettyErrors (source, options) ->
 # separate entrypoints for Node and non-Node environments, so that static
 # analysis tools don’t choke on Node packages when compiling for a non-Node
 # environment.
-exports.run = exports.eval = exports.register = ->
+exports.run = exports.eval = ->
   throw new Error 'require index.coffee, not this file'
 
 # Instantiate a Lexer for our use here.
