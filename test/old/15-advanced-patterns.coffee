@@ -3,6 +3,9 @@
 # Additional language feature tests that were missed in the initial extraction
 # Tests for context properties, expansion, imports, and other advanced patterns
 
+# LIMITATION: {@a, @b} destructuring cannot work in CS29 without modifying nodes.coffee
+# The validation on line 2596 of nodes.coffee prevents @ properties in object keys
+# CS 2.7.0 compiles {@a, @b} to {a: this.a, b: this.b} but CS29 cannot
 # test """
 #   obj = {values: {a: 1, b: 2}, extract: ->
 #     {@a, @b} = @values

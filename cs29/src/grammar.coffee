@@ -148,7 +148,6 @@ grammar =
   SimpleObjAssignable: [
     o 'Identifier'
     o 'Property'
-    o 'ThisProperty'
   ]
 
   ObjAssignable: [
