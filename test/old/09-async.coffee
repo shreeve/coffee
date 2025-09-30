@@ -226,3 +226,71 @@ test """
   d = new Derived()
   await d.getValue()
 """, 2
+
+# Tests moved from 01-functions.coffee
+test """
+  delay = (ms) -> new Promise (resolve) -> setTimeout(resolve, ms)
+  asyncFunc = ->
+    await delay(1)
+    'done'
+  await asyncFunc()
+""", 'done'
+
+# Tests moved from 12-exceptions.coffee
+test """
+  f = ->
+    try
+      await Promise.reject(new Error('async error'))
+    catch e
+      'caught async'
+  await f()
+""", "caught async"
+
+test """
+  f = ->
+    try
+      await Promise.resolve('async success')
+    catch e
+      'should not catch'
+  await f()
+""", "async success"
+
+# Tests moved from 17-iteration-patterns.coffee
+
+# For-from loops (async iteration)
+test "(x for x from [1, 2, 3]).join(',')", "1,2,3"
+test "(x * 2 for x from [1, 2, 3]).join(',')", "2,4,6"
+test "(x for x from [1, 2, 3] when x > 1).join(',')", "2,3"
+
+# For-from with async iterables
+test """
+  asyncIterable = {
+    [Symbol.asyncIterator]: ->
+      values = [1, 2, 3]
+      i = 0
+      {
+        next: ->
+          if i < values.length
+            Promise.resolve({value: values[i++], done: false})
+          else
+            Promise.resolve({done: true})
+      }
+  }
+  results = []
+  for await x from asyncIterable
+    results.push(x)
+  results.join(',')
+""", "1,2,3"
+
+# For-await-of pattern
+test """
+  asyncGen = ->
+    yield await Promise.resolve(1)
+    yield await Promise.resolve(2)
+    yield await Promise.resolve(3)
+
+  results = []
+  for await value from asyncGen()
+    results.push(value)
+  results.join(',')
+""", "1,2,3"

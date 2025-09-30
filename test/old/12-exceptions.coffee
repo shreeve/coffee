@@ -198,25 +198,6 @@ test """
     e.message + ':' + e.modified
 """, "original:true"
 
-# Try-catch with async (in regular function)
-test """
-  f = ->
-    try
-      await Promise.reject(new Error('async error'))
-    catch e
-      'caught async'
-  await f()
-""", "caught async"
-
-test """
-  f = ->
-    try
-      await Promise.resolve('async success')
-    catch e
-      'should not catch'
-  await f()
-""", "async success"
-
 # Multiple catch scenarios
 test """
   attempts = 0

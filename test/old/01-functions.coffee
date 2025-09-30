@@ -4,21 +4,21 @@
 # Tests that verify function features work correctly
 
 # Basic function definition
-test "f = -> 5; f()", 5
-test "add = (a, b) -> a + b; add(2, 3)", 5
-test "greet = (name) -> 'Hello ' + name; greet('World')", "Hello World"
+test "f = -> 5\nf()", 5
+test "add = (a, b) -> a + b\nadd(2, 3)", 5
+test "greet = (name) -> 'Hello ' + name\ngreet('World')", "Hello World"
 
 # Functions with default parameters
-test "f = (x = 10) -> x; f()", 10
-test "f = (x = 10) -> x; f(5)", 5
-test "f = (a = 1, b = 2) -> a + b; f()", 3
-test "f = (a = 1, b = 2) -> a + b; f(5)", 7
-test "f = (a = 1, b = 2) -> a + b; f(5, 3)", 8
+test "f = (x = 10) -> x\nf()", 10
+test "f = (x = 10) -> x\nf(5)", 5
+test "f = (a = 1, b = 2) -> a + b\nf()", 3
+test "f = (a = 1, b = 2) -> a + b\nf(5)", 7
+test "f = (a = 1, b = 2) -> a + b\nf(5, 3)", 8
 
 # Rest parameters (splats)
-test "f = (first, rest...) -> rest.length; f(1, 2, 3, 4)", 3
-test "f = (items...) -> items.join('-'); f('a', 'b', 'c')", "a-b-c"
-test "sum = (nums...) -> nums.reduce ((a,b) -> a+b), 0; sum(1,2,3,4)", 10
+test "f = (first, rest...) -> rest.length\nf(1, 2, 3, 4)", 3
+test "f = (items...) -> items.join('-')\nf('a', 'b', 'c')", "a-b-c"
+test "sum = (nums...) -> nums.reduce ((a,b) -> a+b), 0\nsum(1,2,3,4)", 10
 
 # Function expressions
 test "(-> 42)()", 42
@@ -26,8 +26,8 @@ test "((x) -> x * 2)(5)", 10
 test "((a, b) -> a + b)(3, 4)", 7
 
 # Functions returning functions
-test "makeAdder = (x) -> (y) -> x + y; add5 = makeAdder(5); add5(3)", 8
-test "f = -> -> 'nested'; f()()", 'nested'
+test "makeAdder = (x) -> (y) -> x + y\nadd5 = makeAdder(5)\nadd5(3)", 8
+test "f = -> -> 'nested'\nf()()", 'nested'
 
 # IIFE (Immediately Invoked Function Expression)
 test "do -> 123", 123
@@ -43,9 +43,9 @@ test """
 """, 42
 
 # Function with destructured parameters
-test "f = ({x, y}) -> x + y; f({x: 3, y: 4})", 7
-test "f = ([a, b]) -> a * b; f([5, 6])", 30
-test "f = ({name}) -> 'Hello ' + name; f({name: 'Alice', age: 30})", "Hello Alice"
+test "f = ({x, y}) -> x + y\nf({x: 3, y: 4})", 7
+test "f = ([a, b]) -> a * b\nf([5, 6])", 30
+test "f = ({name}) -> 'Hello ' + name\nf({name: 'Alice', age: 30})", "Hello Alice"
 
 # Nested functions
 test """
@@ -73,13 +73,13 @@ test "[1,2,3].filter((x) -> x > 1).length", 2
 test "[1,2,3].reduce(((a, b) -> a + b), 0)", 6
 
 # Functions with explicit return
-test "f = -> return 10; 20; f()", 10
-test "f = (x) -> return x * 2 if x > 5; x; f(10)", 20
-test "f = (x) -> return x * 2 if x > 5; x; f(3)", 3
+test "f = -> return 10; 20\nf()", 10
+test "f = (x) -> return x * 2 if x > 5; x\nf(10)", 20
+test "f = (x) -> return x * 2 if x > 5; x\nf(3)", 3
 
 # Functions without parentheses in calls
-test "f = -> 99; f()", 99
-test "double = (x) -> x * 2; double 5", 10
+test "f = -> 99\nf()", 99
+test "double = (x) -> x * 2\ndouble 5", 10
 
 # Recursive functions
 test """
@@ -108,15 +108,6 @@ test """
   [g.next().value, g.next().value, g.next().value]
 """, [1, 2, 3]
 
-# Async functions
-test """
-  delay = (ms) -> new Promise (resolve) -> setTimeout(resolve, ms)
-  asyncFunc = ->
-    await delay(1)
-    'done'
-  await asyncFunc()
-""", 'done'
-
 # Functions with arguments object
 test """
   f = ->
@@ -131,7 +122,6 @@ test "((a, ...rest) ->).length", 1
 
 # Function name property
 test "(f = ->).name", 'f'
-test "(function named() {}).name", 'named'
 
 # Partial application pattern
 test """
