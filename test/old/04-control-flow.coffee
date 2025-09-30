@@ -12,7 +12,7 @@ test "x = 2; if x > 3 then 'yes' else 'no'", "no"
 # If without else
 test "if true then 42", 42
 test "if false then 42", undefined
-test "result = if true then 'ok'; result", "ok"
+test "result = if true then 'ok'\nresult", "ok"
 
 # Unless statements
 test "unless false then 1 else 2", 1
@@ -195,15 +195,15 @@ test """
 """, "1,3"
 
 # Return statements
-test "f = -> return 5; 10; f()", 5
-test "f = -> x = 5; return x * 2; f()", 10
-test "f = (x) -> return if x < 0; x * 2; f(5)", 10
-test "f = (x) -> return if x < 0; x * 2; f(-5)", undefined
+test "f = -> return 5; 10\nf()", 5
+test "f = -> x = 5; return x * 2\nf()", 10
+test "f = (x) -> return if x < 0; x * 2\nf(5)", 10
+test "f = (x) -> return if x < 0; x * 2\nf(-5)", undefined
 
 # Implicit returns
-test "f = -> 42; f()", 42
-test "f = -> x = 5; x * 2; f()", 10
-test "f = (x) -> if x > 0 then x else -x; f(-5)", 5
+test "f = -> 42\nf()", 42
+test "f = -> x = 5; x * 2\nf()", 10
+test "f = (x) -> if x > 0 then x else -x\nf(-5)", 5
 
 # Early returns with conditions
 test """

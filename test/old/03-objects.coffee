@@ -91,9 +91,9 @@ test "obj = Object.seal({x: 1}); obj.x", 1
 test "Object.isSealed(Object.seal({}))", true
 
 # in operator
-test "'a' in {a: 1}", true
-test "'b' in {a: 1}", false
-test "'toString' in {}", true
+test "'a' of {a: 1}", true
+test "'b' of {a: 1}", false
+test "'toString' of {}", true
 
 # hasOwnProperty
 test "{a: 1}.hasOwnProperty('a')", true
@@ -112,13 +112,13 @@ test "{}.constructor.name", "Object"
 # test "obj = {_x: 0, `get x() { return this._x; }`, `set x(v) { this._x = v; }`}; obj.x = 5; obj.x", 5
 
 # Object prototype chain
-test "obj = {a: 1}; obj.constructor === Object", true
+test "obj = {a: 1}; obj.constructor is Object", true
 test "{}.toString.call({x: 1})", "[object Object]"
 
 # Object with undefined/null values
 test "{a: undefined}.a", undefined
 test "{b: null}.b", null
-test "'a' in {a: undefined}", true
+test "'a' of {a: undefined}", true
 
 # Complex object operations
 test """
