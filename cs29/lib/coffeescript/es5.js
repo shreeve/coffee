@@ -34,20 +34,6 @@
       return node;
     }
 
-    // Helper to strip quotes from string literals
-    _stripQuotes(str) {
-      var ref;
-      if (str == null) {
-        return str;
-      }
-      // Remove surrounding quotes if present
-      if (((ref = str[0]) === '"' || ref === "'") && str[0] === str[str.length - 1]) {
-        return str.slice(1, -1);
-      } else {
-        return str;
-      }
-    }
-
     // Helper to convert primitive values to AST nodes
     _toNode(value) {
       if (value instanceof this.ast.Base) {
@@ -201,10 +187,10 @@
 
     // Process $use directives
     processUse(o) {
-      var name1, target;
+      var name1, ref, target;
       target = this.$(o.$use);
       if (o.method != null) {
-        return target != null ? typeof target[name1 = o.method] === "function" ? target[name1]() : void 0 : void 0;
+        return target != null ? typeof target[name1 = o.method] === "function" ? target[name1](...((ref = o.args) != null ? ref : [])) : void 0 : void 0;
       }
       if (o.prop != null) {
         return target != null ? target[o.prop] : void 0;
@@ -304,7 +290,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, context, expression, expressions, forNode, ifNode, name, operator, options, ref, ref1, value, variable, whileNode;
+      var args, body, context, expression, expressions, forNode, ifNode, name, operator, options, ref, ref1, stringLiteral, value, variable, whileNode;
       switch (o.$ast) {
         // === CORE EXPRESSIONS (Very High Frequency) ===
 
@@ -318,7 +304,24 @@
         case 'NumberLiteral':
           return new this.ast.NumberLiteral(this.$(o.value));
         case 'StringLiteral':
-          return new this.ast.StringLiteral(this._stripQuotes(this.$(o.value)));
+          stringLiteral = new this.ast.StringLiteral(this.$(o.value), {
+            quote: this.$(o.quote),
+            initialChunk: this.$(o.initialChunk),
+            finalChunk: this.$(o.finalChunk),
+            indent: this.$(o.indent),
+            double: this.$(o.double),
+            heregex: this.$(o.heregex)
+          });
+          if (stringLiteral.locationData == null) {
+            stringLiteral.locationData = {
+              first_line: 0,
+              first_column: 0,
+              last_line: 0,
+              last_column: 0,
+              range: [0, 0]
+            };
+          }
+          return stringLiteral;
         // Basic operations - assignments, calls, operators
         case 'Assign':
           variable = this.$(o.variable);
@@ -382,12 +385,12 @@
           return new this.ast.Root(body);
         // Control flow statements
         case 'If':
-          ifNode = new this.ast.If(this._ensureLocationData(this.$(o.condition)), this._ensureLocationData(this.$(o.body)), {
+          ifNode = new this.ast.If(this.$(o.condition), this.ast.Block.wrap(this.$(o.body)), {
             type: (this.$(o.invert) ? 'unless' : this.$(o.type)),
             postfix: this.$(o.postfix)
           });
           if (o.elseBody != null) {
-            ifNode.addElse(this._ensureLocationData(this.$(o.elseBody)));
+            ifNode.addElse(this.ast.Block.wrap(this.$(o.elseBody)));
           }
           return ifNode;
         case 'While':
@@ -400,7 +403,6 @@
           return whileNode;
         case 'For':
           body = this.ast.Block.wrap(this.$(o.body));
-          this._ensureLocationData(body);
           forNode = new this.ast.For(body, {
             name: this.$(o.name),
             index: this.$(o.index),
