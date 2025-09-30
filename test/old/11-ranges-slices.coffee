@@ -69,11 +69,11 @@ code "[1...5]", "[1, 2, 3, 4];"
 code "[1,2,3,4,5][2..4]", "[1, 2, 3, 4, 5].slice(2, 5);"
 code "[1,2,3,4,5][2...4]", "[1, 2, 3, 4, 5].slice(2, 4);"
 
-# Slice with step (by)
-test "[0..10 by 2].join(',')", "0,2,4,6,8,10"
-test "[1..10 by 3].join(',')", "1,4,7,10"
-test "[10..0 by -2].join(',')", "10,8,6,4,2,0"
-test "[10...0 by -1].length", 10
+# Slice with step (by) - use comprehensions instead
+test "(i for i in [0..10] by 2).join(',')", "0,2,4,6,8,10"
+test "(i for i in [1..10] by 3).join(',')", "1,4,7,10"
+test "(i for i in [10..0] by -2).join(',')", "10,8,6,4,2,0"
+test "(i for i in [10...0] by -1).length", 10
 
 # Slice deletion
 test "a = [1,2,3,4,5]; a[1..2] = []; a.join(',')", "1,4,5"
@@ -116,8 +116,8 @@ test "[].concat([1..3], [7..9]).join(',')", "1,2,3,7,8,9"
 # test "[1..Infinity]", "throws or hangs"  # Don't actually test this
 
 # Range with computed bounds
-test "f = -> 3; [1..f()].join(',')", "1,2,3"
-test "getValue = -> 5; [getValue()..getValue() + 2].join(',')", "5,6,7"
+test "f = -> 3\n[1..f()].join(',')", "1,2,3"
+test "getValue = -> 5\n[getValue()..getValue() + 2].join(',')", "5,6,7"
 
 # Empty slice operations
 test "[1,2,3][10..20].length", 0
