@@ -155,7 +155,7 @@
 
     // Smart resolver - handles all types of references
     $(value) {
-      var key, result, val;
+      var i, item, key, len, resolved, result, results, val;
       if (value == null) {
         return value;
       }
@@ -166,14 +166,20 @@
         }
         return value;
       }
-      // Arrays - resolve each item
+      // Arrays - resolve each item, filtering out undefined/null
       if (Array.isArray(value)) {
-        return value.map((item) => {
-          return this.$(item);
-        });
+        results = [];
+        for (i = 0, len = value.length; i < len; i++) {
+          item = value[i];
+          resolved = this.$(item);
+          if (resolved != null) {
+            results.push(this._toNode(resolved));
+          }
+        }
+        return results;
       }
-      // Objects with directives - process them
-      if (typeof value === 'object') {
+      // Objects with directives - process them (but not null)
+      if (typeof value === 'object' && (value != null)) {
         if (value.$ast || value.$ops || value.$use || value.$arr) {
           return this.process(value);
         }

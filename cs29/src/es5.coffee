@@ -98,12 +98,16 @@ class ES5Backend
       return @currentLookup(value - 1) if @currentLookup
       return value
 
-    # Arrays - resolve each item
+    # Arrays - resolve each item, filtering out undefined/null
     if Array.isArray value
-      return value.map (item) => @$(item)
+      results = []
+      for item in value
+        resolved = @$(item)
+        results.push @_toNode(resolved) if resolved?
+      return results
 
-    # Objects with directives - process them
-    if typeof value is 'object'
+    # Objects with directives - process them (but not null)
+    if typeof value is 'object' and value?
       return @process value if value.$ast or value.$ops or value.$use or value.$arr
 
       # Regular objects - resolve properties

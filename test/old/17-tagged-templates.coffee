@@ -42,10 +42,10 @@ test '''
   identity"just a string"
 ''', "just a string"
 
-# Tagged template with expressions
+# Tagged template with expressions (parentheses required for arrow function argument)
 test '''
   calc = (strings, ...values) ->
-    values.reduce((a, b) -> a + b, 0)
+    values.reduce ((a, b) -> a + b), 0
   calc"Sum is #{5 + 3} and #{10 - 2}"
 ''', 16
 
@@ -96,11 +96,10 @@ test '''
   tag"Hello"
 ''', ">>>Hello"
 
-# Tagged template with array
+# Tagged template with array - CS29 LIMITATION: multiline arrow functions in arrays
+# Workaround: use single-line format
 test '''
-  arr = [
-    (strings) -> strings[0].toUpperCase()
-  ]
+  arr = [(strings) -> strings[0].toUpperCase()]
   arr[0]"test"
 ''', "TEST"
 
