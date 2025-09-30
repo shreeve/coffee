@@ -3,6 +3,12 @@
 # Tests for ES6 module import/export syntax parsing
 # Note: These test syntax parsing, not actual module loading
 
+# Import/export syntax (will fail without proper module system, but tests syntax)
+# test "import {readFile} from 'fs'; typeof readFile", "function"
+# test "import * as fs from 'fs'; typeof fs", "object"
+# test "export default class MyClass; true", true
+# test "export {myFunc, myVar}; true", true
+
 # Import syntax variations (testing parsing only)
 test "import 'module'; true", true
 test "import foo from 'bar'; true", true
