@@ -4,7 +4,7 @@
   // on Node.js/V8, or to run CoffeeScript directly in the browser. This module
   // contains the main entry functions for tokenizing, parsing, and compiling
   // source CoffeeScript into JavaScript.
-  var ES5Backend, FILE_EXTENSIONS, Lexer, SourceMap, base64encode, checkShebangLine, compile, getSourceMap, helpers, lexer, packageJson, parser, registerCompiled, withPrettyErrors;
+  var Backend, FILE_EXTENSIONS, Lexer, SourceMap, base64encode, checkShebangLine, compile, getSourceMap, helpers, lexer, packageJson, parser, registerCompiled, withPrettyErrors;
 
   ({Lexer} = require('./lexer'));
 
@@ -14,7 +14,7 @@
 
   SourceMap = require('./sourcemap');
 
-  ES5Backend = require('./es5');
+  Backend = require('./backend');
 
   // Require `package.json`, which is two levels above this file, as this file is
   // evaluated from `lib/coffeescript`.
@@ -114,7 +114,7 @@
         }
       }
     }
-    parser.yy.backend = new ES5Backend(options, parser.yy); // Inject Solar backend
+    parser.yy.backend = new Backend(options, parser.yy); // Inject Solar backend
     nodes = parser.parse(tokens);
     // If all that was requested was a POJO representation of the nodes, e.g.
     // the abstract syntax tree (AST), we can stop now and just return that
@@ -230,7 +230,7 @@
     if (typeof source === 'string') {
       source = lexer.tokenize(source, options);
     }
-    parser.yy.backend = new ES5Backend(options, parser.yy); // Inject Solar backend
+    parser.yy.backend = new Backend(options, parser.yy); // Inject Solar backend
     return parser.parse(source);
   });
 

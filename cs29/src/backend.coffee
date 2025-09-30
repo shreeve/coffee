@@ -1,8 +1,8 @@
 # ==============================================================================
-# ES5 Backend - Converts Solar directives (pure data) to CoffeeScript AST nodes
+# Backend - Converts Solar directives (pure data) to CoffeeScript AST nodes
 # ==============================================================================
 
-class ES5Backend
+class Backend
   constructor: (@options = {}, @ast = {}) ->
     @currentDirective = null
     @currentRule      = null
@@ -93,13 +93,8 @@ class ES5Backend
       return @currentLookup(value - 1) if @currentLookup
       return value
 
-    # Arrays - resolve each item, filtering out undefined/null
-    if Array.isArray value
-      results = []
-      for item in value
-        resolved = @$(item)
-        results.push @_toNode(resolved) if resolved?
-      return results
+    # Arrays - resolve each item
+    return (@$(item) for item in value) if Array.isArray value
 
     # Objects with directives - process them (but not null)
     if typeof value is 'object' and value?
@@ -164,9 +159,9 @@ class ES5Backend
         if o.addSource?
           # addSource: [1, 2] means ForStart is at position 1, ForSource at position 2
           [loopNode, sourceInfo] = o.addSource.map (item) => @$(item)
-          @_ensureLocation loopNode
-          @_ensureLocation sourceInfo if sourceInfo?
-          loopNode.addSource   sourceInfo if loopNode?.addSource?
+          @_ensureLocation   loopNode
+          @_ensureLocation   sourceInfo if sourceInfo?
+          loopNode.addSource sourceInfo if loopNode?.addSource?
           return loopNode
 
         if o.addBody?
@@ -376,4 +371,4 @@ class ES5Backend
         console.warn "Unknown $ast type:", o.$ast
         new @ast.Literal "# Missing AST node: #{o.$ast}"
 
-module.exports = ES5Backend
+module.exports = Backend
