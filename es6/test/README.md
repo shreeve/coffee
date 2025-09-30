@@ -29,7 +29,7 @@ This test suite uses two different CoffeeScript versions with distinct roles:
 ### Visual Flow
 
 ```
-npm run test ../test/es5
+npm run test ../test/es6
     ↓
 [Global Coffee 2.7.0] → Runs test/runner.coffee
     ↓
