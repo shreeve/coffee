@@ -186,4 +186,4 @@ test """
 test "x = 5; x = 10 if x < 10; x", 10
 test "x = 5; x = 10 unless x > 10; x", 10
 test "result = []; result.push(i) for i in [1, 2]; result.join(',')", "1,2"
-test "sum = 0; sum += i while i = [1, 2, 3].shift(); sum", 6
+test "arr = [1, 2, 3]; sum = 0; sum += i while i = arr.shift(); sum", 6
