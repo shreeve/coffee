@@ -25,10 +25,9 @@ test "obj = {class: 'test'}; obj.class", "test"
 test "obj = {function: 'func'}; obj.function", "func"
 test "obj = {extends: 'ext'}; obj.extends", "ext"
 
-# Arguments and eval as variable names (normally restricted in strict)
-# CoffeeScript may handle these differently
-test "arguments = 10; arguments", 10
-test "eval = 5; eval", 5
+# Arguments and eval as variable names are restricted in CoffeeScript
+fail "arguments = 10; arguments", "'arguments' can't be assigned"
+fail "eval = 5; eval", "'eval' can't be assigned"
 
 # This binding in strict mode
 test """
@@ -65,11 +64,12 @@ test '"\\u0041"', "A"  # Unicode escapes
 test "typeof global", "object"
 test "typeof window", "undefined"  # In Node context
 
-# Strict equality
-test "5 === 5", true
-test "5 === '5'", false
-test "null === undefined", false
-test "NaN === NaN", false
+# Strict equality - CoffeeScript uses 'is' not '==='
+# === is not valid syntax in CoffeeScript
+fail "5 === 5", "unexpected ="
+fail "5 === '5'", "unexpected ="
+fail "null === undefined", "unexpected ="
+fail "NaN === NaN", "unexpected ="
 
 # Arguments object in arrow functions
 test """
@@ -79,7 +79,7 @@ test """
 """, 3
 
 # Eval scope (indirect eval is global)
-test "(0, eval)('1 + 1')", 2
+fail "(0, eval)('1 + 1')", "unexpected ,"
 test "e = eval; e('2 + 2')", 4
 
 # Property descriptors
@@ -115,11 +115,11 @@ test """
   func()
 """, 10
 
-# Restrictions on eval creating variables
+# Eval creating variables - both CS28 and CS29 create variables in current scope
 test """
   eval('var evalVar = 5')
   typeof evalVar
-""", "undefined"  # In strict mode, eval has its own scope
+""", "number"  # eval creates variable in current scope (not strict mode isolated)
 
 # Function name property
 test "(func = ->) and func.name", "func"
