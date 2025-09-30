@@ -15,6 +15,11 @@ class ES5Backend
       node.updateLocationDataIfMissing?(node.locationData)
     node
 
+  # Shorthand for adding dummy location data
+  _ensureLocation: (node) ->
+    node?.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0, range: [0, 0]}
+    node
+
   # Helper to convert primitive values to AST nodes
   _toNode: (value) ->
     return value if value instanceof @ast.Base
@@ -197,12 +202,10 @@ class ES5Backend
       when 'Literal'            then new @ast.Literal          @$(o.value)
       when 'NumberLiteral'      then new @ast.NumberLiteral    @$(o.value)
       when 'StringLiteral'
-        stringLiteral = new @ast.StringLiteral @$(o.value), {
+        @_ensureLocation new @ast.StringLiteral @$(o.value), {
           quote: @$(o.quote), initialChunk: @$(o.initialChunk), finalChunk: @$(o.finalChunk),
           indent: @$(o.indent), double: @$(o.double), heregex: @$(o.heregex)
         }
-        stringLiteral.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0, range: [0, 0]}
-        stringLiteral
 
       # Basic operations - assignments, calls, operators
       when 'Assign'
@@ -257,11 +260,11 @@ class ES5Backend
         whileNode.body = @ast.Block.wrap @$(o.body)
         whileNode
       when 'For'
-        body = @ast.Block.wrap @$(o.body)
+        body = @_ensureLocation @ast.Block.wrap @$(o.body)
         forNode       = new @ast.For body, {name: @$(o.name), index: @$(o.index), source: @$(o.source)}
         forNode.await = @$(o.await) if o.await?
         forNode.own   = @$(o.own  ) if o.own?
-        forNode
+        @_ensureLocation forNode
       when 'Return'
         new @ast.Return @$(o.expression)
 
