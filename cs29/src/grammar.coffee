@@ -500,7 +500,7 @@ grammar =
     o 'ArgElisionList , ArgElision'                                         , $ops: 'array', append: [1, 3]
     o 'ArgElisionList OptComma TERMINATOR ArgElision'                       , $ops: 'array', append: [1, 4]
     o 'INDENT ArgElisionList OptElisions OUTDENT'                           , $ops: 'array', append: [2, 3]
-    o 'ArgElisionList OptElisions INDENT ArgElisionList OptElisions OUTDENT', $ops: 'array', gather: [1, 2, 4, 5]
+    o 'ArgElisionList OptElisions INDENT ArgElisionList OptElisions OUTDENT', $ops: 'array', append: [1, 2, 4, 5]
   ]
 
   ArgElision: [
@@ -529,8 +529,8 @@ grammar =
   SimpleArgs: [
     o 'Expression'
     o 'ExpressionLine'
-    o 'SimpleArgs , Expression'    , $ops: 'array', gather: [1, 3]
-    o 'SimpleArgs , ExpressionLine', $ops: 'array', gather: [1, 3]
+    o 'SimpleArgs , Expression'    , $ops: 'array', append: [1, 3]
+    o 'SimpleArgs , ExpressionLine', $ops: 'array', append: [1, 3]
   ]
 
   # The variants of *try/catch/finally* exception handling blocks.
