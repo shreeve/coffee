@@ -186,6 +186,15 @@ class ES5Backend
           loopNode.addBody body
           return loopNode
 
+      when 'prop'
+        # Handle property setting operations
+        if o.set?
+          target = @$(o.set.target)
+          property = o.set.property
+          value = @$(o.set.value)
+          target[property] = value if target?
+          return target
+
     # Catchall for any missing $ops directive handlers
     console.warn "Missing $ops directive handler:", o
     new @ast.Literal "# Missing $ops directive handler for: #{JSON.stringify(o)}"
