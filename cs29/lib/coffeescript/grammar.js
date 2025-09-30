@@ -1803,7 +1803,7 @@
       o('ArgElisionList OptElisions INDENT ArgElisionList OptElisions OUTDENT',
       {
         $ops: 'array',
-        gather: [1,
+        append: [1,
       2,
       4,
       5]
@@ -1829,7 +1829,7 @@
       o(', Elisions',
       {
         $ops: 'array',
-        gather: [[],
+        append: [[],
       2]
       })
     ],
@@ -1864,13 +1864,13 @@
       o('SimpleArgs , Expression',
       {
         $ops: 'array',
-        gather: [1,
+        append: [1,
       3]
       }),
       o('SimpleArgs , ExpressionLine',
       {
         $ops: 'array',
-        gather: [1,
+        append: [1,
       3]
       })
     ],

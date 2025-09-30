@@ -136,7 +136,7 @@ case 101: case 102:
 return r(1,{$ast:"FuncGlyph",glyph:1});
 case 105: case 155:
 return r(1,{$arr:[]});
-case 107: case 157: case 183: case 208: case 242: case 251:
+case 107: case 157: case 183: case 208: case 242: case 251: case 265: case 266:
 return r(3,{$ops:"array",append:[1,3]});
 case 108: case 158: case 184: case 209: case 243: case 252:
 return r(4,{$ops:"array",append:[1,4]});
@@ -317,15 +317,13 @@ return r(1,{$ast:"Range",from:null,to:null,exclusive:{$use:1,prop:"exclusive"}})
 case 253:
 return r(4,{$ops:"array",append:[2,3]});
 case 254:
-return r(6,{$ops:"array",gather:[1,2,4,5]});
+return r(6,{$ops:"array",append:[1,2,4,5]});
 case 257:
 return r(1,{$arr:[{}]});
 case 258:
-return r(2,{$ops:"array",gather:[[],2]});
+return r(2,{$ops:"array",append:[[],2]});
 case 261:
 return r(1,{$ast:"Elision"});
-case 265: case 266:
-return r(3,{$ops:"array",gather:[1,3]});
 case 267:
 return r(2,{$ast:"Try",attempt:2});
 case 268:

@@ -488,7 +488,7 @@
         case 'Switch':
           return new this.ast.Switch(this.$(o.subject), this.$(o.cases) || [], this.$(o.otherwise));
         case 'SwitchWhen':
-          return new this.ast.SwitchWhen(this.$(o.conditions), this.$(o.body));
+          return new this.ast.SwitchWhen([].concat(this.$(o.conditions)), this.$(o.body));
         // Super calls
         case 'Super':
           return new this.ast.Super(this.$(o.accessor), this.$(o.superLiteral));

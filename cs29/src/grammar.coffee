@@ -510,7 +510,7 @@ grammar =
 
   OptElisions: [
     o 'OptComma'  , $arr: [{}]
-    o ', Elisions', $ops: 'array', gather: [[], 2]
+    o ', Elisions', $ops: 'array', append: [[], 2]
   ]
 
   Elisions: [

@@ -308,7 +308,7 @@ class ES5Backend
 
       # Switch statements
       when 'Switch'     then new @ast.Switch     @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
-      when 'SwitchWhen' then new @ast.SwitchWhen @$(o.conditions), @$(o.body)
+      when 'SwitchWhen' then new @ast.SwitchWhen [].concat(@$(o.conditions)), @$(o.body)
 
       # Super calls
       when 'Super'     then new @ast.Super     @$(o.accessor), @$(o.superLiteral)
