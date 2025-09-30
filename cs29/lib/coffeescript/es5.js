@@ -306,83 +306,20 @@
     processAst(o) {
       var args, body, context, expression, expressions, forNode, ifNode, name, operator, options, ref, ref1, value, variable, whileNode;
       switch (o.$ast) {
-        // Root, Block, and Splat
-        case 'Root':
-          body = this.ast.Block.wrap(this.$(o.body));
-          if (this.options.makeReturn) {
-            body.makeReturn();
-          }
-          return new this.ast.Root(body);
-        case 'Block':
-          expressions = this.$(o.expressions);
-          return new this.ast.Block((expressions instanceof this.ast.Block ? expressions.expressions : expressions) || []);
-        case 'Splat':
-          return new this.ast.Splat(this.$(o.name), {
-            postfix: this.$(o.postfix)
-          });
-        // Literals
+        // === CORE EXPRESSIONS (Very High Frequency) ===
+
+          // Values and property access - the most fundamental operations
+        case 'Value':
+          return this._toValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : []);
+        case 'IdentifierLiteral':
+          return new this.ast.IdentifierLiteral(this.$(o.value));
         case 'Literal':
           return new this.ast.Literal(this.$(o.value));
         case 'NumberLiteral':
           return new this.ast.NumberLiteral(this.$(o.value));
         case 'StringLiteral':
           return new this.ast.StringLiteral(this._stripQuotes(this.$(o.value)));
-        case 'RegexLiteral':
-          return new this.ast.RegexLiteral(this.$(o.value));
-        case 'PassthroughLiteral':
-          return new this.ast.PassthroughLiteral(this.$(o.value));
-        case 'BooleanLiteral':
-          return new this.ast.BooleanLiteral(this.$(o.value));
-        case 'IdentifierLiteral':
-          return new this.ast.IdentifierLiteral(this.$(o.value));
-        case 'PropertyName':
-          return new this.ast.PropertyName(this.$(o.value));
-        case 'ComputedPropertyName':
-          return new this.ast.ComputedPropertyName(this.$(o.expression) || this.$(o.name) || this.$(o.value));
-        case 'StatementLiteral':
-          return new this.ast.StatementLiteral(this.$(o.value));
-        case 'ThisLiteral':
-          return new this.ast.ThisLiteral();
-        case 'UndefinedLiteral':
-          return new this.ast.UndefinedLiteral();
-        case 'NullLiteral':
-          return new this.ast.NullLiteral();
-        case 'InfinityLiteral':
-          return new this.ast.InfinityLiteral();
-        case 'NaNLiteral':
-          return new this.ast.NaNLiteral();
-        case 'StringWithInterpolations':
-          return new this.ast.StringWithInterpolations(this.ast.Block.wrap(this.$(o.body)));
-        // Value, Access, and Index
-        case 'Value':
-          return this._toValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : []);
-        case 'Access':
-          name = this.$(o.name);
-          if (name instanceof this.ast.IdentifierLiteral) {
-            name = new this.ast.PropertyName(name.value);
-          }
-          return new this.ast.Access(name, this.$(o.soak));
-        case 'Index':
-          return new this.ast.Index(this.$(o.index));
-        case 'Slice':
-          return new this.ast.Slice(this.$(o.range));
-        // Operations
-        case 'Op':
-          // Process args - preserve undefineds for proper positioning
-          args = ((ref1 = o.args) != null ? ref1.map((arg) => {
-            return this.$(arg);
-          }) : void 0) || [];
-          if ((o.invertOperator != null) || (o.originalOperator != null)) {
-            options = {};
-            if (o.invertOperator != null) {
-              options.invertOperator = this.$(o.invertOperator);
-            }
-            if (o.originalOperator != null) {
-              options.originalOperator = this.$(o.originalOperator);
-            }
-            args.push(options);
-          }
-          return new this.ast.Op(...args);
+        // Basic operations - assignments, calls, operators
         case 'Assign':
           variable = this.$(o.variable);
           value = this.$(o.value);
@@ -402,7 +339,48 @@
             operatorToken: this.$(o.operatorToken)
           } : {};
           return new this.ast.Assign(variable, value, context, options);
-        // Control Flow
+        case 'Call':
+          return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
+        case 'Op':
+          // Process args - preserve undefineds for proper positioning
+          args = ((ref1 = o.args) != null ? ref1.map((arg) => {
+            return this.$(arg);
+          }) : void 0) || [];
+          if ((o.invertOperator != null) || (o.originalOperator != null)) {
+            options = {};
+            if (o.invertOperator != null) {
+              options.invertOperator = this.$(o.invertOperator);
+            }
+            if (o.originalOperator != null) {
+              options.originalOperator = this.$(o.originalOperator);
+            }
+            args.push(options);
+          }
+          return new this.ast.Op(...args);
+        // Property access patterns
+        case 'Access':
+          name = this.$(o.name);
+          if (name instanceof this.ast.IdentifierLiteral) {
+            name = new this.ast.PropertyName(name.value);
+          }
+          return new this.ast.Access(name, this.$(o.soak));
+        case 'Index':
+          return new this.ast.Index(this.$(o.index));
+        case 'PropertyName':
+          return new this.ast.PropertyName(this.$(o.value));
+        // === CONTROL FLOW & STRUCTURE (High Frequency) ===
+
+          // Program structure
+        case 'Block':
+          expressions = this.$(o.expressions);
+          return new this.ast.Block((expressions instanceof this.ast.Block ? expressions.expressions : expressions) || []);
+        case 'Root':
+          body = this.ast.Block.wrap(this.$(o.body));
+          if (this.options.makeReturn) {
+            body.makeReturn();
+          }
+          return new this.ast.Root(body);
+        // Control flow statements
         case 'If':
           ifNode = new this.ast.If(this._ensureLocationData(this.$(o.condition)), this._ensureLocationData(this.$(o.body)), {
             type: (this.$(o.invert) ? 'unless' : this.$(o.type)),
@@ -435,72 +413,53 @@
             forNode.own = this.$(o.own);
           }
           return forNode;
-        case 'Switch':
-          return new this.ast.Switch(this.$(o.subject), this.$(o.cases) || [], this.$(o.otherwise));
-        case 'SwitchWhen':
-          return new this.ast.SwitchWhen(this.$(o.conditions), this.$(o.body));
-        // Collections
-        case 'Obj':
-          return new this.ast.Obj(this.$(o.properties) || [], this.$(o.generated));
-        case 'Arr':
-          return new this.ast.Arr(this.$(o.objects) || []);
-        case 'Range':
-          return new this.ast.Range(this.$(o.from), this.$(o.to), this.$(o.exclusive) ? 'exclusive' : void 0);
-        // Functions
+        case 'Return':
+          return new this.ast.Return(this.$(o.expression));
+        // === FUNCTIONS & CLASSES (Medium-High Frequency) ===
         case 'Code':
           return new this.ast.Code(this.$(o.params) || [], this.ast.Block.wrap(this.$(o.body)));
         case 'FuncGlyph':
           return new this.ast.FuncGlyph(this.$(o.value) || '->');
-        case 'Super':
-          return new this.ast.Super(this.$(o.accessor), this.$(o.superLiteral));
-        case 'Return':
-          return new this.ast.Return(this.$(o.expression));
-        case 'Call':
-          return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
-        case 'SuperCall':
-          return new this.ast.SuperCall(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
+        case 'Class':
+          return new this.ast.Class(this.$(o.variable), this.$(o.parent), this.$(o.body));
         case 'Param':
           name = this.$(o.name);
           if (name instanceof this.ast.Value && name.base instanceof this.ast.ThisLiteral) {
             name.this = true;
           }
           return new this.ast.Param(name, this.$(o.value), this.$(o.splat));
-        // Classes
-        case 'Class':
-          return new this.ast.Class(this.$(o.variable), this.$(o.parent), this.$(o.body));
-        // Try/Catch/Throw
-        case 'Try':
-          return new this.ast.Try(this.$(o.attempt), this.$(o.catch), this.$(o.ensure));
-        case 'Catch':
-          return new this.ast.Catch(this.$(o.recovery) || this.$(o.body), this.$(o.variable) || this.$(o.errorVariable));
-        case 'Throw':
-          return new this.ast.Throw(this.$(o.expression));
-        // Other
-        case 'Elision':
-          return new this.ast.Elision();
-        case 'Existence':
-          return new this.ast.Existence(this.$(o.expression));
+        // === DATA STRUCTURES (Medium Frequency) ===
+        case 'Obj':
+          return new this.ast.Obj(this.$(o.properties) || [], this.$(o.generated));
+        case 'Arr':
+          return new this.ast.Arr(this.$(o.objects) || []);
+        case 'Range':
+          return new this.ast.Range(this.$(o.from), this.$(o.to), this.$(o.exclusive) ? 'exclusive' : void 0);
+        case 'Slice':
+          return new this.ast.Slice(this.$(o.range));
         case 'Expansion':
-          return new this.ast.Expansion();
-        case 'ExportAllDeclaration':
-          return new this.ast.ExportAllDeclaration(this.$(o.exported), this.$(o.source), this.$(o.assertions));
-        case 'ExportDefaultDeclaration':
-          return new this.ast.ExportDefaultDeclaration(this.$(o.declaration) || this.$(o.value));
-        case 'ExportNamedDeclaration':
-          return new this.ast.ExportNamedDeclaration(this.$(o.clause), this.$(o.source), this.$(o.assertions));
-        case 'ImportClause':
-          return new this.ast.ImportClause(this.$(o.defaultBinding), this.$(o.namedImports));
-        case 'ImportDeclaration':
-          return new this.ast.ImportDeclaration(this.$(o.clause), this.$(o.source));
-        case 'ImportDefaultSpecifier':
-          return new this.ast.ImportDefaultSpecifier(this.$(o.name) || this.$(o.value) || this.$(o));
-        case 'ImportSpecifier':
-          return new this.ast.ImportSpecifier(this.$(o.imported), this.$(o.local));
-        case 'ImportSpecifierList':
-          return new this.ast.ImportSpecifierList(this.$(o.specifiers) || []);
-        case 'Parens':
-          return new this.ast.Parens(this.$(o.body));
-        // String Interpolation
+          return new this.ast.Expansion(); // Rest/spread operator (...)
+        
+          // === COMMON LITERALS (Medium Frequency) ===
+        case 'BooleanLiteral':
+          return new this.ast.BooleanLiteral(this.$(o.value));
+        case 'ThisLiteral':
+          return new this.ast.ThisLiteral();
+        case 'NullLiteral':
+          return new this.ast.NullLiteral();
+        case 'UndefinedLiteral':
+          return new this.ast.UndefinedLiteral();
+        case 'RegexLiteral':
+          return new this.ast.RegexLiteral(this.$(o.value));
+        case 'PassthroughLiteral':
+          return new this.ast.PassthroughLiteral(this.$(o.value));
+        case 'StatementLiteral':
+          return new this.ast.StatementLiteral(this.$(o.value));
+        case 'ComputedPropertyName':
+          return new this.ast.ComputedPropertyName(this.$(o.expression) || this.$(o.name) || this.$(o.value));
+        // === STRING INTERPOLATION (Low-Medium Frequency) ===
+        case 'StringWithInterpolations':
+          return new this.ast.StringWithInterpolations(this.ast.Block.wrap(this.$(o.body)));
         case 'Interpolation':
           expression = this.$(o.expression);
           if (expression != null) {
@@ -509,7 +468,68 @@
             return new this.ast.EmptyInterpolation();
           }
           break;
-        // Additional AST types that were missing
+        // === SPECIAL OPERATIONS (Low Frequency) ===
+
+          // Switch statements
+        case 'Switch':
+          return new this.ast.Switch(this.$(o.subject), this.$(o.cases) || [], this.$(o.otherwise));
+        case 'SwitchWhen':
+          return new this.ast.SwitchWhen(this.$(o.conditions), this.$(o.body));
+        // Super calls
+        case 'Super':
+          return new this.ast.Super(this.$(o.accessor), this.$(o.superLiteral));
+        case 'SuperCall':
+          return new this.ast.SuperCall(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
+        // Other operations
+        case 'Existence':
+          return new this.ast.Existence(this.$(o.expression));
+        case 'Parens':
+          return new this.ast.Parens(this.$(o.body));
+        case 'Splat':
+          return new this.ast.Splat(this.$(o.name), {
+            postfix: this.$(o.postfix)
+          });
+        // === ERROR HANDLING (Low Frequency) ===
+        case 'Try':
+          return new this.ast.Try(this.$(o.attempt), this.$(o.catch), this.$(o.ensure));
+        case 'Catch':
+          return new this.ast.Catch(this.$(o.recovery) || this.$(o.body), this.$(o.variable) || this.$(o.errorVariable));
+        case 'Throw':
+          return new this.ast.Throw(this.$(o.expression));
+        // === MODULES (Low Frequency) ===
+
+          // Import statements
+        case 'ImportDeclaration':
+          return new this.ast.ImportDeclaration(this.$(o.clause), this.$(o.source));
+        case 'ImportClause':
+          return new this.ast.ImportClause(this.$(o.defaultBinding), this.$(o.namedImports));
+        case 'ImportSpecifierList':
+          return new this.ast.ImportSpecifierList(this.$(o.specifiers) || []);
+        case 'ImportSpecifier':
+          return new this.ast.ImportSpecifier(this.$(o.imported), this.$(o.local));
+        case 'ImportDefaultSpecifier':
+          return new this.ast.ImportDefaultSpecifier(this.$(o.name) || this.$(o.value) || this.$(o));
+        // Export statements
+        case 'ExportNamedDeclaration':
+          return new this.ast.ExportNamedDeclaration(this.$(o.clause), this.$(o.source), this.$(o.assertions));
+        case 'ExportDefaultDeclaration':
+          return new this.ast.ExportDefaultDeclaration(this.$(o.declaration) || this.$(o.value));
+        case 'ExportAllDeclaration':
+          return new this.ast.ExportAllDeclaration(this.$(o.exported), this.$(o.source), this.$(o.assertions));
+        case 'ExportSpecifierList':
+          return new this.ast.ExportSpecifierList(this.$(o.specifiers) || []);
+        case 'ExportSpecifier':
+          return new this.ast.ExportSpecifier(this.$(o.local), this.$(o.exported));
+        // === ADVANCED/RARE FEATURES (Very Low Frequency) ===
+
+          // Advanced literals
+        case 'InfinityLiteral':
+          return new this.ast.InfinityLiteral();
+        case 'NaNLiteral':
+          return new this.ast.NaNLiteral();
+        case 'DefaultLiteral':
+          return new this.ast.DefaultLiteral(this.$(o.value));
+        // Advanced operations
         case 'YieldReturn':
           return new this.ast.YieldReturn(this.$(o.expression), {
             returnKeyword: this.$(o.returnKeyword)
@@ -520,6 +540,8 @@
           });
         case 'DynamicImportCall':
           return new this.ast.DynamicImportCall(this.$(o.variable), this.$(o.args) || []);
+        case 'DynamicImport':
+          return new this.ast.DynamicImport();
         case 'TaggedTemplateCall':
           return new this.ast.TaggedTemplateCall(this.$(o.variable), this.$(o.template), this.$(o.soak));
         case 'MetaProperty':
@@ -528,14 +550,9 @@
           return new this.ast.RegexWithInterpolations(this.$(o.invocation), {
             heregexCommentTokens: this.$(o.heregexCommentTokens)
           });
-        case 'ExportSpecifier':
-          return new this.ast.ExportSpecifier(this.$(o.local), this.$(o.exported));
-        case 'ExportSpecifierList':
-          return new this.ast.ExportSpecifierList(this.$(o.specifiers) || []);
-        case 'DynamicImport':
-          return new this.ast.DynamicImport();
-        case 'DefaultLiteral':
-          return new this.ast.DefaultLiteral(this.$(o.value));
+        // Rare array operation
+        case 'Elision':
+          return new this.ast.Elision(); // Sparse array holes
         default:
           console.warn("Unknown $ast type:", o.$ast);
           return new this.ast.Literal(`# Missing AST node: ${o.$ast}`);

@@ -199,54 +199,16 @@ class ES5Backend
   processAst: (o) ->
     switch o.$ast
 
-      # Root, Block, and Splat
-      when 'Root'
-        body = @ast.Block.wrap @$(o.body)
-        body.makeReturn() if @options.makeReturn
-        new @ast.Root body
-      when 'Block'
-        expressions = @$(o.expressions)
-        new @ast.Block (if expressions instanceof @ast.Block then expressions.expressions else expressions) or []
-      when 'Splat' then new @ast.Splat @$(o.name), {postfix: @$(o.postfix)}
+      # === CORE EXPRESSIONS (Very High Frequency) ===
 
-      # Literals
-      when 'Literal'                  then new @ast.Literal              @$(o.value)
-      when 'NumberLiteral'            then new @ast.NumberLiteral        @$(o.value)
-      when 'StringLiteral'            then new @ast.StringLiteral        @_stripQuotes(@$(o.value))
-      when 'RegexLiteral'             then new @ast.RegexLiteral         @$(o.value)
-      when 'PassthroughLiteral'       then new @ast.PassthroughLiteral   @$(o.value)
-      when 'BooleanLiteral'           then new @ast.BooleanLiteral       @$(o.value)
-      when 'IdentifierLiteral'        then new @ast.IdentifierLiteral    @$(o.value)
-      when 'PropertyName'             then new @ast.PropertyName         @$(o.value)
-      when 'ComputedPropertyName'     then new @ast.ComputedPropertyName @$(o.expression) or @$(o.name) or @$(o.value)
-      when 'StatementLiteral'         then new @ast.StatementLiteral     @$(o.value)
-      when 'ThisLiteral'              then new @ast.ThisLiteral
-      when 'UndefinedLiteral'         then new @ast.UndefinedLiteral
-      when 'NullLiteral'              then new @ast.NullLiteral
-      when 'InfinityLiteral'          then new @ast.InfinityLiteral
-      when 'NaNLiteral'               then new @ast.NaNLiteral
-      when 'StringWithInterpolations' then new @ast.StringWithInterpolations @ast.Block.wrap(@$(o.body))
+      # Values and property access - the most fundamental operations
+      when 'Value'              then @_toValue @$(o.base), @$(o.properties) ? []
+      when 'IdentifierLiteral'  then new @ast.IdentifierLiteral @$(o.value)
+      when 'Literal'            then new @ast.Literal          @$(o.value)
+      when 'NumberLiteral'      then new @ast.NumberLiteral    @$(o.value)
+      when 'StringLiteral'      then new @ast.StringLiteral    @_stripQuotes(@$(o.value))
 
-      # Value, Access, and Index
-      when 'Value' then @_toValue @$(o.base), @$(o.properties) ? []
-      when 'Access'
-        name = @$(o.name)
-        name = new @ast.PropertyName name.value if name instanceof @ast.IdentifierLiteral
-        new @ast.Access name, @$(o.soak)
-      when 'Index' then new @ast.Index @$(o.index)
-      when 'Slice' then new @ast.Slice @$(o.range)
-
-      # Operations
-      when 'Op'
-        # Process args - preserve undefineds for proper positioning
-        args = o.args?.map((arg) => @$(arg)) or []
-        if o.invertOperator? or o.originalOperator?
-          options = {}
-          options.invertOperator   = @$(o.invertOperator  ) if o.invertOperator?
-          options.originalOperator = @$(o.originalOperator) if o.originalOperator?
-          args.push options
-        new @ast.Op args...
-
+      # Basic operations - assignments, calls, operators
       when 'Assign'
         variable = @$(o.variable)
         value = @$(o.value)
@@ -258,18 +220,46 @@ class ES5Backend
         value = new @ast.Op operator.replace('=', ''), variable, value if operator and operator isnt '='
         options = if o.operatorToken then {operatorToken: @$(o.operatorToken)} else {}
         new @ast.Assign variable, value, context, options
+      when 'Call'
+        new @ast.Call @$(o.variable), @$(o.args) or [], @$(o.soak)
+      when 'Op'
+        # Process args - preserve undefineds for proper positioning
+        args = o.args?.map((arg) => @$(arg)) or []
+        if o.invertOperator? or o.originalOperator?
+          options = {}
+          options.invertOperator   = @$(o.invertOperator  ) if o.invertOperator?
+          options.originalOperator = @$(o.originalOperator) if o.originalOperator?
+          args.push options
+        new @ast.Op args...
 
-      # Control Flow
+      # Property access patterns
+      when 'Access'
+        name = @$(o.name)
+        name = new @ast.PropertyName name.value if name instanceof @ast.IdentifierLiteral
+        new @ast.Access name, @$(o.soak)
+      when 'Index'        then new @ast.Index        @$(o.index)
+      when 'PropertyName' then new @ast.PropertyName @$(o.value)
+
+      # === CONTROL FLOW & STRUCTURE (High Frequency) ===
+
+      # Program structure
+      when 'Block'
+        expressions = @$(o.expressions)
+        new @ast.Block (if expressions instanceof @ast.Block then expressions.expressions else expressions) or []
+      when 'Root'
+        body = @ast.Block.wrap @$(o.body)
+        body.makeReturn() if @options.makeReturn
+        new @ast.Root body
+
+      # Control flow statements
       when 'If'
         ifNode = new @ast.If @_ensureLocationData(@$(o.condition)), @_ensureLocationData(@$(o.body)), {type: (if @$(o.invert) then 'unless' else @$(o.type)), postfix: @$(o.postfix)}
         ifNode.addElse @_ensureLocationData(@$(o.elseBody)) if o.elseBody?
         ifNode
-
       when 'While'
         whileNode      = new @ast.While @$(o.condition), {invert: @$(o.invert), guard: @$(o.guard), isLoop: @$(o.isLoop)}
         whileNode.body = @ast.Block.wrap @$(o.body)
         whileNode
-
       when 'For'
         body = @ast.Block.wrap @$(o.body)
         @_ensureLocationData body
@@ -277,65 +267,100 @@ class ES5Backend
         forNode.await = @$(o.await) if o.await?
         forNode.own   = @$(o.own  ) if o.own?
         forNode
+      when 'Return'
+        new @ast.Return @$(o.expression)
 
-      when 'Switch'     then new @ast.Switch     @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
-      when 'SwitchWhen' then new @ast.SwitchWhen @$(o.conditions), @$(o.body)
+      # === FUNCTIONS & CLASSES (Medium-High Frequency) ===
 
-      # Collections
-      when 'Obj'        then new @ast.Obj        @$(o.properties) or [], @$(o.generated)
-      when 'Arr'        then new @ast.Arr        @$(o.objects) or []
-      when 'Range'      then new @ast.Range      @$(o.from), @$(o.to), if @$(o.exclusive) then 'exclusive'
-
-      # Functions
-      when 'Code'      then new @ast.Code        @$(o.params) or [], @ast.Block.wrap(@$(o.body))
-      when 'FuncGlyph' then new @ast.FuncGlyph   @$(o.value) or '->'
-      when 'Super'     then new @ast.Super       @$(o.accessor), @$(o.superLiteral)
-      when 'Return'    then new @ast.Return      @$(o.expression)
-      when 'Call'      then new @ast.Call        @$(o.variable), @$(o.args) or [], @$(o.soak)
-      when 'SuperCall' then new @ast.SuperCall   @$(o.variable), @$(o.args) or [], @$(o.soak)
+      when 'Code'      then new @ast.Code      @$(o.params) or [], @ast.Block.wrap(@$(o.body))
+      when 'FuncGlyph' then new @ast.FuncGlyph @$(o.value ) or '->'
+      when 'Class'     then new @ast.Class     @$(o.variable), @$(o.parent), @$(o.body)
       when 'Param'
         name = @$(o.name)
         name.this = true if name instanceof @ast.Value and name.base instanceof @ast.ThisLiteral
         new @ast.Param name, @$(o.value), @$(o.splat)
 
-      # Classes
-      when 'Class' then new @ast.Class @$(o.variable), @$(o.parent), @$(o.body)
+      # === DATA STRUCTURES (Medium Frequency) ===
 
-      # Try/Catch/Throw
-      when 'Try'   then new @ast.Try @$(o.attempt), @$(o.catch), @$(o.ensure)
-      when 'Catch' then new @ast.Catch @$(o.recovery) or @$(o.body), @$(o.variable) or @$(o.errorVariable)
-      when 'Throw' then new @ast.Throw @$(o.expression)
+      when 'Obj'       then new @ast.Obj       @$(o.properties) or [], @$(o.generated)
+      when 'Arr'       then new @ast.Arr       @$(o.objects   ) or []
+      when 'Range'     then new @ast.Range     @$(o.from), @$(o.to), if @$(o.exclusive) then 'exclusive'
+      when 'Slice'     then new @ast.Slice     @$(o.range)
+      when 'Expansion' then new @ast.Expansion  # Rest/spread operator (...)
 
-      # Other
-      when 'Elision'                  then new @ast.Elision
-      when 'Existence'                then new @ast.Existence @$(o.expression)
-      when 'Expansion'                then new @ast.Expansion
-      when 'ExportAllDeclaration'     then new @ast.ExportAllDeclaration @$(o.exported), @$(o.source), @$(o.assertions)
-      when 'ExportDefaultDeclaration' then new @ast.ExportDefaultDeclaration @$(o.declaration) or @$(o.value)
-      when 'ExportNamedDeclaration'   then new @ast.ExportNamedDeclaration @$(o.clause), @$(o.source), @$(o.assertions)
-      when 'ImportClause'             then new @ast.ImportClause @$(o.defaultBinding), @$(o.namedImports)
-      when 'ImportDeclaration'        then new @ast.ImportDeclaration @$(o.clause), @$(o.source)
-      when 'ImportDefaultSpecifier'   then new @ast.ImportDefaultSpecifier @$(o.name) or @$(o.value) or @$(o)
-      when 'ImportSpecifier'          then new @ast.ImportSpecifier @$(o.imported), @$(o.local)
-      when 'ImportSpecifierList'      then new @ast.ImportSpecifierList @$(o.specifiers) or []
-      when 'Parens'                   then new @ast.Parens @$(o.body)
+      # === COMMON LITERALS (Medium Frequency) ===
 
-      # String Interpolation
+      when 'BooleanLiteral'       then new @ast.BooleanLiteral       @$(o.value)
+      when 'ThisLiteral'          then new @ast.ThisLiteral
+      when 'NullLiteral'          then new @ast.NullLiteral
+      when 'UndefinedLiteral'     then new @ast.UndefinedLiteral
+      when 'RegexLiteral'         then new @ast.RegexLiteral         @$(o.value)
+      when 'PassthroughLiteral'   then new @ast.PassthroughLiteral   @$(o.value)
+      when 'StatementLiteral'     then new @ast.StatementLiteral     @$(o.value)
+      when 'ComputedPropertyName' then new @ast.ComputedPropertyName @$(o.expression) or @$(o.name) or @$(o.value)
+
+      # === STRING INTERPOLATION (Low-Medium Frequency) ===
+
+      when 'StringWithInterpolations' then new @ast.StringWithInterpolations @ast.Block.wrap(@$(o.body))
       when 'Interpolation'
         expression = @$(o.expression)
         if expression? then new @ast.Interpolation expression else new @ast.EmptyInterpolation()
 
-      # Additional AST types that were missing
-      when 'YieldReturn'               then new @ast.YieldReturn @$(o.expression), {returnKeyword: @$(o.returnKeyword)}
-      when 'AwaitReturn'               then new @ast.AwaitReturn @$(o.expression), {returnKeyword: @$(o.returnKeyword)}
-      when 'DynamicImportCall'         then new @ast.DynamicImportCall @$(o.variable), @$(o.args) or []
-      when 'TaggedTemplateCall'        then new @ast.TaggedTemplateCall @$(o.variable), @$(o.template), @$(o.soak)
-      when 'MetaProperty'              then new @ast.MetaProperty @$(o.identifier), @$(o.accessor)
-      when 'RegexWithInterpolations'   then new @ast.RegexWithInterpolations @$(o.invocation), {heregexCommentTokens: @$(o.heregexCommentTokens)}
-      when 'ExportSpecifier'           then new @ast.ExportSpecifier @$(o.local), @$(o.exported)
-      when 'ExportSpecifierList'       then new @ast.ExportSpecifierList @$(o.specifiers) or []
-      when 'DynamicImport'             then new @ast.DynamicImport
-      when 'DefaultLiteral'            then new @ast.DefaultLiteral @$(o.value)
+      # === SPECIAL OPERATIONS (Low Frequency) ===
+
+      # Switch statements
+      when 'Switch'     then new @ast.Switch     @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
+      when 'SwitchWhen' then new @ast.SwitchWhen @$(o.conditions), @$(o.body)
+
+      # Super calls
+      when 'Super'     then new @ast.Super     @$(o.accessor), @$(o.superLiteral)
+      when 'SuperCall' then new @ast.SuperCall @$(o.variable), @$(o.args) or [], @$(o.soak)
+
+      # Other operations
+      when 'Existence' then new @ast.Existence @$(o.expression)
+      when 'Parens'    then new @ast.Parens    @$(o.body)
+      when 'Splat'     then new @ast.Splat     @$(o.name), {postfix: @$(o.postfix)}
+
+      # === ERROR HANDLING (Low Frequency) ===
+
+      when 'Try'   then new @ast.Try   @$(o.attempt), @$(o.catch), @$(o.ensure)
+      when 'Catch' then new @ast.Catch @$(o.recovery) or @$(o.body), @$(o.variable) or @$(o.errorVariable)
+      when 'Throw' then new @ast.Throw @$(o.expression)
+
+      # === MODULES (Low Frequency) ===
+
+      # Import statements
+      when 'ImportDeclaration'      then new @ast.ImportDeclaration      @$(o.clause), @$(o.source)
+      when 'ImportClause'           then new @ast.ImportClause           @$(o.defaultBinding), @$(o.namedImports)
+      when 'ImportSpecifierList'    then new @ast.ImportSpecifierList    @$(o.specifiers) or []
+      when 'ImportSpecifier'        then new @ast.ImportSpecifier        @$(o.imported), @$(o.local)
+      when 'ImportDefaultSpecifier' then new @ast.ImportDefaultSpecifier @$(o.name) or @$(o.value) or @$(o)
+
+      # Export statements
+      when 'ExportNamedDeclaration'   then new @ast.ExportNamedDeclaration   @$(o.clause), @$(o.source), @$(o.assertions)
+      when 'ExportDefaultDeclaration' then new @ast.ExportDefaultDeclaration @$(o.declaration) or @$(o.value)
+      when 'ExportAllDeclaration'     then new @ast.ExportAllDeclaration     @$(o.exported), @$(o.source), @$(o.assertions)
+      when 'ExportSpecifierList'      then new @ast.ExportSpecifierList      @$(o.specifiers) or []
+      when 'ExportSpecifier'          then new @ast.ExportSpecifier          @$(o.local), @$(o.exported)
+
+      # === ADVANCED/RARE FEATURES (Very Low Frequency) ===
+
+      # Advanced literals
+      when 'InfinityLiteral' then new @ast.InfinityLiteral
+      when 'NaNLiteral'      then new @ast.NaNLiteral
+      when 'DefaultLiteral'  then new @ast.DefaultLiteral @$(o.value)
+
+      # Advanced operations
+      when 'YieldReturn'             then new @ast.YieldReturn             @$(o.expression), {returnKeyword: @$(o.returnKeyword)}
+      when 'AwaitReturn'             then new @ast.AwaitReturn             @$(o.expression), {returnKeyword: @$(o.returnKeyword)}
+      when 'DynamicImportCall'       then new @ast.DynamicImportCall       @$(o.variable), @$(o.args) or []
+      when 'DynamicImport'           then new @ast.DynamicImport
+      when 'TaggedTemplateCall'      then new @ast.TaggedTemplateCall      @$(o.variable), @$(o.template), @$(o.soak)
+      when 'MetaProperty'            then new @ast.MetaProperty            @$(o.identifier), @$(o.accessor)
+      when 'RegexWithInterpolations' then new @ast.RegexWithInterpolations @$(o.invocation), {heregexCommentTokens: @$(o.heregexCommentTokens)}
+
+      # Rare array operation
+      when 'Elision' then new @ast.Elision  # Sparse array holes
 
       else
         console.warn "Unknown $ast type:", o.$ast
