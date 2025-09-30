@@ -249,8 +249,8 @@ class ES5Backend
 
       # Control flow statements
       when 'If'
-        ifNode = new @ast.If @_ensureLocationData(@$(o.condition)), @_ensureLocationData(@$(o.body)), {type: (if @$(o.invert) then 'unless' else @$(o.type)), postfix: @$(o.postfix)}
-        ifNode.addElse @_ensureLocationData(@$(o.elseBody)) if o.elseBody?
+        ifNode = new @ast.If @$(o.condition), @ast.Block.wrap(@$(o.body)), {type: (if @$(o.invert) then 'unless' else @$(o.type)), postfix: @$(o.postfix)}
+        ifNode.addElse @ast.Block.wrap(@$(o.elseBody)) if o.elseBody?
         ifNode
       when 'While'
         whileNode      = new @ast.While @$(o.condition), {invert: @$(o.invert), guard: @$(o.guard), isLoop: @$(o.isLoop)}
@@ -258,7 +258,6 @@ class ES5Backend
         whileNode
       when 'For'
         body = @ast.Block.wrap @$(o.body)
-        @_ensureLocationData body
         forNode       = new @ast.For body, {name: @$(o.name), index: @$(o.index), source: @$(o.source)}
         forNode.await = @$(o.await) if o.await?
         forNode.own   = @$(o.own  ) if o.own?
