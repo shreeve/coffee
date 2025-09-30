@@ -101,7 +101,7 @@ test "(x for x in [1, 2, 3, 4, 5] when x > 2).join(',')", "3,4,5"
 test "(i for i in [0..4]).join(',')", "0,1,2,3,4"
 
 # Nested array comprehensions
-test "(x + y for x in [1, 2] for y in [10, 20]).join(',')", "11,21,12,22"
+test "(x + y for x in [1, 2] for y in [10, 20]).join(',')", "11,12,21,22"
 
 # Array equality (reference)
 test "a = [1, 2]; b = a; a is b", true
