@@ -37,6 +37,32 @@ global.fail = (code) ->
     console.log "#{green}✓#{reset} #{displayCode} (expected to fail)"
   return
 
+# Test that code compiles to specific JavaScript
+global.code = (coffeeCode, expectedJs) ->
+  try
+    # Compile the CoffeeScript code
+    compiled = CoffeeScript.compile coffeeCode, bare: true
+    # Normalize whitespace for comparison
+    actualJs = compiled.trim()
+    expectedJs = expectedJs.trim()
+
+    if actualJs == expectedJs
+      passed++
+      displayCode = coffeeCode.replace(/\n/g, '\n  ')
+      console.log "#{green}✓#{reset} #{displayCode} → #{expectedJs}"
+    else
+      failed++
+      displayCode = coffeeCode.replace(/\n/g, '\n  ')
+      console.log "#{red}✗#{reset} #{displayCode}"
+      console.log "    Expected JS: #{expectedJs}"
+      console.log "    Got JS:      #{actualJs}"
+  catch e
+    failed++
+    displayCode = coffeeCode.replace(/\n/g, '\n  ')
+    console.log "#{red}✗#{reset} #{displayCode}"
+    console.log "    Compilation Error: #{e.message}"
+  return
+
 # Simple test function: test "code", expected_value
 global.test = (code, expected) ->
   try
