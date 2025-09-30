@@ -1,23 +1,30 @@
 {
   "name": "coffeescript",
-  "description": "Unfancy JavaScript",
+  "description": "Unfancy JavaScript - Modern ES6+ output",
   "keywords": [
     "javascript",
     "language",
     "coffeescript",
-    "compiler"
+    "compiler",
+    "es6",
+    "esm"
   ],
-  "version": "2.9.0",
+  "version": "3.0.0",
   "license": "MIT",
+  "type": "module",
   "engines": {
-    "node": ">=6"
+    "node": ">=14"
   },
   "directories": {
     "lib": "./lib/coffeescript"
   },
-  "main": "./lib/coffeescript/index",
-  "module": "./lib/coffeescript-browser-compiler-modern/coffeescript.js",
-  "browser": "./lib/coffeescript-browser-compiler-legacy/coffeescript.js",
+  "main": "./lib/coffeescript/index.js",
+  "exports": {
+    ".": {
+      "import": "./lib/coffeescript/index.js",
+      "require": "./lib/coffeescript/index.cjs"
+    }
+  },
   "bin": {
     "coffee": "./bin/coffee",
     "cake": "./bin/cake"
@@ -29,7 +36,7 @@
     "repl.js"
   ],
   "scripts": {
-    "parser":  "coffee ../solar-es5.coffee -o lib/coffeescript/parser.js src/grammar.coffee",
+    "parser":  "coffee ../solar-es6.coffee -o lib/coffeescript/parser.js src/grammar.coffee",
     "build":   "coffee -c -o lib/coffeescript src/*.{lit,}coffee",
     "test":    "coffee test/runner.coffee",
     "version": "coffee --version"
@@ -39,17 +46,5 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/jashkenas/coffeescript.git"
-  },
-  "devDependencies": {
-    "@babel/core": "~7.17.9",
-    "@babel/preset-env": "~7.16.11",
-    "babel-preset-minify": "~0.5.1",
-    "codemirror": "~5.65.3",
-    "docco": "~0.9.1",
-    "highlight.js": "~11.5.1",
-    "markdown-it": "~13.0.0",
-    "puppeteer": "~13.6.0",
-    "underscore": "~1.13.3",
-    "webpack": "~5.72.0"
   }
 }
