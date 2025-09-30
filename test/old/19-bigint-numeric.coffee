@@ -119,4 +119,4 @@ fail "100_"    # trailing underscore should be invalid
 # Compilation output tests
 code "123n", "123n;"
 code "0b1010n", "0b1010n;"
-code "1_000_000", "1_000_000;"  # CS29 preserves underscores
+code "1_000_000", "1_000_000;"  # preserves underscores

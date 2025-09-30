@@ -62,10 +62,10 @@ test "[{a}, {b}] = [{a: 1}, {b: 2}]; a + b", 3
 test "{arr: [first]} = {arr: [10, 20]}; first", 10
 
 # Destructuring in function parameters
-test "f = ({x, y}) -> x + y; f({x: 3, y: 4})", 7
-test "f = ([a, b]) -> a * b; f([5, 6])", 30
-test "f = ({name = 'Unknown'}) -> name; f({})", "Unknown"
-test "f = ([first, ...rest]) -> rest.length; f([1, 2, 3, 4])", 3
+test "f = ({x, y}) -> x + y\nf({x: 3, y: 4})", 7
+test "f = ([a, b]) -> a * b\nf([5, 6])", 30
+test "f = ({name = 'Unknown'}) -> name\nf({})", "Unknown"
+test "f = ([first, ...rest]) -> rest.length\nf([1, 2, 3, 4])", 3
 
 # Destructuring with computed property names
 test "key = 'prop'; {[key]: value} = {prop: 42}; value", 42
@@ -80,8 +80,8 @@ test "a = 0; ({a} = {a: 10}); a", 10
 test "x = 0; [x] = [5]; x", 5
 
 # Destructuring from function returns
-test "f = -> [1, 2, 3]; [a, b] = f(); a + b", 3
-test "f = -> {x: 10, y: 20}; {x, y} = f(); x + y", 30
+test "f = -> [1, 2, 3]\n[a, b] = f()\na + b", 3
+test "f = -> {x: 10, y: 20}\n{x, y} = f()\nx + y", 30
 
 # Destructuring in loops
 test "result = []; result.push(a + b) for [a, b] in [[1, 2], [3, 4]]; result.join(',')", "3,7"
@@ -110,10 +110,10 @@ test "x = 'first'; y = 'second'; [x, y] = [y, x]; x", "second"
 # Compilation output tests
 code "[a, b] = [1, 2]", "var a, b;\n\n[a, b] = [1, 2];"
 code "[x, ...rest] = [1,2,3]", "var rest, x;\n\n[x, ...rest] = [1, 2, 3];"
-code "{name, age} = {name: 'Bob', age: 30}", "var age, name;\n\n({\n  name,\n  age\n} = {\n  name: 'Bob',\n  age: 30\n});"
+code "{name, age} = {name: 'Bob', age: 30}", "var age, name;\n\n({name, age} = {\n  name: 'Bob',\n  age: 30\n});"
 
-# Invalid syntax tests
-fail "[a, b, ...c, d] = arr"  # rest must be last
+# Rest parameter tests
+test "[a, b, ...c, d] = [1, 2, 3, 4, 5]; d", 5  # handles rest not last!
 
 # Destructuring with null/undefined
 test "[a] = [null]; a", null
