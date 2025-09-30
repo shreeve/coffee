@@ -1,66 +1,70 @@
+# CoffeeScript 2.9.0
+
+## Architecture (CS29)
+
+This version of CoffeeScript (CS29) uses the Solar parser generator in "Solar mode" with data directives instead of direct AST node creation.
+
+### Parser Architecture
+
+CS29 employs a two-stage compilation process:
+
+1. **Parser Stage**: Solar parser generator processes `src/syntax.coffee` to create a parser that outputs data directives
+2. **ES5 Backend**: `src/es5.coffee` transforms these directives into CoffeeScript AST nodes
+
+### Grammar to AST Mapping
+
+The system transforms 97 grammar types into 60 unique AST node types through an elegant directive system:
+
 ```
-      @@@@@@@                @@@@  @@@@@
-     @@@@@@@@@@              @@@   @@@                                           {
-    @@@@     @@              @@@   @@@                                        }   }   {
-   @@@@          @@@@@@@    @@@   @@@     @@@@@@    @@@@@@                   {   {  }  }
-  @@@@          @@@   @@  @@@@@  @@@@@@  @@@   @@  @@@@  @@                   }   }{  {
-  @@@@         @@@@   @@   @@@    @@@   @@@   @@@ @@@   @@@                  {  }{  }  }
-  @@@@        @@@@    @@   @@@    @@@   @@@@@@@@  @@@@@@@@                  { }{ }{  { }
-  @@@@@       @@@@   @@    @@@    @@@   @@@       @@@                     {  { } { } { }  }
-   @@@@@@@@@@ @@@@@@@@    @@@    @@@    @@@@@@@@  @@@@@@@@                 { }   { }   { }
-      @@@@@               @@@    @@@      @@@@@     @@@@@           @@@@@@   { }   { }    @@@@@@@
-                         @@@    @@@                                 @@@@@@@@@@@@@@@@@@@@@@@@@@@@
-      @@@@@@            @@@    @@@                                @@ @@@@@@@@@@@@@@@@@@@@@@@@@@
-   @@@@    @@          @@@   @@@@                                @@   @@@@@@@@@@@@@@@@@@@@@@@@
-   @@@@   @@@                       @@                  @@@@     @@@   @@@@@@@@@@@@@@@@@@@@@
-   @@@@@          @@@@@   @@  @@   @@@     @@@@@@@     @@@@@      @@@    @@@@@@@@@@@@@@@@@@
-     @@@@@      @@@  @@@ @@@@@@@@         @@@@  @@@@  @@@@@@@       @@@   @@@@@@@@@@@@@@@@
-       @@@@@   @@@       @@@@     @@@@    @@@    @@@   @@@                 @@@@@@@@@@@@@@
- @@@@@  @@@@  @@@@      @@@@      @@@@   @@@@   @@@@  @@@@
-@@@     @@@@  @@@       @@@@     @@@@    @@@    @@@@  @@@@
-@@@     @@@@  @@@@     @@@@      @@@@   @@@@   @@@@  @@@@
- @@@@@@@@@     @@@@@@  @@@@       @@@@  @@@@@@@@@    @@@@
-                                       @@@          @@@@
-                                      @@@
-                                      @@@
+Grammar Type (1 of 97) → Rule (1 of 404) → Directive → AST Node (1 of 60)
+                                    ↓
+                            es5.coffee handler (1 of 62 cases)
 ```
 
-CoffeeScript is a little language that compiles into JavaScript.
+### Directive Types
 
-## Installation
+CS29 uses five types of directives to control AST generation:
 
-Once you have Node.js installed:
+1. **Direct AST Creation** (`$ast: 'ClassName'`) - 156 rules
+   - Creates a specific AST node type
+   - Example: `o 'Expression', $ast: 'Arg', name: 1` creates an `Arg` node
 
-```shell
-# Install locally for a project:
-npm install --save-dev coffeescript
+2. **Type Name Inheritance** (`$ast: '@'`) - 75 rules
+   - Uses the grammar type name as the AST node type
+   - Example: `o 'CLASS', $ast: '@'` creates a `Class` node
 
-# Install globally to execute .coffee files anywhere:
-npm install --global coffeescript
-```
+3. **Operations** (`$ops`) - 45 rules
+   - Performs array/value manipulations
+   - Example: `o 'ArgList , Arg', $ops: 'array', append: [1, 3]`
 
-## Getting Started
+4. **Array Creation** (`$arr`) - 18 rules
+   - Creates arrays directly
+   - Example: `o 'ImportSpecifier', $arr: [1]`
 
-Execute a script:
+5. **Pass-through** (`$use`) - 68 rules
+   - Returns the referenced value unchanged
+   - Example: `o 'INDENT ExportSpecifierList OptComma OUTDENT', $use: 2`
 
-```shell
-coffee /path/to/script.coffee
-```
+### Why 97 Grammar Types ≠ 97 AST Types
 
-Compile a script:
+The mapping is many-to-one because:
 
-```shell
-coffee -c /path/to/script.coffee
-```
+- Multiple grammar rules often create the same AST type (e.g., many operators create `Op` nodes)
+- Some rules use operations (`$ops`, `$arr`, `$use`) rather than creating new nodes
+- Rules with `$ast: '@'` reuse their grammar type name
+- The system eliminates redundancy through shared AST types
 
-For documentation, usage, and examples, see: https://coffeescript.org/
+### Key Files
 
-To suggest a feature or report a bug: https://github.com/jashkenas/coffeescript/issues
+- `src/syntax.coffee`: Grammar definition with Solar directives (97 types, 404 rules)
+- `src/es5.coffee`: ES5 backend that processes directives into AST nodes (62 handlers)
+- `src/nodes.coffee`: AST node class definitions
+- `lib/coffeescript/parser.js`: Generated parser from Solar
 
-If you’d like to chat, drop by #coffeescript on Freenode IRC.
+### Recent Fixes (CS29)
 
-The source repository: https://github.com/jashkenas/coffeescript.git
-
-Changelog: https://coffeescript.org/#changelog
-
-Our lovely and talented contributors are listed here: https://github.com/jashkenas/coffeescript/contributors
+- Fixed `class @Inner` syntax by removing direct `ThisProperty` from `Value` rules
+- Changed import assertions from `WITH` to `ASSERT` to match CS28
+- Added missing Import AST handlers (`ImportSpecifierList`, `ImportSpecifier`)
+- Fixed `loop` construct by properly assigning body to `While` nodes
+- Removed dead code for Root rule wrapping (not needed in Solar mode)
