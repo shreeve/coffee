@@ -69,16 +69,16 @@ test """
 """, true
 
 # Heregex with interpolation
-test """
-  digit = '\\\\d'
+test '''
+  digit = '\\d'
   ///#{digit}+///.test('123')
-""", true
+''', true
 
-test """
+test '''
   start = '^'
   end = '$'
   ///#{start}test#{end}///.test('test')
-""", true
+''', true
 
 # Empty heregex
 test "//////.source", "(?:)"
