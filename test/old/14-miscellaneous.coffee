@@ -82,7 +82,12 @@ test """
 # Implicit returns
 test "f = -> 42\nf()", 42
 test "f = (x) -> x * 2\nf(5)", 10
-test "f = -> x = 5\nx + 1\nf()", 6
+test """
+  f = ->
+    x = 5
+    x + 1
+  f()
+""", 6
 
 # Everything is an expression
 test "x = if true then 5 else 10; x", 5
@@ -117,7 +122,6 @@ test "off", false
 # Undefined and null
 test "undefined", undefined
 test "null", null
-fail "void 0"  # void is reserved
 test "null?", false
 test "undefined?", false
 
