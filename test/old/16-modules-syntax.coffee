@@ -40,11 +40,7 @@ code """
     bar,
     baz
   } from 'module'
-""", """import {
-  foo,
-  bar,
-  baz
-} from 'module';"""
+""", "import {\n  foo,\n  bar,\n  baz\n} from 'module';"
 
 # Export with line breaks
 code """
@@ -53,11 +49,7 @@ code """
     bar,
     baz
   }
-""", """export {
-  foo,
-  bar,
-  baz
-};"""
+""", "export {\n  foo,\n  bar,\n  baz\n};"
 
 # Dynamic import (function call style)
 test "import('./module').constructor.name", "Promise"
@@ -71,10 +63,7 @@ code """
     foo,
     bar,
   } from 'module'
-""", """import {
-  foo,
-  bar
-} from 'module';"""
+""", "import {\n  foo,\n  bar\n} from 'module';"
 
 # Export with trailing comma
 code """
@@ -82,10 +71,7 @@ code """
     foo,
     bar,
   }
-""", """export {
-  foo,
-  bar
-};"""
+""", "export {\n  foo,\n  bar\n};"
 
 # Import all as namespace
 code "import * as utils from 'utils'", "import * as utils from 'utils';"
@@ -101,10 +87,7 @@ code """
     namedExport1,
     namedExport2 as alias
   } from 'module'
-""", """import defaultExport, {
-  namedExport1,
-  namedExport2 as alias
-} from 'module';"""
+""", "import defaultExport, {\n  namedExport1,\n  namedExport2 as alias\n} from 'module';"
 
 # Export from variable
 code """
