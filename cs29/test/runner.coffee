@@ -127,7 +127,7 @@ if args.length == 0
   console.log "Usage: coffee runner_clean.coffee <test-file-or-directory>..."
   process.exit(1)
 
-console.log "#{bold}Solar CoffeeScript Test Runner#{reset}\n"
+console.log "#{bold}CoffeeScript #{CoffeeScript.VERSION} Test Runner#{reset}\n"
 
 # Find all test files
 testFiles = []
