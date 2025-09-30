@@ -509,6 +509,8 @@
           return new this.ast.ImportSpecifier(this.$(o.imported), this.$(o.local));
         case 'ImportDefaultSpecifier':
           return new this.ast.ImportDefaultSpecifier(this.$(o.name) || this.$(o.value) || this.$(o));
+        case 'ImportNamespaceSpecifier':
+          return new this.ast.ImportNamespaceSpecifier(this.$(o.star), this.$(o.local));
         // Export statements
         case 'ExportNamedDeclaration':
           return new this.ast.ExportNamedDeclaration(this.$(o.clause), this.$(o.source), this.$(o.assertions));

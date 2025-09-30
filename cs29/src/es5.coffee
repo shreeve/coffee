@@ -330,11 +330,12 @@ class ES5Backend
       # === MODULES (Low Frequency) ===
 
       # Import statements
-      when 'ImportDeclaration'      then new @ast.ImportDeclaration      @$(o.clause), @$(o.source)
-      when 'ImportClause'           then new @ast.ImportClause           @$(o.defaultBinding), @$(o.namedImports)
-      when 'ImportSpecifierList'    then new @ast.ImportSpecifierList    @$(o.specifiers) or []
-      when 'ImportSpecifier'        then new @ast.ImportSpecifier        @$(o.imported), @$(o.local)
-      when 'ImportDefaultSpecifier' then new @ast.ImportDefaultSpecifier @$(o.name) or @$(o.value) or @$(o)
+      when 'ImportDeclaration'        then new @ast.ImportDeclaration        @$(o.clause), @$(o.source)
+      when 'ImportClause'             then new @ast.ImportClause             @$(o.defaultBinding), @$(o.namedImports)
+      when 'ImportSpecifierList'      then new @ast.ImportSpecifierList      @$(o.specifiers) or []
+      when 'ImportSpecifier'          then new @ast.ImportSpecifier          @$(o.imported), @$(o.local)
+      when 'ImportDefaultSpecifier'   then new @ast.ImportDefaultSpecifier   @$(o.name) or @$(o.value) or @$(o)
+      when 'ImportNamespaceSpecifier' then new @ast.ImportNamespaceSpecifier @$(o.star), @$(o.local)
 
       # Export statements
       when 'ExportNamedDeclaration'   then new @ast.ExportNamedDeclaration   @$(o.clause), @$(o.source), @$(o.assertions)
