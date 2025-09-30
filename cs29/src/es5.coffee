@@ -352,14 +352,19 @@ class ES5Backend
       when 'ExportDefaultDeclaration' then new @ast.ExportDefaultDeclaration @$(o.declaration) or @$(o.value)
       when 'ExportAllDeclaration'     then new @ast.ExportAllDeclaration     @$(o.exported), @$(o.source), @$(o.assertions)
       when 'ExportSpecifierList'      then new @ast.ExportSpecifierList      @$(o.specifiers) or []
-      when 'ExportSpecifier'          then new @ast.ExportSpecifier          @$(o.local), @$(o.exported)
+      when 'ExportSpecifier'
+        # Handle 'export {default}' case where we have 'value' instead of 'local'
+        if o.value
+          new @ast.ExportSpecifier @$(o.value), null
+        else
+          new @ast.ExportSpecifier @$(o.local), @$(o.exported)
 
       # === ADVANCED/RARE FEATURES (Very Low Frequency) ===
 
       # Advanced literals
       when 'InfinityLiteral' then new @ast.InfinityLiteral
       when 'NaNLiteral'      then new @ast.NaNLiteral
-      when 'DefaultLiteral'  then new @ast.DefaultLiteral @$(o.value)
+      when 'DefaultLiteral'  then new @ast.DefaultLiteral @$(o.value) or 'default'
 
       # Advanced operations
       when 'YieldReturn'             then new @ast.YieldReturn             @$(o.expression), {returnKeyword: @$(o.returnKeyword)}

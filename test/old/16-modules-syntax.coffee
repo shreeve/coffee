@@ -9,49 +9,55 @@
 # test "export default class MyClass; true", true
 # test "export {myFunc, myVar}; true", true
 
-# Import syntax variations (testing parsing only)
-test "import 'module'; true", true
-test "import foo from 'bar'; true", true
-test "import {foo} from 'bar'; true", true
-test "import {foo as bar} from 'baz'; true", true
-test "import {foo, bar} from 'baz'; true", true
-test "import foo, {bar} from 'baz'; true", true
-test "import * as foo from 'bar'; true", true
-test "import foo, * as bar from 'baz'; true", true
+# Import syntax variations (testing compilation only - cannot execute ES6 modules)
+code "import 'module'", "import 'module';"
+code "import foo from 'bar'", "import foo from 'bar';"
+code "import {foo} from 'bar'", "import {\n  foo\n} from 'bar';"
+code "import {foo as bar} from 'baz'", "import {\n  foo as bar\n} from 'baz';"
+code "import {foo, bar} from 'baz'", "import {\n  foo,\n  bar\n} from 'baz';"
+code "import foo, {bar} from 'baz'", "import foo, {\n  bar\n} from 'baz';"
+code "import * as foo from 'bar'", "import * as foo from 'bar';"
+code "import foo, * as bar from 'baz'", "import foo, * as bar from 'baz';"
 
-# Export syntax variations (testing parsing only)
-test "export default 42; true", true
-test "export {foo}; true", true
-test "export {foo as bar}; true", true
-test "export {foo, bar}; true", true
-test "export * from 'module'; true", true
-test "export {foo} from 'bar'; true", true
-test "export {foo as bar} from 'baz'; true", true
+# Export syntax variations (testing compilation only)
+code "export default 42", "export default 42;"
+code "export {foo}", "export {\n  foo\n};"
+code "export {foo as bar}", "export {\n  foo as bar\n};"
+code "export {foo, bar}", "export {\n  foo,\n  bar\n};"
+code "export * from 'module'", "export * from 'module';"
+code "export {foo} from 'bar'", "export {\n  foo\n} from 'bar';"
+code "export {foo as bar} from 'baz'", "export {\n  foo as bar\n} from 'baz';"
 
 # Export with declarations
-test "export class MyClass {}; true", true
-test "export myFunc = -> 42; true", true
-test "export myVar = 123; true", true
+code "export class MyClass", "export var MyClass = class MyClass {};"
+code "export myFunc = -> 42", "export var myFunc = function() {\n  return 42;\n};"
+code "export myVar = 123", "export var myVar = 123;"
 
 # Import with line breaks
-test """
+code """
   import {
     foo,
     bar,
     baz
   } from 'module'
-  true
-""", true
+""", """import {
+  foo,
+  bar,
+  baz
+} from 'module';"""
 
 # Export with line breaks
-test """
+code """
   export {
     foo,
     bar,
     baz
   }
-  true
-""", true
+""", """export {
+  foo,
+  bar,
+  baz
+};"""
 
 # Dynamic import (function call style)
 test "import('./module').constructor.name", "Promise"
@@ -60,58 +66,72 @@ test "import('./module').constructor.name", "Promise"
 # test "import json from './data.json' assert {type: 'json'}; true", true
 
 # Import with trailing comma
-test """
+code """
   import {
     foo,
     bar,
   } from 'module'
-  true
-""", true
+""", """import {
+  foo,
+  bar
+} from 'module';"""
 
 # Export with trailing comma
-test """
+code """
   export {
     foo,
     bar,
   }
-  true
-""", true
+""", """export {
+  foo,
+  bar
+};"""
 
 # Import all as namespace
-test "import * as utils from 'utils'; true", true
+code "import * as utils from 'utils'", "import * as utils from 'utils';"
 
 # Re-export patterns
-test "export {default} from 'other'; true", true
-test "export {foo as default} from 'bar'; true", true
-test "export * as utils from 'utils'; true", true
+code "export {default} from 'other'", "export {\n  default\n} from 'other';"
+code "export {foo as default} from 'bar'", "export {\n  foo as default\n} from 'bar';"
+fail "export * as utils from 'utils'", "unexpected as"
 
 # Mixed import styles
-test """
+code """
   import defaultExport, {
     namedExport1,
     namedExport2 as alias
   } from 'module'
-  true
-""", true
+""", """import defaultExport, {
+  namedExport1,
+  namedExport2 as alias
+} from 'module';"""
 
 # Export from variable
-test """
+code """
   myValue = 42
   export {myValue}
-  true
-""", true
+""", """var myValue;
+
+myValue = 42;
+
+export {
+  myValue
+};"""
 
 # Export multiple defaults (should fail in real module)
 # test "export default 1; export default 2; true", "should fail"
 
 # Import in function (should parse)
-test """
+code """
   loadModule = ->
     import('./dynamic')
-  true
-""", true
+""", """var loadModule;
+
+loadModule = function() {
+  return import('./dynamic');
+};"""
 
 # Compilation output tests
 code "import x from 'y'", "import x from 'y';"
-code "export default class A", "export default A = class A {};"
+code "export default class A", "var A;\n\nexport default A = class A {};"
 code "export {a, b}", "export {\n  a,\n  b\n};"

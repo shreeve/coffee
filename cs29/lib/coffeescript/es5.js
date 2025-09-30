@@ -551,7 +551,14 @@
         case 'ExportSpecifierList':
           return new this.ast.ExportSpecifierList(this.$(o.specifiers) || []);
         case 'ExportSpecifier':
-          return new this.ast.ExportSpecifier(this.$(o.local), this.$(o.exported));
+          
+          // Handle 'export {default}' case where we have 'value' instead of 'local'
+          if (o.value) {
+            return new this.ast.ExportSpecifier(this.$(o.value), null);
+          } else {
+            return new this.ast.ExportSpecifier(this.$(o.local), this.$(o.exported));
+          }
+          break;
         // === ADVANCED/RARE FEATURES (Very Low Frequency) ===
 
           // Advanced literals
@@ -560,7 +567,7 @@
         case 'NaNLiteral':
           return new this.ast.NaNLiteral();
         case 'DefaultLiteral':
-          return new this.ast.DefaultLiteral(this.$(o.value));
+          return new this.ast.DefaultLiteral(this.$(o.value) || 'default');
         // Advanced operations
         case 'YieldReturn':
           return new this.ast.YieldReturn(this.$(o.expression), {
