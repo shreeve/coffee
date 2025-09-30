@@ -88,9 +88,9 @@ test "'b' > 'a'", true
 test "'hello' is 'hello'", true
 test "'hello' is 'world'", false
 
-# Template literals (backticks - not typical CoffeeScript)
-test "`plain`", "plain"
-test "x = 5; `value: ${x}`", "value: 5"
+# Template literals (backticks are for embedded JS in CoffeeScript, not template strings)
+# test "`plain`", "plain"  # This becomes a variable reference, not a string
+# test "x = 5; `value: ${x}`", "value: 5"  # Backticks don't work as template literals
 
 # String concatenation with +
 test "'hello' + ' ' + 'world'", "hello world"
@@ -146,7 +146,7 @@ test """
     indented
       text
   '''
-""", "  indented\n    text"
+""", "indented\n  text"  # Triple quotes strip common leading whitespace
 
 # Empty strings
 test '""', ""
