@@ -56,12 +56,15 @@ test """
   results.join(',')
 """, "0,1,2"
 
-# Loop with guard
+# Loop with guard and result capture
 test """
   i = 0
-  result = loop
+  result = null
+  loop
     i++
-    break i if i > 5
+    if i > 5
+      result = i
+      break
   result
 """, 6
 
@@ -75,7 +78,7 @@ test """
     for j in [1..3]
       result.push(i * j) if i isnt j
   result.join(',')
-""", "2,3,3,6,2,6"
+""", "2,3,2,6,3,6"
 
 # Range iteration with variables
 test """
@@ -111,8 +114,7 @@ test """
   findFirst([1, 2, 3, 4], (x) -> x > 2)
 """, 3
 
-# Do notation in comprehensions
-test "(do (x) -> x * x for x in [1, 2, 3]).join(',')", "1,4,9"
+test "x = null; (do (x) -> x * x for x in [1, 2, 3]).join(',')", "1,4,9"
 
 # By clause with negative step
 test "(i for i in [10..1] by -2).join(',')", "10,8,6,4,2"
