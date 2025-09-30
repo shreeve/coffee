@@ -289,7 +289,7 @@ class ES5Backend
       when 'ThisLiteral'          then new @ast.ThisLiteral
       when 'NullLiteral'          then new @ast.NullLiteral
       when 'UndefinedLiteral'     then new @ast.UndefinedLiteral
-      when 'RegexLiteral'         then new @ast.RegexLiteral         @$(o.value)
+      when 'RegexLiteral'         then new @ast.RegexLiteral         @$(o.value), {delimiter: @$(o.delimiter), heregexCommentTokens: @$(o.heregexCommentTokens)}
       when 'PassthroughLiteral'   then new @ast.PassthroughLiteral   @$(o.value)
       when 'StatementLiteral'     then new @ast.StatementLiteral     @$(o.value)
       when 'ComputedPropertyName' then new @ast.ComputedPropertyName @$(o.expression) or @$(o.name) or @$(o.value)

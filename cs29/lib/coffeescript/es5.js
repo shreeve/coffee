@@ -452,7 +452,10 @@
         case 'UndefinedLiteral':
           return new this.ast.UndefinedLiteral();
         case 'RegexLiteral':
-          return new this.ast.RegexLiteral(this.$(o.value));
+          return new this.ast.RegexLiteral(this.$(o.value), {
+            delimiter: this.$(o.delimiter),
+            heregexCommentTokens: this.$(o.heregexCommentTokens)
+          });
         case 'PassthroughLiteral':
           return new this.ast.PassthroughLiteral(this.$(o.value));
         case 'StatementLiteral':
