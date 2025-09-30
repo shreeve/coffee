@@ -46,8 +46,8 @@ test "/(\\w)\\1/.test('hello')", true
 # Lookahead/lookbehind
 test "/foo(?=bar)/.test('foobar')", true
 test "/foo(?!bar)/.test('foobaz')", true
-# test "/(?<=foo)bar/.test('foobar')", true  # Lookbehind (ES2018)
-# test "/(?<!foo)bar/.test('xbar')", true  # Negative lookbehind
+test "/(?<=foo)bar/.test('foobar')", true  # Lookbehind (ES2018)
+test "/(?<!foo)bar/.test('xbar')", true  # Negative lookbehind
 
 # Heregex (multiline regex with comments)
 test "///test///.test('test')", true
@@ -68,11 +68,13 @@ test """
   ///.test('hello 123')
 """, true
 
-# Heregex with interpolation
-test '''
-  digit = '\\d'
-  ///#{digit}+///.test('123')
-''', true
+# Heregex with interpolation - Note: interpolating '\d' doesn't work as expected
+# The string '\d' becomes literal 'd', not the regex pattern \d
+# This test is fundamentally flawed in both CS28 and CS29
+test """
+  digit = '\\\\d'
+  ///\#{digit}+///.test('123')
+""", true
 
 test '''
   start = '^'
@@ -82,12 +84,12 @@ test '''
 
 # Empty heregex
 test "//////.source", "(?:)"
-test "///.source", ""
+fail "///.source", "missing ///"
 
 # Heregex with flags
 test "///test///i.test('TEST')", true
 test "///a.b///s.test('a\\nb')", true  # Dotall flag
-test "///^\\d+$///m.test('line1\\n123\\nline3').toString().includes('123')", true
+test "///^\\d+$///m.test('line1\\n123\\nline3')", true
 
 # Special characters in regex
 test "/\\n/.test('\\n')", true
@@ -99,7 +101,7 @@ test "/\\//.test('/')", true
 # Unicode escapes in regex
 test "/\\u0041/.test('A')", true
 test "/\\x41/.test('A')", true
-# test "/\\u{1F600}/u.test('😀')", true  # Unicode code point escape
+test "/\\u{1F600}/u.test('😀')", true  # Unicode code point escape
 
 # Regex methods
 test "'test123'.match(/\\d+/)[0]", "123"
@@ -146,7 +148,7 @@ test "/test/gi.toString()", "/test/gi"
 # Division vs regex disambiguation
 test "x = 10; y = 2; x / y", 5
 test "x = 10; y = 2; z = x / y / 2; z", 2.5
-test "fn = -> 10; fn() / 2", 5
+test "fn = -> 10\nfn() / 2", 5
 
 # Edge cases
 test "/]/.test(']')", true  # Closing bracket doesn't need escaping
