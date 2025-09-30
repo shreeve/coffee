@@ -429,7 +429,7 @@
         }
       })
     ],
-    SimpleObjAssignable: [o('Identifier'), o('Property')],
+    SimpleObjAssignable: [o('Identifier'), o('Property'), o('ThisProperty')],
     ObjAssignable: [
       o('SimpleObjAssignable'),
       o('[ Expression ]',
