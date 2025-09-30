@@ -219,7 +219,7 @@
 
     // Process $ops directives
     processOps(o) {
-      var accessor, body, elseBody, i, ifNode, item, len, loopNode, ref, ref1, ref2, ref3, ref4, ref5, resolved, result, sourceInfo, util, value;
+      var accessor, body, elseBody, i, ifNode, item, len, loopNode, property, ref, ref1, ref2, ref3, ref4, ref5, resolved, result, sourceInfo, target, util, value;
       switch (o.$ops) {
         case 'array':
           result = [];
@@ -297,6 +297,18 @@
             this._ensureLocationData(body);
             loopNode.addBody(body);
             return loopNode;
+          }
+          break;
+        case 'prop':
+          // Handle property setting operations
+          if (o.set != null) {
+            target = this.$(o.set.target);
+            property = o.set.property;
+            value = this.$(o.set.value);
+            if (target != null) {
+              target[property] = value;
+            }
+            return target;
           }
       }
       // Catchall for any missing $ops directive handlers
