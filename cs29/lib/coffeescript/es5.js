@@ -509,6 +509,33 @@
             return new this.ast.EmptyInterpolation();
           }
           break;
+        // Additional AST types that were missing
+        case 'YieldReturn':
+          return new this.ast.YieldReturn(this.$(o.expression), {
+            returnKeyword: this.$(o.returnKeyword)
+          });
+        case 'AwaitReturn':
+          return new this.ast.AwaitReturn(this.$(o.expression), {
+            returnKeyword: this.$(o.returnKeyword)
+          });
+        case 'DynamicImportCall':
+          return new this.ast.DynamicImportCall(this.$(o.variable), this.$(o.args) || []);
+        case 'TaggedTemplateCall':
+          return new this.ast.TaggedTemplateCall(this.$(o.variable), this.$(o.template), this.$(o.soak));
+        case 'MetaProperty':
+          return new this.ast.MetaProperty(this.$(o.identifier), this.$(o.accessor));
+        case 'RegexWithInterpolations':
+          return new this.ast.RegexWithInterpolations(this.$(o.invocation), {
+            heregexCommentTokens: this.$(o.heregexCommentTokens)
+          });
+        case 'ExportSpecifier':
+          return new this.ast.ExportSpecifier(this.$(o.local), this.$(o.exported));
+        case 'ExportSpecifierList':
+          return new this.ast.ExportSpecifierList(this.$(o.specifiers) || []);
+        case 'DynamicImport':
+          return new this.ast.DynamicImport();
+        case 'DefaultLiteral':
+          return new this.ast.DefaultLiteral(this.$(o.value));
         default:
           console.warn("Unknown $ast type:", o.$ast);
           return new this.ast.Literal(`# Missing AST node: ${o.$ast}`);

@@ -325,6 +325,18 @@ class ES5Backend
         expression = @$(o.expression)
         if expression? then new @ast.Interpolation expression else new @ast.EmptyInterpolation()
 
+      # Additional AST types that were missing
+      when 'YieldReturn'               then new @ast.YieldReturn @$(o.expression), {returnKeyword: @$(o.returnKeyword)}
+      when 'AwaitReturn'               then new @ast.AwaitReturn @$(o.expression), {returnKeyword: @$(o.returnKeyword)}
+      when 'DynamicImportCall'         then new @ast.DynamicImportCall @$(o.variable), @$(o.args) or []
+      when 'TaggedTemplateCall'        then new @ast.TaggedTemplateCall @$(o.variable), @$(o.template), @$(o.soak)
+      when 'MetaProperty'              then new @ast.MetaProperty @$(o.identifier), @$(o.accessor)
+      when 'RegexWithInterpolations'   then new @ast.RegexWithInterpolations @$(o.invocation), {heregexCommentTokens: @$(o.heregexCommentTokens)}
+      when 'ExportSpecifier'           then new @ast.ExportSpecifier @$(o.local), @$(o.exported)
+      when 'ExportSpecifierList'       then new @ast.ExportSpecifierList @$(o.specifiers) or []
+      when 'DynamicImport'             then new @ast.DynamicImport
+      when 'DefaultLiteral'            then new @ast.DefaultLiteral @$(o.value)
+
       else
         console.warn "Unknown $ast type:", o.$ast
         new @ast.Literal "# Missing AST node: #{o.$ast}"
