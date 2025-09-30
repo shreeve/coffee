@@ -3,7 +3,7 @@
 # Tests for variable scope, closures, and the do keyword
 
 # Basic scope
-test "x = 5; do -> x = 10; x", 5  # Inner scope doesn't affect outer
+test "x = 5; do -> x = 10; x", 10  # do modifies outer x
 test "x = 5; (-> x = 10)(); x", 10  # Without 'do', it modifies outer
 
 # do with parameters
@@ -86,10 +86,10 @@ test """
   f = ->
     x  # References outer x
   g = ->
-    x = 'inner'
+    x = 'inner'  # Modifies the same outer x
     f()
   g()
-""", "outer"
+""", "inner"
 
 # Block scope (CoffeeScript doesn't have block scope like let/const)
 test """
@@ -123,14 +123,13 @@ test """
   obj.getValue()
 """, 20
 
-# Hoisting behavior (functions are hoisted in CoffeeScript)
-test """
-  f()
-  f = -> 'hoisted'
-""", "hoisted"
+# Hoisting behavior - CoffeeScript does NOT hoist function expressions
+# Function expressions (f = ->) are not hoisted like JS function declarations
+# This compiles but throws runtime error: "f is not a function"
+# Both CS28 and CS29 have this behavior (correct, matches JS semantics)
 
 # do in comprehensions
-test "(do (x) -> x * x for x in [1, 2, 3]).join(',')", "1,4,9"
+test "x = null; (do (x) -> x * x for x in [1, 2, 3]).join(',')", "1,4,9"
 test """
   results = []
   for x in [1, 2, 3]
