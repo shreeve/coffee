@@ -352,12 +352,7 @@ class ES5Backend
       when 'ExportDefaultDeclaration' then new @ast.ExportDefaultDeclaration @$(o.declaration) or @$(o.value)
       when 'ExportAllDeclaration'     then new @ast.ExportAllDeclaration     @$(o.exported), @$(o.source), @$(o.assertions)
       when 'ExportSpecifierList'      then new @ast.ExportSpecifierList      @$(o.specifiers) or []
-      when 'ExportSpecifier'
-        # Handle 'export {default}' case where we have 'value' instead of 'local'
-        if o.value
-          new @ast.ExportSpecifier @$(o.value), null
-        else
-          new @ast.ExportSpecifier @$(o.local), @$(o.exported)
+      when 'ExportSpecifier'          then new @ast.ExportSpecifier          @$(o.value or o.local), @$(o.exported)
 
       # === ADVANCED/RARE FEATURES (Very Low Frequency) ===
 

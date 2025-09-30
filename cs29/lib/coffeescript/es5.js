@@ -551,14 +551,7 @@
         case 'ExportSpecifierList':
           return new this.ast.ExportSpecifierList(this.$(o.specifiers) || []);
         case 'ExportSpecifier':
-          
-          // Handle 'export {default}' case where we have 'value' instead of 'local'
-          if (o.value) {
-            return new this.ast.ExportSpecifier(this.$(o.value), null);
-          } else {
-            return new this.ast.ExportSpecifier(this.$(o.local), this.$(o.exported));
-          }
-          break;
+          return new this.ast.ExportSpecifier(this.$(o.value || o.local), this.$(o.exported));
         // === ADVANCED/RARE FEATURES (Very Low Frequency) ===
 
           // Advanced literals
