@@ -89,8 +89,8 @@ test "'hello' is 'hello'", true
 test "'hello' is 'world'", false
 
 # Template literals (backticks are for embedded JS in CoffeeScript, not template strings)
-# test "`plain`", "plain"  # This becomes a variable reference, not a string
-# test "x = 5; `value: ${x}`", "value: 5"  # Backticks don't work as template literals
+code "`plain`", "plain;"  # Backticks embed JS directly
+code "x = 5; `value: ${x}`", "var x;\n\nx = 5;\n\nvalue: ${x};"  # Invalid JS but shows what CS does
 
 # String concatenation with +
 test "'hello' + ' ' + 'world'", "hello world"
