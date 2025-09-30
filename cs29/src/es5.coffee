@@ -279,7 +279,6 @@ class ES5Backend
         forNode
 
       when 'Switch'     then new @ast.Switch     @$(o.subject), @$(o.cases) or [], @$(o.otherwise)
-      when 'When'       then new @ast.SwitchWhen @$(o.conditions), @$(o.body)
       when 'SwitchWhen' then new @ast.SwitchWhen @$(o.conditions), @$(o.body)
 
       # Collections
@@ -292,7 +291,6 @@ class ES5Backend
       when 'FuncGlyph' then new @ast.FuncGlyph   @$(o.value) or '->'
       when 'Super'     then new @ast.Super       @$(o.accessor), @$(o.superLiteral)
       when 'Return'    then new @ast.Return      @$(o.expression)
-      when 'Yield'     then new @ast.Yield       @$(o.expression) or new @ast.Value(new @ast.Literal '')
       when 'Call'      then new @ast.Call        @$(o.variable), @$(o.args) or [], @$(o.soak)
       when 'SuperCall' then new @ast.SuperCall   @$(o.variable), @$(o.args) or [], @$(o.soak)
       when 'Param'
@@ -301,25 +299,26 @@ class ES5Backend
         new @ast.Param name, @$(o.value), @$(o.splat)
 
       # Classes
-      when 'Class'                  then new @ast.Class              @$(o.variable), @$(o.parent), @$(o.body)
-      when 'ClassProtoAssignOp'     then new @ast.ClassProtoAssignOp @$(o.variable), @$(o.value)
+      when 'Class' then new @ast.Class @$(o.variable), @$(o.parent), @$(o.body)
 
       # Try/Catch/Throw
-      when 'Try'                    then new @ast.Try @$(o.attempt), @$(o.catch), @$(o.ensure)
-      when 'Catch'                  then new @ast.Catch @$(o.recovery) or @$(o.body), @$(o.variable) or @$(o.errorVariable)
-      when 'Throw'                  then new @ast.Throw @$(o.expression)
+      when 'Try'   then new @ast.Try @$(o.attempt), @$(o.catch), @$(o.ensure)
+      when 'Catch' then new @ast.Catch @$(o.recovery) or @$(o.body), @$(o.variable) or @$(o.errorVariable)
+      when 'Throw' then new @ast.Throw @$(o.expression)
 
       # Other
-      when 'Elision'                then new @ast.Elision
-      when 'Existence'              then new @ast.Existence @$(o.expression)
-      when 'Expansion'              then new @ast.Expansion
-      when 'ExportDeclaration'      then new @ast.ExportDeclaration @$(o.clause), @$(o.source), @$(o.default)
-      when 'ImportClause'           then new @ast.ImportClause @$(o.defaultBinding), @$(o.namedImports)
-      when 'ImportDeclaration'      then new @ast.ImportDeclaration @$(o.clause), @$(o.source)
-      when 'ImportDefaultSpecifier' then new @ast.ImportDefaultSpecifier @$(o.name) or @$(o.value) or @$(o)
-      when 'ImportSpecifier'        then new @ast.ImportSpecifier @$(o.imported), @$(o.local)
-      when 'ImportSpecifierList'    then new @ast.ImportSpecifierList @$(o.specifiers) or []
-      when 'Parens'                 then new @ast.Parens @$(o.body)
+      when 'Elision'                  then new @ast.Elision
+      when 'Existence'                then new @ast.Existence @$(o.expression)
+      when 'Expansion'                then new @ast.Expansion
+      when 'ExportAllDeclaration'     then new @ast.ExportAllDeclaration @$(o.exported), @$(o.source), @$(o.assertions)
+      when 'ExportDefaultDeclaration' then new @ast.ExportDefaultDeclaration @$(o.declaration) or @$(o.value)
+      when 'ExportNamedDeclaration'   then new @ast.ExportNamedDeclaration @$(o.clause), @$(o.source), @$(o.assertions)
+      when 'ImportClause'             then new @ast.ImportClause @$(o.defaultBinding), @$(o.namedImports)
+      when 'ImportDeclaration'        then new @ast.ImportDeclaration @$(o.clause), @$(o.source)
+      when 'ImportDefaultSpecifier'   then new @ast.ImportDefaultSpecifier @$(o.name) or @$(o.value) or @$(o)
+      when 'ImportSpecifier'          then new @ast.ImportSpecifier @$(o.imported), @$(o.local)
+      when 'ImportSpecifierList'      then new @ast.ImportSpecifierList @$(o.specifiers) or []
+      when 'Parens'                   then new @ast.Parens @$(o.body)
 
       # String Interpolation
       when 'Interpolation'

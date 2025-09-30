@@ -437,8 +437,6 @@
           return forNode;
         case 'Switch':
           return new this.ast.Switch(this.$(o.subject), this.$(o.cases) || [], this.$(o.otherwise));
-        case 'When':
-          return new this.ast.SwitchWhen(this.$(o.conditions), this.$(o.body));
         case 'SwitchWhen':
           return new this.ast.SwitchWhen(this.$(o.conditions), this.$(o.body));
         // Collections
@@ -457,8 +455,6 @@
           return new this.ast.Super(this.$(o.accessor), this.$(o.superLiteral));
         case 'Return':
           return new this.ast.Return(this.$(o.expression));
-        case 'Yield':
-          return new this.ast.Yield(this.$(o.expression) || new this.ast.Value(new this.ast.Literal('')));
         case 'Call':
           return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
         case 'SuperCall':
@@ -472,8 +468,6 @@
         // Classes
         case 'Class':
           return new this.ast.Class(this.$(o.variable), this.$(o.parent), this.$(o.body));
-        case 'ClassProtoAssignOp':
-          return new this.ast.ClassProtoAssignOp(this.$(o.variable), this.$(o.value));
         // Try/Catch/Throw
         case 'Try':
           return new this.ast.Try(this.$(o.attempt), this.$(o.catch), this.$(o.ensure));
@@ -488,8 +482,12 @@
           return new this.ast.Existence(this.$(o.expression));
         case 'Expansion':
           return new this.ast.Expansion();
-        case 'ExportDeclaration':
-          return new this.ast.ExportDeclaration(this.$(o.clause), this.$(o.source), this.$(o.default));
+        case 'ExportAllDeclaration':
+          return new this.ast.ExportAllDeclaration(this.$(o.exported), this.$(o.source), this.$(o.assertions));
+        case 'ExportDefaultDeclaration':
+          return new this.ast.ExportDefaultDeclaration(this.$(o.declaration) || this.$(o.value));
+        case 'ExportNamedDeclaration':
+          return new this.ast.ExportNamedDeclaration(this.$(o.clause), this.$(o.source), this.$(o.assertions));
         case 'ImportClause':
           return new this.ast.ImportClause(this.$(o.defaultBinding), this.$(o.namedImports));
         case 'ImportDeclaration':
