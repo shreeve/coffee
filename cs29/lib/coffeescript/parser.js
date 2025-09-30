@@ -293,7 +293,7 @@ return r(4,{$arr:2,implicit:{$use:1,prop:"generated"}});
 case 225: case 226:
 return r(1,{$ast:"Value",base:{$ast:"ThisLiteral"}});
 case 227:
-return r(2,{$ast:"Value",base:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:2}],bareLiteral:{$ast:"ThisLiteral"}});
+return r(2,{$ast:"Value",this:true,base:{$ast:"ThisLiteral"},properties:[{$ast:"Access",name:2}],bareLiteral:{$ast:"ThisLiteral"}});
 case 228:
 return r(2,{$ast:"Arr",objects:[]});
 case 229:

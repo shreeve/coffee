@@ -1609,6 +1609,7 @@
       o('@ Property',
       {
         $ast: 'Value',
+        this: true,
         base: {
           $ast: 'ThisLiteral'
         },

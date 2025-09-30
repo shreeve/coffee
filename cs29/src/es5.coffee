@@ -206,7 +206,10 @@ class ES5Backend
       # === CORE EXPRESSIONS (Very High Frequency) ===
 
       # Values and property access - the most fundamental operations
-      when 'Value'              then @_toValue @$(o.base), @$(o.properties) ? []
+      when 'Value'
+        value = @_toValue @$(o.base), @$(o.properties) ? []
+        value.this = true if o.this
+        value
       when 'IdentifierLiteral'  then new @ast.IdentifierLiteral @$(o.value)
       when 'Literal'            then new @ast.Literal          @$(o.value)
       when 'NumberLiteral'      then new @ast.NumberLiteral    @$(o.value)

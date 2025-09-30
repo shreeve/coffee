@@ -3712,8 +3712,11 @@
           indent = isCompact ? '' : idt;
           key = prop instanceof Assign && prop.context === 'object' ? prop.variable : prop instanceof Assign ? (!this.lhs ? prop.operatorToken.error(`unexpected ${prop.operatorToken.value}`) : void 0, prop.variable) : prop;
           if (key instanceof Value && key.hasProperties()) {
-            if (prop.context === 'object' || !key.this) {
-              key.error('invalid object key');
+            // Allow @property shorthand in objects (e.g., {@a} becomes {a: this.a})
+            if (!(key.this && !(prop instanceof Assign))) {
+              if (prop.context === 'object' || !key.this) {
+                key.error('invalid object key');
+              }
             }
             key = key.properties[0].name;
             prop = new Assign(key, prop, 'object');
@@ -3818,8 +3821,11 @@
         ({variable, context, operatorToken} = property);
         key = property instanceof Assign && context === 'object' ? variable : property instanceof Assign ? (!this.lhs ? operatorToken.error(`unexpected ${operatorToken.value}`) : void 0, variable) : property;
         if (key instanceof Value && key.hasProperties()) {
-          if (!(context !== 'object' && key.this)) {
-            key.error('invalid object key');
+          // Allow @property shorthand in objects (e.g., {@a} becomes {a: this.a})
+          if (!(key.this && !(property instanceof Assign))) {
+            if (!(context !== 'object' && key.this)) {
+              key.error('invalid object key');
+            }
           }
           if (property instanceof Assign) {
             return new ObjectProperty({

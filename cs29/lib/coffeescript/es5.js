@@ -324,7 +324,11 @@
 
           // Values and property access - the most fundamental operations
         case 'Value':
-          return this._toValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : []);
+          value = this._toValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : []);
+          if (o.this) {
+            value.this = true;
+          }
+          return value;
         case 'IdentifierLiteral':
           return new this.ast.IdentifierLiteral(this.$(o.value));
         case 'Literal':

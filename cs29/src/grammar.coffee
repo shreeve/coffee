@@ -443,7 +443,7 @@ grammar =
 
   # A reference to a property on *this*
   ThisProperty: [
-    o '@ Property', $ast: 'Value', base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 2 } ], bareLiteral: {$ast: 'ThisLiteral'}
+    o '@ Property', $ast: 'Value', this: true, base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 2 } ], bareLiteral: {$ast: 'ThisLiteral'}
   ]
 
   # The array literal.

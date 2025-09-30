@@ -2539,7 +2539,9 @@ exports.Obj = class Obj extends Base
       else
         prop
       if key instanceof Value and key.hasProperties()
-        key.error 'invalid object key' if prop.context is 'object' or not key.this
+        # Allow @property shorthand in objects (e.g., {@a} becomes {a: this.a})
+        unless key.this and not (prop instanceof Assign)
+          key.error 'invalid object key' if prop.context is 'object' or not key.this
         key  = key.properties[0].name
         prop = new Assign key, prop, 'object'
       if key is prop
@@ -2593,7 +2595,9 @@ exports.Obj = class Obj extends Base
     else
       property
     if key instanceof Value and key.hasProperties()
-      key.error 'invalid object key' unless context isnt 'object' and key.this
+      # Allow @property shorthand in objects (e.g., {@a} becomes {a: this.a})
+      unless key.this and not (property instanceof Assign)
+        key.error 'invalid object key' unless context isnt 'object' and key.this
       if property instanceof Assign
         return new ObjectProperty fromAssign: property
       else
