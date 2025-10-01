@@ -34,11 +34,8 @@
     "test":    "coffee test/runner.coffee",
     "version": "coffee --version",
 
-    "link5":   "ln -f src/nodes5.coffee src/nodes.coffee",
-    "link6":   "ln -f src/nodes6.coffee src/nodes.coffee",
-
-    "parser6": "./bin/coffee ../solar-es6.coffee -o ../cs30/lib/coffeescript/parser.js src/grammar.coffee",
-    "build6":  "./bin/coffee -bc -o ../cs30/lib/coffeescript ../cs30/src/*.{lit,}coffee",
+    "parser6": "CS3=1 ./bin/coffee ../solar-es6.coffee -o ../cs30/lib/coffeescript/parser.js src/grammar.coffee",
+    "build6":  "CS3=1 ./bin/coffee -bc -o ../cs30/lib/coffeescript ../cs30/src/*.{lit,}coffee",
     "test6":   "../cs30/bin/coffee ../cs30/test/runner.coffee"
   },
   "homepage": "https://coffeescript.org",
