@@ -239,7 +239,8 @@ class Backend
         variable.this = true if context is 'object' and variable instanceof @ast.Value and variable.base instanceof @ast.ThisLiteral
         # Handle compound assignment (+=, -=, etc.)
         operator = @$(o.operator) if o.operator?
-        value = new @ast.Op operator.replace('=', ''), variable, value if operator and operator isnt '='
+        value = new @ast.Op operator[...-1], variable, value if operator and operator not in ['=', '?=']
+        context = operator if operator is '?='
         options = if o.operatorToken then {operatorToken: @$(o.operatorToken)} else {}
         options.moduleDeclaration = @$(o.moduleDeclaration) if o.moduleDeclaration?
         options.originalContext   = @$(o.originalContext  ) if o.originalContext?
