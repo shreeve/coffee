@@ -131,6 +131,8 @@ class Backend
   # Process $ops directives
   processOps: (o) ->
     switch o.$ops
+
+      # Handle array operations
       when 'array'
         result = []
         if o.append?
@@ -142,18 +144,17 @@ class Backend
               result.push resolved
         return result
 
+      # Handle addElse operation for if-else chains
       when 'if'
-        # Handle addElse operation for if-else chains
         if o.addElse?
           [ifNode, elseBody] = o.addElse.map (item) => @$(item)
-          # Ensure elseBody has location data
           if elseBody and not elseBody.locationData and @currentLocationData
             elseBody.locationData = @currentLocationData
           ifNode.addElse elseBody
           return ifNode
 
+      # Handle adding accessors to Values
       when 'value'
-        # Handle adding accessors to Values
         if o.add?
           [value, accessor] = o.add.map (item) => @$(item)
           if value instanceof @ast.Value
@@ -161,8 +162,8 @@ class Backend
           else
             return @_toValue value, [accessor]
 
+      # Handle different loop operations
       when 'loop'
-        # Handle different loop operations
         if o.addSource?
           # addSource: [1, 2] means ForStart is at position 1, ForSource at position 2
           [loopNode, sourceInfo] = o.addSource.map (item) => @$(item)
@@ -184,8 +185,8 @@ class Backend
           loopNode.postfix = @$(o.postfix) if o.postfix?
           return loopNode
 
+      # Handle property setting operations
       when 'prop'
-        # Handle property setting operations
         if o.set?
           target = @$(o.set.target)
           property = o.set.property
@@ -220,22 +221,18 @@ class Backend
       # Basic operations - assignments, calls, operators
       when 'Assign'
         variable = @$(o.variable)
-        value = @$(o.value)
-        context = @$(o.context)
-        # Mark @-based object-context assignments as static (for class bodies)
+        operator = @$(o.operator)
+        value    = @$(o.value   )
+        context  = @$(o.context )
         variable.this = true if context is 'object' and variable instanceof @ast.Value and variable.base instanceof @ast.ThisLiteral
-        # Handle compound assignment (+=, -=, etc.)
-        operator = @$(o.operator) if o.operator?
-        value = new @ast.Op operator[...-1], variable, value if operator and operator not in ['=', '?=']
-        context = operator if operator is '?='
-        options = if o.operatorToken then {operatorToken: @$(o.operatorToken)} else {}
-        options.moduleDeclaration = @$(o.moduleDeclaration) if o.moduleDeclaration?
-        options.originalContext   = @$(o.originalContext  ) if o.originalContext?
+        value    = new @ast.Op operator[...-1], variable, value if operator and operator not in ['=', '?=', undefined]
+        context  = operator if operator is '?='
+        options  = {}
+        options[key] = @$(o[key]) for key in ['operatorToken', 'moduleDeclaration', 'originalContext'] when o[key]?
         new @ast.Assign variable, value, context, options
       when 'Call'
         new @ast.Call @$(o.variable), @$(o.args) or [], @$(o.soak)
       when 'Op'
-        # Process args - preserve undefineds for proper positioning
         args = o.args?.map((arg) => @$(arg)) or []
         if o.invertOperator? or o.originalOperator?
           options = {}
