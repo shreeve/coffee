@@ -70,7 +70,7 @@
     };
   };
 
-  // Compile CoffeeScript code to JavaScript, using the Coffee/Jison compiler.
+  // Compile CoffeeScript code to JavaScript.
 
   // If `options.sourceMap` is specified, then `options.filename` must also be
   // specified. All options that can be passed to `SourceMap#generate` may also
@@ -81,7 +81,7 @@
   // object, where sourceMap is a sourcemap.coffee#SourceMap object, handy for
   // doing programmatic lookups.
   exports.compile = compile = withPrettyErrors(function(code, options = {}) {
-    var ast, currentColumn, currentLine, encoded, filename, fragment, fragments, generateSourceMap, header, i, j, js, len, len1, map, newLines, nodes, range, ref, sourceCodeLastLine, sourceCodeNumberOfLines, sourceMapDataURI, sourceURL, token, tokens, transpiler, transpilerOptions, transpilerOutput, v3SourceMap;
+    var ast, currentColumn, currentLine, encoded, filename, fragment, fragments, generateSourceMap, header, i, j, js, len, len1, map, newLines, nodes, range, ref, sourceCodeLastLine, sourceCodeNumberOfLines, sourceMapDataURI, sourceURL, token, tokens, v3SourceMap;
     // Clone `options`, to avoid mutating the `options` object passed in.
     options = Object.assign({}, options);
     generateSourceMap = options.sourceMap || options.inlineMap || (options.filename == null);
@@ -177,29 +177,6 @@
     if (generateSourceMap) {
       v3SourceMap = map.generate(options, code);
     }
-    if (options.transpile) {
-      if (typeof options.transpile !== 'object') {
-        // This only happens if run via the Node API and `transpile` is set to
-        // something other than an object.
-        throw new Error('The transpile option must be given an object with options to pass to Babel');
-      }
-      // Get the reference to Babel that we have been passed if this compiler
-      // is run via the CLI or Node API.
-      transpiler = options.transpile.transpile;
-      delete options.transpile.transpile;
-      transpilerOptions = Object.assign({}, options.transpile);
-      // See https://github.com/babel/babel/issues/827#issuecomment-77573107:
-      // Babel can take a v3 source map object as input in `inputSourceMap`
-      // and it will return an *updated* v3 source map object in its output.
-      if (v3SourceMap && (transpilerOptions.inputSourceMap == null)) {
-        transpilerOptions.inputSourceMap = v3SourceMap;
-      }
-      transpilerOutput = transpiler(js, transpilerOptions);
-      js = transpilerOutput.code;
-      if (v3SourceMap && transpilerOutput.map) {
-        v3SourceMap = transpilerOutput.map;
-      }
-    }
     if (options.inlineMap) {
       encoded = base64encode(JSON.stringify(v3SourceMap));
       sourceMapDataURI = `//# sourceMappingURL=data:application/json;base64,${encoded}`;
@@ -247,8 +224,7 @@
   lexer = new Lexer();
 
   // The real Lexer produces a generic stream of tokens. This object provides a
-  // thin wrapper around it, compatible with the Jison API. We can then pass it
-  // directly as a "Jison lexer."
+  // thin wrapper around it, compatible with the parser API.
   parser.lexer = {
     yylloc: {
       range: []
@@ -281,10 +257,10 @@
   // Load ES6 nodes (nodes6) if ES6 environment variable is set, otherwise ES5 (nodes5)
   parser.yy = require(process.env.ES6 ? './nodes6' : './nodes5');
 
-  // Override Jison's default error handling function.
+  // Override the parser's default error handling function.
   parser.yy.parseError = function(message, {token}) {
     var errorLoc, errorTag, errorText, errorToken, tokens;
-    // Disregard Jison's message, it contains redundant line number information.
+    // Disregard the parser's message, it contains redundant line number information.
     // Disregard the token, we take its value directly from the lexer in case
     // the error is caused by a generated token which might refer to its origin.
     ({errorToken, tokens} = parser);
@@ -302,9 +278,8 @@
       }
     })();
     // The second argument has a `loc` property, which should have the location
-    // data for this token. Unfortunately, Jison seems to send an outdated `loc`
-    // (from the previous token), so we take the location information directly
-    // from the lexer.
+    // data for this token. We take the location information directly
+    // from the lexer for accuracy.
     return helpers.throwSyntaxError(`unexpected ${errorText}`, errorLoc);
   };
 

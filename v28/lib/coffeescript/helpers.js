@@ -137,7 +137,7 @@
     return out.join('\n');
   };
 
-  // Merge two jison-style location data objects together.
+  // Merge two location data objects together.
   // If `last` is not provided, this will simply return `first`.
   buildLocationData = function(first, last) {
     if (!last) {
@@ -255,7 +255,7 @@
     return node.comments.push(...comments);
   };
 
-  // Convert jison location data to a string.
+  // Convert location data to a string.
   // `obj` can be a token, or a locationData.
   exports.locationDataToString = function(obj) {
     var locationData;

@@ -7,9 +7,8 @@
 
   //     [tag, value, locationData]
 
-  // where locationData is {first_line, first_column, last_line, last_column, last_line_exclusive, last_column_exclusive}, which is a
-  // format that can be fed directly into [Jison](https://github.com/zaach/jison).  These
-  // are read by jison in the `parser.lexer` function defined in coffeescript.coffee.
+  // where locationData is {first_line, first_column, last_line, last_column, last_line_exclusive, last_column_exclusive}.
+  // These are read by the parser in the `parser.lexer` function defined in coffeescript.coffee.
   var BOM, BOOL, CALLABLE, CODE, COFFEE_ALIASES, COFFEE_ALIAS_MAP, COFFEE_KEYWORDS, COMMENT, COMPARABLE_LEFT_SIDE, COMPARE, COMPOUND_ASSIGN, HERECOMMENT_ILLEGAL, HEREDOC_DOUBLE, HEREDOC_INDENT, HEREDOC_SINGLE, HEREGEX, HEREGEX_COMMENT, HERE_JSTOKEN, IDENTIFIER, INDENTABLE_CLOSERS, INDEXABLE, INSIDE_JSX, INVERSES, JSTOKEN, JSX_ATTRIBUTE, JSX_FRAGMENT_IDENTIFIER, JSX_IDENTIFIER, JSX_IDENTIFIER_PART, JSX_INTERPOLATION, JS_KEYWORDS, LINE_BREAK, LINE_CONTINUER, Lexer, MATH, MULTI_DENT, NOT_REGEX, NUMBER, OPERATOR, POSSIBLY_DIVISION, REGEX, REGEX_FLAGS, REGEX_ILLEGAL, REGEX_INVALID_ESCAPE, RELATION, RESERVED, Rewriter, SHIFT, STRICT_PROSCRIBED, STRING_DOUBLE, STRING_INVALID_ESCAPE, STRING_SINGLE, STRING_START, TRAILING_SPACES, UNARY, UNARY_MATH, UNFINISHED, VALID_FLAGS, WHITESPACE, addTokenData, attachCommentsToNode, compact, count, flatten, invertLiterate, isForFrom, isUnassignable, key, locationDataToString, merge, parseNumber, repeat, replaceUnicodeCodePointEscapes, starts, throwSyntaxError,
     indexOf = [].indexOf,
     slice = [].slice;
@@ -1098,7 +1097,7 @@
     }
 
     // We treat all other single characters as a token. E.g.: `( ) , . !`
-    // Multi-character operators are also literal tokens, so that Jison can assign
+    // Multi-character operators are also literal tokens, so that the parser can assign
     // the proper order of operations. There are some symbols that we tag specially
     // here. `;` and newlines are both treated as a `TERMINATOR`, we distinguish
     // parentheses that indicate a method call from regular parentheses, and so on.

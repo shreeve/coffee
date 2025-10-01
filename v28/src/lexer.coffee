@@ -5,9 +5,8 @@
 #
 #     [tag, value, locationData]
 #
-# where locationData is {first_line, first_column, last_line, last_column, last_line_exclusive, last_column_exclusive}, which is a
-# format that can be fed directly into [Jison](https://github.com/zaach/jison).  These
-# are read by jison in the `parser.lexer` function defined in coffeescript.coffee.
+# where locationData is {first_line, first_column, last_line, last_column, last_line_exclusive, last_column_exclusive}.
+# These are read by the parser in the `parser.lexer` function defined in coffeescript.coffee.
 
 {Rewriter, INVERSES, UNFINISHED} = require './rewriter'
 
@@ -748,7 +747,7 @@ exports.Lexer = class Lexer
     last?.tag is '/>' and last
 
   # We treat all other single characters as a token. E.g.: `( ) , . !`
-  # Multi-character operators are also literal tokens, so that Jison can assign
+  # Multi-character operators are also literal tokens, so that the parser can assign
   # the proper order of operations. There are some symbols that we tag specially
   # here. `;` and newlines are both treated as a `TERMINATOR`, we distinguish
   # parentheses that indicate a method call from regular parentheses, and so on.

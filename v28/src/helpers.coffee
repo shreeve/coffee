@@ -91,7 +91,7 @@ exports.invertLiterate = (code) ->
       out.push "# #{line}"
   out.join '\n'
 
-# Merge two jison-style location data objects together.
+# Merge two location data objects together.
 # If `last` is not provided, this will simply return `first`.
 buildLocationData = (first, last) ->
   if not last
@@ -170,7 +170,7 @@ exports.attachCommentsToNode = attachCommentsToNode = (comments, node) ->
   node.comments ?= []
   node.comments.push comments...
 
-# Convert jison location data to a string.
+# Convert location data to a string.
 # `obj` can be a token, or a locationData.
 exports.locationDataToString = (obj) ->
   if ("2" of obj) and ("first_line" of obj[2]) then locationData = obj[2]

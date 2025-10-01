@@ -421,10 +421,10 @@ exports.Base = class Base
   # By default, a node class's AST `type` is its class name.
   astType: -> @constructor.name
 
-  # The AST location data is a rearranged version of our Jison location data,
-  # mutated into the structure that the Babel spec uses.
+  # The AST location data converts our internal format to ESTree format,
+  # which is the standard for JavaScript tooling (VSCode, ESLint, etc).
   astLocationData: ->
-    jisonLocationDataToAstLocationData @locationData
+    convertLocationDataToAst @locationData
 
   # Determines whether an AST node needs an `ExpressionStatement` wrapper.
   # Typically matches our `isStatement()` logic but this allows overriding.
@@ -656,9 +656,10 @@ exports.Root = class Root extends Base
 
   astProperties: (o) ->
     @body.isRootBlock = yes
-    return
+    return {
       program: Object.assign @body.ast(o), @astLocationData()
       comments: @commentsAst()
+    }
 
 #### Block
 
@@ -1679,8 +1680,8 @@ exports.Value = class Value extends Base
     return super() unless @isJSXTag()
     # don't include leading < of JSX tag in location data
     mergeAstLocationData(
-      jisonLocationDataToAstLocationData(@base.tagNameLocationData),
-      jisonLocationDataToAstLocationData(@properties[@properties.length - 1].locationData)
+      convertLocationDataToAst(@base.tagNameLocationData),
+      convertLocationDataToAst(@properties[@properties.length - 1].locationData)
     )
 
 exports.MetaProperty = class MetaProperty extends Base
@@ -1944,14 +1945,14 @@ exports.JSXElement = class JSXElement extends Base
   astNode: (o) ->
     # The location data spanning the opening element < ... > is captured by
     # the generated Arr which contains the element's attributes
-    @openingElementLocationData = jisonLocationDataToAstLocationData @attributes.locationData
+    @openingElementLocationData = convertLocationDataToAst @attributes.locationData
 
     tagName = @tagName.base
     tagName.locationData = tagName.tagNameLocationData
     if @content?
       @closingElementLocationData = mergeAstLocationData(
-        jisonLocationDataToAstLocationData tagName.closingTagOpeningBracketLocationData
-        jisonLocationDataToAstLocationData tagName.closingTagClosingBracketLocationData
+        convertLocationDataToAst tagName.closingTagOpeningBracketLocationData
+        convertLocationDataToAst tagName.closingTagClosingBracketLocationData
       )
 
     super o
@@ -1982,7 +1983,7 @@ exports.JSXElement = class JSXElement extends Base
         type: 'JSXClosingElement'
         name: Object.assign(
           tagNameAst(),
-          jisonLocationDataToAstLocationData @tagName.base.closingTagNameLocationData
+          convertLocationDataToAst @tagName.base.closingTagNameLocationData
         )
       }, @closingElementLocationData
       if closingElement.name.type in ['JSXMemberExpression', 'JSXNamespacedName']
@@ -5117,7 +5118,7 @@ exports.Try = class Try extends Base
           Object.assign @ensure.ast(o, LEVEL_TOP),
             # Include `finally` keyword in location data.
             mergeAstLocationData(
-              jisonLocationDataToAstLocationData(@finallyTag.locationData),
+              convertLocationDataToAst(@finallyTag.locationData),
               @ensure.astLocationData()
             )
         else
@@ -6191,9 +6192,9 @@ exports.mergeAstLocationData = mergeAstLocationData = (nodeA, nodeB, {justLeadin
       else
         greater nodeA.end, nodeB.end
 
-# Convert Jison-style node class location data to Babel-style location data
-exports.jisonLocationDataToAstLocationData = jisonLocationDataToAstLocationData = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) ->
-  return
+# Convert internal location data format to ESTree-compatible AST location data format
+exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) ->
+  return {
     loc:
       start:
         line:   first_line + 1
@@ -6207,6 +6208,7 @@ exports.jisonLocationDataToAstLocationData = jisonLocationDataToAstLocationData 
     ]
     start: range[0]
     end:   range[1]
+  }
 
 # Generate a zero-width location data that corresponds to the end of another node's location.
 zeroWidthLocationDataFromEndLocation = ({range: [, endRange], last_line_exclusive, last_column_exclusive}) -> {
