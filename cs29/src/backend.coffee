@@ -8,12 +8,6 @@ class Backend
     @currentRule      = null
     @currentLookup    = null
 
-  # Helper to ensure node has location data to avoid errors in AST operations
-  _ensureLocation: (node) ->
-    if typeof node is 'object' and node isnt null
-      node.locationData ?= {first_line: 0, first_column: 0, last_line: 0, last_column: 0, range: [0, 0]}
-      node.updateLocationDataIfMissing?(node.locationData)
-    node
 
   # Helper to convert base + properties to Value node
   _toValue: (base, properties) ->
@@ -163,8 +157,6 @@ class Backend
         # Handle addElse operation for if-else chains
         if o.addElse?
           [ifNode, elseBody] = o.addElse.map (item) => @$(item)
-          @_ensureLocation ifNode
-          @_ensureLocation elseBody
           ifNode.addElse elseBody
           return ifNode
 
@@ -182,8 +174,6 @@ class Backend
         if o.addSource?
           # addSource: [1, 2] means ForStart is at position 1, ForSource at position 2
           [loopNode, sourceInfo] = o.addSource.map (item) => @$(item)
-          @_ensureLocation   loopNode
-          @_ensureLocation   sourceInfo if sourceInfo?
           loopNode.addSource sourceInfo if loopNode?.addSource?
           return loopNode
 
@@ -198,8 +188,6 @@ class Backend
             console.log "[Solar] loop.addBody loopNode:", loopNode?.constructor?.name
             console.log "[Solar] loop.addBody body:", util.inspect(body, {depth: 2, colors: true})
 
-          @_ensureLocation loopNode
-          @_ensureLocation body
           loopNode.addBody body
           return loopNode
 
@@ -231,7 +219,7 @@ class Backend
       when 'Literal'            then new @ast.Literal          @$(o.value)
       when 'NumberLiteral'      then new @ast.NumberLiteral    @$(o.value)
       when 'StringLiteral'
-        @_ensureLocation new @ast.StringLiteral @$(o.value), {
+        new @ast.StringLiteral @$(o.value), {
           quote: @$(o.quote), initialChunk: @$(o.initialChunk), finalChunk: @$(o.finalChunk),
           indent: @$(o.indent), double: @$(o.double), heregex: @$(o.heregex)
         }
@@ -289,11 +277,11 @@ class Backend
         whileNode.body = @ast.Block.wrap @$(o.body)
         whileNode
       when 'For'
-        body = @_ensureLocation @ast.Block.wrap @$(o.body)
+        body = @ast.Block.wrap @$(o.body)
         forNode       = new @ast.For body, {name: @$(o.name), index: @$(o.index), source: @$(o.source)}
         forNode.await = @$(o.await) if o.await?
         forNode.own   = @$(o.own  ) if o.own?
-        @_ensureLocation forNode
+        forNode
       when 'Return'
         new @ast.Return @$(o.expression)
 

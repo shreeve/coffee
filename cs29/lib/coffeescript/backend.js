@@ -15,25 +15,6 @@
       this.currentLookup = null;
     }
 
-    // Helper to ensure node has location data to avoid errors in AST operations
-    _ensureLocation(node) {
-      if (typeof node === 'object' && node !== null) {
-        if (node.locationData == null) {
-          node.locationData = {
-            first_line: 0,
-            first_column: 0,
-            last_line: 0,
-            last_column: 0,
-            range: [0, 0]
-          };
-        }
-        if (typeof node.updateLocationDataIfMissing === "function") {
-          node.updateLocationDataIfMissing(node.locationData);
-        }
-      }
-      return node;
-    }
-
     // Helper to convert base + properties to Value node
     _toValue(base, properties) {
       var props;
@@ -56,7 +37,6 @@
       lookup = function(index) {
         return values[stackTop - symbolCount + 1 + index];
       };
-      
       // Create lookup function for position data
       lookupPos = function(index) {
         return positions[stackTop - symbolCount + 1 + index];
@@ -111,7 +91,6 @@
       o = new Proxy(directive, handler);
       // Process the directive
       result = this.process(o);
-      
       // Attach location data to the result if it's an AST node
       if (result instanceof this.ast.Base && this.currentLocationData) {
         result.locationData = this.currentLocationData;
@@ -247,8 +226,6 @@
             [ifNode, elseBody] = o.addElse.map((item) => {
               return this.$(item);
             });
-            this._ensureLocation(ifNode);
-            this._ensureLocation(elseBody);
             ifNode.addElse(elseBody);
             return ifNode;
           }
@@ -273,10 +250,6 @@
             [loopNode, sourceInfo] = o.addSource.map((item) => {
               return this.$(item);
             });
-            this._ensureLocation(loopNode);
-            if (sourceInfo != null) {
-              this._ensureLocation(sourceInfo);
-            }
             if ((loopNode != null ? loopNode.addSource : void 0) != null) {
               loopNode.addSource(sourceInfo);
             }
@@ -298,8 +271,6 @@
                 colors: true
               }));
             }
-            this._ensureLocation(loopNode);
-            this._ensureLocation(body);
             loopNode.addBody(body);
             return loopNode;
           }
@@ -341,14 +312,14 @@
         case 'NumberLiteral':
           return new this.ast.NumberLiteral(this.$(o.value));
         case 'StringLiteral':
-          return this._ensureLocation(new this.ast.StringLiteral(this.$(o.value), {
+          return new this.ast.StringLiteral(this.$(o.value), {
             quote: this.$(o.quote),
             initialChunk: this.$(o.initialChunk),
             finalChunk: this.$(o.finalChunk),
             indent: this.$(o.indent),
             double: this.$(o.double),
             heregex: this.$(o.heregex)
-          }));
+          });
         // Basic operations - assignments, calls, operators
         case 'Assign':
           variable = this.$(o.variable);
@@ -432,7 +403,7 @@
           whileNode.body = this.ast.Block.wrap(this.$(o.body));
           return whileNode;
         case 'For':
-          body = this._ensureLocation(this.ast.Block.wrap(this.$(o.body)));
+          body = this.ast.Block.wrap(this.$(o.body));
           forNode = new this.ast.For(body, {
             name: this.$(o.name),
             index: this.$(o.index),
@@ -444,7 +415,7 @@
           if (o.own != null) {
             forNode.own = this.$(o.own);
           }
-          return this._ensureLocation(forNode);
+          return forNode;
         case 'Return':
           return new this.ast.Return(this.$(o.expression));
         // === FUNCTIONS & CLASSES (Medium-High Frequency) ===

@@ -1191,6 +1191,7 @@
       // Wrap up the given nodes as a **Block**, unless it already happens
       // to be one.
       static wrap(nodes) {
+        var block, first, last, ref1, ref2, ref3, ref4, ref5, ref6;
         if (nodes instanceof Block) {
           return nodes;
         }
@@ -1198,12 +1199,27 @@
           return new Block([]);
         }
         if (!Array.isArray(nodes)) {
-          return new Block([nodes]);
+          block = new Block([nodes]);
+          if (nodes.locationData != null) {
+            block.locationData = nodes.locationData;
+          }
+          return block;
         }
         if (nodes.length === 1 && nodes[0] instanceof Block) {
           return nodes[0];
         }
-        return new Block(nodes);
+        block = new Block(nodes);
+        // Preserve location data from first to last node
+        if (nodes.length > 0 && ((ref1 = (first = nodes[0])) != null ? ref1.locationData : void 0) && ((ref2 = (last = nodes[nodes.length - 1])) != null ? ref2.locationData : void 0)) {
+          block.locationData = {
+            first_line: first.locationData.first_line,
+            first_column: first.locationData.first_column,
+            last_line: last.locationData.last_line,
+            last_column: last.locationData.last_column,
+            range: [(ref3 = (ref4 = first.locationData.range) != null ? ref4[0] : void 0) != null ? ref3 : 0, (ref5 = (ref6 = last.locationData.range) != null ? ref6[1] : void 0) != null ? ref5 : 0]
+          };
+        }
+        return block;
       }
 
       astNode(o) {

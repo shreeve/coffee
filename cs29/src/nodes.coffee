@@ -838,9 +838,21 @@ exports.Block = class Block extends Base
   @wrap: (nodes) ->
     return nodes             if nodes instanceof Block
     return new Block []      unless nodes?
-    return new Block [nodes] unless Array.isArray nodes
-    return nodes[0]          if nodes.length is 1 and nodes[0] instanceof Block
-    new Block nodes
+    unless Array.isArray nodes
+      block = new Block [nodes]
+      block.locationData = nodes.locationData if nodes.locationData?
+      return block
+    return nodes[0] if nodes.length is 1 and nodes[0] instanceof Block
+    block = new Block nodes
+    # Preserve location data from first to last node
+    if nodes.length > 0 and (first = nodes[0])?.locationData and (last = nodes[nodes.length - 1])?.locationData
+      block.locationData =
+        first_line: first.locationData.first_line
+        first_column: first.locationData.first_column
+        last_line: last.locationData.last_line
+        last_column: last.locationData.last_column
+        range: [first.locationData.range?[0] ? 0, last.locationData.range?[1] ? 0]
+    block
 
   astNode: (o) ->
     if (o.level? and o.level isnt LEVEL_TOP) and @expressions.length
