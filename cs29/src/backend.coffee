@@ -276,7 +276,7 @@ class Backend
 
       # === FUNCTIONS & CLASSES (Medium-High Frequency) ===
 
-      when 'Code'      then new @ast.Code      @$(o.params) or [], @ast.Block.wrap(@$(o.body))
+      when 'Code'      then new @ast.Code      @$(o.params) or [], @ast.Block.wrap(@$(o.body)), @$(o.funcGlyph), @$(o.paramStart)
       when 'FuncGlyph' then new @ast.FuncGlyph @$(o.glyph) or @$(o.value) or '->'
       when 'Class'     then new @ast.Class     @$(o.variable), @$(o.parent), @$(o.body)
       when 'Param'

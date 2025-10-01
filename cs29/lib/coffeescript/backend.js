@@ -419,7 +419,7 @@
           return new this.ast.Return(this.$(o.expression));
         // === FUNCTIONS & CLASSES (Medium-High Frequency) ===
         case 'Code':
-          return new this.ast.Code(this.$(o.params) || [], this.ast.Block.wrap(this.$(o.body)));
+          return new this.ast.Code(this.$(o.params) || [], this.ast.Block.wrap(this.$(o.body)), this.$(o.funcGlyph), this.$(o.paramStart));
         case 'FuncGlyph':
           return new this.ast.FuncGlyph(this.$(o.glyph) || this.$(o.value) || '->');
         case 'Class':
