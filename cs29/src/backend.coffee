@@ -32,9 +32,27 @@ class Backend
     # Create lookup function to access stack values
     lookup = (index) -> values[stackTop - symbolCount + 1 + index]
 
+    # Create lookup function for position data
+    lookupPos = (index) -> positions[stackTop - symbolCount + 1 + index]
+
     @currentDirective = directive
     @currentRule      = directive
     @currentLookup    = lookup  # Store lookup for use in $()
+    @currentLookupPos = lookupPos  # Store position lookup
+
+    # Get the location data for this production (combines all positions)
+    if positions and symbolCount > 0
+      firstPos = lookupPos(0)
+      lastPos = lookupPos(symbolCount - 1)
+      if firstPos and lastPos
+        @currentLocationData =
+          first_line: firstPos.first_line
+          first_column: firstPos.first_column
+          last_line: lastPos.last_line
+          last_column: lastPos.last_column
+          range: [firstPos.range?[0] ? 0, lastPos.range?[1] ? 0]
+    else
+      @currentLocationData = null
 
     # Create smart proxy that auto-resolves properties
     handler =
@@ -59,6 +77,11 @@ class Backend
 
     # Process the directive
     result = @process o
+
+    # Attach location data to the result if it's an AST node
+    if result instanceof @ast.Base and @currentLocationData
+      result.locationData = @currentLocationData
+      result.updateLocationDataIfMissing?(@currentLocationData)
 
     if global.process?.env?.SOLAR_DEBUG
       util = require 'util'

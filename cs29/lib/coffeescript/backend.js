@@ -51,15 +51,37 @@
 
     // Main entry point (called by parser as 'reduce')
     reduce(values, positions, stackTop, symbolCount, directive) {
-      var handler, lookup, o, outName, ref, ref1, ref2, ref3, result, util;
+      var firstPos, handler, lastPos, lookup, lookupPos, o, outName, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, result, util;
       // Create lookup function to access stack values
       lookup = function(index) {
         return values[stackTop - symbolCount + 1 + index];
       };
+      
+      // Create lookup function for position data
+      lookupPos = function(index) {
+        return positions[stackTop - symbolCount + 1 + index];
+      };
       this.currentDirective = directive;
       this.currentRule = directive;
       this.currentLookup = lookup; // Store lookup for use in $()
+      this.currentLookupPos = lookupPos; // Store position lookup
       
+      // Get the location data for this production (combines all positions)
+      if (positions && symbolCount > 0) {
+        firstPos = lookupPos(0);
+        lastPos = lookupPos(symbolCount - 1);
+        if (firstPos && lastPos) {
+          this.currentLocationData = {
+            first_line: firstPos.first_line,
+            first_column: firstPos.first_column,
+            last_line: lastPos.last_line,
+            last_column: lastPos.last_column,
+            range: [(ref = (ref1 = firstPos.range) != null ? ref1[0] : void 0) != null ? ref : 0, (ref2 = (ref3 = lastPos.range) != null ? ref3[1] : void 0) != null ? ref2 : 0]
+          };
+        }
+      } else {
+        this.currentLocationData = null;
+      }
       // Create smart proxy that auto-resolves properties
       handler = {
         get: function(target, prop) {
@@ -89,9 +111,17 @@
       o = new Proxy(directive, handler);
       // Process the directive
       result = this.process(o);
-      if ((ref = global.process) != null ? (ref1 = ref.env) != null ? ref1.SOLAR_DEBUG : void 0 : void 0) {
+      
+      // Attach location data to the result if it's an AST node
+      if (result instanceof this.ast.Base && this.currentLocationData) {
+        result.locationData = this.currentLocationData;
+        if (typeof result.updateLocationDataIfMissing === "function") {
+          result.updateLocationDataIfMissing(this.currentLocationData);
+        }
+      }
+      if ((ref4 = global.process) != null ? (ref5 = ref4.env) != null ? ref5.SOLAR_DEBUG : void 0 : void 0) {
         util = require('util');
-        outName = (ref2 = result != null ? (ref3 = result.constructor) != null ? ref3.name : void 0 : void 0) != null ? ref2 : typeof result;
+        outName = (ref6 = result != null ? (ref7 = result.constructor) != null ? ref7.name : void 0 : void 0) != null ? ref6 : typeof result;
         console.log("[Solar] result:", outName, util.inspect(result, {
           depth: 3,
           colors: true
