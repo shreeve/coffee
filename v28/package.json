@@ -1,36 +1,30 @@
 {
   "name": "coffeescript",
-  "description": "Unfancy JavaScript - Modern ES6+ output",
+  "description": "Unfancy JavaScript",
   "keywords": [
     "javascript",
     "language",
     "coffeescript",
-    "compiler",
-    "es6",
-    "esm"
+    "compiler"
   ],
-  "version": "3.0.0",
+  "version": "2.8.0",
   "license": "MIT",
-  "type": "module",
+  "type": "commonjs",
   "engines": {
     "node": ">=14"
   },
   "directories": {
     "lib": "./lib/coffeescript"
   },
-  "main": "./lib/coffeescript/index.js",
-  "exports": {
-    ".": {
-      "import": "./lib/coffeescript/index.js",
-      "require": "./lib/coffeescript/index.cjs"
-    }
-  },
+  "main": "./lib/coffeescript/index",
   "bin": {
     "coffee": "./bin/coffee"
   },
   "files": [
     "bin",
-    "lib"
+    "lib",
+    "register.js",
+    "repl.js"
   ],
   "scripts": {
     "parser":  "coffee ../solar-es5.coffee -o lib/coffeescript/parser.js src/grammar.coffee",
