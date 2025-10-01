@@ -634,10 +634,10 @@ with...
     if (opts.transpile) {
       try {
         // The user has requested that the CoffeeScript compiler also transpile
-        // via Babel. We don’t include Babel as a dependency because we want to
-        // avoid dependencies in general, and most users probably won’t be relying
+        // via Babel. We don't include Babel as a dependency because we want to
+        // avoid dependencies in general, and most users probably won't be relying
         // on us to transpile for them; we assume most users will probably either
-        // run CoffeeScript’s output without transpilation (modern Node or evergreen
+        // run CoffeeScript's output without transpilation (modern Node or evergreen
         // browsers) or use a proper build chain like Gulp or Webpack.
         require('@babel/core');
       } catch (error) {

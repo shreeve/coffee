@@ -164,7 +164,7 @@
     for (argIndex = i = 0, len = args.length; i < len; argIndex = ++i) {
       arg = args[argIndex];
       // If the previous argument given to the script was an option that uses the
-      // next command-line argument as its argument, create copy of the option’s
+      // next command-line argument as its argument, create copy of the option's
       // rule with an `argument` field.
       if (needsArgOpt != null) {
         withArg = Object.assign({}, needsArgOpt.rule, {

@@ -200,7 +200,7 @@
 
   exports.addDataToNode = addDataToNode;
 
-  // Constant functions for nodes that don’t need customization.
+  // Constant functions for nodes that don't need customization.
   YES = function() {
     return true;
   };
@@ -272,9 +272,9 @@
       }
 
       // Occasionally a node is compiled multiple times, for example to get the name
-      // of a variable to add to scope tracking. When we know that a “premature”
-      // compilation won’t result in comments being output, set those comments aside
-      // so that they’re preserved for a later `compile` call that will result in
+      // of a variable to add to scope tracking. When we know that a "premature"
+      // compilation won't result in comments being output, set those comments aside
+      // so that they're preserved for a later `compile` call that will result in
       // the comments being included in the output.
       compileWithoutComments(o, lvl, method = 'compile') {
         var fragments, unwrapped;
@@ -367,7 +367,7 @@
           return fragments;
         }
         // This is where comments, that are attached to nodes as a `comments`
-        // property, become `CodeFragment`s. “Inline block comments,” e.g.
+        // property, become `CodeFragment`s. "Inline block comments," e.g.
         // `/* */`-delimited comments that are interspersed within code on a line,
         // are added to the current `fragments` stream. All other fragments are
         // attached as properties to the nearest preceding or following fragment,
@@ -395,7 +395,7 @@
           if (!(indexOf.call(this.compiledComments, comment) < 0)) {
             continue;
           }
-          this.compiledComments.push(comment); // Don’t output this comment twice.
+          this.compiledComments.push(comment); // Don't output this comment twice.
           // For block/here comments, denoted by `###`, that are inline comments
           // like `1 + ### comment ### 2`, create fragments and insert them into
           // the fragments array.
@@ -482,7 +482,7 @@
         return [fragmentsToText(cacheValues[0]), fragmentsToText(cacheValues[1])];
       }
 
-      // Construct a node that returns the current node’s result.
+      // Construct a node that returns the current node's result.
       // Note that this is overridden for smarter behavior for
       // many statement nodes (e.g. `If`, `For`).
       makeReturn(results, mark) {
@@ -560,7 +560,7 @@
         // Create serializable representation of this node.
         astNode = this.astNode(o);
         // Mark AST nodes that correspond to expressions that (implicitly) return.
-        // We can’t do this as part of `astNode` because we need to assemble child
+        // We can't do this as part of `astNode` because we need to assemble child
         // nodes first before marking the parent being returned.
         if ((this.astNode != null) && this.canBeReturned) {
           Object.assign(astNode, {
@@ -606,7 +606,7 @@
         return {};
       }
 
-      // By default, a node class’s AST `type` is its class name.
+      // By default, a node class's AST `type` is its class name.
       astType() {
         return this.constructor.name;
       }
@@ -735,7 +735,7 @@
         return this;
       }
 
-      // Throw a SyntaxError associated with this node’s location.
+      // Throw a SyntaxError associated with this node's location.
       error(message) {
         return throwSyntaxError(message, this.locationData);
       }
@@ -778,9 +778,9 @@
     // the pointer to the `children` are how you can traverse the tree.
     Base.prototype.children = [];
 
-    // `isStatement` has to do with “everything is an expression”. A few things
-    // can’t be expressions, such as `break`. Things that `isStatement` returns
-    // `true` for are things that can’t be used as expressions. There are some
+    // `isStatement` has to do with "everything is an expression". A few things
+    // can't be expressions, such as `break`. Things that `isStatement` returns
+    // `true` for are things that can't be used as expressions. There are some
     // error messages that come from `nodes.coffee` due to statements ending up
     // in expression position.
     Base.prototype.isStatement = NO;
@@ -795,7 +795,7 @@
 
     // `jumps` tells you if an expression, or an internal part of an expression,
     // has a flow control construct (like `break`, `continue`, or `return`)
-    // that jumps out of the normal flow of control and can’t be used as a value.
+    // that jumps out of the normal flow of control and can't be used as a value.
     // (Note that `throw` is not considered a flow control construct.)
     // This is important because flow control in the middle of an expression
     // makes no sense; we have to disallow it.
@@ -851,7 +851,7 @@
       this.source = source1;
       // Holds presentational options to apply when the source node is compiled.
       this.options = {};
-      // Placeholder fragments to be replaced by the source node’s compilation.
+      // Placeholder fragments to be replaced by the source node's compilation.
       this.targetFragments = {
         fragments: []
       };
@@ -920,7 +920,7 @@
         results1 = [];
         for (j = 0, len1 = ref2.length; j < len1; j++) {
           name = ref2[j];
-          // Mark given local variables in the root scope as parameters so they don’t
+          // Mark given local variables in the root scope as parameters so they don't
           // end up being declared on the root block.
           results1.push(o.scope.parameter(name));
         }
@@ -1056,8 +1056,8 @@
         len = this.expressions.length;
         ref1 = this.expressions, [lastExp] = slice1.call(ref1, -1);
         lastExp = (lastExp != null ? lastExp.unwrap() : void 0) || false;
-        // We also need to check that we’re not returning a JSX tag if there’s an
-        // adjacent one at the same level; JSX doesn’t allow that.
+        // We also need to check that we're not returning a JSX tag if there's an
+        // adjacent one at the same level; JSX doesn't allow that.
         if (lastExp && lastExp instanceof Parens && lastExp.body.expressions.length > 1) {
           ({
             body: {expressions}
@@ -1094,7 +1094,7 @@
       }
 
       // Compile all expressions within the **Block** body. If we need to return
-      // the result, and it’s an expression, simply return it. If it’s a statement,
+      // the result, and it's an expression, simply return it. If it's a statement,
       // ask the statement to do so.
       compileNode(o) {
         var answer, compiledNodes, fragments, index, j, lastFragment, len1, node, ref1, top;
@@ -1112,7 +1112,7 @@
           }
           node = node.unfoldSoak(o) || node;
           if (node instanceof Block) {
-            // This is a nested block. We don’t do anything special here like
+            // This is a nested block. We don't do anything special here like
             // enclose it in a new scope; we just compile the statements in this
             // block along with our own.
             compiledNodes.push(node.compileNode(o));
@@ -1227,7 +1227,7 @@
           if (fragment.precedingComments) {
             // Determine the indentation level of the fragment that we are about
             // to insert comments before, and use that indentation level for our
-            // inserted comments. At this point, the fragments’ `code` property
+            // inserted comments. At this point, the fragments' `code` property
             // is the generated output JavaScript, and CoffeeScript always
             // generates output indented by two spaces; so all we need to do is
             // search for a `code` property that begins with at least two spaces.
@@ -1262,9 +1262,9 @@
               pastFragment = ref2[pastFragmentIndex];
               newLineIndex = pastFragment.code.lastIndexOf('\n');
               if (newLineIndex === -1) {
-                // Keep searching previous fragments until we can’t go back any
-                // further, either because there are no fragments left or we’ve
-                // discovered that we’re in a code block that is interpolated
+                // Keep searching previous fragments until we can't go back any
+                // further, either because there are no fragments left or we've
+                // discovered that we're in a code block that is interpolated
                 // inside a string.
                 if (pastFragmentIndex === 0) {
                   pastFragment.code = '\n' + pastFragment.code;
@@ -1282,7 +1282,7 @@
             }
           }
           // Yes, this is awfully similar to the previous `if` block, but if you
-          // look closely you’ll find lots of tiny differences that make this
+          // look closely you'll find lots of tiny differences that make this
           // confusing if it were abstracted into a function that both blocks share.
           if (fragment.followingComments) {
             // Does the first trailing comment follow at the end of a line of code,
@@ -1316,7 +1316,7 @@
               }
             }
             // Is this comment following the indent inserted by bare mode?
-            // If so, there’s no need to indent this further.
+            // If so, there's no need to indent this further.
             code = fragmentIndex === 1 && /^\s+$/.test(fragments[0].code) ? '' : trail ? ' ' : `\n${fragmentIndent}`;
             // Assemble properly indented comments.
             code += ((function() {
@@ -1338,9 +1338,9 @@
               upcomingFragment = ref4[upcomingFragmentIndex];
               newLineIndex = upcomingFragment.code.indexOf('\n');
               if (newLineIndex === -1) {
-                // Keep searching upcoming fragments until we can’t go any
-                // further, either because there are no fragments left or we’ve
-                // discovered that we’re in a code block that is interpolated
+                // Keep searching upcoming fragments until we can't go any
+                // further, either because there are no fragments left or we've
+                // discovered that we're in a code block that is interpolated
                 // inside a string.
                 if (upcomingFragmentIndex === fragments.length - 1) {
                   upcomingFragment.code = upcomingFragment.code + '\n';
@@ -1446,8 +1446,8 @@
             }, expression.astLocationData()));
           }
         }
-        // For now, we’re not including `sourceType` on the `Program` AST node.
-        // Its value could be either `'script'` or `'module'`, and there’s no way
+        // For now, we're not including `sourceType` on the `Program` AST node.
+        // Its value could be either `'script'` or `'module'`, and there's no way
         // for CoffeeScript to always know which it should be. The presence of an
         // `import` or `export` statement in source code would imply that it should
         // be a `module`, but a project may consist of mostly such files and also
@@ -1456,7 +1456,7 @@
         // Determining the value of `sourceType` is essentially the same challenge
         // posed by determining the parse goal of a JavaScript file, also `module`
         // or `script`, and so if Node figures out a way to do so for `.js` files
-        // then CoffeeScript can copy Node’s algorithm.
+        // then CoffeeScript can copy Node's algorithm.
 
           // sourceType: 'module'
         return {body, directives};
@@ -2031,7 +2031,7 @@
 
   //### Return
 
-  // A `return` is a *pureStatement*—wrapping it in a closure wouldn’t make sense.
+  // A `return` is a *pureStatement*—wrapping it in a closure wouldn't make sense.
   exports.Return = Return = (function() {
     class Return extends Base {
       constructor(expression1, {belongsToFuncDirectiveReturn} = {}) {
@@ -2053,7 +2053,7 @@
       compileNode(o) {
         var answer, fragment, j, len1;
         answer = [];
-        // TODO: If we call `expression.compile()` here twice, we’ll sometimes
+        // TODO: If we call `expression.compile()` here twice, we'll sometimes
         // get back different results!
         if (this.expression) {
           answer = this.expression.compileToFragments(o, LEVEL_PAREN);
@@ -2078,7 +2078,7 @@
       }
 
       checkForPureStatementInExpression() {
-        // don’t flag `return` from `await return`/`yield return` as invalid.
+        // don't flag `return` from `await return`/`yield return` as invalid.
         if (this.belongsToFuncDirectiveReturn) {
           return;
         }
@@ -2415,7 +2415,7 @@
         }
       }
 
-      // For AST generation, we need an `object` that’s this `Value` minus its last
+      // For AST generation, we need an `object` that's this `Value` minus its last
       // property, if it has properties.
       object() {
         var initialProperties, object;
@@ -2425,15 +2425,15 @@
         // Get all properties except the last one; for a `Value` with only one
         // property, `initialProperties` is an empty array.
         initialProperties = this.properties.slice(0, this.properties.length - 1);
-        // Create the `object` that becomes the new “base” for the split-off final
+        // Create the `object` that becomes the new "base" for the split-off final
         // property.
         object = new Value(this.base, initialProperties, this.tag, this.isDefaultValue);
         // Add location data to our new node, so that it has correct location data
         // for source maps or later conversion into AST location data.
         // This new `Value` has only one property, so the location data is just
-        // that of the parent `Value`’s base.
+        // that of the parent `Value`'s base.
         // This new `Value` has multiple properties, so the location data spans
-        // from the parent `Value`’s base to the last property that’s included
+        // from the parent `Value`'s base to the last property that's included
         // in this new node (a.k.a. the second-to-last property of the parent).
         object.locationData = initialProperties.length === 0 ? this.base.locationData : mergeLocationData(this.base.locationData, initialProperties[initialProperties.length - 1].locationData);
         return object;
@@ -2460,7 +2460,7 @@
       astNode(o) {
         if (!this.hasProperties()) {
           // If the `Value` has no properties, the AST node is just whatever this
-          // node’s `base` is.
+          // node's `base` is.
           return this.base.ast(o);
         }
         // Otherwise, call `Base::ast` which in turn calls the `astType` and
@@ -2606,7 +2606,7 @@
       fragment.newLine = this.newLine;
       fragment.unshift = this.unshift;
       fragment.multiline = multiline;
-      // Don’t rely on `fragment.type`, which can break when the compiler is minified.
+      // Don't rely on `fragment.type`, which can break when the compiler is minified.
       fragment.isComment = fragment.isHereComment = true;
       return fragment;
     }
@@ -2648,7 +2648,7 @@
       fragment.newLine = this.newLine;
       fragment.unshift = this.unshift;
       fragment.trail = !this.newLine && !this.unshift;
-      // Don’t rely on `fragment.type`, which can break when the compiler is minified.
+      // Don't rely on `fragment.type`, which can break when the compiler is minified.
       fragment.isComment = fragment.isLineComment = true;
       return fragment;
     }
@@ -3410,7 +3410,7 @@
           // get incorrectly output near `super.method()`, when we want them to
           // get output on the second pass when `method:` is output. So set them
           // aside during this compilation pass, and put them back on the object so
-          // that they’re there for the later compilation.
+          // that they're there for the later compilation.
           salvagedComments = this.accessor.name.comments;
           delete this.accessor.name.comments;
         }
@@ -3576,8 +3576,8 @@
       }
 
       astNode(o) {
-        // Babel doesn’t have an AST node for `Access`, but rather just includes
-        // this Access node’s child `name` Identifier node as the `property` of
+        // Babel doesn't have an AST node for `Access`, but rather just includes
+        // this Access node's child `name` Identifier node as the `property` of
         // the `MemberExpression` node.
         return this.name.ast(o);
       }
@@ -3611,9 +3611,9 @@
       }
 
       astNode(o) {
-        // Babel doesn’t have an AST node for `Index`, but rather just includes
-        // this Index node’s child `index` Identifier node as the `property` of
-        // the `MemberExpression` node. The fact that the `MemberExpression`’s
+        // Babel doesn't have an AST node for `Index`, but rather just includes
+        // this Index node's child `index` Identifier node as the `property` of
+        // the `MemberExpression` node. The fact that the `MemberExpression`'s
         // `property` is an Index means that `computed` is `true` for the
         // `MemberExpression`.
         return this.index.ast(o);
@@ -3765,7 +3765,7 @@
 
   //### Slice
 
-  // An array slice literal. Unlike JavaScript’s `Array#slice`, the second parameter
+  // An array slice literal. Unlike JavaScript's `Array#slice`, the second parameter
   // specifies the index of the end of the slice, just as the first parameter
   // is the index of the beginning.
   exports.Slice = Slice = (function() {
@@ -4008,7 +4008,7 @@
         return results1;
       }
 
-      // Convert “bare” properties to `ObjectProperty`s (or `Splat`s).
+      // Convert "bare" properties to `ObjectProperty`s (or `Splat`s).
       expandProperty(property) {
         var context, key, operatorToken, variable;
         ({variable, context, operatorToken} = property);
@@ -4258,7 +4258,7 @@
         // by definition line comments will introduce newlines into our output.
         // The exception is if only the first element has line comments; in that
         // case, output as the compact form if we otherwise would have, so that the
-        // first element’s line comments get output before or after the array.
+        // first element's line comments get output before or after the array.
         includesLineCommentsOnNonFirstElement = false;
         for (index = k = 0, len2 = compiledObjs.length; k < len2; index = ++k) {
           fragments = compiledObjs[index];
@@ -5006,9 +5006,9 @@
 
       checkScope(o, moduleDeclarationType) {
         // TODO: would be appropriate to flag this error during AST generation (as
-        // well as when compiling to JS). But `o.indent` isn’t tracked during AST
-        // generation, and there doesn’t seem to be a current alternative way to track
-        // whether we’re at the “program top-level”.
+        // well as when compiling to JS). But `o.indent` isn't tracked during AST
+        // generation, and there doesn't seem to be a current alternative way to track
+        // whether we're at the "program top-level".
         if (o.indent.length !== 0) {
           return this.error(`${moduleDeclarationType} statements must be at top-level scope`);
         }
@@ -5332,7 +5332,7 @@
 
     addIdentifierToScope(o) {
       var ref1;
-      // Per the spec, symbols can’t be imported multiple times
+      // Per the spec, symbols can't be imported multiple times
       // (e.g. `import { foo, foo } from 'lib'` is invalid)
       if ((ref1 = this.identifier, indexOf.call(o.importedSymbols, ref1) >= 0) || o.scope.check(this.identifier)) {
         this.error(`'${this.identifier}' has already been declared`);
@@ -5453,7 +5453,7 @@
       }
 
       // During AST generation, we need to allow assignment to these constructs
-      // that are considered “unassignable” during compile-to-JS, while still
+      // that are considered "unassignable" during compile-to-JS, while still
       // flagging things like `[null] = b`.
       addScopeVariables(o, {allowAssignmentToExpansion = false, allowAssignmentToNontrailingSplat = false, allowAssignmentToEmptyArray = false, allowAssignmentToComplexSplat = false} = {}) {
         var varBase;
@@ -5493,7 +5493,7 @@
             // If this assignment identifier has one or more herecomments
             // attached, output them as part of the declarations line (unless
             // other herecomments are already staged there) for compatibility
-            // with Flow typing. Don’t do this if this assignment is for a
+            // with Flow typing. Don't do this if this assignment is for a
             // class, e.g. `ClassName = class ClassName {`, as Flow requires
             // the comment to be between the class name and the `{`.
             if (name.comments && !o.scope.comments[name.value] && !(this.value instanceof Class) && name.comments.every(function(comment) {
@@ -5517,8 +5517,8 @@
         var answer, compiledName, isValue, name, properties, prototype, ref1, ref2, ref3, ref4, val;
         isValue = this.variable instanceof Value;
         if (isValue) {
-          // If `@variable` is an array or an object, we’re destructuring;
-          // if it’s also `isAssignable()`, the destructuring syntax is supported
+          // If `@variable` is an array or an object, we're destructuring;
+          // if it's also `isAssignable()`, the destructuring syntax is supported
           // in ES and we can output it as is; otherwise we `@compileDestructuring`
           // and convert this ES-unsupported destructuring into acceptable output.
           if (this.variable.isArray() || this.variable.isObject()) {
@@ -5562,7 +5562,7 @@
         }
         answer = compiledName.concat(this.makeCode(` ${this.context || '='} `), val);
         // Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
-        // if we’re destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
+        // if we're destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
         // The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
         // (i.e. LEVEL_COND (4), LEVEL_OP (5) or LEVEL_ACCESS (6)), or if we're destructuring object, e.g. {a,b} = obj.
         if (o.level > LEVEL_LIST || isValue && this.variable.base instanceof Obj && !this.nestedLhs && !(this.param === true)) {
@@ -5633,7 +5633,7 @@
         }
         // At this point, there are several things to destructure. So the `fn()` in
         // `{a, b} = fn()` must be cached, for example. Make vvar into a simple
-        // variable if it isn’t already.
+        // variable if it isn't already.
         if (!(value.unwrap() instanceof IdentifierLiteral) || this.variable.assigns(vvarText)) {
           ref = o.scope.freeVariable('ref');
           assigns.push([this.makeCode(ref + ' = '), ...vvar]);
@@ -5957,7 +5957,7 @@
           return;
         }
         // This is the left-hand side of an assignment; let `Arr` and `Obj`
-        // know that, so that those nodes know that they’re assignable as
+        // know that, so that those nodes know that they're assignable as
         // destructured variables.
         return this.variable.base.propagateLhs(true);
       }
@@ -6122,7 +6122,7 @@
         // adding expressions to the function body to declare all parameter
         // variables that would have been after the splat/expansion parameter.
         // If we encounter a parameter that needs to be declared in the function
-        // body for any reason, for example it’s destructured with `this`, also
+        // body for any reason, for example it's destructured with `this`, also
         // declare and assign all subsequent parameters in the function body so that
         // any non-idempotent parameters are evaluated in the correct order.
         for (i = j = 0, len1 = ref4.length; j < len1; i = ++j) {
@@ -6175,10 +6175,10 @@
             // If this parameter comes before the splat or expansion, it will go
             // in the function definition parameter list.
             if (!haveSplatParam) {
-              // If this parameter has a default value, and it hasn’t already been
+              // If this parameter has a default value, and it hasn't already been
               // set by the `shouldCache()` block above, define it as a statement in
               // the function body. This parameter comes after the splat parameter,
-              // so we can’t define its default value in the parameter list.
+              // so we can't define its default value in the parameter list.
               if (param.shouldCache()) {
                 ref = param.asReference(o);
               } else {
@@ -6190,7 +6190,7 @@
                   ref = param;
                 }
               }
-              // Add this parameter’s reference(s) to the function scope.
+              // Add this parameter's reference(s) to the function scope.
               if (param.name instanceof Arr || param.name instanceof Obj) {
                 // This parameter is destructured.
                 param.name.lhs = true;
@@ -6202,8 +6202,8 @@
               } else {
                 // This compilation of the parameter is only to get its name to add
                 // to the scope name tracking; since the compilation output here
-                // isn’t kept for eventual output, don’t include comments in this
-                // compilation, so that they get output the “real” time this param
+                // isn't kept for eventual output, don't include comments in this
+                // compilation, so that they get output the "real" time this param
                 // is compiled.
                 paramToAddToScope = param.value != null ? param : ref;
                 o.scope.parameter(fragmentsToText(paramToAddToScope.compileToFragmentsWithoutComments(o)));
@@ -6211,7 +6211,7 @@
               params.push(ref);
             } else {
               paramsAfterSplat.push(param);
-              // If this parameter had a default value, since it’s no longer in the
+              // If this parameter had a default value, since it's no longer in the
               // function parameter list we need to assign its default value
               // (if necessary) as an expression in the body.
               if ((param.value != null) && !param.shouldCache()) {
@@ -6220,7 +6220,7 @@
                 exprs.push(new If(condition, ifTrue));
               }
               if (((ref5 = param.name) != null ? ref5.value : void 0) != null) {
-                // Add this parameter to the scope, since it wouldn’t have been added
+                // Add this parameter to the scope, since it wouldn't have been added
                 // yet since it was skipped earlier.
                 o.scope.add(param.name.value, 'var', true);
               }
@@ -6261,7 +6261,7 @@
         if (!(wasEmpty || this.noReturn)) {
           this.body.makeReturn();
         }
-        // JavaScript doesn’t allow bound (`=>`) functions to also be generators.
+        // JavaScript doesn't allow bound (`=>`) functions to also be generators.
         // This is usually caught via `Op::compileContinuation`, but double-check:
         if (this.bound && this.isGenerator) {
           yieldNode = this.body.contains(function(node) {
@@ -6297,7 +6297,7 @@
             signature.push(this.makeCode('...'));
           }
           // Compile this parameter, but if any generated variables get created
-          // (e.g. `ref`), shift those into the parent scope since we can’t put a
+          // (e.g. `ref`), shift those into the parent scope since we can't put a
           // `var` line inside a function parameter list.
           scopeVariablesCount = o.scope.variables.length;
           signature.push(...param.compileToFragments(o, LEVEL_PAREN));
@@ -7930,7 +7930,7 @@
         var bare, expr, fragments, ref1, shouldWrapComment;
         expr = this.body.unwrap();
         // If these parentheses are wrapping an `IdentifierLiteral` followed by a
-        // block comment, output the parentheses (or put another way, don’t optimize
+        // block comment, output the parentheses (or put another way, don't optimize
         // away these redundant parentheses). This is because Flow requires
         // parentheses in certain circumstances to distinguish identifiers followed
         // by comment-based type annotations from JavaScript labels.
@@ -8098,7 +8098,7 @@
               // Flag the `{` and `}` fragments as having been generated by this
               // `StringWithInterpolations` node, so that `compileComments` knows
               // to treat them as bounds. But the braces are unnecessary if all of
-              // the enclosed comments are `/* */` comments. Don’t trust
+              // the enclosed comments are `/* */` comments. Don't trust
               // `fragment.type`, which can report minified variable names when
               // this compiler is minified.
               code[0].isStringWithInterpolations = true;
@@ -8277,7 +8277,7 @@
         }
         this.returns = false;
         ref4 = ['source', 'guard', 'step', 'name', 'index'];
-        // Move up any comments in the “`for` line”, i.e. the line of code with `for`,
+        // Move up any comments in the "`for` line", i.e. the line of code with `for`,
         // from any child nodes of that line up to the `for` node itself so that these
         // comments get output, and get output above the `for` loop.
         for (k = 0, len2 = ref4.length; k < len2; k++) {
@@ -8293,7 +8293,7 @@
                 comment = ref5[l];
                 // These comments are buried pretty deeply, so if they happen to be
                 // trailing comments the line they trail will be unrecognizable when
-                // we’re done compiling this `for` loop; so just shift them up to
+                // we're done compiling this `for` loop; so just shift them up to
                 // output above the `for` line.
                 comment.newLine = comment.unshift = true;
               }
@@ -8707,7 +8707,7 @@
   // to the last line of each clause.
 
   // Single-expression **Ifs** are compiled into conditional operators if possible,
-  // because ternaries are already proper expressions, and don’t need conversion.
+  // because ternaries are already proper expressions, and don't need conversion.
   exports.If = If = (function() {
     class If extends Base {
       constructor(condition1, body1, options = {}) {
@@ -9008,7 +9008,7 @@
     return code;
   };
 
-  // Wherever in CoffeeScript 1 we might’ve inserted a `makeCode "#{@tab}"` to
+  // Wherever in CoffeeScript 1 we might've inserted a `makeCode "#{@tab}"` to
   // indent a line of code, now we must account for the possibility of comments
   // preceding that line of code. If there are such comments, indent each line of
   // such comments, and _then_ indent the first following line of code.
@@ -9243,15 +9243,15 @@
     return a.last_column > b.last_column;
   };
 
-  // Take two nodes’ location data and return a new `locationData` object that
+  // Take two nodes' location data and return a new `locationData` object that
   // encompasses the location data of both nodes. So the new `first_line` value
-  // will be the earlier of the two nodes’ `first_line` values, the new
-  // `last_column` the later of the two nodes’ `last_column` values, etc.
+  // will be the earlier of the two nodes' `first_line` values, the new
+  // `last_column` the later of the two nodes' `last_column` values, etc.
 
-  // If you only want to extend the first node’s location data with the start or
+  // If you only want to extend the first node's location data with the start or
   // end location data of the second node, pass the `justLeading` or `justEnding`
-  // options. So e.g. if `first`’s range is [4, 5] and `second`’s range is [1, 10],
-  // you’d get:
+  // options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
+  // you'd get:
   // ```
   // mergeLocationData(first, second).range                   # [1, 10]
   // mergeLocationData(first, second, justLeading: yes).range # [1, 5]
@@ -9287,15 +9287,15 @@
     });
   };
 
-  // Take two AST nodes, or two AST nodes’ location data objects, and return a new
+  // Take two AST nodes, or two AST nodes' location data objects, and return a new
   // location data object that encompasses the location data of both nodes. So the
-  // new `start` value will be the earlier of the two nodes’ `start` values, the
-  // new `end` value will be the later of the two nodes’ `end` values, etc.
+  // new `start` value will be the earlier of the two nodes' `start` values, the
+  // new `end` value will be the later of the two nodes' `end` values, etc.
 
-  // If you only want to extend the first node’s location data with the start or
+  // If you only want to extend the first node's location data with the start or
   // end location data of the second node, pass the `justLeading` or `justEnding`
-  // options. So e.g. if `first`’s range is [4, 5] and `second`’s range is [1, 10],
-  // you’d get:
+  // options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
+  // you'd get:
   // ```
   // mergeAstLocationData(first, second).range                   # [1, 10]
   // mergeAstLocationData(first, second, justLeading: yes).range # [1, 5]
@@ -9332,7 +9332,7 @@
     };
   };
 
-  // Generate a zero-width location data that corresponds to the end of another node’s location.
+  // Generate a zero-width location data that corresponds to the end of another node's location.
   zeroWidthLocationDataFromEndLocation = function({
       range: [, endRange],
       last_line_exclusive,
@@ -9387,12 +9387,12 @@
     };
   };
 
-  // We don’t currently have a token corresponding to the empty space
+  // We don't currently have a token corresponding to the empty space
   // between interpolation/JSX expression braces, so piece together the location
-  // data by trimming the braces from the Interpolation’s location data.
+  // data by trimming the braces from the Interpolation's location data.
   // Technically the last_line/last_column calculation here could be
   // incorrect if the ending brace is preceded by a newline, but
-  // last_line/last_column aren’t used for AST generation anyway.
+  // last_line/last_column aren't used for AST generation anyway.
   emptyExpressionLocationData = function({
       interpolationNode: element,
       openingBrace,

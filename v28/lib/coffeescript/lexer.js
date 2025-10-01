@@ -93,8 +93,8 @@
     }
 
     // Preprocess the code to remove leading and trailing whitespace, carriage
-    // returns, etc. If we’re lexing literate CoffeeScript, strip external Markdown
-    // by removing all lines that aren’t indented by at least four spaces or a tab.
+    // returns, etc. If we're lexing literate CoffeeScript, strip external Markdown
+    // by removing all lines that aren't indented by at least four spaces or a tab.
     clean(code) {
       var base, thusFar;
       thusFar = 0;
@@ -125,9 +125,9 @@
     // ----------
 
       // Matches identifying literals: variables, keywords, method names, etc.
-    // Check to ensure that JavaScript reserved words aren’t being used as
+    // Check to ensure that JavaScript reserved words aren't being used as
     // identifiers. Because CoffeeScript reserves a handful of keywords that are
-    // allowed in JavaScript, we’re careful not to tag them as keywords when
+    // allowed in JavaScript, we're careful not to tag them as keywords when
     // referenced as property names here, so you can still do `jQuery.is()` even
     // though `is` means `===` otherwise.
     identifierToken() {
@@ -432,13 +432,13 @@
             length: matchIllegal[0].length
           });
         }
-        // Parse indentation or outdentation as if this block comment didn’t exist.
+        // Parse indentation or outdentation as if this block comment didn't exist.
         chunk = chunk.replace(`###${hereComment}###`, '');
         // Remove leading newlines, like `Rewriter::removeLeadingNewlines`, to
         // avoid the creation of unwanted `TERMINATOR` tokens.
         chunk = chunk.replace(/^\n+/, '');
         this.lineToken({chunk});
-        // Pull out the ###-style comment’s content, and format it.
+        // Pull out the ###-style comment's content, and format it.
         content = hereComment;
         contents = [
           {
@@ -526,7 +526,7 @@
       }).call(this);
       prev = this.prev();
       if (!prev) {
-        // If there’s no previous token, create a placeholder token to attach
+        // If there's no previous token, create a placeholder token to attach
         // this comment to; and follow with a newline.
         commentAttachments[0].newLine = true;
         this.lineToken({
@@ -853,7 +853,7 @@
     }
 
     // Matches and consumes non-meaningful whitespace. Tag the previous token
-    // as being “spaced”, because there are some cases where it makes a difference.
+    // as being "spaced", because there are some cases where it makes a difference.
     whitespaceToken() {
       var match, nline, prev;
       if (!((match = WHITESPACE.exec(this.chunk)) || (nline = this.chunk.charAt(0) === '\n'))) {
@@ -970,7 +970,7 @@
         } else if (firstChar === '{') {
           if (prevChar === ':') {
             // This token represents the start of a JSX attribute value
-            // that’s an expression (e.g. the `{b}` in `<div a={b} />`).
+            // that's an expression (e.g. the `{b}` in `<div a={b} />`).
             // Our grammar represents the beginnings of expressions as `(`
             // tokens, so make this into a `(` token that displays as `{`.
             token = this.token('(', '{');
@@ -1179,7 +1179,7 @@
             prev[0] = 'FUNC_EXIST';
           }
           tag = 'CALL_START';
-        } else if (value === '[' && (((ref5 = prev[0], indexOf.call(INDEXABLE, ref5) >= 0) && !prev.spaced) || (prev[0] === '::'))) { // `.prototype` can’t be a method you can call.
+        } else if (value === '[' && (((ref5 = prev[0], indexOf.call(INDEXABLE, ref5) >= 0) && !prev.spaced) || (prev[0] === '::'))) { // `.prototype` can't be a method you can call.
           tag = 'INDEX_START';
           switch (prev[0]) {
             case '?':
@@ -1572,8 +1572,8 @@
         range: []
       };
       [locationData.first_line, locationData.first_column, locationData.range[0]] = this.getLineAndColumnFromChunk(offsetInChunk);
-      // Use length - 1 for the final offset - we’re supplying the last_line and the last_column,
-      // so if last_column == first_column, then we’re looking at a character of length 1.
+      // Use length - 1 for the final offset - we're supplying the last_line and the last_column,
+      // so if last_column == first_column, then we're looking at a character of length 1.
       lastCharacter = length > 0 ? length - 1 : 0;
       [locationData.last_line, locationData.last_column, endOffset] = this.getLineAndColumnFromChunk(offsetInChunk + lastCharacter);
       [locationData.last_line_exclusive, locationData.last_column_exclusive] = this.getLineAndColumnFromChunk(offsetInChunk + lastCharacter + (length > 0 ? 1 : 0));
@@ -1713,10 +1713,10 @@
 
   exports.isUnassignable = isUnassignable;
 
-  // `from` isn’t a CoffeeScript keyword, but it behaves like one in `import` and
+  // `from` isn't a CoffeeScript keyword, but it behaves like one in `import` and
   // `export` statements (handled above) and in the declaration line of a `for`
   // loop. Try to detect when `from` is a variable identifier and when it is this
-  // “sometimes” keyword.
+  // "sometimes" keyword.
   isForFrom = function(prev) {
     var ref;
     // `for i from iterable`
@@ -1879,13 +1879,13 @@
 
   LINE_CONTINUER = /^\s*(?:,|\??\.(?![.\d])|\??::)/;
 
-  STRING_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d|[1-7])|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/; // Make sure the escape isn’t escaped.
+  STRING_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d|[1-7])|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/; // Make sure the escape isn't escaped.
   // octal escape
   // hex escape
   // unicode code point escape
   // unicode escape
 
-  REGEX_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d)|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/; // Make sure the escape isn’t escaped.
+  REGEX_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d)|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/; // Make sure the escape isn't escaped.
   // octal escape
   // hex escape
   // unicode code point escape

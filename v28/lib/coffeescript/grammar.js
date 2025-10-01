@@ -619,7 +619,7 @@
         }
       })
     ],
-    // The **Code** node is the function literal. It’s defined by an indented block
+    // The **Code** node is the function literal. It's defined by an indented block
     // of **Block** preceded by a function arrow, with an optional parameter list.
     Code: [
       o('PARAM_START ParamList PARAM_END FuncGlyph Block',
@@ -871,7 +871,7 @@
         }
       })
     ],
-    // A “meta-property” access e.g. `new.target` or `import.meta`, where
+    // A "meta-property" access e.g. `new.target` or `import.meta`, where
     // something that looks like a property is referenced on a keyword.
     MetaProperty: [
       o('NEW_TARGET . Property',
@@ -2262,7 +2262,7 @@
       })
     ],
     // The source of a comprehension is an array or object with an optional guard
-    // clause. If it’s an array comprehension, you can also choose to step through
+    // clause. If it's an array comprehension, you can also choose to step through
     // in fixed-size increments.
     ForSource: [
       o('FORIN Expression',
