@@ -8,7 +8,6 @@ class Backend
     @currentRule      = null
     @currentLookup    = null
 
-
   # Helper to convert base + properties to Value node
   _toValue: (base, properties) ->
     props = if Array.isArray(properties) then properties else []
@@ -18,33 +17,26 @@ class Backend
       base.add props if props.length
       return base
 
-    # In a properly working grammar, base should always be a node already
+    # Base should already be a node
     new @ast.Value base, props
 
   # Main entry point (called by parser as 'reduce')
   reduce: (values, positions, stackTop, symbolCount, directive) ->
-    # Create lookup function to access stack values
-    lookup = (index) -> values[stackTop - symbolCount + 1 + index]
-
-    # Create lookup function for position data
-    lookupPos = (index) -> positions[stackTop - symbolCount + 1 + index]
-
     @currentDirective = directive
     @currentRule      = directive
-    @currentLookup    = lookup  # Store lookup for use in $()
-    @currentLookupPos = lookupPos  # Store position lookup
+    @currentLookup    = (index) -> values[stackTop - symbolCount + 1 + index]
 
     # Get the location data for this production (combines all positions)
     if positions and symbolCount > 0
-      firstPos = lookupPos(0)
-      lastPos = lookupPos(symbolCount - 1)
+      firstPos = positions[stackTop - symbolCount + 1]
+      lastPos  = positions[stackTop]
       if firstPos and lastPos
         @currentLocationData =
-          first_line: firstPos.first_line
-          first_column: firstPos.first_column
-          last_line_exclusive: lastPos.last_line_exclusive ? lastPos.last_line
+          first_line:            firstPos.first_line
+          first_column:          firstPos.first_column
+          last_line_exclusive:   lastPos.last_line_exclusive   ?  lastPos.last_line
           last_column_exclusive: lastPos.last_column_exclusive ? (lastPos.last_column + 1)
-          range: [firstPos.range?[0] ? 0, lastPos.range?[1] ? 0]
+          range:                [firstPos.range?[0] ? 0, lastPos.range?[1] ? 0]
     else
       @currentLocationData = null
 
@@ -57,12 +49,12 @@ class Backend
         # Handle numeric indices for stack access
         if typeof prop is 'string' and /^\d+$/.test(prop)
           idx = parseInt(prop, 10) - 1  # Convert to 0-based
-          return lookup(idx) if idx >= 0
+          return @currentLookup(idx) if idx >= 0
 
         # Handle $N syntax
         if typeof prop is 'string' and prop[0] is '$'
           idx = parseInt(prop.slice(1), 10) - 1  # Convert to 0-based
-          return lookup(idx) if idx >= 0
+          return @currentLookup(idx) if idx >= 0
 
         undefined
 
@@ -107,20 +99,15 @@ class Backend
       for item in value
         resolved = @$(item)
         continue unless resolved?
-        # ONLY include actual AST Base nodes
-        # This prevents circular references and ensures arrays only contain proper nodes
         if resolved instanceof @ast.Base
           results.push resolved
       return results
 
-    # Objects with directives - process them (but not null)
+    # Process objects with directives
     if typeof value is 'object' and value?
       return @process value if value.$ast or value.$ops or value.$use or value.$arr
-
-      # Regular objects - resolve properties
       result = {}
-      for own key, val of value
-        result[key] = @$(val)
+      result[key] = @$(val) for own key, val of value
       return result
 
     # Everything else passes through
