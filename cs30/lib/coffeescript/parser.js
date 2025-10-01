@@ -515,7 +515,7 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
           throw new Error(`Parse Error: multiple actions possible at state: ${state}, token: ${symbol}`);
         }
         switch (action[0]) {
-          case 1: // shift
+          case 1:
             stk.push(symbol, action[1]);
             val.push(lexer.yytext);
             loc.push(lexer.yylloc);
@@ -529,7 +529,7 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
               [symbol, preErrorSymbol] = [preErrorSymbol, null];
             }
             break;
-          case 2: // reduce
+          case 2:
             len = this.ruleData[action[1]][1];
             yyval.$ = val[val.length - len];
             [locFirst, locLast] = [loc[loc.length - (len || 1)], loc[loc.length - 1]];
@@ -547,9 +547,9 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
               yyval.$ = r;
             }
             if (len) {
-              stk.length -= len * 2;
-              val.length -= len;
-              loc.length -= len;
+              stk.length = stk.length - len * 2;
+              val.length = val.length - len;
+              loc.length = loc.length - len;
             }
             stk.push(this.ruleData[action[1]][0]);
             val.push(yyval.$);
@@ -557,7 +557,7 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
             newState = parseTable[stk[stk.length - 2]][stk[stk.length - 1]];
             stk.push(newState);
             break;
-          case 3: // accept
+          case 3:
             return val[val.length - 1];
         }
       }
