@@ -25,7 +25,8 @@ replDefaults =
     input = input.replace /^\s*try\s*{([\s\S]*)}\s*catch.*$/m, '$1'
 
     # Require AST nodes to do some AST manipulation.
-    {Block, Assign, Value, Literal, Call, Code, Root} = require './nodes'
+    # Load ES6 nodes (nodes6) if CS3 environment variable is set, otherwise ES5 (nodes5)
+    {Block, Assign, Value, Literal, Call, Code, Root} = require if process.env.CS3 then './nodes6' else './nodes5'
 
     try
       # Tokenize the clean input.
