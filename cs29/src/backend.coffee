@@ -15,14 +15,6 @@ class Backend
       node.updateLocationDataIfMissing?(node.locationData)
     node
 
-  # Helper to convert primitive values to AST nodes
-  _toNode: (value) ->
-    return value if value instanceof @ast.Base
-    return new @ast.IdentifierLiteral value if typeof value is 'string'
-    return new @ast.NumberLiteral     value if typeof value is 'number'
-    return new @ast.BooleanLiteral    value if typeof value is 'boolean'
-    value
-
   # Helper to convert base + properties to Value node
   _toValue: (base, properties) ->
     props = if Array.isArray(properties) then properties else []
@@ -32,8 +24,7 @@ class Backend
       base.add props if props.length
       return base
 
-    # Ensure base is a node
-    base = @_toNode(base) if base? and not (base instanceof @ast.Base)
+    # In a properly working grammar, base should always be a node already
     new @ast.Value base, props
 
   # Main entry point (called by parser as 'reduce')
@@ -93,8 +84,17 @@ class Backend
       return @currentLookup(value - 1) if @currentLookup
       return value
 
-    # Arrays - resolve each item
-    return (@$(item) for item in value) if Array.isArray value
+    # Arrays - resolve each item, filtering out undefined/null/non-nodes
+    if Array.isArray value
+      results = []
+      for item in value
+        resolved = @$(item)
+        continue unless resolved?
+        # ONLY include actual AST Base nodes
+        # This prevents circular references and ensures arrays only contain proper nodes
+        if resolved instanceof @ast.Base
+          results.push resolved
+      return results
 
     # Objects with directives - process them (but not null)
     if typeof value is 'object' and value?
@@ -277,7 +277,7 @@ class Backend
       # === FUNCTIONS & CLASSES (Medium-High Frequency) ===
 
       when 'Code'      then new @ast.Code      @$(o.params) or [], @ast.Block.wrap(@$(o.body))
-      when 'FuncGlyph' then new @ast.FuncGlyph @$(o.value ) or '->'
+      when 'FuncGlyph' then new @ast.FuncGlyph @$(o.glyph) or @$(o.value) or '->'
       when 'Class'     then new @ast.Class     @$(o.variable), @$(o.parent), @$(o.body)
       when 'Param'
         name = @$(o.name)
