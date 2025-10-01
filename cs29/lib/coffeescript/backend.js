@@ -174,7 +174,7 @@
       return value;
     }
 
-    // Process $arr directives  
+    // Process $arr directives
     processArr(o) {
       var implicit, items, result;
       items = this.$(o.$arr);
@@ -280,6 +280,9 @@
               }));
             }
             loopNode.addBody(body);
+            if (o.postfix != null) {
+              loopNode.postfix = this.$(o.postfix);
+            }
             return loopNode;
           }
           break;

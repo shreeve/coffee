@@ -199,6 +199,7 @@ class Backend
             console.log "[Solar] loop.addBody body:", util.inspect(body, {depth: 2, colors: true})
 
           loopNode.addBody body
+          loopNode.postfix = @$(o.postfix) if o.postfix?
           return loopNode
 
       when 'prop'
