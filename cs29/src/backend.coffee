@@ -225,8 +225,16 @@ class Backend
         value      = @$(o.value   )
         context    = @$(o.context )
         variable.this = true if context is 'object' and variable instanceof @ast.Value and variable.base instanceof @ast.ThisLiteral
-        value      = new @ast.Op operator[...-1], variable, value if operator and operator not in ['=', '?=', undefined]
-        context    = operator if operator is '?='
+        # Only expand special compound assignments that JS doesn't support natively
+        # Standard compound assignments like +=, -=, *=, /=, etc. should be preserved
+        if operator in ['//=', '%%=']
+          value = new @ast.Op operator[...-1], variable, value
+          context = '='
+        else if operator and operator not in ['=', '?=', undefined]
+          # For standard compound assignments, preserve them by setting context
+          context = operator
+        else if operator is '?='
+          context = operator
         options    = {}
         options[k] = @$(o[k]) for k in ['operatorToken', 'moduleDeclaration', 'originalContext'] when o[k]?
         new @ast.Assign variable, value, context, options

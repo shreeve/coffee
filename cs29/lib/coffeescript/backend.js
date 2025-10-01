@@ -327,10 +327,15 @@
           if (context === 'object' && variable instanceof this.ast.Value && variable.base instanceof this.ast.ThisLiteral) {
             variable.this = true;
           }
-          if (operator && (operator !== '=' && operator !== '?=' && operator !== (void 0))) {
+          // Only expand special compound assignments that JS doesn't support natively
+          // Standard compound assignments like +=, -=, *=, /=, etc. should be preserved
+          if (operator === '//=' || operator === '%%=') {
             value = new this.ast.Op(operator.slice(0, -1), variable, value);
-          }
-          if (operator === '?=') {
+            context = '=';
+          } else if (operator && (operator !== '=' && operator !== '?=' && operator !== (void 0))) {
+            // For standard compound assignments, preserve them by setting context
+            context = operator;
+          } else if (operator === '?=') {
             context = operator;
           }
           options = {};
