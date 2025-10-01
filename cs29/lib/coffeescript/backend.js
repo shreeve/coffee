@@ -26,30 +26,22 @@
         }
         return base;
       }
-      // In a properly working grammar, base should always be a node already
+      // Base should already be a node
       return new this.ast.Value(base, props);
     }
 
     // Main entry point (called by parser as 'reduce')
     reduce(values, positions, stackTop, symbolCount, directive) {
-      var firstPos, handler, lastPos, lookup, lookupPos, o, outName, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, util;
-      // Create lookup function to access stack values
-      lookup = function(index) {
-        return values[stackTop - symbolCount + 1 + index];
-      };
-      // Create lookup function for position data
-      lookupPos = function(index) {
-        return positions[stackTop - symbolCount + 1 + index];
-      };
+      var firstPos, handler, lastPos, o, outName, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, util;
       this.currentDirective = directive;
       this.currentRule = directive;
-      this.currentLookup = lookup; // Store lookup for use in $()
-      this.currentLookupPos = lookupPos; // Store position lookup
-      
+      this.currentLookup = function(index) {
+        return values[stackTop - symbolCount + 1 + index];
+      };
       // Get the location data for this production (combines all positions)
       if (positions && symbolCount > 0) {
-        firstPos = lookupPos(0);
-        lastPos = lookupPos(symbolCount - 1);
+        firstPos = positions[stackTop - symbolCount + 1];
+        lastPos = positions[stackTop];
         if (firstPos && lastPos) {
           this.currentLocationData = {
             first_line: firstPos.first_line,
@@ -74,14 +66,14 @@
           if (typeof prop === 'string' && /^\d+$/.test(prop)) {
             idx = parseInt(prop, 10) - 1; // Convert to 0-based
             if (idx >= 0) {
-              return lookup(idx);
+              return this.currentLookup(idx);
             }
           }
           // Handle $N syntax
           if (typeof prop === 'string' && prop[0] === '$') {
             idx = parseInt(prop.slice(1), 10) - 1; // Convert to 0-based
             if (idx >= 0) {
-              return lookup(idx);
+              return this.currentLookup(idx);
             }
           }
           return void 0;
@@ -148,20 +140,17 @@
           if (resolved == null) {
             continue;
           }
-          // ONLY include actual AST Base nodes
-          // This prevents circular references and ensures arrays only contain proper nodes
           if (resolved instanceof this.ast.Base) {
             results.push(resolved);
           }
         }
         return results;
       }
-      // Objects with directives - process them (but not null)
+      // Process objects with directives
       if (typeof value === 'object' && (value != null)) {
         if (value.$ast || value.$ops || value.$use || value.$arr) {
           return this.process(value);
         }
-        // Regular objects - resolve properties
         result = {};
         for (key in value) {
           if (!hasProp.call(value, key)) continue;
@@ -205,6 +194,7 @@
     processOps(o) {
       var accessor, body, elseBody, i, ifNode, item, len, loopNode, property, ref, ref1, ref2, ref3, ref4, ref5, resolved, result, sourceInfo, target, util, value;
       switch (o.$ops) {
+        // Handle array operations
         case 'array':
           result = [];
           if (o.append != null) {
@@ -220,13 +210,12 @@
             }
           }
           return result;
+        // Handle addElse operation for if-else chains
         case 'if':
-          // Handle addElse operation for if-else chains
           if (o.addElse != null) {
             [ifNode, elseBody] = o.addElse.map((item) => {
               return this.$(item);
             });
-            // Ensure elseBody has location data
             if (elseBody && !elseBody.locationData && this.currentLocationData) {
               elseBody.locationData = this.currentLocationData;
             }
@@ -234,8 +223,8 @@
             return ifNode;
           }
           break;
+        // Handle adding accessors to Values
         case 'value':
-          // Handle adding accessors to Values
           if (o.add != null) {
             [value, accessor] = o.add.map((item) => {
               return this.$(item);
@@ -247,8 +236,8 @@
             }
           }
           break;
+        // Handle different loop operations
         case 'loop':
-          // Handle different loop operations
           if (o.addSource != null) {
             // addSource: [1, 2] means ForStart is at position 1, ForSource at position 2
             [loopNode, sourceInfo] = o.addSource.map((item) => {
@@ -282,8 +271,8 @@
             return loopNode;
           }
           break;
+        // Handle property setting operations
         case 'prop':
-          // Handle property setting operations
           if (o.set != null) {
             target = this.$(o.set.target);
             property = o.set.property;
@@ -301,7 +290,7 @@
 
     // Process $ast directives - the main AST node creation
     processAst(o) {
-      var args, body, context, expression, expressions, forNode, ifNode, name, operator, options, ref, ref1, value, variable, whileNode;
+      var args, body, context, expression, expressions, forNode, i, ifNode, j, k, len, len1, name, operator, options, ref, ref1, ref2, ref3, value, variable, whileNode;
       switch (o.$ast) {
         // === CORE EXPRESSIONS (Very High Frequency) ===
 
@@ -332,37 +321,31 @@
         // Basic operations - assignments, calls, operators
         case 'Assign':
           variable = this.$(o.variable);
+          operator = this.$(o.operator);
           value = this.$(o.value);
           context = this.$(o.context);
           if (context === 'object' && variable instanceof this.ast.Value && variable.base instanceof this.ast.ThisLiteral) {
-            // Mark @-based object-context assignments as static (for class bodies)
             variable.this = true;
           }
-          if (o.operator != null) {
-            // Handle compound assignment (+=, -=, etc.)
-            operator = this.$(o.operator);
-          }
-          if (operator && (operator !== '=' && operator !== '?=')) {
+          if (operator && (operator !== '=' && operator !== '?=' && operator !== (void 0))) {
             value = new this.ast.Op(operator.slice(0, -1), variable, value);
           }
           if (operator === '?=') {
             context = operator;
           }
-          options = o.operatorToken ? {
-            operatorToken: this.$(o.operatorToken)
-          } : {};
-          if (o.moduleDeclaration != null) {
-            options.moduleDeclaration = this.$(o.moduleDeclaration);
-          }
-          if (o.originalContext != null) {
-            options.originalContext = this.$(o.originalContext);
+          options = {};
+          ref1 = ['operatorToken', 'moduleDeclaration', 'originalContext'];
+          for (i = 0, len = ref1.length; i < len; i++) {
+            k = ref1[i];
+            if (o[k] != null) {
+              options[k] = this.$(o[k]);
+            }
           }
           return new this.ast.Assign(variable, value, context, options);
         case 'Call':
           return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
         case 'Op':
-          // Process args - preserve undefineds for proper positioning
-          args = ((ref1 = o.args) != null ? ref1.map((arg) => {
+          args = ((ref2 = o.args) != null ? ref2.map((arg) => {
             return this.$(arg);
           }) : void 0) || [];
           if ((o.invertOperator != null) || (o.originalOperator != null)) {
@@ -427,29 +410,12 @@
             index: this.$(o.index),
             source: this.$(o.source)
           });
-          if (o.await != null) {
-            forNode.await = this.$(o.await);
-          }
-          if (o.awaitTag != null) {
-            forNode.awaitTag = this.$(o.awaitTag);
-          }
-          if (o.own != null) {
-            forNode.own = this.$(o.own);
-          }
-          if (o.ownTag != null) {
-            forNode.ownTag = this.$(o.ownTag);
-          }
-          if (o.step != null) {
-            forNode.step = this.$(o.step);
-          }
-          if (o.from != null) {
-            forNode.from = this.$(o.from);
-          }
-          if (o.object != null) {
-            forNode.object = this.$(o.object);
-          }
-          if (o.guard != null) {
-            forNode.guard = this.$(o.guard);
+          ref3 = ['await', 'awaitTag', 'own', 'ownTag', 'step', 'from', 'object', 'guard'];
+          for (j = 0, len1 = ref3.length; j < len1; j++) {
+            k = ref3[j];
+            if (o[k] != null) {
+              forNode[k] = this.$(o[k]);
+            }
           }
           return forNode;
         case 'Return':
