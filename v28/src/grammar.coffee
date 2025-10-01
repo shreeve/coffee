@@ -437,13 +437,13 @@ grammar =
 
   # A reference to the *this* current object.
   This: [
-    o 'THIS', $ast: 'Value', base: {$ast: 'ThisLiteral'}
-    o '@'   , $ast: 'Value', base: {$ast: 'ThisLiteral'}
+    o 'THIS', $ast: 'Value', base: {$ast: 'ThisLiteral', value: 1}
+    o '@'   , $ast: 'Value', base: {$ast: 'ThisLiteral', value: 1}
   ]
 
   # A reference to a property on *this*
   ThisProperty: [
-    o '@ Property', $ast: 'Value', this: true, base: {$ast: 'ThisLiteral'}, properties: [ { $ast: 'Access', name: 2 } ], bareLiteral: {$ast: 'ThisLiteral'}
+    o '@ Property', $ast: 'Value', this: true, base: {$ast: 'ThisLiteral', value: 1}, properties: [ { $ast: 'Access', name: 2 } ], bareLiteral: {$ast: 'ThisLiteral', value: 1}
   ]
 
   # The array literal.

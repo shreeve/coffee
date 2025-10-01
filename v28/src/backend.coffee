@@ -306,7 +306,11 @@ class Backend
       # === COMMON LITERALS (Medium Frequency) ===
 
       when 'BooleanLiteral'           then new @ast.BooleanLiteral       @$(o.value), {originalValue: @$(o.originalValue)}
-      when 'ThisLiteral'              then new @ast.ThisLiteral
+      when 'ThisLiteral'
+        result = new @ast.ThisLiteral @$(o.value)
+        # Attach location data for nested AST nodes that don't go through reduce
+        result.locationData = @currentLocationData if @currentLocationData and not result.locationData
+        result
       when 'NullLiteral'              then new @ast.NullLiteral
       when 'UndefinedLiteral'         then new @ast.UndefinedLiteral
       when 'RegexLiteral'             then new @ast.RegexLiteral         @$(o.value), {delimiter: @$(o.delimiter), heregexCommentTokens: @$(o.heregexCommentTokens)}

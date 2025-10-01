@@ -424,6 +424,8 @@ exports.Base = class Base
   # The AST location data converts our internal format to ESTree format,
   # which is the standard for JavaScript tooling (VSCode, ESLint, etc).
   astLocationData: ->
+    # Some nodes are created synthetically during compilation and don't have
+    # location data (e.g., implicit 'this' in bound functions)
     return undefined unless @locationData?
     convertLocationDataToAst @locationData
 
