@@ -4,7 +4,7 @@
   // nodes are created as the result of actions in the [grammar](grammar.html),
   // but some are created by other nodes as a method of code generation. To convert
   // the syntax tree into a string of JavaScript code, call `compile()` on the root.
-  var Access, Arr, Assign, AwaitReturn, Base, Block, BooleanLiteral, Call, Catch, Class, ClassProperty, ClassPrototypeProperty, Code, CodeFragment, ComputedPropertyName, DefaultLiteral, Directive, DynamicImport, DynamicImportCall, Elision, EmptyInterpolation, ExecutableClassBody, Existence, Expansion, ExportAllDeclaration, ExportDeclaration, ExportDefaultDeclaration, ExportNamedDeclaration, ExportSpecifier, ExportSpecifierList, Extends, For, FuncDirectiveReturn, FuncGlyph, HEREGEX_OMIT, HereComment, HoistTarget, IdentifierLiteral, If, ImportClause, ImportDeclaration, ImportDefaultSpecifier, ImportNamespaceSpecifier, ImportSpecifier, ImportSpecifierList, In, Index, InfinityLiteral, Interpolation, JSXAttribute, JSXAttributes, JSXElement, JSXEmptyExpression, JSXExpressionContainer, JSXIdentifier, JSXNamespacedName, JSXTag, JSXText, JS_FORBIDDEN, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, LineComment, Literal, MetaProperty, ModuleDeclaration, ModuleSpecifier, ModuleSpecifierList, NEGATE, NO, NaNLiteral, NullLiteral, NumberLiteral, Obj, ObjectProperty, Op, Param, Parens, PassthroughLiteral, PropertyName, Range, RegexLiteral, RegexWithInterpolations, Return, Root, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, Scope, Sequence, Slice, Splat, StatementLiteral, StringLiteral, StringWithInterpolations, Super, SuperCall, Switch, SwitchCase, SwitchWhen, TAB, THIS, TRAILING_BLANK_LINE, TaggedTemplateCall, TemplateElement, ThisLiteral, Throw, Try, UTILITIES, UndefinedLiteral, Value, While, YES, YieldReturn, addDataToNode, astAsBlockIfNeeded, attachCommentsToNode, compact, convertLocationDataToAst, del, emptyExpressionLocationData, ends, extend, extractSameLineLocationDataFirst, extractSameLineLocationDataLast, flatten, fragmentsToText, greater, hasLineComments, indentInitial, isAstLocGreater, isFunction, isLiteralArguments, isLiteralThis, isLocationDataEndGreater, isLocationDataStartGreater, isNumber, isPlainObject, isUnassignable, lesser, locationDataToString, makeDelimitedLiteral, merge, mergeAstLocationData, mergeLocationData, moveComments, multident, parseNumber, replaceUnicodeCodePointEscapes, shouldCacheOrIsAssignable, sniffDirectives, some, starts, throwSyntaxError, unfoldSoak, unshiftAfterComments, utility, zeroWidthLocationDataFromEndLocation,
+  var Access, Arr, Assign, AwaitReturn, Base, Block, BooleanLiteral, Call, Catch, Class, ClassProperty, ClassPrototypeProperty, Code, CodeFragment, ComputedPropertyName, DefaultLiteral, Directive, DynamicImport, DynamicImportCall, Elision, EmptyInterpolation, ExecutableClassBody, Existence, Expansion, ExportAllDeclaration, ExportDeclaration, ExportDefaultDeclaration, ExportNamedDeclaration, ExportSpecifier, ExportSpecifierList, Extends, For, FuncDirectiveReturn, FuncGlyph, HEREGEX_OMIT, HereComment, HoistTarget, IdentifierLiteral, If, ImportClause, ImportDeclaration, ImportDefaultSpecifier, ImportNamespaceSpecifier, ImportSpecifier, ImportSpecifierList, In, Index, InfinityLiteral, Interpolation, JSXAttribute, JSXAttributes, JSXElement, JSXEmptyExpression, JSXExpressionContainer, JSXIdentifier, JSXNamespacedName, JSXTag, JSXText, JS_FORBIDDEN, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, LineComment, Literal, MetaProperty, ModuleDeclaration, ModuleSpecifier, ModuleSpecifierList, NEGATE, NO, NaNLiteral, NullLiteral, NumberLiteral, Obj, ObjectProperty, Op, Param, Parens, PassthroughLiteral, PropertyName, Range, RegexLiteral, RegexWithInterpolations, Return, Root, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, Scope, Sequence, Slice, Splat, StatementLiteral, StringLiteral, StringWithInterpolations, Super, SuperCall, Switch, SwitchCase, SwitchWhen, TAB, THIS, TRAILING_BLANK_LINE, TaggedTemplateCall, TemplateElement, ThisLiteral, Throw, Try, UTILITIES, UndefinedLiteral, Value, While, YES, YieldReturn, addDataToNode, astAsBlockIfNeeded, attachCommentsToNode, compact, convertLocationDataToAst, del, ends, extend, flatten, fragmentsToText, greater, hasLineComments, indentInitial, isAstLocGreater, isFunction, isLiteralArguments, isLiteralThis, isLocationDataEndGreater, isLocationDataStartGreater, isNumber, isPlainObject, isUnassignable, lesser, locationDataToString, makeDelimitedLiteral, merge, mergeAstLocationData, mergeLocationData, moveComments, multident, parseNumber, replaceUnicodeCodePointEscapes, shouldCacheOrIsAssignable, sniffDirectives, some, starts, throwSyntaxError, unfoldSoak, unshiftAfterComments, utility,
     indexOf = [].indexOf,
     splice = [].splice,
     slice1 = [].slice;
@@ -614,12 +614,8 @@
       // The AST location data converts our internal format to ESTree format,
       // which is the standard for JavaScript tooling (VSCode, ESLint, etc).
       astLocationData() {
-        if (this.locationData == null) {
-          // Some nodes are created synthetically during compilation and don't have
-          // location data (e.g., implicit 'this' in bound functions)
-          return void 0;
-        }
-        return convertLocationDataToAst(this.locationData);
+        // Location data is already in ESTree format from backend
+        return this.locationData;
       }
 
       // Determines whether an AST node needs an `ExpressionStatement` wrapper.
@@ -710,23 +706,12 @@
 
       // For this node and all descendents, set the location data to `locationData`
       // if the location data is not already set.
-      updateLocationDataIfMissing(locationData, force) {
-        if (force) {
-          this.forceUpdateLocation = true;
-        }
-        if (this.locationData && !this.forceUpdateLocation) {
-          return this;
-        }
-        delete this.forceUpdateLocation;
-        this.locationData = locationData;
-        return this.eachChild(function(child) {
-          return child.updateLocationDataIfMissing(locationData);
-        });
-      }
-
-      // Add location data from another node
+      // Simplified: just set location data if provided
       withLocationDataFrom({locationData}) {
-        return this.updateLocationDataIfMissing(locationData);
+        if (locationData) {
+          this.locationData = locationData;
+        }
+        return this;
       }
 
       // Add location data and comments from another node
@@ -2895,12 +2880,8 @@
         var name, namespace;
         super();
         [namespace, name] = tag.value.split(':');
-        this.namespace = new JSXIdentifier(namespace).withLocationDataFrom({
-          locationData: extractSameLineLocationDataFirst(namespace.length)(tag.locationData)
-        });
-        this.name = new JSXIdentifier(name).withLocationDataFrom({
-          locationData: extractSameLineLocationDataLast(name.length)(tag.locationData)
-        });
+        this.namespace = new JSXIdentifier(namespace).withLocationDataFrom(tag);
+        this.name = new JSXIdentifier(name).withLocationDataFrom(tag);
         this.locationData = tag.locationData;
       }
 
@@ -3068,11 +3049,7 @@
                 ({expression} = element);
                 if (expression == null) {
                   emptyExpression = new JSXEmptyExpression();
-                  emptyExpression.locationData = emptyExpressionLocationData({
-                    interpolationNode: element,
-                    openingBrace: '{',
-                    closingBrace: '}'
-                  });
+                  emptyExpression.locationData = element.locationData;
                   results1.push(new JSXExpressionContainer(emptyExpression, {
                     locationData: element.locationData
                   }));
@@ -4761,8 +4738,15 @@
         this.declareName(o);
         this.name = this.determineName();
         this.body.isClassBody = true;
-        if (this.hasGeneratedBody) {
-          this.body.locationData = zeroWidthLocationDataFromEndLocation(this.locationData);
+        // For generated body, use the end of the class location
+        if (this.hasGeneratedBody && this.locationData) {
+          this.body.locationData = {
+            loc: {
+              start: this.locationData.loc.end,
+              end: this.locationData.loc.end
+            },
+            range: [this.locationData.range[1], this.locationData.range[1]]
+          };
         }
         this.walkBody(o);
         sniffDirectives(this.body.expressions);
@@ -8282,11 +8266,7 @@
             }).withLocationDataFrom(element).ast(o)); // Interpolation
           } else {
             ({expression} = element);
-            node = expression == null ? (emptyInterpolation = new EmptyInterpolation(), emptyInterpolation.locationData = emptyExpressionLocationData({
-              interpolationNode: element,
-              openingBrace: '#{',
-              closingBrace: '}'
-            }), emptyInterpolation) : expression.unwrapAll();
+            node = expression == null ? (emptyInterpolation = new EmptyInterpolation(), emptyInterpolation.locationData = element.locationData, emptyInterpolation) : expression.unwrapAll();
             expressions.push(astAsBlockIfNeeded(node, o));
           }
         }
@@ -9475,81 +9455,11 @@
     };
   };
 
-  // Generate a zero-width location data that corresponds to the end of another node's location.
-  zeroWidthLocationDataFromEndLocation = function({
-      range: [, endRange],
-      last_line_exclusive,
-      last_column_exclusive
-    }) {
-    return {
-      first_line: last_line_exclusive,
-      first_column: last_column_exclusive,
-      last_line: last_line_exclusive,
-      last_column: last_column_exclusive,
-      last_line_exclusive,
-      last_column_exclusive,
-      range: [endRange, endRange]
-    };
-  };
-
-  extractSameLineLocationDataFirst = function(numChars) {
-    return function({
-        range: [startRange],
-        first_line,
-        first_column
-      }) {
-      return {
-        first_line,
-        first_column,
-        last_line: first_line,
-        last_column: first_column + numChars - 1,
-        last_line_exclusive: first_line,
-        last_column_exclusive: first_column + numChars,
-        range: [startRange, startRange + numChars]
-      };
-    };
-  };
-
-  extractSameLineLocationDataLast = function(numChars) {
-    return function({
-        range: [, endRange],
-        last_line,
-        last_column,
-        last_line_exclusive,
-        last_column_exclusive
-      }) {
-      return {
-        first_line: last_line,
-        first_column: last_column - (numChars - 1),
-        last_line: last_line,
-        last_column: last_column,
-        last_line_exclusive,
-        last_column_exclusive,
-        range: [endRange - numChars, endRange]
-      };
-    };
-  };
-
   // We don't currently have a token corresponding to the empty space
-  // between interpolation/JSX expression braces, so piece together the location
-  // data by trimming the braces from the Interpolation's location data.
-  // Technically the last_line/last_column calculation here could be
-  // incorrect if the ending brace is preceded by a newline, but
-  // last_line/last_column aren't used for AST generation anyway.
-  emptyExpressionLocationData = function({
-      interpolationNode: element,
-      openingBrace,
-      closingBrace
-    }) {
-    return {
-      first_line: element.locationData.first_line,
-      first_column: element.locationData.first_column + openingBrace.length,
-      last_line: element.locationData.last_line,
-      last_column: element.locationData.last_column - closingBrace.length,
-      last_line_exclusive: element.locationData.last_line,
-      last_column_exclusive: element.locationData.last_column,
-      range: [element.locationData.range[0] + openingBrace.length, element.locationData.range[1] - closingBrace.length]
-    };
-  };
+// between interpolation/JSX expression braces, so piece together the location
+// data by trimming the braces from the Interpolation's location data.
+// Technically the last_line/last_column calculation here could be
+// incorrect if the ending brace is preceded by a newline, but
+// last_line/last_column aren't used for AST generation anyway.
 
 }).call(this);
