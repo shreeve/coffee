@@ -200,7 +200,7 @@ grammar =
     o 'AWAIT RETURN'           , $ast: '@', expression: null, returnKeyword: {$ast: 'Literal', value: 2, $pos: 2}
   ]
 
-  # The **Code** node is the function literal. It’s defined by an indented block
+  # The **Code** node is the function literal. It's defined by an indented block
   # of **Block** preceded by a function arrow, with an optional parameter list.
   Code: [
     o 'PARAM_START ParamList PARAM_END FuncGlyph Block', $ast: '@', params: 2 , body: 5, funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1, $pos: 1}
@@ -286,7 +286,7 @@ grammar =
     o 'SUPER INDEX_START INDENT Expression OUTDENT INDEX_END', $ast: '@', accessor: {$ast: 'Index', name: 4, $pos: 4}, literal: {$ast: 'Literal', value: 1, $pos: 1}
   ]
 
-  # A “meta-property” access e.g. `new.target` or `import.meta`, where
+  # A "meta-property" access e.g. `new.target` or `import.meta`, where
   # something that looks like a property is referenced on a keyword.
   MetaProperty: [
     o 'NEW_TARGET . Property' , $ast: '@', identifier: {$ast: 'IdentifierLiteral', value: 1, $pos: 1}, accessor: {$ast: 'Access', name: 3, $pos: 3}
@@ -640,7 +640,7 @@ grammar =
   ]
 
   # The source of a comprehension is an array or object with an optional guard
-  # clause. If it’s an array comprehension, you can also choose to step through
+  # clause. If it's an array comprehension, you can also choose to step through
   # in fixed-size increments.
   ForSource: [
     o 'FORIN Expression'                                      , source: 2
