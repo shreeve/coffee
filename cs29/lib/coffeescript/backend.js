@@ -176,15 +176,11 @@
 
     // Process $arr directives
     processArr(o) {
-      var implicit, items, result;
+      var items, result;
       items = this.$(o.$arr);
       result = Array.isArray(items) ? items : [items];
-      // Special handling for Arguments with implicit flag
       if (o.implicit != null) {
-        implicit = this.$(o.implicit);
-        // In CoffeeScript, implicit defaults to true when generated is undefined or true
-        // Only explicit calls (generated: false) have implicit: false
-        result.implicit = implicit !== false;
+        result.implicit = !!this.$(o.implicit);
       }
       return result;
     }
@@ -346,8 +342,11 @@
             // Handle compound assignment (+=, -=, etc.)
             operator = this.$(o.operator);
           }
-          if (operator && operator !== '=') {
-            value = new this.ast.Op(operator.replace('=', ''), variable, value);
+          if (operator && (operator !== '=' && operator !== '?=')) {
+            value = new this.ast.Op(operator.slice(0, -1), variable, value);
+          }
+          if (operator === '?=') {
+            context = operator;
           }
           options = o.operatorToken ? {
             operatorToken: this.$(o.operatorToken)
