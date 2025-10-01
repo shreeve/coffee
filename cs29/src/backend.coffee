@@ -228,7 +228,7 @@ class Backend
         value
       when 'IdentifierLiteral'  then new @ast.IdentifierLiteral @$(o.value)
       when 'Literal'            then new @ast.Literal          @$(o.value)
-      when 'NumberLiteral'      then new @ast.NumberLiteral    @$(o.value)
+      when 'NumberLiteral'      then new @ast.NumberLiteral    @$(o.value), {parsedValue: @$(o.parsedValue)}
       when 'StringLiteral'
         new @ast.StringLiteral @$(o.value), {
           quote: @$(o.quote), initialChunk: @$(o.initialChunk), finalChunk: @$(o.finalChunk),
@@ -246,6 +246,8 @@ class Backend
         operator = @$(o.operator) if o.operator?
         value = new @ast.Op operator.replace('=', ''), variable, value if operator and operator isnt '='
         options = if o.operatorToken then {operatorToken: @$(o.operatorToken)} else {}
+        options.moduleDeclaration = @$(o.moduleDeclaration) if o.moduleDeclaration?
+        options.originalContext   = @$(o.originalContext  ) if o.originalContext?
         new @ast.Assign variable, value, context, options
       when 'Call'
         new @ast.Call @$(o.variable), @$(o.args) or [], @$(o.soak)
@@ -289,9 +291,15 @@ class Backend
         whileNode
       when 'For'
         body = @ast.Block.wrap @$(o.body)
-        forNode       = new @ast.For body, {name: @$(o.name), index: @$(o.index), source: @$(o.source)}
-        forNode.await = @$(o.await) if o.await?
-        forNode.own   = @$(o.own  ) if o.own?
+        forNode          = new @ast.For body, {name: @$(o.name), index: @$(o.index), source: @$(o.source)}
+        forNode.await    = @$(o.await   ) if o.await?
+        forNode.awaitTag = @$(o.awaitTag) if o.awaitTag?
+        forNode.own      = @$(o.own     ) if o.own?
+        forNode.ownTag   = @$(o.ownTag  ) if o.ownTag?
+        forNode.step     = @$(o.step    ) if o.step?
+        forNode.from     = @$(o.from    ) if o.from?
+        forNode.object   = @$(o.object  ) if o.object?
+        forNode.guard    = @$(o.guard   ) if o.guard?
         forNode
       when 'Return'
         new @ast.Return @$(o.expression)
@@ -316,7 +324,7 @@ class Backend
 
       # === COMMON LITERALS (Medium Frequency) ===
 
-      when 'BooleanLiteral'       then new @ast.BooleanLiteral       @$(o.value)
+      when 'BooleanLiteral'       then new @ast.BooleanLiteral       @$(o.value), {originalValue: @$(o.originalValue)}
       when 'ThisLiteral'          then new @ast.ThisLiteral
       when 'NullLiteral'          then new @ast.NullLiteral
       when 'UndefinedLiteral'     then new @ast.UndefinedLiteral
@@ -349,8 +357,8 @@ class Backend
 
       # === ERROR HANDLING (Low Frequency) ===
 
-      when 'Try'   then new @ast.Try   @$(o.attempt), @$(o.catch), @$(o.ensure)
-      when 'Catch' then new @ast.Catch @$(o.recovery) or @$(o.body), @$(o.variable) or @$(o.errorVariable)
+      when 'Try'   then new @ast.Try   @$(o.attempt ),   @$(o.catch), @$(o.ensure  ), {finallyTag: @$(o.finallyTag   )}
+      when 'Catch' then new @ast.Catch @$(o.recovery) or @$(o.body ), @$(o.variable) or            @$(o.errorVariable)
       when 'Throw' then new @ast.Throw @$(o.expression)
 
       # === MODULES (Low Frequency) ===

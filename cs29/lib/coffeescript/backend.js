@@ -321,7 +321,9 @@
         case 'Literal':
           return new this.ast.Literal(this.$(o.value));
         case 'NumberLiteral':
-          return new this.ast.NumberLiteral(this.$(o.value));
+          return new this.ast.NumberLiteral(this.$(o.value), {
+            parsedValue: this.$(o.parsedValue)
+          });
         case 'StringLiteral':
           return new this.ast.StringLiteral(this.$(o.value), {
             quote: this.$(o.quote),
@@ -350,6 +352,12 @@
           options = o.operatorToken ? {
             operatorToken: this.$(o.operatorToken)
           } : {};
+          if (o.moduleDeclaration != null) {
+            options.moduleDeclaration = this.$(o.moduleDeclaration);
+          }
+          if (o.originalContext != null) {
+            options.originalContext = this.$(o.originalContext);
+          }
           return new this.ast.Assign(variable, value, context, options);
         case 'Call':
           return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
@@ -423,8 +431,26 @@
           if (o.await != null) {
             forNode.await = this.$(o.await);
           }
+          if (o.awaitTag != null) {
+            forNode.awaitTag = this.$(o.awaitTag);
+          }
           if (o.own != null) {
             forNode.own = this.$(o.own);
+          }
+          if (o.ownTag != null) {
+            forNode.ownTag = this.$(o.ownTag);
+          }
+          if (o.step != null) {
+            forNode.step = this.$(o.step);
+          }
+          if (o.from != null) {
+            forNode.from = this.$(o.from);
+          }
+          if (o.object != null) {
+            forNode.object = this.$(o.object);
+          }
+          if (o.guard != null) {
+            forNode.guard = this.$(o.guard);
           }
           return forNode;
         case 'Return':
@@ -456,7 +482,9 @@
         
           // === COMMON LITERALS (Medium Frequency) ===
         case 'BooleanLiteral':
-          return new this.ast.BooleanLiteral(this.$(o.value));
+          return new this.ast.BooleanLiteral(this.$(o.value), {
+            originalValue: this.$(o.originalValue)
+          });
         case 'ThisLiteral':
           return new this.ast.ThisLiteral();
         case 'NullLiteral':
@@ -511,7 +539,9 @@
           });
         // === ERROR HANDLING (Low Frequency) ===
         case 'Try':
-          return new this.ast.Try(this.$(o.attempt), this.$(o.catch), this.$(o.ensure));
+          return new this.ast.Try(this.$(o.attempt), this.$(o.catch), this.$(o.ensure), {
+            finallyTag: this.$(o.finallyTag)
+          });
         case 'Catch':
           return new this.ast.Catch(this.$(o.recovery) || this.$(o.body), this.$(o.variable) || this.$(o.errorVariable));
         case 'Throw':
