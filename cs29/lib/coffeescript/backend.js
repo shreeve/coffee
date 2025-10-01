@@ -174,30 +174,27 @@
       return value;
     }
 
-    // Process $arr directives
+    // Process $arr directives  
     processArr(o) {
-      var items;
+      var implicit, items, result;
       items = this.$(o.$arr);
-      if (Array.isArray(items)) {
-        return items;
-      } else {
-        return [items];
+      result = Array.isArray(items) ? items : [items];
+      // Special handling for Arguments with implicit flag
+      if (o.implicit != null) {
+        implicit = this.$(o.implicit);
+        // In CoffeeScript, implicit defaults to true when generated is undefined or true
+        // Only explicit calls (generated: false) have implicit: false
+        result.implicit = implicit !== false;
       }
+      return result;
     }
 
     // Process $use directives
     processUse(o) {
-      var name1, ref, ref1, ref2, target;
+      var name1, ref, target;
       target = this.$(o.$use);
-      if (((ref = global.process) != null ? (ref1 = ref.env) != null ? ref1.SOLAR_DEBUG_IMPLICIT : void 0 : void 0) && o.prop === 'generated') {
-        console.log("[Solar] processUse for 'generated':", {
-          target,
-          prop: o.prop,
-          value: target != null ? target[o.prop] : void 0
-        });
-      }
       if (o.method != null) {
-        return target != null ? typeof target[name1 = o.method] === "function" ? target[name1](...((ref2 = o.args) != null ? ref2 : [])) : void 0 : void 0;
+        return target != null ? typeof target[name1 = o.method] === "function" ? target[name1](...((ref = o.args) != null ? ref : [])) : void 0 : void 0;
       }
       if (o.prop != null) {
         return target != null ? target[o.prop] : void 0;

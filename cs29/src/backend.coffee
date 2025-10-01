@@ -129,7 +129,14 @@ class Backend
   # Process $arr directives
   processArr: (o) ->
     items = @$(o.$arr)
-    if Array.isArray(items) then items else [items]
+    result = if Array.isArray(items) then items else [items]
+    # Special handling for Arguments with implicit flag
+    if o.implicit?
+      implicit = @$(o.implicit)
+      # In CoffeeScript, implicit defaults to true when generated is undefined or true
+      # Only explicit calls (generated: false) have implicit: false
+      result.implicit = implicit isnt false
+    result
 
   # Process $use directives
   processUse: (o) ->
