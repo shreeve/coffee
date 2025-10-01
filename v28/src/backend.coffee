@@ -320,7 +320,7 @@ class Backend
 
       # === STRING INTERPOLATION (Low-Medium Frequency) ===
 
-      when 'StringWithInterpolations' then new @ast.StringWithInterpolations @ast.Block.wrap(@$(o.body))
+      when 'StringWithInterpolations' then new @ast.StringWithInterpolations @ast.Block.wrap(@$(o.body)), {quote: @$(o.quote), startQuote: @$(o.startQuote)}
       when 'Interpolation'
         expression = @$(o.expression)
         if expression? then new @ast.Interpolation expression else new @ast.EmptyInterpolation()

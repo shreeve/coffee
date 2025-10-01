@@ -482,7 +482,10 @@
           return new this.ast.ComputedPropertyName(this.$(o.expression) || this.$(o.name) || this.$(o.value));
         // === STRING INTERPOLATION (Low-Medium Frequency) ===
         case 'StringWithInterpolations':
-          return new this.ast.StringWithInterpolations(this.ast.Block.wrap(this.$(o.body)));
+          return new this.ast.StringWithInterpolations(this.ast.Block.wrap(this.$(o.body)), {
+            quote: this.$(o.quote),
+            startQuote: this.$(o.startQuote)
+          });
         case 'Interpolation':
           expression = this.$(o.expression);
           if (expression != null) {
