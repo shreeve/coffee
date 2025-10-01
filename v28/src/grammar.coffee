@@ -92,7 +92,7 @@ grammar =
 
   String: [
     o 'STRING'                                , $ast: 'StringLiteral', value: {$use: 1, method: 'slice', args: [1, -1]}, quote: {$use: 1, prop: 'quote'}, initialChunk: {$use: 1, prop: 'initialChunk'}, finalChunk: {$use: 1, prop: 'finalChunk'}, indent: {$use: 1, prop: 'indent'}, double: {$use: 1, prop: 'double'}, heregex: {$use: 1, prop: 'heregex'}
-    o 'STRING_START Interpolations STRING_END', $ast: 'StringWithInterpolations', body: 2, quote: {$use: 1, prop: 'quote'}, startQuote: {$ast: 'Literal', value: {$use: 1, method: 'toString'}, $pos: 1}
+    o 'STRING_START Interpolations STRING_END', $ast: 'StringWithInterpolations', body: 2, quote: {$use: 1, prop: 'quote'}, startQuote: {$ast: 'Literal', value: {$use: 1, method: 'toString'}}
   ]
 
   Interpolations: [
@@ -139,10 +139,10 @@ grammar =
   AssignObj: [
     o 'ObjAssignable'                                  , $ast: 'Value', base: 1
     o 'ObjRestValue'
-    o 'ObjAssignable : Expression'                     , $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'ObjAssignable : INDENT Expression OUTDENT'      , $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'SimpleObjAssignable = Expression'               , $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 3, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'SimpleObjAssignable = INDENT Expression OUTDENT', $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 4, operatorToken: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'ObjAssignable : Expression'                     , $ast: 'Assign', variable: {$ast: 'Value', base: 1}, value: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2}
+    o 'ObjAssignable : INDENT Expression OUTDENT'      , $ast: 'Assign', variable: {$ast: 'Value', base: 1}, value: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2}
+    o 'SimpleObjAssignable = Expression'               , $ast: 'Assign', variable: {$ast: 'Value', base: 1}, value: 3, operatorToken: {$ast: 'Literal', value: 2}
+    o 'SimpleObjAssignable = INDENT Expression OUTDENT', $ast: 'Assign', variable: {$ast: 'Value', base: 1}, value: 4, operatorToken: {$ast: 'Literal', value: 2}
   ]
 
   SimpleObjAssignable: [
@@ -154,7 +154,7 @@ grammar =
   ObjAssignable: [
     o 'SimpleObjAssignable'
     o '[ Expression ]'  , $ast: 'Value', base: {$ast: 'ComputedPropertyName', expression: 2}
-    o '@ [ Expression ]', $ast: 'Value', base: {$ast: 'ThisLiteral', value: 1, $pos: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3, $pos: 3}], context: 'this'
+    o '@ [ Expression ]', $ast: 'Value', base: {$ast: 'ThisLiteral', value: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3}], context: 'this'
     o 'AlphaNumeric'
   ]
 
@@ -191,25 +191,25 @@ grammar =
   ]
 
   YieldReturn: [
-    o 'YIELD RETURN Expression', $ast: '@', expression: 3, returnKeyword: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'YIELD RETURN'           , $ast: '@', expression: null, returnKeyword: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'YIELD RETURN Expression', $ast: '@', expression: 3, returnKeyword: {$ast: 'Literal', value: 2}
+    o 'YIELD RETURN'           , $ast: '@', expression: null, returnKeyword: {$ast: 'Literal', value: 2}
   ]
 
   AwaitReturn: [
-    o 'AWAIT RETURN Expression', $ast: '@', expression: 3, returnKeyword: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'AWAIT RETURN'           , $ast: '@', expression: null, returnKeyword: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'AWAIT RETURN Expression', $ast: '@', expression: 3, returnKeyword: {$ast: 'Literal', value: 2}
+    o 'AWAIT RETURN'           , $ast: '@', expression: null, returnKeyword: {$ast: 'Literal', value: 2}
   ]
 
   # The **Code** node is the function literal. It's defined by an indented block
   # of **Block** preceded by a function arrow, with an optional parameter list.
   Code: [
-    o 'PARAM_START ParamList PARAM_END FuncGlyph Block', $ast: '@', params: 2 , body: 5, funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1, $pos: 1}
+    o 'PARAM_START ParamList PARAM_END FuncGlyph Block', $ast: '@', params: 2 , body: 5, funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1}
     o 'FuncGlyph Block'                                , $ast: '@', params: [], body: 2, funcGlyph: 1
   ]
 
   # The Codeline is the **Code** node with **Line** instead of indented **Block**.
   CodeLine: [
-    o 'PARAM_START ParamList PARAM_END FuncGlyph Line', $ast: 'Code', params: 2 , body: [5], funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1, $pos: 1}
+    o 'PARAM_START ParamList PARAM_END FuncGlyph Line', $ast: 'Code', params: 2 , body: [5], funcGlyph: 4, paramStart: {$ast: 'Literal', value: 1}
     o 'FuncGlyph Line'                                , $ast: 'Code', params: [], body: [2], funcGlyph: 1
   ]
 
@@ -281,23 +281,23 @@ grammar =
 
   # A `super`-based expression that can be used as a value.
   Super: [
-    o 'SUPER . Property'                                     , $ast: '@', accessor: {$ast: 'Access', name: 3, $pos: 3}, literal: {$ast: 'Literal', value: 1, $pos: 1}
-    o 'SUPER INDEX_START Expression INDEX_END'               , $ast: '@', accessor: {$ast: 'Index', name: 3, $pos: 3}, literal: {$ast: 'Literal', value: 1, $pos: 1}
-    o 'SUPER INDEX_START INDENT Expression OUTDENT INDEX_END', $ast: '@', accessor: {$ast: 'Index', name: 4, $pos: 4}, literal: {$ast: 'Literal', value: 1, $pos: 1}
+    o 'SUPER . Property'                                     , $ast: '@', accessor: {$ast: 'Access', name: 3}, literal: {$ast: 'Literal', value: 1}
+    o 'SUPER INDEX_START Expression INDEX_END'               , $ast: '@', accessor: {$ast: 'Index', name: 3}, literal: {$ast: 'Literal', value: 1}
+    o 'SUPER INDEX_START INDENT Expression OUTDENT INDEX_END', $ast: '@', accessor: {$ast: 'Index', name: 4}, literal: {$ast: 'Literal', value: 1}
   ]
 
   # A "meta-property" access e.g. `new.target` or `import.meta`, where
   # something that looks like a property is referenced on a keyword.
   MetaProperty: [
-    o 'NEW_TARGET . Property' , $ast: '@', identifier: {$ast: 'IdentifierLiteral', value: 1, $pos: 1}, accessor: {$ast: 'Access', name: 3, $pos: 3}
-    o 'IMPORT_META . Property', $ast: '@', identifier: {$ast: 'IdentifierLiteral', value: 1, $pos: 1}, accessor: {$ast: 'Access', name: 3, $pos: 3}
+    o 'NEW_TARGET . Property' , $ast: '@', identifier: {$ast: 'IdentifierLiteral', value: 1}, accessor: {$ast: 'Access', name: 3}
+    o 'IMPORT_META . Property', $ast: '@', identifier: {$ast: 'IdentifierLiteral', value: 1}, accessor: {$ast: 'Access', name: 3}
   ]
 
   Accessor: [
     o '.  Property' , $ast: 'Access', name: 2
     o '?. Property' , $ast: 'Access', name: 2, soak: true
-    o ':: Property' , $arr: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
-    o '?:: Property', $arr: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
+    o ':: Property' , $arr: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true}, {$ast: 'Access', name: 2}]
+    o '?:: Property', $arr: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true}, {$ast: 'Access', name: 2}]
     o '::'          , $ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true
     o '?::'         , $ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true
     o 'Index'
@@ -410,7 +410,7 @@ grammar =
   ExportSpecifier: [
     o 'Identifier'              , $ast: '@', local: 1
     o 'Identifier AS Identifier', $ast: '@', local: 1, exported: 3
-    o 'Identifier AS DEFAULT'   , $ast: '@', local: 1, exported: {$ast: 'DefaultLiteral', value: 3, $pos: 3}
+    o 'Identifier AS DEFAULT'   , $ast: '@', local: 1, exported: {$ast: 'DefaultLiteral', value: 3}
     o 'DEFAULT'                 , $ast: '@', value: {$ast: 'DefaultLiteral'}
     o 'DEFAULT AS Identifier'   , $ast: '@', local: {$ast: 'DefaultLiteral'}, exported: 3
   ]
@@ -606,20 +606,20 @@ grammar =
   ]
 
   ForBody: [
-    o 'FOR Range'              , $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2, $pos: 2}
-    o 'FOR Range BY Expression', $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2, $pos: 2}, step: 4
+    o 'FOR Range'              , $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2}
+    o 'FOR Range BY Expression', $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2}, step: 4
     o 'ForStart ForSource'     , $ops: 'loop', addSource: [1, 2]
   ]
 
   ForLineBody: [
-    o 'FOR Range BY ExpressionLine', $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2, $pos: 2}, step: 4
+    o 'FOR Range BY ExpressionLine', $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2}, step: 4
     o 'ForStart ForLineSource'     , $ops: 'loop', addSource: [1, 2]
   ]
 
   ForStart: [
     o 'FOR ForVariables'      , $ast: 'For', body: {$arr: [{}]}, name: {$use: 2, index: 0}, index: {$use: 2, index: 1}
-    o 'FOR AWAIT ForVariables', $ast: 'For', body: {$arr:  [] }, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, await: true, awaitTag: {$ast: 'Literal', value: 2, $pos: 2}
-    o 'FOR OWN ForVariables'  , $ast: 'For', body: {$arr:  [] }, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, own: true, ownTag: {$ast: 'Literal', value: 2, $pos: 2}
+    o 'FOR AWAIT ForVariables', $ast: 'For', body: {$arr:  [] }, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, await: true, awaitTag: {$ast: 'Literal', value: 2}
+    o 'FOR OWN ForVariables'  , $ast: 'For', body: {$arr:  [] }, name: {$use: 3, index: 0}, index: {$use: 3, index: 1}, own: true, ownTag: {$ast: 'Literal', value: 2}
   ]
 
   # An array of all accepted values for a variable inside the loop.

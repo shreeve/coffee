@@ -45,7 +45,7 @@ return r(1,{$ast:"NumberLiteral",value:{$use:1,method:"toString"},parsedValue:{$
 case 41:
 return r(1,{$ast:"StringLiteral",value:{$use:1,method:"slice",args:[1,-1]},quote:{$use:1,prop:"quote"},initialChunk:{$use:1,prop:"initialChunk"},finalChunk:{$use:1,prop:"finalChunk"},indent:{$use:1,prop:"indent"},double:{$use:1,prop:"double"},heregex:{$use:1,prop:"heregex"}});
 case 42:
-return r(3,{$ast:"StringWithInterpolations",body:2,quote:{$use:1,prop:"quote"},startQuote:{$ast:"Literal",value:{$use:1,method:"toString"},$pos:1}});
+return r(3,{$ast:"StringWithInterpolations",body:2,quote:{$use:1,prop:"quote"},startQuote:{$ast:"Literal",value:{$use:1,method:"toString"}}});
 case 43: case 106: case 156: case 182: case 207: case 241: case 255: case 259: case 311: case 357:
 return r(1,{$arr:[1]});
 case 44: case 256: case 260: case 358:
@@ -81,17 +81,17 @@ return r(5,{$ast:"Assign",variable:1,value:4});
 case 62: case 121: case 126: case 127: case 129: case 130: case 131: case 132: case 133: case 135: case 136: case 309: case 310:
 return r(1,{$ast:"Value",base:1});
 case 64:
-return r(3,{$ast:"Assign",variable:{$ast:"Value",base:1,$pos:1},value:3,context:"object",operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"Assign",variable:{$ast:"Value",base:1},value:3,context:"object",operatorToken:{$ast:"Literal",value:2}});
 case 65:
-return r(5,{$ast:"Assign",variable:{$ast:"Value",base:1,$pos:1},value:4,context:"object",operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(5,{$ast:"Assign",variable:{$ast:"Value",base:1},value:4,context:"object",operatorToken:{$ast:"Literal",value:2}});
 case 66:
-return r(3,{$ast:"Assign",variable:{$ast:"Value",base:1,$pos:1},value:3,operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"Assign",variable:{$ast:"Value",base:1},value:3,operatorToken:{$ast:"Literal",value:2}});
 case 67:
-return r(5,{$ast:"Assign",variable:{$ast:"Value",base:1,$pos:1},value:4,operatorToken:{$ast:"Literal",value:2,$pos:2}});
+return r(5,{$ast:"Assign",variable:{$ast:"Value",base:1},value:4,operatorToken:{$ast:"Literal",value:2}});
 case 72:
 return r(3,{$ast:"Value",base:{$ast:"ComputedPropertyName",expression:2}});
 case 73:
-return r(4,{$ast:"Value",base:{$ast:"ThisLiteral",value:1,$pos:1},properties:[{$ast:"ComputedPropertyName",name:3,$pos:3}],context:"this"});
+return r(4,{$ast:"Value",base:{$ast:"ThisLiteral",value:1},properties:[{$ast:"ComputedPropertyName",name:3}],context:"this"});
 case 75:
 return r(2,{$ast:"Splat",name:{$ast:"Value",base:1},postfix:false});
 case 76:
@@ -117,19 +117,19 @@ return r(4,{$ast:"Return",value:{$ast:"Value"}});
 case 92:
 return r(1,{$ast:"Return"});
 case 93:
-return r(3,{$ast:"YieldReturn",expression:3,returnKeyword:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"YieldReturn",expression:3,returnKeyword:{$ast:"Literal",value:2}});
 case 94:
-return r(2,{$ast:"YieldReturn",expression:null,returnKeyword:{$ast:"Literal",value:2,$pos:2}});
+return r(2,{$ast:"YieldReturn",expression:null,returnKeyword:{$ast:"Literal",value:2}});
 case 95:
-return r(3,{$ast:"AwaitReturn",expression:3,returnKeyword:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"AwaitReturn",expression:3,returnKeyword:{$ast:"Literal",value:2}});
 case 96:
-return r(2,{$ast:"AwaitReturn",expression:null,returnKeyword:{$ast:"Literal",value:2,$pos:2}});
+return r(2,{$ast:"AwaitReturn",expression:null,returnKeyword:{$ast:"Literal",value:2}});
 case 97:
-return r(5,{$ast:"Code",params:2,body:5,funcGlyph:4,paramStart:{$ast:"Literal",value:1,$pos:1}});
+return r(5,{$ast:"Code",params:2,body:5,funcGlyph:4,paramStart:{$ast:"Literal",value:1}});
 case 98:
 return r(2,{$ast:"Code",params:[],body:2,funcGlyph:1});
 case 99:
-return r(5,{$ast:"Code",params:2,body:[5],funcGlyph:4,paramStart:{$ast:"Literal",value:1,$pos:1}});
+return r(5,{$ast:"Code",params:2,body:[5],funcGlyph:4,paramStart:{$ast:"Literal",value:1}});
 case 100:
 return r(2,{$ast:"Code",params:[],body:[2],funcGlyph:1});
 case 101: case 102:
@@ -153,21 +153,21 @@ return r(3,{$ast:"Param",name:1,value:3});
 case 114: case 249:
 return r(1,{$ast:"Expansion"});
 case 137:
-return r(3,{$ast:"Super",accessor:{$ast:"Access",name:3,$pos:3},literal:{$ast:"Literal",value:1,$pos:1}});
+return r(3,{$ast:"Super",accessor:{$ast:"Access",name:3},literal:{$ast:"Literal",value:1}});
 case 138:
-return r(4,{$ast:"Super",accessor:{$ast:"Index",name:3,$pos:3},literal:{$ast:"Literal",value:1,$pos:1}});
+return r(4,{$ast:"Super",accessor:{$ast:"Index",name:3},literal:{$ast:"Literal",value:1}});
 case 139:
-return r(6,{$ast:"Super",accessor:{$ast:"Index",name:4,$pos:4},literal:{$ast:"Literal",value:1,$pos:1}});
+return r(6,{$ast:"Super",accessor:{$ast:"Index",name:4},literal:{$ast:"Literal",value:1}});
 case 140: case 141:
-return r(3,{$ast:"MetaProperty",identifier:{$ast:"IdentifierLiteral",value:1,$pos:1},accessor:{$ast:"Access",name:3,$pos:3}});
+return r(3,{$ast:"MetaProperty",identifier:{$ast:"IdentifierLiteral",value:1},accessor:{$ast:"Access",name:3}});
 case 142:
 return r(2,{$ast:"Access",name:2});
 case 143:
 return r(2,{$ast:"Access",name:2,soak:true});
 case 144:
-return r(2,{$arr:[{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true,$pos:1},{$ast:"Access",name:2,$pos:2}]});
+return r(2,{$arr:[{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true},{$ast:"Access",name:2}]});
 case 145:
-return r(2,{$arr:[{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true,soak:true,$pos:1},{$ast:"Access",name:2,$pos:2}]});
+return r(2,{$arr:[{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true,soak:true},{$ast:"Access",name:2}]});
 case 146:
 return r(1,{$ast:"Access",name:{$ast:"PropertyName",value:"prototype"},shorthand:true});
 case 147:
@@ -275,7 +275,7 @@ return r(1,{$ast:"ExportSpecifier",local:1});
 case 213:
 return r(3,{$ast:"ExportSpecifier",local:1,exported:3});
 case 214:
-return r(3,{$ast:"ExportSpecifier",local:1,exported:{$ast:"DefaultLiteral",value:3,$pos:3}});
+return r(3,{$ast:"ExportSpecifier",local:1,exported:{$ast:"DefaultLiteral",value:3}});
 case 215:
 return r(1,{$ast:"ExportSpecifier",value:{$ast:"DefaultLiteral"}});
 case 216:
@@ -365,17 +365,17 @@ return r(2,{$ast:"While",condition:{$ast:"BooleanLiteral",value:"true"},isLoop:t
 case 295: case 296:
 return r(2,{$ops:"loop",addBody:[2,1],postfix:true});
 case 299:
-return r(2,{$ast:"For",body:{$arr:[]},source:{$ast:"Value",base:2,$pos:2}});
+return r(2,{$ast:"For",body:{$arr:[]},source:{$ast:"Value",base:2}});
 case 300: case 302:
-return r(4,{$ast:"For",body:{$arr:[]},source:{$ast:"Value",base:2,$pos:2},step:4});
+return r(4,{$ast:"For",body:{$arr:[]},source:{$ast:"Value",base:2},step:4});
 case 301: case 303:
 return r(2,{$ops:"loop",addSource:[1,2]});
 case 304:
 return r(2,{$ast:"For",body:{$arr:[{}]},name:{$use:2,index:0},index:{$use:2,index:1}});
 case 305:
-return r(3,{$ast:"For",body:{$arr:[]},name:{$use:3,index:0},index:{$use:3,index:1},await:true,awaitTag:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"For",body:{$arr:[]},name:{$use:3,index:0},index:{$use:3,index:1},await:true,awaitTag:{$ast:"Literal",value:2}});
 case 306:
-return r(3,{$ast:"For",body:{$arr:[]},name:{$use:3,index:0},index:{$use:3,index:1},own:true,ownTag:{$ast:"Literal",value:2,$pos:2}});
+return r(3,{$ast:"For",body:{$arr:[]},name:{$use:3,index:0},index:{$use:3,index:1},own:true,ownTag:{$ast:"Literal",value:2}});
 case 312:
 return r(3,{$arr:[1,3]});
 case 313: case 332:

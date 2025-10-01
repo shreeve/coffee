@@ -209,8 +209,7 @@
           value: {
             $use: 1,
             method: 'toString'
-          },
-          $pos: 1
+          }
         }
       })
     ],
@@ -371,15 +370,13 @@
         $ast: 'Assign',
         variable: {
           $ast: 'Value',
-          base: 1,
-          $pos: 1
+          base: 1
         },
         value: 3,
         context: 'object',
         operatorToken: {
           $ast: 'Literal',
-          value: 2,
-          $pos: 2
+          value: 2
         }
       }),
       o('ObjAssignable : INDENT Expression OUTDENT',
@@ -387,15 +384,13 @@
         $ast: 'Assign',
         variable: {
           $ast: 'Value',
-          base: 1,
-          $pos: 1
+          base: 1
         },
         value: 4,
         context: 'object',
         operatorToken: {
           $ast: 'Literal',
-          value: 2,
-          $pos: 2
+          value: 2
         }
       }),
       o('SimpleObjAssignable = Expression',
@@ -403,14 +398,12 @@
         $ast: 'Assign',
         variable: {
           $ast: 'Value',
-          base: 1,
-          $pos: 1
+          base: 1
         },
         value: 3,
         operatorToken: {
           $ast: 'Literal',
-          value: 2,
-          $pos: 2
+          value: 2
         }
       }),
       o('SimpleObjAssignable = INDENT Expression OUTDENT',
@@ -418,14 +411,12 @@
         $ast: 'Assign',
         variable: {
           $ast: 'Value',
-          base: 1,
-          $pos: 1
+          base: 1
         },
         value: 4,
         operatorToken: {
           $ast: 'Literal',
-          value: 2,
-          $pos: 2
+          value: 2
         }
       })
     ],
@@ -445,14 +436,12 @@
         $ast: 'Value',
         base: {
           $ast: 'ThisLiteral',
-          value: 1,
-          $pos: 1
+          value: 1
         },
         properties: [
           {
             $ast: 'ComputedPropertyName',
-            name: 3,
-            $pos: 3
+            name: 3
           }
         ],
         context: 'this'
@@ -582,8 +571,7 @@
         expression: 3,
         returnKeyword: {
           $ast: 'Literal',
-          value: 2,
-          $pos: 2
+          value: 2
         }
       }),
       o('YIELD RETURN',
@@ -592,8 +580,7 @@
         expression: null,
         returnKeyword: {
           $ast: 'Literal',
-          value: 2,
-          $pos: 2
+          value: 2
         }
       })
     ],
@@ -604,8 +591,7 @@
         expression: 3,
         returnKeyword: {
           $ast: 'Literal',
-          value: 2,
-          $pos: 2
+          value: 2
         }
       }),
       o('AWAIT RETURN',
@@ -614,8 +600,7 @@
         expression: null,
         returnKeyword: {
           $ast: 'Literal',
-          value: 2,
-          $pos: 2
+          value: 2
         }
       })
     ],
@@ -630,8 +615,7 @@
         funcGlyph: 4,
         paramStart: {
           $ast: 'Literal',
-          value: 1,
-          $pos: 1
+          value: 1
         }
       }),
       o('FuncGlyph Block',
@@ -652,8 +636,7 @@
         funcGlyph: 4,
         paramStart: {
           $ast: 'Literal',
-          value: 1,
-          $pos: 1
+          value: 1
         }
       }),
       o('FuncGlyph Line',
@@ -833,13 +816,11 @@
         $ast: '@',
         accessor: {
           $ast: 'Access',
-          name: 3,
-          $pos: 3
+          name: 3
         },
         literal: {
           $ast: 'Literal',
-          value: 1,
-          $pos: 1
+          value: 1
         }
       }),
       o('SUPER INDEX_START Expression INDEX_END',
@@ -847,13 +828,11 @@
         $ast: '@',
         accessor: {
           $ast: 'Index',
-          name: 3,
-          $pos: 3
+          name: 3
         },
         literal: {
           $ast: 'Literal',
-          value: 1,
-          $pos: 1
+          value: 1
         }
       }),
       o('SUPER INDEX_START INDENT Expression OUTDENT INDEX_END',
@@ -861,13 +840,11 @@
         $ast: '@',
         accessor: {
           $ast: 'Index',
-          name: 4,
-          $pos: 4
+          name: 4
         },
         literal: {
           $ast: 'Literal',
-          value: 1,
-          $pos: 1
+          value: 1
         }
       })
     ],
@@ -879,13 +856,11 @@
         $ast: '@',
         identifier: {
           $ast: 'IdentifierLiteral',
-          value: 1,
-          $pos: 1
+          value: 1
         },
         accessor: {
           $ast: 'Access',
-          name: 3,
-          $pos: 3
+          name: 3
         }
       }),
       o('IMPORT_META . Property',
@@ -893,13 +868,11 @@
         $ast: '@',
         identifier: {
           $ast: 'IdentifierLiteral',
-          value: 1,
-          $pos: 1
+          value: 1
         },
         accessor: {
           $ast: 'Access',
-          name: 3,
-          $pos: 3
+          name: 3
         }
       })
     ],
@@ -924,13 +897,11 @@
               $ast: 'PropertyName',
               value: 'prototype'
             },
-            shorthand: true,
-            $pos: 1
+            shorthand: true
           },
           {
             $ast: 'Access',
-            name: 2,
-            $pos: 2
+            name: 2
           }
         ]
       }),
@@ -944,13 +915,11 @@
               value: 'prototype'
             },
             shorthand: true,
-            soak: true,
-            $pos: 1
+            soak: true
           },
           {
             $ast: 'Access',
-            name: 2,
-            $pos: 2
+            name: 2
           }
         ]
       }),
@@ -1497,8 +1466,7 @@
         local: 1,
         exported: {
           $ast: 'DefaultLiteral',
-          value: 3,
-          $pos: 3
+          value: 3
         }
       }),
       o('DEFAULT',
@@ -2131,8 +2099,7 @@
         },
         source: {
           $ast: 'Value',
-          base: 2,
-          $pos: 2
+          base: 2
         }
       }),
       o('FOR Range BY Expression',
@@ -2143,8 +2110,7 @@
         },
         source: {
           $ast: 'Value',
-          base: 2,
-          $pos: 2
+          base: 2
         },
         step: 4
       }),
@@ -2164,8 +2130,7 @@
         },
         source: {
           $ast: 'Value',
-          base: 2,
-          $pos: 2
+          base: 2
         },
         step: 4
       }),
@@ -2209,8 +2174,7 @@
         await: true,
         awaitTag: {
           $ast: 'Literal',
-          value: 2,
-          $pos: 2
+          value: 2
         }
       }),
       o('FOR OWN ForVariables',
@@ -2230,8 +2194,7 @@
         own: true,
         ownTag: {
           $ast: 'Literal',
-          value: 2,
-          $pos: 2
+          value: 2
         }
       })
     ],
