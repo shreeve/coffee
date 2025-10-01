@@ -1648,7 +1648,17 @@ exports.Value = class Value extends Base
         # This new `Value` has multiple properties, so the location data spans
         # from the parent `Value`'s base to the last property that's included
         # in this new node (a.k.a. the second-to-last property of the parent).
-        mergeLocationData @base.locationData, initialProperties[initialProperties.length - 1].locationData
+        lastProp = initialProperties[initialProperties.length - 1]
+        # For prototype access (::), only extend to the :: operator, not the property after it
+        if lastProp.name?.value is 'prototype' and lastProp.shorthand
+          # This is a :: operator - the location should end right after the base + ::
+          # The :: is 2 characters wide and comes right after the base
+          adjustedLocationData = Object.assign {}, lastProp.locationData
+          adjustedLocationData.last_column_exclusive = @base.locationData.last_column_exclusive + 2
+          adjustedLocationData.range = [@base.locationData.range[0], @base.locationData.range[1] + 2]
+          mergeLocationData @base.locationData, adjustedLocationData
+        else
+          mergeLocationData @base.locationData, lastProp.locationData
     object
 
   containsSoak: ->

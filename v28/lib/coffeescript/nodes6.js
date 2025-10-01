@@ -2436,7 +2436,7 @@
       // For AST generation, we need an `object` that's this `Value` minus its last
       // property, if it has properties.
       object() {
-        var initialProperties, object;
+        var adjustedLocationData, initialProperties, lastProp, object, ref1;
         if (!this.hasProperties()) {
           return this;
         }
@@ -2453,7 +2453,10 @@
         // This new `Value` has multiple properties, so the location data spans
         // from the parent `Value`'s base to the last property that's included
         // in this new node (a.k.a. the second-to-last property of the parent).
-        object.locationData = initialProperties.length === 0 ? this.base.locationData : mergeLocationData(this.base.locationData, initialProperties[initialProperties.length - 1].locationData);
+        // For prototype access (::), only extend to the :: operator, not the property after it
+        // This is a :: operator - the location should end right after the base + ::
+        // The :: is 2 characters wide and comes right after the base
+        object.locationData = initialProperties.length === 0 ? this.base.locationData : (lastProp = initialProperties[initialProperties.length - 1], ((ref1 = lastProp.name) != null ? ref1.value : void 0) === 'prototype' && lastProp.shorthand ? (adjustedLocationData = Object.assign({}, lastProp.locationData), adjustedLocationData.last_column_exclusive = this.base.locationData.last_column_exclusive + 2, adjustedLocationData.range = [this.base.locationData.range[0], this.base.locationData.range[1] + 2], mergeLocationData(this.base.locationData, adjustedLocationData)) : mergeLocationData(this.base.locationData, lastProp.locationData));
         return object;
       }
 
