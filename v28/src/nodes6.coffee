@@ -5,8 +5,109 @@
 
 Error.stackTraceLimit = Infinity
 
-{Scope} = require './scope'
 {isUnassignable, JS_FORBIDDEN} = require './lexer'
+
+# Inline Scope class for ES6 generation
+# The Scope class regulates lexical scoping within CoffeeScript. As you
+# generate code, you create a tree of scopes in the same shape as the nested
+# function bodies. Each scope knows about the variables declared within it,
+# and has a reference to its parent enclosing scope.
+class Scope
+  # Initialize a scope with its parent, for lookups up the chain,
+  # as well as a reference to the Block node it belongs to, which is
+  # where it should declare its variables, a reference to the function that
+  # it belongs to, and a list of variables referenced in the source code
+  # and therefore should be avoided when generating variables.
+  constructor: (@parent, @expressions, @method, @referencedVars) ->
+    @variables = [{name: 'arguments', type: 'arguments'}]
+    @comments  = {}
+    @positions = {}
+    @utilities = {} unless @parent
+    # The @root is the top-level Scope object for a given file.
+    @root = @parent?.root ? this
+
+  # Adds a new variable or overrides an existing one.
+  add: (name, type, immediate) ->
+    return @parent.add name, type, immediate if @shared and not immediate
+    if Object::hasOwnProperty.call @positions, name
+      @variables[@positions[name]].type = type
+    else
+      @positions[name] = @variables.push({name, type}) - 1
+
+  # When `super` is called, we need to find the name of the current method we're
+  # in, so that we know how to invoke the same method of the parent class. This
+  # can get complicated if super is being called from an inner function.
+  # `namedMethod` will walk up the scope tree until it either finds the first
+  # function object that has a name filled in, or bottoms out.
+  namedMethod: ->
+    return @method if @method?.name or !@parent
+    @parent.namedMethod()
+
+  # Look up a variable name in lexical scope, and declare it if it does not
+  # already exist.
+  find: (name, type = 'var') ->
+    return yes if @check name
+    @add name, type
+    no
+
+  # Reserve a variable name as originating from a function parameter for this
+  # scope. No `var` required for internal references.
+  parameter: (name) ->
+    return if @shared and @parent.check name, yes
+    @add name, 'param'
+
+  # Just check to see if a variable has already been declared, without reserving,
+  # walks up to the root scope.
+  check: (name) ->
+    !!(@type(name) or @parent?.check(name))
+
+  # Generate a temporary variable name at the given index.
+  temporary: (name, index, single=false) ->
+    if single
+      startCode = name.charCodeAt(0)
+      endCode = 'z'.charCodeAt(0)
+      diff = endCode - startCode
+      newCode = startCode + index % (diff + 1)
+      letter = String.fromCharCode(newCode)
+      num = index // (diff + 1)
+      "#{letter}#{num or ''}"
+    else
+      "#{name}#{index or ''}"
+
+  # Gets the type of a variable.
+  type: (name) ->
+    return v.type for v in @variables when v.name is name
+    null
+
+  # If we need to store an intermediate result, find an available name for a
+  # compiler-generated variable. `_var`, `_var2`, and so on...
+  freeVariable: (name, options={}) ->
+    index = 0
+    loop
+      temp = @temporary name, index, options.single
+      break unless @check(temp) or temp in @root.referencedVars
+      index++
+    @add temp, 'var', yes if options.reserve ? true
+    temp
+
+  # Ensure that an assignment is made at the top of this scope
+  # (or at the top-level scope, if requested).
+  assign: (name, value) ->
+    @add name, {value, assigned: yes}, yes
+    @hasAssignments = yes
+
+  # Does this scope have any declared variables?
+  hasDeclarations: ->
+    !!@declaredVariables().length
+
+  # Return the list of variables first declared in this scope.
+  declaredVariables: ->
+    (v.name for v in @variables when v.type is 'var').sort()
+
+  # Return the list of assignments that are supposed to be made at the top
+  # of this scope.
+  assignedVariables: ->
+    "#{v.name} = #{v.type.value}" for v in @variables when v.type.assigned
 
 # Import the helpers we plan to use.
 {compact, flatten, extend, merge, del, starts, ends, some,
@@ -678,7 +779,31 @@ exports.Block = class Block extends Base
 
   compileRoot: (o) ->
     @spaced = yes
+    # Separate imports from other expressions
+    imports = []
+    others = []
+    for exp in @expressions
+      if exp instanceof ImportDeclaration
+        imports.push exp
+      else
+        others.push exp
+
+    # Temporarily replace expressions with just others, then restore
+    originalExpressions = @expressions
+    @expressions = others
     fragments = @compileWithDeclarations o
+    @expressions = originalExpressions
+
+    # Compile imports and place them at the very top
+    if imports.length > 0
+      importFragments = []
+      for imp in imports
+        importFragments.push imp.compileToFragments(o)...
+        importFragments.push @makeCode '\n'
+      if others.length > 0
+        importFragments.push @makeCode '\n'
+      fragments = importFragments.concat fragments
+
     HoistTarget.expand fragments
     @compileComments fragments
 
@@ -703,19 +828,10 @@ exports.Block = class Block extends Base
       assigns = scope.hasAssignments
       if declars or assigns
         fragments.push @makeCode '\n' if i
-        fragments.push @makeCode "#{@tab}var "
-        if declars
-          declaredVariables = scope.declaredVariables()
-          for declaredVariable, declaredVariablesIndex in declaredVariables
-            fragments.push @makeCode declaredVariable
-            if Object::hasOwnProperty.call o.scope.comments, declaredVariable
-              fragments.push o.scope.comments[declaredVariable]...
-            if declaredVariablesIndex isnt declaredVariables.length - 1
-              fragments.push @makeCode ', '
-        if assigns
-          fragments.push @makeCode ",\n#{@tab + TAB}" if declars
-          fragments.push @makeCode scope.assignedVariables().join(",\n#{@tab + TAB}")
-        fragments.push @makeCode ";\n#{if @spaced then '\n' else ''}"
+        # ES6: Skip all hoisting - variables will be declared at first assignment
+        # This completely removes the ES5-style variable hoisting pattern
+
+        fragments.push @makeCode '\n' if @spaced
       else if fragments.length and post.length
         fragments.push @makeCode "\n"
     fragments.concat post
@@ -836,8 +952,23 @@ exports.Block = class Block extends Base
   # Wrap up the given nodes as a **Block**, unless it already happens
   # to be one.
   @wrap: (nodes) ->
+    return nodes             if nodes instanceof Block
+    return new Block []      unless nodes?
+    unless Array.isArray nodes
+      block = new Block [nodes]
+      block.locationData = nodes.locationData if nodes.locationData?
+      return block
     return nodes[0] if nodes.length is 1 and nodes[0] instanceof Block
-    new Block nodes
+    block = new Block nodes
+    # Preserve location data from first to last node
+    if nodes.length > 0 and (first = nodes[0])?.locationData and (last = nodes[nodes.length - 1])?.locationData
+      block.locationData =
+        first_line: first.locationData.first_line
+        first_column: first.locationData.first_column
+        last_line_exclusive: last.locationData.last_line_exclusive ? last.locationData.last_line
+        last_column_exclusive: last.locationData.last_column_exclusive ? (last.locationData.last_column + 1)
+        range: [first.locationData.range?[0] ? 0, last.locationData.range?[1] ? 0]
+    block
 
   astNode: (o) ->
     if (o.level? and o.level isnt LEVEL_TOP) and @expressions.length
@@ -2338,7 +2469,7 @@ exports.Range = class Range extends Base
     namedIndex = idxName and idxName isnt idx
     varPart  =
       if known and not namedIndex
-        "var #{idx} = #{@fromC}"
+        "let #{idx} = #{@fromC}"
       else
         "#{idx} = #{@fromC}"
     varPart += ", #{@toC}" if @toC isnt @toVar
@@ -2536,7 +2667,9 @@ exports.Obj = class Obj extends Base
       else
         prop
       if key instanceof Value and key.hasProperties()
-        key.error 'invalid object key' if prop.context is 'object' or not key.this
+        # Allow @property shorthand in objects (e.g., {@a} becomes {a: this.a})
+        unless key.this and not (prop instanceof Assign)
+          key.error 'invalid object key' if prop.context is 'object' or not key.this
         key  = key.properties[0].name
         prop = new Assign key, prop, 'object'
       if key is prop
@@ -2590,7 +2723,9 @@ exports.Obj = class Obj extends Base
     else
       property
     if key instanceof Value and key.hasProperties()
-      key.error 'invalid object key' unless context isnt 'object' and key.this
+      # Allow @property shorthand in objects (e.g., {@a} becomes {a: this.a})
+      unless key.this and not (property instanceof Assign)
+        key.error 'invalid object key' unless context isnt 'object' and key.this
       if property instanceof Assign
         return new ObjectProperty fromAssign: property
       else
@@ -2819,7 +2954,8 @@ exports.Class = class Class extends Base
       @variable ?= new IdentifierLiteral o.scope.freeVariable '_class'
       [@variable, @variableRef] = @variable.cache o unless @variableRef?
 
-    if @variable
+    # Don't wrap in Assign if this is a direct export
+    if @variable and not @moduleDeclaration
       node = new Assign @variable, node, null, { @moduleDeclaration }
 
     @compileNode = @compileClassDeclaration
@@ -3248,7 +3384,15 @@ exports.ImportDeclaration = class ImportDeclaration extends ModuleDeclaration
 
     if @source?.value?
       code.push @makeCode ' from ' unless @clause is null
-      code.push @makeCode @source.value
+      # Add .js extension to relative imports for ES6 module compatibility
+      sourceValue = @source.value
+      if sourceValue.match(/^['"]\.\.?\//)?  # Matches './...' or '../...'
+        # Remove quotes, add .js if no extension, re-add quotes
+        unquoted = sourceValue.slice(1, -1)
+        unless unquoted.match(/\.\w+$/)?  # If no extension
+          quoteMark = sourceValue[0]
+          sourceValue = "#{quoteMark}#{unquoted}.js#{quoteMark}"
+      code.push @makeCode sourceValue
       if @assertions?
         code.push @makeCode ' assert '
         code.push @assertions.compileToFragments(o)...
@@ -3303,10 +3447,16 @@ exports.ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
     code.push @makeCode "#{@tab}export "
     code.push @makeCode 'default ' if @ instanceof ExportDefaultDeclaration
 
-    if @ not instanceof ExportDefaultDeclaration and
-       (@clause instanceof Assign or @clause instanceof Class)
-      code.push @makeCode 'var '
-      @clause.moduleDeclaration = 'export'
+    if @ not instanceof ExportDefaultDeclaration
+      # For named exports, determine the appropriate keyword
+      if @clause instanceof Class
+        # Classes don't need 'const', 'let', or 'var'
+        @clause.moduleDeclaration = 'export'
+      else if @clause instanceof Assign
+        # For assignments, use 'const' for ES6 exports
+        code.push @makeCode 'const '
+        @clause.moduleDeclaration = 'export'
+      # For other constructs like functions, no additional keyword needed
 
     if @clause.body? and @clause.body instanceof Block
       code = code.concat @clause.compileToFragments o, LEVEL_TOP
@@ -3314,7 +3464,15 @@ exports.ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
       code = code.concat @clause.compileNode o
 
     if @source?.value?
-      code.push @makeCode " from #{@source.value}"
+      # Add .js extension to relative imports for ES6 module compatibility
+      sourceValue = @source.value
+      if sourceValue.match(/^['"]\.\.?\//)?  # Matches './...' or '../...'
+        # Remove quotes, add .js if no extension, re-add quotes
+        unquoted = sourceValue.slice(1, -1)
+        unless unquoted.match(/\.\w+$/)?  # If no extension
+          quoteMark = sourceValue[0]
+          sourceValue = "#{quoteMark}#{unquoted}.js#{quoteMark}"
+      code.push @makeCode " from #{sourceValue}"
       if @assertions?
         code.push @makeCode ' assert '
         code.push @assertions.compileToFragments(o)...
@@ -3578,6 +3736,47 @@ exports.Assign = class Assign extends Base
       return @compileConditional  o if @isConditional()
       return @compileSpecialMath  o if @context in ['//=', '%%=']
 
+    # ES6: Smart const/let analysis
+    needsDeclaration = false
+    declarationKeyword = 'let' # Default to let for safety
+
+    # Check if this is a simple identifier assignment
+    varName = null
+    # For chained assignments (e.g., 'tp = as = ""'), we can't use inline declarations
+    # because it would generate invalid code like "let tp = const as = ''"
+    # Instead, we need to handle this specially
+    isChainedAssignment = @value instanceof Assign and not @value.context
+
+    # Check if we're part of a chain (being compiled as the inner assignment)
+    isInnerChainedAssignment = o.chainedAssignment
+
+    # Can't declare variables inside conditionals or expressions (e.g., if (const x = ...))
+    # LEVEL_PAREN and higher means we're in an expression context, not a statement
+    isInsideExpression = o.level >= LEVEL_PAREN
+
+    if @variable.unwrapAll() instanceof IdentifierLiteral and not @context and not @moduleDeclaration and not isInnerChainedAssignment and not isInsideExpression
+      varName = @variable.unwrapAll().value
+
+      # Check if variable needs declaration (first assignment)
+      if not o.scope.check(varName)
+        # For the outer variable in a chained assignment, use let
+        # We can't use const because the assignment form doesn't work with const
+        if isChainedAssignment
+          needsDeclaration = true
+          declarationKeyword = 'let'
+        else
+          needsDeclaration = true
+
+          # Smart const/let determination:
+          # 1. Functions and classes are always const (immutable by nature)
+          # 2. For other values, scan ahead to see if reassigned
+          if @value instanceof Code or @value instanceof Class
+            declarationKeyword = 'const'
+          else
+            # Check if this variable will be reassigned in the current scope
+            # We do this without modifying the Scope class!
+            declarationKeyword = if @willBeReassignedInScope(o, varName) then 'let' else 'const'
+
     @addScopeVariables o
     if @value instanceof Code
       if @value.isStatic
@@ -3586,7 +3785,12 @@ exports.Assign = class Assign extends Base
         [properties..., prototype, name] = @variable.properties
         @value.name = name if prototype.name?.value is 'prototype'
 
+    # If this is a chained assignment, compile the inner assignment without declarations
+    if isChainedAssignment
+      o.chainedAssignment = true
     val = @value.compileToFragments o, LEVEL_LIST
+    if isChainedAssignment
+      delete o.chainedAssignment
     compiledName = @variable.compileToFragments o, LEVEL_LIST
 
     if @context is 'object'
@@ -3596,6 +3800,14 @@ exports.Assign = class Assign extends Base
       return compiledName.concat @makeCode(': '), val
 
     answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
+
+    # Prepend declaration if needed
+    # But check if the value already starts with a declaration keyword (for chained assignments)
+    if needsDeclaration
+      # Check if the first fragment already contains a declaration keyword
+      valText = val[0]?.code or ''
+      if not valText.match(/^(const|let|var)\s/)
+        answer.unshift @makeCode "#{declarationKeyword} "
     # Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
     # if we’re destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
     # The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
@@ -3882,6 +4094,42 @@ exports.Assign = class Assign extends Base
       ret.operator = @originalContext ? '='
 
     ret
+
+  # ES6: Check if a variable will be reassigned in the current scope
+  # This method is self-contained and doesn't rely on Scope class modifications!
+  willBeReassignedInScope: (o, varName) ->
+    # Track how many times this variable is assigned
+    assignmentCount = 0
+
+    # Helper to check if a node is an assignment to our variable
+    checkNode = (node) =>
+      # Check for regular assignments
+      if node instanceof Assign and
+         node.variable.unwrapAll() instanceof IdentifierLiteral and
+         node.variable.unwrapAll().value is varName
+        # Count initial assignment (no context) and compound assignments (+=, -=, etc)
+        assignmentCount++
+
+      # Check for ++ and -- operators (which are reassignments)
+      else if node instanceof Op and node.operator in ['++', '--', 'delete']
+        # Check if this operates on our variable
+        if node.first?.unwrapAll() instanceof IdentifierLiteral and
+           node.first.unwrapAll().value is varName
+          assignmentCount++
+          # Since this is a reassignment operation, we already know it needs 'let'
+          return true if assignmentCount > 1
+
+      # Continue traversing
+      true
+
+    # Look through all expressions in the current scope
+    if o.scope.expressions
+      o.scope.expressions.traverseChildren false, (child) ->
+        checkNode child
+        true
+
+    # If we find more than one assignment, it's reassigned
+    assignmentCount > 1
 
 #### FuncGlyph
 
@@ -5419,16 +5667,16 @@ exports.For = class For extends While
     else
       svar    = @source.compile o, LEVEL_LIST
       if (name or @own) and not @from and @source.unwrap() not instanceof IdentifierLiteral
-        defPart    += "#{@tab}#{ref = scope.freeVariable 'ref'} = #{svar};\n"
+        defPart    += "#{@tab}const #{ref = scope.freeVariable 'ref'} = #{svar};\n"
         svar       = ref
       if name and not @pattern and not @from
-        namePart   = "#{name} = #{svar}[#{kvar}]"
+        namePart   = "const #{name} = #{svar}[#{kvar}]"
       if not @object and not @from
         defPart += "#{@tab}#{step};\n" if step isnt stepVar
         down = stepNum < 0
         lvar = scope.freeVariable 'len' unless @step and stepNum? and down
-        declare = "#{kvarAssign}#{ivar} = 0, #{lvar} = #{svar}.length"
-        declareDown = "#{kvarAssign}#{ivar} = #{svar}.length - 1"
+        declare = "let #{kvarAssign}#{ivar} = 0, #{lvar} = #{svar}.length"
+        declareDown = "let #{kvarAssign}#{ivar} = #{svar}.length - 1"
         compare = "#{ivar} < #{lvar}"
         compareDown = "#{ivar} >= 0"
         if @step
@@ -5438,7 +5686,7 @@ exports.For = class For extends While
               declare = declareDown
           else
             compare = "#{stepVar} > 0 ? #{compare} : #{compareDown}"
-            declare = "(#{stepVar} > 0 ? (#{declare}) : #{declareDown})"
+            declare = "(#{stepVar} > 0 ? (let #{kvarAssign}#{ivar} = 0, #{lvar} = #{svar}.length) : let #{kvarAssign}#{ivar} = #{svar}.length - 1)"
           increment = "#{ivar} += #{stepVar}"
         else
           increment = "#{if kvar isnt ivar then "++#{ivar}" else "#{ivar}++"}"
@@ -5457,14 +5705,14 @@ exports.For = class For extends While
 
     varPart = "\n#{idt1}#{namePart};" if namePart
     if @object
-      forPartFragments = [@makeCode("#{kvar} in #{svar}")]
+      forPartFragments = [@makeCode("let #{kvar} in #{svar}")]
       guardPart = "\n#{idt1}if (!#{utility 'hasProp', o}.call(#{svar}, #{kvar})) continue;" if @own
     else if @from
       if @await
-        forPartFragments = new Op 'await', new Parens new Literal "#{kvar} of #{svar}"
+        forPartFragments = new Op 'await', new Parens new Literal "let #{kvar} of #{svar}"
         forPartFragments = forPartFragments.compileToFragments o, LEVEL_TOP
       else
-        forPartFragments = [@makeCode("#{kvar} of #{svar}")]
+        forPartFragments = [@makeCode("let #{kvar} of #{svar}")]
     bodyFragments = body.compileToFragments merge(o, indent: idt1), LEVEL_TOP
     if bodyFragments and bodyFragments.length > 0
       bodyFragments = [].concat @makeCode('\n'), bodyFragments, @makeCode('\n')

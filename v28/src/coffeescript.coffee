@@ -7,6 +7,8 @@
 {parser}      = require './parser'
 helpers       = require './helpers'
 SourceMap     = require './sourcemap'
+Backend       = require './backend'
+
 # Require `package.json`, which is two levels above this file, as this file is
 # evaluated from `lib/coffeescript`.
 packageJson   = require '../../package.json'
@@ -85,6 +87,7 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
         options.bare = yes
         break
 
+  parser.yy.backend = new Backend(options, parser.yy) # Inject Solar backend
   nodes = parser.parse tokens
   # If all that was requested was a POJO representation of the nodes, e.g.
   # the abstract syntax tree (AST), we can stop now and just return that
@@ -188,6 +191,7 @@ exports.tokens = withPrettyErrors (code, options) ->
 # or traverse it by using `.traverseChildren()` with a callback.
 exports.nodes = withPrettyErrors (source, options) ->
   source = lexer.tokenize source, options if typeof source is 'string'
+  parser.yy.backend = new Backend(options, parser.yy) # Inject Solar backend
   parser.parse source
 
 # This file used to export these methods; leave stubs that throw warnings
@@ -224,7 +228,8 @@ parser.lexer =
   upcomingInput: -> ''
 
 # Make all the AST nodes visible to the parser.
-parser.yy = require './nodes'
+# Load ES6 nodes (nodes6) if CS3 environment variable is set, otherwise ES5 (nodes5)
+parser.yy = require if process.env.CS3 then './nodes6' else './nodes5'
 
 # Override Jison's default error handling function.
 parser.yy.parseError = (message, {token}) ->
