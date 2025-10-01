@@ -11,9 +11,186 @@
 
   Error.stackTraceLimit = 2e308;
 
-  ({Scope} = require('./scope'));
-
   ({isUnassignable, JS_FORBIDDEN} = require('./lexer'));
+
+  // Inline Scope class for ES5 generation
+  // The Scope class regulates lexical scoping within CoffeeScript. As you
+  // generate code, you create a tree of scopes in the same shape as the nested
+  // function bodies. Each scope knows about the variables declared within it,
+  // and has a reference to its parent enclosing scope.
+  Scope = class Scope {
+    // Initialize a scope with its parent, for lookups up the chain,
+    // as well as a reference to the Block node it belongs to, which is
+    // where it should declare its variables, a reference to the function that
+    // it belongs to, and a list of variables referenced in the source code
+    // and therefore should be avoided when generating variables.
+    constructor(parent1, expressions1, method1, referencedVars) {
+      var ref1, ref2;
+      this.parent = parent1;
+      this.expressions = expressions1;
+      this.method = method1;
+      this.referencedVars = referencedVars;
+      this.variables = [
+        {
+          name: 'arguments',
+          type: 'arguments'
+        }
+      ];
+      this.comments = {};
+      this.positions = {};
+      if (!this.parent) {
+        this.utilities = {};
+      }
+      // The @root is the top-level Scope object for a given file.
+      this.root = (ref1 = (ref2 = this.parent) != null ? ref2.root : void 0) != null ? ref1 : this;
+    }
+
+    // Adds a new variable or overrides an existing one.
+    add(name, type, immediate) {
+      if (this.shared && !immediate) {
+        return this.parent.add(name, type, immediate);
+      }
+      if (Object.prototype.hasOwnProperty.call(this.positions, name)) {
+        return this.variables[this.positions[name]].type = type;
+      } else {
+        return this.positions[name] = this.variables.push({name, type}) - 1;
+      }
+    }
+
+    // When `super` is called, we need to find the name of the current method we're
+    // in, so that we know how to invoke the same method of the parent class. This
+    // can get complicated if super is being called from an inner function.
+    // `namedMethod` will walk up the scope tree until it either finds the first
+    // function object that has a name filled in, or bottoms out.
+    namedMethod() {
+      var ref1;
+      if (((ref1 = this.method) != null ? ref1.name : void 0) || !this.parent) {
+        return this.method;
+      }
+      return this.parent.namedMethod();
+    }
+
+    // Look up a variable name in lexical scope, and declare it if it does not
+    // already exist.
+    find(name, type = 'var') {
+      if (this.check(name)) {
+        return true;
+      }
+      this.add(name, type);
+      return false;
+    }
+
+    // Reserve a variable name as originating from a function parameter for this
+    // scope. No `var` required for internal references.
+    parameter(name) {
+      if (this.shared && this.parent.check(name, true)) {
+        return;
+      }
+      return this.add(name, 'param');
+    }
+
+    // Just check to see if a variable has already been declared, without reserving,
+    // walks up to the root scope.
+    check(name) {
+      var ref1;
+      return !!(this.type(name) || ((ref1 = this.parent) != null ? ref1.check(name) : void 0));
+    }
+
+    // Generate a temporary variable name at the given index.
+    temporary(name, index, single = false) {
+      var diff, endCode, letter, newCode, num, startCode;
+      if (single) {
+        startCode = name.charCodeAt(0);
+        endCode = 'z'.charCodeAt(0);
+        diff = endCode - startCode;
+        newCode = startCode + index % (diff + 1);
+        letter = String.fromCharCode(newCode);
+        num = Math.floor(index / (diff + 1));
+        return `${letter}${num || ''}`;
+      } else {
+        return `${name}${index || ''}`;
+      }
+    }
+
+    // Gets the type of a variable.
+    type(name) {
+      var j, len1, ref1, v;
+      ref1 = this.variables;
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        v = ref1[j];
+        if (v.name === name) {
+          return v.type;
+        }
+      }
+      return null;
+    }
+
+    // If we need to store an intermediate result, find an available name for a
+    // compiler-generated variable. `_var`, `_var2`, and so on...
+    freeVariable(name, options = {}) {
+      var index, ref1, temp;
+      index = 0;
+      while (true) {
+        temp = this.temporary(name, index, options.single);
+        if (!(this.check(temp) || indexOf.call(this.root.referencedVars, temp) >= 0)) {
+          break;
+        }
+        index++;
+      }
+      if ((ref1 = options.reserve) != null ? ref1 : true) {
+        this.add(temp, 'var', true);
+      }
+      return temp;
+    }
+
+    // Ensure that an assignment is made at the top of this scope
+    // (or at the top-level scope, if requested).
+    assign(name, value) {
+      this.add(name, {
+        value,
+        assigned: true
+      }, true);
+      return this.hasAssignments = true;
+    }
+
+    // Does this scope have any declared variables?
+    hasDeclarations() {
+      return !!this.declaredVariables().length;
+    }
+
+    // Return the list of variables first declared in this scope.
+    declaredVariables() {
+      var v;
+      return ((function() {
+        var j, len1, ref1, results1;
+        ref1 = this.variables;
+        results1 = [];
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          v = ref1[j];
+          if (v.type === 'var') {
+            results1.push(v.name);
+          }
+        }
+        return results1;
+      }).call(this)).sort();
+    }
+
+    // Return the list of assignments that are supposed to be made at the top
+    // of this scope.
+    assignedVariables() {
+      var j, len1, ref1, results1, v;
+      ref1 = this.variables;
+      results1 = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        v = ref1[j];
+        if (v.type.assigned) {
+          results1.push(`${v.name} = ${v.type.value}`);
+        }
+      }
+      return results1;
+    }
+
+  };
 
   // Import the helpers we plan to use.
   ({compact, flatten, extend, merge, del, starts, ends, some, addDataToNode, attachCommentsToNode, locationDataToString, throwSyntaxError, replaceUnicodeCodePointEscapes, isFunction, isPlainObject, isNumber, parseNumber} = require('./helpers'));
@@ -1191,10 +1368,35 @@
       // Wrap up the given nodes as a **Block**, unless it already happens
       // to be one.
       static wrap(nodes) {
+        var block, first, last, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8;
+        if (nodes instanceof Block) {
+          return nodes;
+        }
+        if (nodes == null) {
+          return new Block([]);
+        }
+        if (!Array.isArray(nodes)) {
+          block = new Block([nodes]);
+          if (nodes.locationData != null) {
+            block.locationData = nodes.locationData;
+          }
+          return block;
+        }
         if (nodes.length === 1 && nodes[0] instanceof Block) {
           return nodes[0];
         }
-        return new Block(nodes);
+        block = new Block(nodes);
+        // Preserve location data from first to last node
+        if (nodes.length > 0 && ((ref1 = (first = nodes[0])) != null ? ref1.locationData : void 0) && ((ref2 = (last = nodes[nodes.length - 1])) != null ? ref2.locationData : void 0)) {
+          block.locationData = {
+            first_line: first.locationData.first_line,
+            first_column: first.locationData.first_column,
+            last_line_exclusive: (ref3 = last.locationData.last_line_exclusive) != null ? ref3 : last.locationData.last_line,
+            last_column_exclusive: (ref4 = last.locationData.last_column_exclusive) != null ? ref4 : last.locationData.last_column + 1,
+            range: [(ref5 = (ref6 = first.locationData.range) != null ? ref6[0] : void 0) != null ? ref5 : 0, (ref7 = (ref8 = last.locationData.range) != null ? ref8[1] : void 0) != null ? ref7 : 0]
+          };
+        }
+        return block;
       }
 
       astNode(o) {
@@ -3703,8 +3905,11 @@
           indent = isCompact ? '' : idt;
           key = prop instanceof Assign && prop.context === 'object' ? prop.variable : prop instanceof Assign ? (!this.lhs ? prop.operatorToken.error(`unexpected ${prop.operatorToken.value}`) : void 0, prop.variable) : prop;
           if (key instanceof Value && key.hasProperties()) {
-            if (prop.context === 'object' || !key.this) {
-              key.error('invalid object key');
+            // Allow @property shorthand in objects (e.g., {@a} becomes {a: this.a})
+            if (!(key.this && !(prop instanceof Assign))) {
+              if (prop.context === 'object' || !key.this) {
+                key.error('invalid object key');
+              }
             }
             key = key.properties[0].name;
             prop = new Assign(key, prop, 'object');
@@ -3809,8 +4014,11 @@
         ({variable, context, operatorToken} = property);
         key = property instanceof Assign && context === 'object' ? variable : property instanceof Assign ? (!this.lhs ? operatorToken.error(`unexpected ${operatorToken.value}`) : void 0, variable) : property;
         if (key instanceof Value && key.hasProperties()) {
-          if (!(context !== 'object' && key.this)) {
-            key.error('invalid object key');
+          // Allow @property shorthand in objects (e.g., {@a} becomes {a: this.a})
+          if (!(key.this && !(property instanceof Assign))) {
+            if (!(context !== 'object' && key.this)) {
+              key.error('invalid object key');
+            }
           }
           if (property instanceof Assign) {
             return new ObjectProperty({
