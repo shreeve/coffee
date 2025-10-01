@@ -458,7 +458,10 @@
             heregexCommentTokens: this.$(o.heregexCommentTokens)
           });
         case 'PassthroughLiteral':
-          return new this.ast.PassthroughLiteral(this.$(o.value));
+          return new this.ast.PassthroughLiteral(this.$(o.value), {
+            here: this.$(o.here),
+            generated: this.$(o.generated)
+          });
         case 'StatementLiteral':
           return new this.ast.StatementLiteral(this.$(o.value));
         case 'ComputedPropertyName':
