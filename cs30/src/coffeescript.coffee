@@ -3,29 +3,27 @@
 # contains the main entry functions for tokenizing, parsing, and compiling
 # source CoffeeScript into JavaScript.
 
-{Lexer}       = require './lexer'
-{parser}      = require './parser'
-helpers       = require './helpers'
-SourceMap     = require './sourcemap'
-Backend       = require './backend'
-
+import {Lexer} from './lexer'
+import {parser} from './parser'
+import * as helpers from './helpers'
+import {SourceMap} from './sourcemap'
+import {Backend} from './backend'
+import * as nodes from './nodes'
 # Require `package.json`, which is two levels above this file, as this file is
 # evaluated from `lib/coffeescript`.
-packageJson   = require '../../package.json'
+import packageJson from '../../package.json'
 
 # The current CoffeeScript version number.
-exports.VERSION = packageJson.version
+export VERSION = packageJson.version
 
-exports.FILE_EXTENSIONS = FILE_EXTENSIONS = ['.coffee', '.litcoffee', '.coffee.md']
+export FILE_EXTENSIONS = ['.coffee', '.litcoffee', '.coffee.md']
 
 # Expose helpers for testing.
-exports.helpers = helpers
+export {helpers}
 
+# Export SourceMap static methods for stack trace support
 {getSourceMap, registerCompiled} = SourceMap
-# This is exported to enable an external module to implement caching of
-# sourcemaps. This is used only when `patchStackTrace` has been called to adjust
-# stack traces for files with cached source maps.
-exports.registerCompiled = registerCompiled
+export {registerCompiled, getSourceMap}
 
 # Function that allows for btoa in both nodejs and the browser.
 base64encode = (src) -> switch
@@ -61,7 +59,7 @@ withPrettyErrors = (fn) ->
 # in which case this returns a `{js, v3SourceMap, sourceMap}`
 # object, where sourceMap is a sourcemap.coffee#SourceMap object, handy for
 # doing programmatic lookups.
-exports.compile = compile = withPrettyErrors (code, options = {}) ->
+export compile = withPrettyErrors (code, options = {}) ->
   # Clone `options`, to avoid mutating the `options` object passed in.
   options = Object.assign {}, options
 
@@ -142,29 +140,6 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
   if generateSourceMap
     v3SourceMap = map.generate options, code
 
-  if options.transpile
-    if typeof options.transpile isnt 'object'
-      # This only happens if run via the Node API and `transpile` is set to
-      # something other than an object.
-      throw new Error 'The transpile option must be given an object with options to pass to Babel'
-
-    # Get the reference to Babel that we have been passed if this compiler
-    # is run via the CLI or Node API.
-    transpiler = options.transpile.transpile
-    delete options.transpile.transpile
-
-    transpilerOptions = Object.assign {}, options.transpile
-
-    # See https://github.com/babel/babel/issues/827#issuecomment-77573107:
-    # Babel can take a v3 source map object as input in `inputSourceMap`
-    # and it will return an *updated* v3 source map object in its output.
-    if v3SourceMap and not transpilerOptions.inputSourceMap?
-      transpilerOptions.inputSourceMap = v3SourceMap
-    transpilerOutput = transpiler js, transpilerOptions
-    js = transpilerOutput.code
-    if v3SourceMap and transpilerOutput.map
-      v3SourceMap = transpilerOutput.map
-
   if options.inlineMap
     encoded = base64encode JSON.stringify v3SourceMap
     sourceMapDataURI = "//# sourceMappingURL=data:application/json;base64,#{encoded}"
@@ -183,13 +158,13 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
     js
 
 # Tokenize a string of CoffeeScript code, and return the array of tokens.
-exports.tokens = withPrettyErrors (code, options) ->
+export tokens = withPrettyErrors (code, options) ->
   lexer.tokenize code, options
 
 # Parse a string of CoffeeScript code or an array of lexed tokens, and
 # return the AST. You can then compile it by calling `.compile()` on the root,
 # or traverse it by using `.traverseChildren()` with a callback.
-exports.nodes = withPrettyErrors (source, options) ->
+export nodes = withPrettyErrors (source, options) ->
   source = lexer.tokenize source, options if typeof source is 'string'
   parser.yy.backend = new Backend(options, parser.yy) # Inject Solar backend
   parser.parse source
@@ -199,8 +174,9 @@ exports.nodes = withPrettyErrors (source, options) ->
 # separate entrypoints for Node and non-Node environments, so that static
 # analysis tools don’t choke on Node packages when compiling for a non-Node
 # environment.
-exports.run = exports.eval = ->
+export run = ->
   throw new Error 'require index.coffee, not this file'
+export {run as eval}
 
 # Instantiate a Lexer for our use here.
 lexer = new Lexer
@@ -228,7 +204,7 @@ parser.lexer =
   upcomingInput: -> ''
 
 # Make all the AST nodes visible to the parser.
-parser.yy = require './nodes'
+parser.yy = nodes
 
 # Override Jison's default error handling function.
 parser.yy.parseError = (message, {token}) ->
@@ -254,7 +230,7 @@ parser.yy.parseError = (message, {token}) ->
   # from the lexer.
   helpers.throwSyntaxError "unexpected #{errorText}", errorLoc
 
-exports.patchStackTrace = ->
+export patchStackTrace = ->
   # Based on http://v8.googlecode.com/svn/branches/bleeding_edge/src/messages.js
   # Modified to handle sourceMap
   formatSourcePosition = (frame, getSourceMapping) ->

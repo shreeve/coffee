@@ -1,34 +1,13 @@
 # Node.js Implementation
-CoffeeScript  = require './coffeescript'
-fs            = require 'fs'
-vm            = require 'vm'
-path          = require 'path'
+import * as CoffeeScript from './coffeescript'
+import fs from 'fs'
+import vm from 'vm'
+import path from 'path'
 
 helpers       = CoffeeScript.helpers
 
-CoffeeScript.transpile = (js, options) ->
-  try
-    babel = require '@babel/core'
-  catch
-    try
-      babel = require 'babel-core'
-    catch
-      # This error is only for Node, as CLI users will see a different error
-      # earlier if they don’t have Babel installed.
-      throw new Error 'To use the transpile option, you must have the \'@babel/core\' module installed'
-  babel.transform js, options
-
-# The `compile` method shared by the CLI, Node and browser APIs.
-universalCompile = CoffeeScript.compile
-# The `compile` method particular to the Node API.
-CoffeeScript.compile = (code, options) ->
-  # Pass a reference to Babel into the compiler, so that the transpile option
-  # is available in the Node API. We need to do this so that tools like Webpack
-  # can `require('coffeescript')` and build correctly, without trying to
-  # require Babel.
-  if options?.transpile
-    options.transpile.transpile = CoffeeScript.transpile
-  universalCompile.call CoffeeScript, code, options
+# The `compile` method is directly available from coffeescript module
+# No need for transpilation support
 
 # Compile and execute a string of CoffeeScript (on the server), correctly
 # setting `__filename`, `__dirname`, and relative `require()`.
@@ -135,23 +114,22 @@ CoffeeScript._compileFile = (filename, options = {}) ->
 
   CoffeeScript._compileRawFileContent raw, filename, options
 
-module.exports = CoffeeScript
+export default CoffeeScript
 
-# Explicitly define all named exports so that Node’s automatic detection of
-# named exports from CommonJS packages finds all of them. This enables consuming
-# packages to write code like `import { compile } from 'coffeescript'`.
-# Don’t simplify this into a loop or similar; the `module.exports.name` part is
-# essential for Node’s algorithm to successfully detect the name.
-module.exports.VERSION = CoffeeScript.VERSION
-module.exports.FILE_EXTENSIONS = CoffeeScript.FILE_EXTENSIONS
-module.exports.helpers = CoffeeScript.helpers
-module.exports.registerCompiled = CoffeeScript.registerCompiled
-module.exports.compile = CoffeeScript.compile
-module.exports.tokens = CoffeeScript.tokens
-module.exports.nodes = CoffeeScript.nodes
-module.exports.eval = CoffeeScript.eval
-module.exports.run = CoffeeScript.run
-module.exports.transpile = CoffeeScript.transpile
-module.exports.patchStackTrace = CoffeeScript.patchStackTrace
-module.exports._compileRawFileContent = CoffeeScript._compileRawFileContent
-module.exports._compileFile = CoffeeScript._compileFile
+# Named exports for backwards compatibility and better tree-shaking
+export {
+  VERSION,
+  FILE_EXTENSIONS,
+  helpers,
+  registerCompiled,
+  compile,
+  tokens,
+  nodes,
+  patchStackTrace
+} from './coffeescript'
+
+# Export the modified functions from this module
+export {CoffeeScript.eval as eval}
+export {CoffeeScript.run as run}
+export {CoffeeScript._compileRawFileContent as _compileRawFileContent}
+export {CoffeeScript._compileFile as _compileFile}

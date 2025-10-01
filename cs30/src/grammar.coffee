@@ -821,6 +821,4 @@ operators = """
 # Export the processed grammar and operators for the parser generator. Unlike
 # the original implementation, we no longer extract and pass tokens separately,
 # the parser generator can derive them automatically from the BNF grammar.
-module.exports =
-  grammar: grammar
-  operators: operators
+export {grammar, operators}

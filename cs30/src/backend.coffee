@@ -2,7 +2,9 @@
 # Backend - Converts Solar directives (pure data) to CoffeeScript AST nodes
 # ==============================================================================
 
-class Backend
+import util from 'util'
+
+export class Backend
   constructor: (@options = {}, @ast = {}) ->
     @currentDirective = null
     @currentRule      = null
@@ -70,7 +72,6 @@ class Backend
       result.updateLocationDataIfMissing?(@currentLocationData)
 
     if global.process?.env?.SOLAR_DEBUG
-      util = require 'util'
       outName = result?.constructor?.name ? typeof result
       console.log "[Solar] result:", outName, util.inspect(result, {depth: 3, colors: true})
 
@@ -177,7 +178,6 @@ class Backend
           body = @ast.Block.wrap body
 
           if global.process?.env?.SOLAR_DEBUG
-            util = require 'util'
             console.log "[Solar] loop.addBody loopNode:", loopNode?.constructor?.name
             console.log "[Solar] loop.addBody body:", util.inspect(body, {depth: 2, colors: true})
 
@@ -373,5 +373,3 @@ class Backend
       else
         console.warn "Unknown $ast type:", o.$ast
         new @ast.Literal "# Missing AST node: #{o.$ast}"
-
-module.exports = Backend
