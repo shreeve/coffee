@@ -42,8 +42,8 @@ class Backend
         @currentLocationData =
           first_line: firstPos.first_line
           first_column: firstPos.first_column
-          last_line: lastPos.last_line
-          last_column: lastPos.last_column
+          last_line_exclusive: lastPos.last_line_exclusive ? lastPos.last_line
+          last_column_exclusive: lastPos.last_column_exclusive ? (lastPos.last_column + 1)
           range: [firstPos.range?[0] ? 0, lastPos.range?[1] ? 0]
     else
       @currentLocationData = null
@@ -157,6 +157,9 @@ class Backend
         # Handle addElse operation for if-else chains
         if o.addElse?
           [ifNode, elseBody] = o.addElse.map (item) => @$(item)
+          # Ensure elseBody has location data
+          if elseBody and not elseBody.locationData and @currentLocationData
+            elseBody.locationData = @currentLocationData
           ifNode.addElse elseBody
           return ifNode
 

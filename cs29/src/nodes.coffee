@@ -849,8 +849,8 @@ exports.Block = class Block extends Base
       block.locationData =
         first_line: first.locationData.first_line
         first_column: first.locationData.first_column
-        last_line: last.locationData.last_line
-        last_column: last.locationData.last_column
+        last_line_exclusive: last.locationData.last_line_exclusive ? last.locationData.last_line
+        last_column_exclusive: last.locationData.last_column_exclusive ? (last.locationData.last_column + 1)
         range: [first.locationData.range?[0] ? 0, last.locationData.range?[1] ? 0]
     block
 
