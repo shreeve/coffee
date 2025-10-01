@@ -974,9 +974,38 @@
       }
 
       compileRoot(o) {
-        var fragments;
+        var exp, fragments, imp, importFragments, imports, j, k, len1, len2, originalExpressions, others, ref1;
         this.spaced = true;
+        // Separate imports from other expressions
+        imports = [];
+        others = [];
+        ref1 = this.expressions;
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          exp = ref1[j];
+          if (exp instanceof ImportDeclaration) {
+            imports.push(exp);
+          } else {
+            others.push(exp);
+          }
+        }
+        // Temporarily replace expressions with just others, then restore
+        originalExpressions = this.expressions;
+        this.expressions = others;
         fragments = this.compileWithDeclarations(o);
+        this.expressions = originalExpressions;
+        // Compile imports and place them at the very top
+        if (imports.length > 0) {
+          importFragments = [];
+          for (k = 0, len2 = imports.length; k < len2; k++) {
+            imp = imports[k];
+            importFragments.push(...imp.compileToFragments(o));
+            importFragments.push(this.makeCode('\n'));
+          }
+          if (others.length > 0) {
+            importFragments.push(this.makeCode('\n'));
+          }
+          fragments = importFragments.concat(fragments);
+        }
         HoistTarget.expand(fragments);
         return this.compileComments(fragments);
       }
@@ -984,7 +1013,7 @@
       // Compile the expressions body for the contents of a function, with
       // declarations of all inner variables pushed up to the top.
       compileWithDeclarations(o) {
-        var assigns, declaredVariable, declaredVariables, declaredVariablesIndex, declars, exp, fragments, i, j, k, len1, len2, post, ref1, rest, scope, spaced;
+        var assigns, declars, exp, fragments, i, j, len1, post, ref1, rest, scope, spaced;
         fragments = [];
         post = [];
         ref1 = this.expressions;
@@ -1013,27 +1042,11 @@
             if (i) {
               fragments.push(this.makeCode('\n'));
             }
-            fragments.push(this.makeCode(`${this.tab}var `));
-            if (declars) {
-              declaredVariables = scope.declaredVariables();
-              for (declaredVariablesIndex = k = 0, len2 = declaredVariables.length; k < len2; declaredVariablesIndex = ++k) {
-                declaredVariable = declaredVariables[declaredVariablesIndex];
-                fragments.push(this.makeCode(declaredVariable));
-                if (Object.prototype.hasOwnProperty.call(o.scope.comments, declaredVariable)) {
-                  fragments.push(...o.scope.comments[declaredVariable]);
-                }
-                if (declaredVariablesIndex !== declaredVariables.length - 1) {
-                  fragments.push(this.makeCode(', '));
-                }
-              }
+            if (this.spaced) {
+              // ES6: Skip all hoisting - variables will be declared at first assignment
+              // This completely removes the ES5-style variable hoisting pattern
+              fragments.push(this.makeCode('\n'));
             }
-            if (assigns) {
-              if (declars) {
-                fragments.push(this.makeCode(`,\n${this.tab + TAB}`));
-              }
-              fragments.push(this.makeCode(scope.assignedVariables().join(`,\n${this.tab + TAB}`)));
-            }
-            fragments.push(this.makeCode(`;\n${this.spaced ? '\n' : ''}`));
           } else if (fragments.length && post.length) {
             fragments.push(this.makeCode("\n"));
           }
@@ -1191,6 +1204,7 @@
       // Wrap up the given nodes as a **Block**, unless it already happens
       // to be one.
       static wrap(nodes) {
+        var block, first, last, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8;
         if (nodes instanceof Block) {
           return nodes;
         }
@@ -1198,12 +1212,27 @@
           return new Block([]);
         }
         if (!Array.isArray(nodes)) {
-          return new Block([nodes]);
+          block = new Block([nodes]);
+          if (nodes.locationData != null) {
+            block.locationData = nodes.locationData;
+          }
+          return block;
         }
         if (nodes.length === 1 && nodes[0] instanceof Block) {
           return nodes[0];
         }
-        return new Block(nodes);
+        block = new Block(nodes);
+        // Preserve location data from first to last node
+        if (nodes.length > 0 && ((ref1 = (first = nodes[0])) != null ? ref1.locationData : void 0) && ((ref2 = (last = nodes[nodes.length - 1])) != null ? ref2.locationData : void 0)) {
+          block.locationData = {
+            first_line: first.locationData.first_line,
+            first_column: first.locationData.first_column,
+            last_line_exclusive: (ref3 = last.locationData.last_line_exclusive) != null ? ref3 : last.locationData.last_line,
+            last_column_exclusive: (ref4 = last.locationData.last_column_exclusive) != null ? ref4 : last.locationData.last_column + 1,
+            range: [(ref5 = (ref6 = first.locationData.range) != null ? ref6[0] : void 0) != null ? ref5 : 0, (ref7 = (ref8 = last.locationData.range) != null ? ref8[1] : void 0) != null ? ref7 : 0]
+          };
+        }
+        return block;
       }
 
       astNode(o) {
@@ -4857,7 +4886,7 @@
 
   exports.ImportDeclaration = ImportDeclaration = class ImportDeclaration extends ModuleDeclaration {
     compileNode(o) {
-      var code, ref1;
+      var code, quoteMark, ref1, sourceValue, unquoted;
       this.checkScope(o, 'import');
       o.importedSymbols = [];
       code = [];
@@ -4869,7 +4898,17 @@
         if (this.clause !== null) {
           code.push(this.makeCode(' from '));
         }
-        code.push(this.makeCode(this.source.value));
+        // Add .js extension to relative imports for ES6 module compatibility
+        sourceValue = this.source.value;
+        if (sourceValue.match(/^['"]\.\.?\//) != null) {
+          // Remove quotes, add .js if no extension, re-add quotes
+          unquoted = sourceValue.slice(1, -1);
+          if (unquoted.match(/\.\w+$/) == null) {
+            quoteMark = sourceValue[0];
+            sourceValue = `${quoteMark}${unquoted}.js${quoteMark}`; // If no extension
+          } // Matches './...' or '../...'
+        }
+        code.push(this.makeCode(sourceValue));
         if (this.assertions != null) {
           code.push(this.makeCode(' assert '));
           code.push(...this.assertions.compileToFragments(o));
@@ -4947,10 +4986,18 @@
       if (this instanceof ExportDefaultDeclaration) {
         code.push(this.makeCode('default '));
       }
-      if (!(this instanceof ExportDefaultDeclaration) && (this.clause instanceof Assign || this.clause instanceof Class)) {
-        code.push(this.makeCode('var '));
-        this.clause.moduleDeclaration = 'export';
+      if (!(this instanceof ExportDefaultDeclaration)) {
+        // For named exports, determine the appropriate keyword
+        if (this.clause instanceof Class) {
+          // Classes don't need 'const', 'let', or 'var'
+          this.clause.moduleDeclaration = 'export';
+        } else if (this.clause instanceof Assign) {
+          // For assignments, use 'const' for ES6 exports
+          code.push(this.makeCode('const '));
+          this.clause.moduleDeclaration = 'export';
+        }
       }
+      // For other constructs like functions, no additional keyword needed
       if ((this.clause.body != null) && this.clause.body instanceof Block) {
         code = code.concat(this.clause.compileToFragments(o, LEVEL_TOP));
       } else {
@@ -5321,7 +5368,7 @@
       // we've been assigned to, for correct internal references. If the variable
       // has not been seen yet within the current scope, declare it.
       compileNode(o) {
-        var answer, compiledName, isValue, name, properties, prototype, ref1, ref2, ref3, ref4, val;
+        var answer, compiledName, declarationKeyword, isValue, name, needsDeclaration, properties, prototype, ref1, ref2, ref3, ref4, val, varName;
         isValue = this.variable instanceof Value;
         if (isValue) {
           // If `@variable` is an array or an object, we’re destructuring;
@@ -5347,6 +5394,31 @@
             return this.compileSpecialMath(o);
           }
         }
+        // ES6: Smart const/let analysis
+        needsDeclaration = false;
+        declarationKeyword = 'let'; // Default to let for safety
+        
+        // Check if this is a simple identifier assignment
+        varName = null;
+        if (this.variable.unwrapAll() instanceof IdentifierLiteral && !this.context && !this.moduleDeclaration) {
+          varName = this.variable.unwrapAll().value;
+          
+          // Check if variable needs declaration (first assignment)
+          if (!o.scope.check(varName)) {
+            needsDeclaration = true;
+            
+            // Smart const/let determination:
+            // 1. Functions and classes are always const (immutable by nature)
+            // 2. For other values, scan ahead to see if reassigned
+            if (this.value instanceof Code || this.value instanceof Class) {
+              declarationKeyword = 'const';
+            } else {
+              // Check if this variable will be reassigned in the current scope
+              // We do this WITHOUT modifying scope.litcoffee!
+              declarationKeyword = this.willBeReassignedInScope(o, varName) ? 'let' : 'const';
+            }
+          }
+        }
         this.addScopeVariables(o);
         if (this.value instanceof Code) {
           if (this.value.isStatic) {
@@ -5368,6 +5440,11 @@
           return compiledName.concat(this.makeCode(': '), val);
         }
         answer = compiledName.concat(this.makeCode(` ${this.context || '='} `), val);
+        
+        // Prepend declaration if needed
+        if (needsDeclaration) {
+          answer.unshift(this.makeCode(`${declarationKeyword} `));
+        }
         // Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
         // if we’re destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
         // The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
@@ -5815,6 +5892,36 @@
           ret.operator = (ref1 = this.originalContext) != null ? ref1 : '=';
         }
         return ret;
+      }
+
+      
+        // ES6: Check if a variable will be reassigned in the current scope
+      // This method is self-contained and doesn't rely on scope.litcoffee modifications!
+      willBeReassignedInScope(o, varName) {
+        var assignmentCount, checkNode;
+        // Track how many times this variable is assigned
+        assignmentCount = 0;
+        
+        // Helper to check if a node is an assignment to our variable
+        checkNode = (node) => {
+          if (node instanceof Assign && node.variable.unwrapAll() instanceof IdentifierLiteral && node.variable.unwrapAll().value === varName && !node.context) {
+            assignmentCount++;
+          }
+          
+          // Continue traversing
+          return true;
+        };
+        
+        // Look through all expressions in the current scope
+        if (o.scope.expressions) {
+          o.scope.expressions.traverseChildren(false, function(child) {
+            checkNode(child);
+            return true;
+          });
+        }
+        
+        // If we find more than one assignment, it's reassigned
+        return assignmentCount > 1;
       }
 
     };
