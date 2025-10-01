@@ -32,7 +32,14 @@
     "parser":  "coffee ../solar-es5.coffee -o lib/coffeescript/parser.js src/grammar.coffee",
     "build":   "coffee -c -o lib/coffeescript src/*.{lit,}coffee",
     "test":    "coffee test/runner.coffee",
-    "version": "coffee --version"
+    "version": "coffee --version",
+
+    "link5":   "ln -f src/nodes5.coffee src/nodes.coffee",
+    "link6":   "ln -f src/nodes6.coffee src/nodes.coffee",
+
+    "parser6": "./bin/coffee ../solar-es6.coffee -o ../cs30/lib/coffeescript/parser.js src/grammar.coffee",
+    "build6":  "./bin/coffee -c -o ../cs30/lib/coffeescript ../cs30/src/*.{lit,}coffee",
+    "test6":   "../cs30/bin/coffee ../cs30/test/runner.coffee"
   },
   "homepage": "https://coffeescript.org",
   "bugs": "https://github.com/jashkenas/coffeescript/issues",
