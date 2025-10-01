@@ -6,22 +6,22 @@
 import {Scope} from './scope'
 import {isUnassignable, JS_FORBIDDEN} from './lexer'
 # Import the helpers we plan to use.
-import {compact, flatten, extend, merge, del, starts, ends, some,
-addDataToNode, attachCommentsToNode, locationDataToString,
+import {compact, flatten, merge, del, starts, ends, some,
+attachCommentsToNode, locationDataToString,
 throwSyntaxError, replaceUnicodeCodePointEscapes,
 isFunction, isPlainObject, isNumber, parseNumber} from './helpers'
 
-Error.stackTraceLimit = Infinity
+# Functions required by parser - import and re-export.
+export {extend, addDataToNode} from './helpers'
 
-# Functions required by parser.
-export {extend}
-export {addDataToNode}
+# Set in compile function instead of module level to avoid IIFE wrapper
+# Error.stackTraceLimit = Infinity
 
-# Constant functions for nodes that don’t need customization.
-YES     = -> yes
-NO      = -> no
-THIS    = -> this
-NEGATE  = -> @negated = not @negated; this
+# Constant functions for nodes that don't need customization.
+export YES     = -> yes
+export NO      = -> no
+export THIS    = -> this
+export NEGATE  = -> @negated = not @negated; this
 
 #### CodeFragment
 
@@ -41,7 +41,7 @@ export class CodeFragment
     "#{@code}#{if @locationData then ": " + locationDataToString(@locationData) else ''}"
 
 # Convert an array of CodeFragments into a string.
-fragmentsToText = (fragments) ->
+export fragmentsToText = (fragments) ->
   (fragment.code for fragment in fragments).join('')
 
 #### Base
@@ -56,6 +56,7 @@ fragmentsToText = (fragments) ->
 # being requested by the surrounding function), information about the current
 # scope, and indentation level.
 export class Base
+  # Constant functions moved here to avoid IIFE wrapper
 
   compile: (o, lvl) ->
     fragmentsToText @compileToFragments o, lvl
@@ -374,30 +375,33 @@ export class Base
   # `children` are the properties to recurse into when tree walking. The
   # `children` list *is* the structure of the AST. The `parent` pointer, and
   # the pointer to the `children` are how you can traverse the tree.
-  children: []
+  # Initialize as method to avoid IIFE wrapper
+  constructor: ->
+    @children = []
+    @compiledComments = []
 
-  # `isStatement` has to do with “everything is an expression”. A few things
+  # `isStatement` has to do with "everything is an expression". A few things
   # can’t be expressions, such as `break`. Things that `isStatement` returns
   # `true` for are things that can’t be used as expressions. There are some
   # error messages that come from `nodes.coffee` due to statements ending up
   # in expression position.
-  isStatement: NO
+  isStatement: -> no
 
   # Track comments that have been compiled into fragments, to avoid outputting
   # them twice.
-  compiledComments: []
+  # (Now initialized in constructor to avoid IIFE wrapper)
 
   # `includeCommentFragments` lets `compileCommentFragments` know whether this node
   # has special awareness of how to handle comments within its output.
-  includeCommentFragments: NO
+  includeCommentFragments: -> no
 
   # `jumps` tells you if an expression, or an internal part of an expression,
   # has a flow control construct (like `break`, `continue`, or `return`)
-  # that jumps out of the normal flow of control and can’t be used as a value.
+  # that jumps out of the normal flow of control and can't be used as a value.
   # (Note that `throw` is not considered a flow control construct.)
   # This is important because flow control in the middle of an expression
   # makes no sense; we have to disallow it.
-  jumps: NO
+  jumps: -> no
 
   # If `node.shouldCache() is false`, it is safe to use `node` more than once.
   # Otherwise you need to store the value of `node` in a variable and output
@@ -408,17 +412,17 @@ export class Base
   # also cases where we might not need to cache but where we want to, for
   # example a long expression that may well be idempotent but we want to cache
   # for brevity.
-  shouldCache: YES
+  shouldCache: -> yes
 
-  isChainable: NO
-  isAssignable: NO
-  isNumber: NO
+  isChainable: -> no
+  isAssignable: -> no
+  isNumber: -> no
 
-  unwrap: THIS
-  unfoldSoak: NO
+  unwrap: -> this
+  unfoldSoak: -> no
 
   # Is this node used to assign a certain variable?
-  assigns: NO
+  assigns: -> no
 
   # For this node and all descendents, set the location data to `locationData`
   # if the location data is not already set.
@@ -698,24 +702,9 @@ export class Block extends Base
     post = @compileNode o
     {scope} = o
     if scope.expressions is this
-      declars = o.scope.hasDeclarations()
-      assigns = scope.hasAssignments
-      if declars or assigns
-        fragments.push @makeCode '\n' if i
-        fragments.push @makeCode "#{@tab}var "
-        if declars
-          declaredVariables = scope.declaredVariables()
-          for declaredVariable, declaredVariablesIndex in declaredVariables
-            fragments.push @makeCode declaredVariable
-            if Object::hasOwnProperty.call o.scope.comments, declaredVariable
-              fragments.push o.scope.comments[declaredVariable]...
-            if declaredVariablesIndex isnt declaredVariables.length - 1
-              fragments.push @makeCode ', '
-        if assigns
-          fragments.push @makeCode ",\n#{@tab + TAB}" if declars
-          fragments.push @makeCode scope.assignedVariables().join(",\n#{@tab + TAB}")
-        fragments.push @makeCode ";\n#{if @spaced then '\n' else ''}"
-      else if fragments.length and post.length
+      # ES6: No hoisting - variables declared inline at first use
+      # Skip the old hoisting logic entirely
+      if fragments.length and post.length
         fragments.push @makeCode "\n"
     fragments.concat post
 
@@ -3584,6 +3573,28 @@ export class Assign extends Base
       return @compileConditional  o if @isConditional()
       return @compileSpecialMath  o if @context in ['//=', '%%=']
 
+    # ES6: Smart const/let analysis
+    needsDeclaration = false
+    declarationKeyword = 'let' # Default to let for safety
+
+    # Check if this is a simple identifier assignment
+    varName = null
+    if @variable.unwrapAll() instanceof IdentifierLiteral and not @context and not @moduleDeclaration
+      varName = @variable.unwrapAll().value
+
+      # Check if variable needs declaration (first assignment)
+      if not o.scope.check(varName)
+        needsDeclaration = true
+
+        # Smart const/let determination:
+        # 1. Functions and classes are always const (immutable by nature)
+        # 2. For other values, scan ahead to see if reassigned
+        if @value instanceof Code or @value instanceof Class
+          declarationKeyword = 'const'
+        else
+          # Scan the current scope for reassignments to this variable
+          declarationKeyword = if @willBeReassignedInScope(o, varName) then 'let' else 'const'
+
     @addScopeVariables o
     if @value instanceof Code
       if @value.isStatic
@@ -3602,6 +3613,10 @@ export class Assign extends Base
       return compiledName.concat @makeCode(': '), val
 
     answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
+
+    # Prepend declaration if needed
+    if needsDeclaration
+      answer.unshift @makeCode "#{declarationKeyword} "
     # Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
     # if we’re destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
     # The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
@@ -3888,6 +3903,31 @@ export class Assign extends Base
       ret.operator = @originalContext ? '='
 
     ret
+
+  # ES6: Scan scope to check if variable will be reassigned
+  willBeReassignedInScope: (o, varName) ->
+    # Look through the current scope's expressions for reassignments
+    assignmentCount = 0
+
+    # Helper to check if a node is an assignment to our variable
+    checkNode = (node) =>
+      if node instanceof Assign and
+         node.variable.unwrapAll() instanceof IdentifierLiteral and
+         node.variable.unwrapAll().value is varName and
+         not node.context
+        assignmentCount++
+
+      # Recursively check child nodes
+      if node.traverseChildren
+        node.traverseChildren false, checkNode
+      true
+
+    # Check all expressions in the current scope
+    if o.scope.expressions
+      o.scope.expressions.traverseChildren false, checkNode
+
+    # If we find more than one assignment (including this one), use let
+    assignmentCount > 1
 
 #### FuncGlyph
 
@@ -5768,25 +5808,25 @@ UTILITIES =
 
 # Levels indicate a node's position in the AST. Useful for knowing if
 # parens are necessary or superfluous.
-LEVEL_TOP    = 1  # ...;
-LEVEL_PAREN  = 2  # (...)
-LEVEL_LIST   = 3  # [...]
-LEVEL_COND   = 4  # ... ? x : y
-LEVEL_OP     = 5  # !...
-LEVEL_ACCESS = 6  # ...[0]
+export LEVEL_TOP    = 1  # ...;
+export LEVEL_PAREN  = 2  # (...)
+export LEVEL_LIST   = 3  # [...]
+export LEVEL_COND   = 4  # ... ? x : y
+export LEVEL_OP     = 5  # !...
+export LEVEL_ACCESS = 6  # ...[0]
 
 # Tabs are two spaces for pretty printing.
-TAB = '  '
+export TAB = '  '
 
-SIMPLENUM = /^[+-]?\d+(?:_\d+)*$/
-SIMPLE_STRING_OMIT = /\s*\n\s*/g
-LEADING_BLANK_LINE  = /^[^\n\S]*\n/
-TRAILING_BLANK_LINE = /\n[^\n\S]*$/
-STRING_OMIT    = ///
+export SIMPLENUM = /^[+-]?\d+(?:_\d+)*$/
+export SIMPLE_STRING_OMIT = /\s*\n\s*/g
+export LEADING_BLANK_LINE  = /^[^\n\S]*\n/
+export TRAILING_BLANK_LINE = /\n[^\n\S]*$/
+export STRING_OMIT    = ///
     ((?:\\\\)+)      # Consume (and preserve) an even number of backslashes.
   | \\[^\S\n]*\n\s*  # Remove escaped newlines.
 ///g
-HEREGEX_OMIT = ///
+export HEREGEX_OMIT = ///
     ((?:\\\\)+)     # Consume (and preserve) an even number of backslashes.
   | \\(\s)          # Preserve escaped whitespace.
   | \s+(?:#.*)?     # Remove whitespace and comments.
@@ -5796,7 +5836,7 @@ HEREGEX_OMIT = ///
 # ----------------
 
 # Helper for ensuring that utility functions are assigned at the top level.
-utility = (name, o) ->
+export utility = (name, o) ->
   {root} = o.scope
   if name of root.utilities
     root.utilities[name]
@@ -5805,7 +5845,7 @@ utility = (name, o) ->
     root.assign ref, UTILITIES[name] o
     root.utilities[name] = ref
 
-multident = (code, tab, includingFirstLine = yes) ->
+export multident = (code, tab, includingFirstLine = yes) ->
   endsWithNewLine = code[code.length - 1] is '\n'
   code = (if includingFirstLine then tab else '') + code.replace /\n/g, "$&#{tab}"
   code = code.replace /\s+$/, ''
@@ -5816,7 +5856,7 @@ multident = (code, tab, includingFirstLine = yes) ->
 # indent a line of code, now we must account for the possibility of comments
 # preceding that line of code. If there are such comments, indent each line of
 # such comments, and _then_ indent the first following line of code.
-indentInitial = (fragments, node) ->
+export indentInitial = (fragments, node) ->
   for fragment, fragmentIndex in fragments
     if fragment.isHereComment
       fragment.code = multident fragment.code, node.tab
@@ -5825,7 +5865,7 @@ indentInitial = (fragments, node) ->
       break
   fragments
 
-hasLineComments = (node) ->
+export hasLineComments = (node) ->
   return no unless node.comments
   for comment in node.comments
     return yes if comment.here is no
@@ -5833,7 +5873,7 @@ hasLineComments = (node) ->
 
 # Move the `comments` property from one object to another, deleting it from
 # the first object.
-moveComments = (from, to) ->
+export moveComments = (from, to) ->
   return unless from?.comments
   attachCommentsToNode from.comments, to
   delete from.comments
@@ -5841,7 +5881,7 @@ moveComments = (from, to) ->
 # Sometimes when compiling a node, we want to insert a fragment at the start
 # of an array of fragments; but if the start has one or more comment fragments,
 # we want to insert this fragment after those but before any non-comments.
-unshiftAfterComments = (fragments, fragmentToInsert) ->
+export unshiftAfterComments = (fragments, fragmentToInsert) ->
   inserted = no
   for fragment, fragmentIndex in fragments when not fragment.isComment
     fragments.splice fragmentIndex, 0, fragmentToInsert
@@ -5850,23 +5890,23 @@ unshiftAfterComments = (fragments, fragmentToInsert) ->
   fragments.push fragmentToInsert unless inserted
   fragments
 
-isLiteralArguments = (node) ->
+export isLiteralArguments = (node) ->
   node instanceof IdentifierLiteral and node.value is 'arguments'
 
-isLiteralThis = (node) ->
+export isLiteralThis = (node) ->
   node instanceof ThisLiteral or (node instanceof Code and node.bound)
 
-shouldCacheOrIsAssignable = (node) -> node.shouldCache() or node.isAssignable?()
+export shouldCacheOrIsAssignable = (node) -> node.shouldCache() or node.isAssignable?()
 
 # Unfold a node's child if soak, then tuck the node under created `If`
-unfoldSoak = (o, parent, name) ->
+export unfoldSoak = (o, parent, name) ->
   return unless ifn = parent[name].unfoldSoak o
   parent[name] = ifn.body
   ifn.body = new Value parent
   ifn
 
 # Constructs a string or regex by escaping certain characters.
-makeDelimitedLiteral = (body, {delimiter: delimiterOption, escapeNewlines, double, includeDelimiters = yes, escapeDelimiter = yes, convertTrailingNullEscapes} = {}) ->
+export makeDelimitedLiteral = (body, {delimiter: delimiterOption, escapeNewlines, double, includeDelimiters = yes, escapeDelimiter = yes, convertTrailingNullEscapes} = {}) ->
   body = '(?:)' if body is '' and delimiterOption is '/'
   escapeTemplateLiteralCurlies = delimiterOption is '`'
   regex = ///
@@ -5923,7 +5963,7 @@ makeDelimitedLiteral = (body, {delimiter: delimiterOption, escapeNewlines, doubl
   printedDelimiter = if includeDelimiters then delimiterOption else ''
   "#{printedDelimiter}#{body}#{printedDelimiter}"
 
-sniffDirectives = (expressions, {notFinalExpression} = {}) ->
+export sniffDirectives = (expressions, {notFinalExpression} = {}) ->
   index = 0
   lastIndex = expressions.length - 1
   while index <= lastIndex
@@ -5938,7 +5978,7 @@ sniffDirectives = (expressions, {notFinalExpression} = {}) ->
       .withLocationDataFrom expression
     index++
 
-astAsBlockIfNeeded = (node, o) ->
+export astAsBlockIfNeeded = (node, o) ->
   unwrapped = node.unwrap()
   if unwrapped instanceof Block and unwrapped.expressions.length > 1
     unwrapped.makeReturn null, yes
@@ -5947,20 +5987,20 @@ astAsBlockIfNeeded = (node, o) ->
     node.ast o, LEVEL_PAREN
 
 # Helpers for `mergeLocationData` and `mergeAstLocationData` below.
-lesser  = (a, b) -> if a < b then a else b
-greater = (a, b) -> if a > b then a else b
+export lesser  = (a, b) -> if a < b then a else b
+export greater = (a, b) -> if a > b then a else b
 
-isAstLocGreater = (a, b) ->
+export isAstLocGreater = (a, b) ->
   return yes if a.line > b.line
   return no unless a.line is b.line
   a.column > b.column
 
-isLocationDataStartGreater = (a, b) ->
+export isLocationDataStartGreater = (a, b) ->
   return yes if a.first_line > b.first_line
   return no unless a.first_line is b.first_line
   a.first_column > b.first_column
 
-isLocationDataEndGreater = (a, b) ->
+export isLocationDataEndGreater = (a, b) ->
   return yes if a.last_line > b.last_line
   return no unless a.last_line is b.last_line
   a.last_column > b.last_column
@@ -6095,7 +6135,7 @@ export jisonLocationDataToAstLocationData = ({first_line, first_column, last_lin
     end:   range[1]
 
 # Generate a zero-width location data that corresponds to the end of another node’s location.
-zeroWidthLocationDataFromEndLocation = ({range: [, endRange], last_line_exclusive, last_column_exclusive}) -> {
+export zeroWidthLocationDataFromEndLocation = ({range: [, endRange], last_line_exclusive, last_column_exclusive}) -> {
   first_line: last_line_exclusive
   first_column: last_column_exclusive
   last_line: last_line_exclusive
@@ -6105,7 +6145,7 @@ zeroWidthLocationDataFromEndLocation = ({range: [, endRange], last_line_exclusiv
   range: [endRange, endRange]
 }
 
-extractSameLineLocationDataFirst = (numChars) -> ({range: [startRange], first_line, first_column}) -> {
+export extractSameLineLocationDataFirst = (numChars) -> ({range: [startRange], first_line, first_column}) -> {
   first_line
   first_column
   last_line: first_line
@@ -6115,7 +6155,7 @@ extractSameLineLocationDataFirst = (numChars) -> ({range: [startRange], first_li
   range: [startRange, startRange + numChars]
 }
 
-extractSameLineLocationDataLast = (numChars) -> ({range: [, endRange], last_line, last_column, last_line_exclusive, last_column_exclusive}) -> {
+export extractSameLineLocationDataLast = (numChars) -> ({range: [, endRange], last_line, last_column, last_line_exclusive, last_column_exclusive}) -> {
   first_line: last_line
   first_column: last_column - (numChars - 1)
   last_line: last_line
@@ -6131,7 +6171,7 @@ extractSameLineLocationDataLast = (numChars) -> ({range: [, endRange], last_line
 # Technically the last_line/last_column calculation here could be
 # incorrect if the ending brace is preceded by a newline, but
 # last_line/last_column aren’t used for AST generation anyway.
-emptyExpressionLocationData = ({interpolationNode: element, openingBrace, closingBrace}) ->
+export emptyExpressionLocationData = ({interpolationNode: element, openingBrace, closingBrace}) ->
   first_line:            element.locationData.first_line
   first_column:          element.locationData.first_column + openingBrace.length
   last_line:             element.locationData.last_line

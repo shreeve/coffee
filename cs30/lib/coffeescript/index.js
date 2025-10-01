@@ -3,47 +3,44 @@ import * as CoffeeScript from './coffeescript.js';
 import fs from 'fs';
 import vm from 'vm';
 import path from 'path';
+import Module from 'module';
 
 
-let coffeeCompileFile, coffeeCompileRawFileContent, coffeeEval, coffeeRun, ext, helpers, i, len, ref;
-let hasProp = {}.hasOwnProperty;
 
-helpers = CoffeeScript.helpers;
+const helpers = CoffeeScript.helpers;
 
 CoffeeScript.run = function(code, options = {}) {
-  let answer, dir, mainModule, ref;
-  mainModule = require.main;
+  const mainModule = process.mainModule || {};
   mainModule.filename = process.argv[1] = options.filename ? fs.realpathSync(options.filename) : helpers.anonymousFileName();
   mainModule.moduleCache = mainModule.moduleCache && {};
-  dir = options.filename != null ? path.dirname(fs.realpathSync(options.filename)) : fs.realpathSync('.');
-  mainModule.paths = require('module')._nodeModulePaths(dir);
+  const dir = options.filename != null ? path.dirname(fs.realpathSync(options.filename)) : fs.realpathSync('.');
+  mainModule.paths = Module._nodeModulePaths(dir);
   mainModule.options = options;
   options.filename = mainModule.filename;
   options.inlineMap = true;
-  answer = CoffeeScript.compile(code, options);
+  const answer = CoffeeScript.compile(code, options);
   code = (ref = answer.js) != null ? ref : answer;
   return mainModule._compile(code, mainModule.filename);
 };
 
 CoffeeScript.eval = function(code, options = {}) {
-  let Module, _module, _require, createContext, i, isContext, js, k, len, o, r, ref, ref1, ref2, ref3, sandbox, v;
   if (!(code = code.trim())) {
     return;
   }
-  createContext = (ref = vm.Script.createContext) != null ? ref : vm.createContext;
-  isContext = (ref1 = vm.isContext) != null ? ref1 : function(ctx) {
+  const createContext = vm.Script.createContext != null ? vm.Script.createContext : vm.createContext;
+  const isContext = vm.isContext != null ? vm.isContext : function(ctx) {
     return options.sandbox instanceof createContext().constructor;
   };
   if (createContext) {
     if (options.sandbox != null) {
       if (isContext(options.sandbox)) {
-        sandbox = options.sandbox;
+        let sandbox = options.sandbox;
       } else {
         sandbox = createContext();
-        ref2 = options.sandbox;
-        for (k in ref2) {
+        const ref2 = options.sandbox;
+        for (let k in ref2) {
           if (!hasProp.call(ref2, k)) continue;
-          v = ref2[k];
+          const v = ref2[k];
           sandbox[k] = v;
         }
       }
@@ -54,33 +51,27 @@ CoffeeScript.eval = function(code, options = {}) {
     sandbox.__filename = options.filename || 'eval';
     sandbox.__dirname = path.dirname(sandbox.__filename);
     if (!(sandbox !== global || sandbox.module || sandbox.require)) {
-      Module = require('module');
-      sandbox.module = _module = new Module(options.modulename || 'eval');
-      sandbox.require = _require = function(path) {
+      const _module = new Module(options.modulename || 'eval');
+      sandbox.module = _module;
+      const _require = function(path) {
         return Module._load(path, _module, true);
       };
+      sandbox.require = _require;
       _module.filename = sandbox.__filename;
-      ref3 = Object.getOwnPropertyNames(require);
-      for (i = 0, len = ref3.length; i < len; i++) {
-        r = ref3[i];
-        if (r !== 'paths' && r !== 'arguments' && r !== 'caller') {
-          _require[r] = require[r];
-        }
-      }
       _require.paths = _module.paths = Module._nodeModulePaths(process.cwd());
       _require.resolve = function(request) {
         return Module._resolveFilename(request, _module);
       };
     }
   }
-  o = {};
-  for (k in options) {
+  const o = {};
+  for (let k in options) {
     if (!hasProp.call(options, k)) continue;
-    v = options[k];
+    const v = options[k];
     o[k] = v;
   }
   o.bare = true;
-  js = CoffeeScript.compile(code, o);
+  const js = CoffeeScript.compile(code, o);
   if (sandbox === global) {
     return vm.runInThisContext(js);
   } else {
@@ -89,11 +80,10 @@ CoffeeScript.eval = function(code, options = {}) {
 };
 
 if (require.extensions) {
-  ref = CoffeeScript.FILE_EXTENSIONS;
-  for (i = 0, len = ref.length; i < len; i++) {
-    ext = ref[i];
+  const ref = CoffeeScript.FILE_EXTENSIONS;
+  for (let i = 0, len = ref.length; i < len; i++) {
+    const ext = ref[i];
     (function(ext) {
-      let base;
       return (base = require.extensions)[ext] != null ? base[ext] : base[ext] = function() {
         throw new Error(`ES6 modules do not support runtime .coffee file loading. Please compile .coffee files to .js first.`);
       };
@@ -102,25 +92,23 @@ if (require.extensions) {
 }
 
 CoffeeScript._compileRawFileContent = function(raw, filename, options = {}) {
-  let answer, err, stripped;
-  stripped = raw.charCodeAt(0) === 0xFEFF ? raw.substring(1) : raw;
+  const stripped = raw.charCodeAt(0) === 0xFEFF ? raw.substring(1) : raw;
   options = Object.assign({}, options, {
     filename: filename,
     literate: helpers.isLiterate(filename),
     sourceFiles: [filename]
   });
   try {
-    answer = CoffeeScript.compile(stripped, options);
+    const answer = CoffeeScript.compile(stripped, options);
   } catch (error) {
-    err = error;
+    const err = error;
     throw helpers.updateSyntaxError(err, stripped, filename);
   }
   return answer;
 };
 
 CoffeeScript._compileFile = function(filename, options = {}) {
-  let raw;
-  raw = fs.readFileSync(filename, 'utf8');
+  const raw = fs.readFileSync(filename, 'utf8');
   return CoffeeScript._compileRawFileContent(raw, filename, options);
 };
 
@@ -135,15 +123,15 @@ export {
   tokens,
   parseNodes as nodes,
   patchStackTrace
-} from './coffeescript';
+} from './coffeescript.js';
 
-coffeeEval = CoffeeScript.eval;
+const coffeeEval = CoffeeScript.eval;
 
-coffeeRun = CoffeeScript.run;
+const coffeeRun = CoffeeScript.run;
 
-coffeeCompileRawFileContent = CoffeeScript._compileRawFileContent;
+const coffeeCompileRawFileContent = CoffeeScript._compileRawFileContent;
 
-coffeeCompileFile = CoffeeScript._compileFile;
+const coffeeCompileFile = CoffeeScript._compileFile;
 
 export {
   coffeeEval as eval,

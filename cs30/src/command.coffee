@@ -8,7 +8,7 @@ import fs from 'fs'
 import path from 'path'
 import * as helpers from './helpers'
 import * as optparse from './optparse'
-import * as CoffeeScript from './'
+import * as CoffeeScript from './coffeescript'
 import {spawn, exec} from 'child_process'
 import {EventEmitter} from 'events'
 

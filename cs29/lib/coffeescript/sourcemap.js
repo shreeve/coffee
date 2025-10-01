@@ -7,16 +7,14 @@
 
   // In order to produce maps, we must keep track of positions (line number, column number)
   // that originated every node in the syntax tree, and be able to generate a
-  // [map file](https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit)
-  // — which is a compact, VLQ-encoded representation of the JSON serialization
+  // map file — which is a compact, VLQ-encoded representation of the JSON serialization
   // of this information — to write out alongside the generated JavaScript.
 
   // LineMap
   // -------
-
-  // A **LineMap** object keeps track of information about original line and column
+  // A LineMap object keeps track of information about original line and column
   // positions for a single line of output JavaScript code.
-  // **SourceMaps** are implemented in terms of **LineMaps**.
+  // SourceMaps are implemented in terms of LineMaps.
   var LineMap, SourceMap;
 
   LineMap = class LineMap {
@@ -52,11 +50,10 @@
 
     // SourceMap
     // ---------
-
-      // Maps locations in a single generated JavaScript file back to locations in
+    // Maps locations in a single generated JavaScript file back to locations in
     // the original CoffeeScript source file.
 
-      // This is intentionally agnostic towards how a source map might be represented on
+    // This is intentionally agnostic towards how a source map might be represented on
     // disk. Once the compiler is ready to produce a "v3"-style source map, we can walk
     // through the arrays of line and column buffer to produce it.
     class SourceMap {
@@ -97,8 +94,7 @@
 
       // V3 SourceMap Generation
       // -----------------------
-
-        // Builds up a V3 source map, returning the generated JSON as a string.
+      // Builds up a V3 source map, returning the generated JSON as a string.
       // `options.sourceRoot` may be used to specify the sourceRoot written to the source
       // map.  Also, `options.sourceFiles` and `options.generatedFile` may be passed to
       // set "sources" and "file", respectively.
@@ -131,19 +127,20 @@
                 buffer += ",";
                 needComma = false;
               }
-              // Write the next segment. Segments can be 1, 4, or 5 values.  If just one, then it
-              // is a generated column which doesn't match anything in the source code.
+              // Write the next segment. Segments can be 1, 4, or 5 values.
+              // If just one, then it is a generated column which doesn't match anything
+              // in the source code.
 
-              // The starting column in the generated source, relative to any previous recorded
-              // column for the current line:
+              // The starting column in the generated source, relative to any previous
+              // recorded column for the current line:
               buffer += this.encodeVlq(mapping.column - lastColumn);
               lastColumn = mapping.column;
               // The index into the list of sources:
               buffer += this.encodeVlq(0);
-              // The starting line in the original source, relative to the previous source line.
+              // The starting line in the original source, relative to the previous source line:
               buffer += this.encodeVlq(mapping.sourceLine - lastSourceLine);
               lastSourceLine = mapping.sourceLine;
-              // The starting column in the original source, relative to the previous column.
+              // The starting column in the original source, relative to the previous column:
               buffer += this.encodeVlq(mapping.sourceColumn - lastSourceColumn);
               lastSourceColumn = mapping.sourceColumn;
               needComma = true;
@@ -195,7 +192,6 @@
 
     // Caching
     // -------
-
     // A static source maps cache `filename`: `map`. These are used for transforming
     // stack traces and are currently set in `CoffeeScript.compile` for all files
     // compiled with the source maps option.
@@ -203,12 +199,11 @@
 
     // Base64 VLQ Encoding
     // -------------------
-
     // Note that SourceMap VLQ encoding is "backwards".  MIDI-style VLQ encoding puts
     // the most-significant-bit (MSB) from the original value into the MSB of the VLQ
-    // encoded value (see [Wikipedia](https://en.wikipedia.org/wiki/File:Uintvar_coding.svg)).
-    // SourceMap VLQ does things the other way around, with the least significat four
-    // bits of the original value encoded into the first byte of the VLQ encoded value.
+    // encoded value (see Wikipedia). SourceMap VLQ does things the other way around,
+    // with the least significant four bits of the original value encoded into the
+    // first byte of the VLQ encoded value.
     VLQ_SHIFT = 5;
 
     VLQ_CONTINUATION_BIT = 1 << VLQ_SHIFT; // 0010 0000
@@ -223,7 +218,7 @@
 
   }).call(this);
 
-  // Our API for source maps is just the `SourceMap` class.
+  // Our API for source maps is just the SourceMap class.
   module.exports = SourceMap;
 
 }).call(this);

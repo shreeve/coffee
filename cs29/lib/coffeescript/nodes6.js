@@ -11,9 +11,186 @@
 
   Error.stackTraceLimit = 2e308;
 
-  ({Scope} = require('./scope'));
-
   ({isUnassignable, JS_FORBIDDEN} = require('./lexer'));
+
+  // Inline Scope class for ES6 generation
+  // The Scope class regulates lexical scoping within CoffeeScript. As you
+  // generate code, you create a tree of scopes in the same shape as the nested
+  // function bodies. Each scope knows about the variables declared within it,
+  // and has a reference to its parent enclosing scope.
+  Scope = class Scope {
+    // Initialize a scope with its parent, for lookups up the chain,
+    // as well as a reference to the Block node it belongs to, which is
+    // where it should declare its variables, a reference to the function that
+    // it belongs to, and a list of variables referenced in the source code
+    // and therefore should be avoided when generating variables.
+    constructor(parent1, expressions1, method1, referencedVars) {
+      var ref1, ref2;
+      this.parent = parent1;
+      this.expressions = expressions1;
+      this.method = method1;
+      this.referencedVars = referencedVars;
+      this.variables = [
+        {
+          name: 'arguments',
+          type: 'arguments'
+        }
+      ];
+      this.comments = {};
+      this.positions = {};
+      if (!this.parent) {
+        this.utilities = {};
+      }
+      // The @root is the top-level Scope object for a given file.
+      this.root = (ref1 = (ref2 = this.parent) != null ? ref2.root : void 0) != null ? ref1 : this;
+    }
+
+    // Adds a new variable or overrides an existing one.
+    add(name, type, immediate) {
+      if (this.shared && !immediate) {
+        return this.parent.add(name, type, immediate);
+      }
+      if (Object.prototype.hasOwnProperty.call(this.positions, name)) {
+        return this.variables[this.positions[name]].type = type;
+      } else {
+        return this.positions[name] = this.variables.push({name, type}) - 1;
+      }
+    }
+
+    // When `super` is called, we need to find the name of the current method we're
+    // in, so that we know how to invoke the same method of the parent class. This
+    // can get complicated if super is being called from an inner function.
+    // `namedMethod` will walk up the scope tree until it either finds the first
+    // function object that has a name filled in, or bottoms out.
+    namedMethod() {
+      var ref1;
+      if (((ref1 = this.method) != null ? ref1.name : void 0) || !this.parent) {
+        return this.method;
+      }
+      return this.parent.namedMethod();
+    }
+
+    // Look up a variable name in lexical scope, and declare it if it does not
+    // already exist.
+    find(name, type = 'var') {
+      if (this.check(name)) {
+        return true;
+      }
+      this.add(name, type);
+      return false;
+    }
+
+    // Reserve a variable name as originating from a function parameter for this
+    // scope. No `var` required for internal references.
+    parameter(name) {
+      if (this.shared && this.parent.check(name, true)) {
+        return;
+      }
+      return this.add(name, 'param');
+    }
+
+    // Just check to see if a variable has already been declared, without reserving,
+    // walks up to the root scope.
+    check(name) {
+      var ref1;
+      return !!(this.type(name) || ((ref1 = this.parent) != null ? ref1.check(name) : void 0));
+    }
+
+    // Generate a temporary variable name at the given index.
+    temporary(name, index, single = false) {
+      var diff, endCode, letter, newCode, num, startCode;
+      if (single) {
+        startCode = name.charCodeAt(0);
+        endCode = 'z'.charCodeAt(0);
+        diff = endCode - startCode;
+        newCode = startCode + index % (diff + 1);
+        letter = String.fromCharCode(newCode);
+        num = Math.floor(index / (diff + 1));
+        return `${letter}${num || ''}`;
+      } else {
+        return `${name}${index || ''}`;
+      }
+    }
+
+    // Gets the type of a variable.
+    type(name) {
+      var j, len1, ref1, v;
+      ref1 = this.variables;
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        v = ref1[j];
+        if (v.name === name) {
+          return v.type;
+        }
+      }
+      return null;
+    }
+
+    // If we need to store an intermediate result, find an available name for a
+    // compiler-generated variable. `_var`, `_var2`, and so on...
+    freeVariable(name, options = {}) {
+      var index, ref1, temp;
+      index = 0;
+      while (true) {
+        temp = this.temporary(name, index, options.single);
+        if (!(this.check(temp) || indexOf.call(this.root.referencedVars, temp) >= 0)) {
+          break;
+        }
+        index++;
+      }
+      if ((ref1 = options.reserve) != null ? ref1 : true) {
+        this.add(temp, 'var', true);
+      }
+      return temp;
+    }
+
+    // Ensure that an assignment is made at the top of this scope
+    // (or at the top-level scope, if requested).
+    assign(name, value) {
+      this.add(name, {
+        value,
+        assigned: true
+      }, true);
+      return this.hasAssignments = true;
+    }
+
+    // Does this scope have any declared variables?
+    hasDeclarations() {
+      return !!this.declaredVariables().length;
+    }
+
+    // Return the list of variables first declared in this scope.
+    declaredVariables() {
+      var v;
+      return ((function() {
+        var j, len1, ref1, results1;
+        ref1 = this.variables;
+        results1 = [];
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          v = ref1[j];
+          if (v.type === 'var') {
+            results1.push(v.name);
+          }
+        }
+        return results1;
+      }).call(this)).sort();
+    }
+
+    // Return the list of assignments that are supposed to be made at the top
+    // of this scope.
+    assignedVariables() {
+      var j, len1, ref1, results1, v;
+      ref1 = this.variables;
+      results1 = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        v = ref1[j];
+        if (v.type.assigned) {
+          results1.push(`${v.name} = ${v.type.value}`);
+        }
+      }
+      return results1;
+    }
+
+  };
 
   // Import the helpers we plan to use.
   ({compact, flatten, extend, merge, del, starts, ends, some, addDataToNode, attachCommentsToNode, locationDataToString, throwSyntaxError, replaceUnicodeCodePointEscapes, isFunction, isPlainObject, isNumber, parseNumber} = require('./helpers'));
@@ -3511,7 +3688,7 @@
         idx = del(o, 'index');
         idxName = del(o, 'name');
         namedIndex = idxName && idxName !== idx;
-        varPart = known && !namedIndex ? `var ${idx} = ${this.fromC}` : `${idx} = ${this.fromC}`;
+        varPart = known && !namedIndex ? `let ${idx} = ${this.fromC}` : `${idx} = ${this.fromC}`;
         if (this.toC !== this.toVar) {
           varPart += `, ${this.toC}`;
         }
@@ -4264,7 +4441,8 @@
             [this.variable, this.variableRef] = this.variable.cache(o);
           }
         }
-        if (this.variable) {
+        // Don't wrap in Assign if this is a direct export
+        if (this.variable && !this.moduleDeclaration) {
           node = new Assign(this.variable, node, null, {moduleDeclaration: this.moduleDeclaration});
         }
         this.compileNode = this.compileClassDeclaration;
@@ -4978,7 +5156,7 @@
 
   exports.ExportDeclaration = ExportDeclaration = class ExportDeclaration extends ModuleDeclaration {
     compileNode(o) {
-      var code, ref1;
+      var code, quoteMark, ref1, sourceValue, unquoted;
       this.checkScope(o, 'export');
       this.checkForAnonymousClassExport();
       code = [];
@@ -5004,7 +5182,17 @@
         code = code.concat(this.clause.compileNode(o));
       }
       if (((ref1 = this.source) != null ? ref1.value : void 0) != null) {
-        code.push(this.makeCode(` from ${this.source.value}`));
+        // Add .js extension to relative imports for ES6 module compatibility
+        sourceValue = this.source.value;
+        if (sourceValue.match(/^['"]\.\.?\//) != null) {
+          // Remove quotes, add .js if no extension, re-add quotes
+          unquoted = sourceValue.slice(1, -1);
+          if (unquoted.match(/\.\w+$/) == null) {
+            quoteMark = sourceValue[0];
+            sourceValue = `${quoteMark}${unquoted}.js${quoteMark}`; // If no extension
+          } // Matches './...' or '../...'
+        }
+        code.push(this.makeCode(` from ${sourceValue}`));
         if (this.assertions != null) {
           code.push(this.makeCode(' assert '));
           code.push(...this.assertions.compileToFragments(o));
@@ -5368,7 +5556,7 @@
       // we've been assigned to, for correct internal references. If the variable
       // has not been seen yet within the current scope, declare it.
       compileNode(o) {
-        var answer, compiledName, declarationKeyword, isValue, name, needsDeclaration, properties, prototype, ref1, ref2, ref3, ref4, val, varName;
+        var answer, compiledName, declarationKeyword, isChainedAssignment, isInnerChainedAssignment, isInsideExpression, isValue, name, needsDeclaration, properties, prototype, ref1, ref2, ref3, ref4, ref5, val, valText, varName;
         isValue = this.variable instanceof Value;
         if (isValue) {
           // If `@variable` is an array or an object, we’re destructuring;
@@ -5400,22 +5588,36 @@
         
         // Check if this is a simple identifier assignment
         varName = null;
-        if (this.variable.unwrapAll() instanceof IdentifierLiteral && !this.context && !this.moduleDeclaration) {
+        // For chained assignments (e.g., 'tp = as = ""'), we can't use inline declarations
+        // because it would generate invalid code like "let tp = const as = ''"
+        // Instead, we need to handle this specially
+        isChainedAssignment = this.value instanceof Assign && !this.value.context;
+        // Check if we're part of a chain (being compiled as the inner assignment)
+        isInnerChainedAssignment = o.chainedAssignment;
+        // Can't declare variables inside conditionals or expressions (e.g., if (const x = ...))
+        // LEVEL_PAREN and higher means we're in an expression context, not a statement
+        isInsideExpression = o.level >= LEVEL_PAREN;
+        if (this.variable.unwrapAll() instanceof IdentifierLiteral && !this.context && !this.moduleDeclaration && !isInnerChainedAssignment && !isInsideExpression) {
           varName = this.variable.unwrapAll().value;
-          
           // Check if variable needs declaration (first assignment)
           if (!o.scope.check(varName)) {
-            needsDeclaration = true;
-            
-            // Smart const/let determination:
-            // 1. Functions and classes are always const (immutable by nature)
-            // 2. For other values, scan ahead to see if reassigned
-            if (this.value instanceof Code || this.value instanceof Class) {
-              declarationKeyword = 'const';
+            // For the outer variable in a chained assignment, use let
+            // We can't use const because the assignment form doesn't work with const
+            if (isChainedAssignment) {
+              needsDeclaration = true;
+              declarationKeyword = 'let';
             } else {
-              // Check if this variable will be reassigned in the current scope
-              // We do this WITHOUT modifying scope.litcoffee!
-              declarationKeyword = this.willBeReassignedInScope(o, varName) ? 'let' : 'const';
+              needsDeclaration = true;
+              // Smart const/let determination:
+              // 1. Functions and classes are always const (immutable by nature)
+              // 2. For other values, scan ahead to see if reassigned
+              if (this.value instanceof Code || this.value instanceof Class) {
+                declarationKeyword = 'const';
+              } else {
+                // Check if this variable will be reassigned in the current scope
+                // We do this without modifying the Scope class!
+                declarationKeyword = this.willBeReassignedInScope(o, varName) ? 'let' : 'const';
+              }
             }
           }
         }
@@ -5430,7 +5632,14 @@
             }
           }
         }
+        // If this is a chained assignment, compile the inner assignment without declarations
+        if (isChainedAssignment) {
+          o.chainedAssignment = true;
+        }
         val = this.value.compileToFragments(o, LEVEL_LIST);
+        if (isChainedAssignment) {
+          delete o.chainedAssignment;
+        }
         compiledName = this.variable.compileToFragments(o, LEVEL_LIST);
         if (this.context === 'object') {
           if (this.variable.shouldCache()) {
@@ -5440,10 +5649,14 @@
           return compiledName.concat(this.makeCode(': '), val);
         }
         answer = compiledName.concat(this.makeCode(` ${this.context || '='} `), val);
-        
         // Prepend declaration if needed
+        // But check if the value already starts with a declaration keyword (for chained assignments)
         if (needsDeclaration) {
-          answer.unshift(this.makeCode(`${declarationKeyword} `));
+          // Check if the first fragment already contains a declaration keyword
+          valText = ((ref5 = val[0]) != null ? ref5.code : void 0) || '';
+          if (!valText.match(/^(const|let|var)\s/)) {
+            answer.unshift(this.makeCode(`${declarationKeyword} `));
+          }
         }
         // Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
         // if we’re destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
@@ -5894,24 +6107,33 @@
         return ret;
       }
 
-      
-        // ES6: Check if a variable will be reassigned in the current scope
-      // This method is self-contained and doesn't rely on scope.litcoffee modifications!
+      // ES6: Check if a variable will be reassigned in the current scope
+      // This method is self-contained and doesn't rely on Scope class modifications!
       willBeReassignedInScope(o, varName) {
         var assignmentCount, checkNode;
         // Track how many times this variable is assigned
         assignmentCount = 0;
-        
         // Helper to check if a node is an assignment to our variable
         checkNode = (node) => {
-          if (node instanceof Assign && node.variable.unwrapAll() instanceof IdentifierLiteral && node.variable.unwrapAll().value === varName && !node.context) {
+          var ref1, ref2;
+          // Check for regular assignments
+          if (node instanceof Assign && node.variable.unwrapAll() instanceof IdentifierLiteral && node.variable.unwrapAll().value === varName) {
+            // Count initial assignment (no context) and compound assignments (+=, -=, etc)
             assignmentCount++;
+          // Check for ++ and -- operators (which are reassignments)
+          } else if (node instanceof Op && ((ref1 = node.operator) === '++' || ref1 === '--' || ref1 === 'delete')) {
+            // Check if this operates on our variable
+            if (((ref2 = node.first) != null ? ref2.unwrapAll() : void 0) instanceof IdentifierLiteral && node.first.unwrapAll().value === varName) {
+              assignmentCount++;
+              if (assignmentCount > 1) {
+                // Since this is a reassignment operation, we already know it needs 'let'
+                return true;
+              }
+            }
           }
-          
           // Continue traversing
           return true;
         };
-        
         // Look through all expressions in the current scope
         if (o.scope.expressions) {
           o.scope.expressions.traverseChildren(false, function(child) {
@@ -5919,7 +6141,6 @@
             return true;
           });
         }
-        
         // If we find more than one assignment, it's reassigned
         return assignmentCount > 1;
       }
@@ -8281,11 +8502,11 @@
         } else {
           svar = this.source.compile(o, LEVEL_LIST);
           if ((name || this.own) && !this.from && !(this.source.unwrap() instanceof IdentifierLiteral)) {
-            defPart += `${this.tab}${ref = scope.freeVariable('ref')} = ${svar};\n`;
+            defPart += `${this.tab}const ${ref = scope.freeVariable('ref')} = ${svar};\n`;
             svar = ref;
           }
           if (name && !this.pattern && !this.from) {
-            namePart = `${name} = ${svar}[${kvar}]`;
+            namePart = `const ${name} = ${svar}[${kvar}]`;
           }
           if (!this.object && !this.from) {
             if (step !== stepVar) {
@@ -8295,8 +8516,8 @@
             if (!(this.step && (stepNum != null) && down)) {
               lvar = scope.freeVariable('len');
             }
-            declare = `${kvarAssign}${ivar} = 0, ${lvar} = ${svar}.length`;
-            declareDown = `${kvarAssign}${ivar} = ${svar}.length - 1`;
+            declare = `let ${kvarAssign}${ivar} = 0, ${lvar} = ${svar}.length`;
+            declareDown = `let ${kvarAssign}${ivar} = ${svar}.length - 1`;
             compare = `${ivar} < ${lvar}`;
             compareDown = `${ivar} >= 0`;
             if (this.step) {
@@ -8307,7 +8528,7 @@
                 }
               } else {
                 compare = `${stepVar} > 0 ? ${compare} : ${compareDown}`;
-                declare = `(${stepVar} > 0 ? (${declare}) : ${declareDown})`;
+                declare = `(${stepVar} > 0 ? (let ${kvarAssign}${ivar} = 0, ${lvar} = ${svar}.length) : let ${kvarAssign}${ivar} = ${svar}.length - 1)`;
               }
               increment = `${ivar} += ${stepVar}`;
             } else {
@@ -8337,16 +8558,16 @@
           varPart = `\n${idt1}${namePart};`;
         }
         if (this.object) {
-          forPartFragments = [this.makeCode(`${kvar} in ${svar}`)];
+          forPartFragments = [this.makeCode(`let ${kvar} in ${svar}`)];
           if (this.own) {
             guardPart = `\n${idt1}if (!${utility('hasProp', o)}.call(${svar}, ${kvar})) continue;`;
           }
         } else if (this.from) {
           if (this.await) {
-            forPartFragments = new Op('await', new Parens(new Literal(`${kvar} of ${svar}`)));
+            forPartFragments = new Op('await', new Parens(new Literal(`let ${kvar} of ${svar}`)));
             forPartFragments = forPartFragments.compileToFragments(o, LEVEL_TOP);
           } else {
-            forPartFragments = [this.makeCode(`${kvar} of ${svar}`)];
+            forPartFragments = [this.makeCode(`let ${kvar} of ${svar}`)];
           }
         }
         bodyFragments = body.compileToFragments(merge(o, {

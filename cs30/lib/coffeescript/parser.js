@@ -454,15 +454,15 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
       var EOF, TERROR, action, errStr, expected, k, len, lex, lexer, loc, locFirst, locLast, newState, p, parseTable, preErrorSymbol, r, ranges, recovering, ref, ref1, ref2, sharedState, state, stk, symbol, v, val, yyleng, yylineno, yyloc, yytext, yyval;
       [stk, val, loc] = [[0], [null], []];
       [parseTable, yytext, yylineno, yyleng, recovering] = [this.parseTable, '', 0, 0, 0];
-      [TERROR, EOF] = [2, 1];
+      const [TERROR, EOF] = [2, 1];
       lexer = Object.create(this.lexer);
-      sharedState = {
+      let sharedState = {
         yy: {}
       };
       ref = this.yy;
       for (k in ref) {
         if (!hasProp.call(ref, k)) continue;
-        v = ref[k];
+        let v = ref[k];
         sharedState.yy[k] = v;
       }
       lexer.setInput(input, sharedState.yy);
@@ -474,7 +474,7 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
       loc.push(yyloc);
       ranges = (ref1 = lexer.options) != null ? ref1.ranges : void 0;
       this.parseError = typeof sharedState.yy.parseError === 'function' ? sharedState.yy.parseError : Object.getPrototypeOf(this).parseError;
-      lex = () => {
+      let lex = () => {
         var token;
         token = lexer.lex() || EOF;
         if (typeof token !== 'number') {
@@ -487,12 +487,12 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
         state = stk[stk.length - 1];
         action = this.defaultActions[state] || (symbol == null ? symbol = lex() : void 0, (ref2 = parseTable[state]) != null ? ref2[symbol] : void 0);
         if (!((action != null ? action.length : void 0) && action[0])) {
-          errStr = '';
+          let errStr = '';
           if (!recovering) {
-            expected = (function() {
+            let expected = (function() {
               var ref3, results;
               ref3 = parseTable[state];
-              results = [];
+              let results = [];
               for (p in ref3) {
                 if (!hasProp.call(ref3, p)) continue;
                 if (this.tokenNames[p] && p > TERROR) {
@@ -519,20 +519,20 @@ return r(4,{$ast:"Assign",variable:1,value:4,operator:{$use:2,method:"toString"}
             stk.push(symbol, action[1]);
             val.push(lexer.yytext);
             loc.push(lexer.yylloc);
-            symbol = null;
+            let symbol = null;
             if (!preErrorSymbol) {
               [yyleng, yytext, yylineno, yyloc] = [lexer.yyleng, lexer.yytext, lexer.yylineno, lexer.yylloc];
               if (recovering > 0) {
                 recovering--;
               }
             } else {
-              [symbol, preErrorSymbol] = [preErrorSymbol, null];
+              const [symbol, preErrorSymbol] = [preErrorSymbol, null];
             }
             break;
           case 2:
             len = this.ruleData[action[1]][1];
             yyval.$ = val[val.length - len];
-            [locFirst, locLast] = [loc[loc.length - (len || 1)], loc[loc.length - 1]];
+            const [locFirst, locLast] = [loc[loc.length - (len || 1)], loc[loc.length - 1]];
             yyval._$ = {
               first_line: locFirst.first_line,
               last_line: locLast.last_line,

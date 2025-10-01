@@ -383,16 +383,13 @@ task 'release', 'update dependencies, build and test the CoffeeScript source, an
 
 task 'bench', 'quick benchmark of compilation time', ->
   {Rewriter} = require './lib/coffeescript/rewriter'
-  sources = ['coffeescript', 'grammar', 'helpers', 'lexer', 'nodes', 'rewriter']
-  coffee  = sources.map((name) -> fs.readFileSync "src/#{name}.coffee").join '\n'
-  litcoffee = fs.readFileSync("src/scope.litcoffee").toString()
+  sources = ['coffeescript', 'grammar', 'helpers', 'lexer', 'nodes5', 'nodes6', 'rewriter', 'sourcemap', 'backend']
+  coffee  = sources.map((name) -> fs.readFileSync "#{__dirname}/src/#{name}.coffee").join '\n'
   fmt    = (ms) -> " #{bold}#{ "   #{ms}".slice -4 }#{reset} ms"
   total  = 0
   now    = Date.now()
   time   = -> total += ms = -(now - now = Date.now()); fmt ms
   tokens = CoffeeScript.tokens coffee, rewrite: no
-  littokens = CoffeeScript.tokens litcoffee, rewrite: no, literate: yes
-  tokens = tokens.concat(littokens)
   console.log "Lex    #{time()} (#{tokens.length} tokens)"
   tokens = new Rewriter().rewrite tokens
   console.log "Rewrite#{time()} (#{tokens.length} tokens)"

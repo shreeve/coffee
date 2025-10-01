@@ -3,20 +3,17 @@ import {
   repeat
 } from './helpers.js';
 
-let LONG_FLAG, MULTI_FLAG, OPTIONAL, SHORT_FLAG, buildRule, buildRules, normalizeArguments;
-let splice = [].splice;
 
-export OptionParser = class OptionParser {
+export class OptionParser {
   constructor(ruleDeclarations, banner) {
     this.banner = banner;
     this.rules = buildRules(ruleDeclarations);
   }
 
   parse(args) {
-    let argument, hasArgument, i, isList, len, name, options, positional, rules;
     ({rules, positional} = normalizeArguments(args, this.rules.flagDict));
-    options = {};
-    for (i = 0, len = rules.length; i < len; i++) {
+    const options = {};
+    for (let i = 0, len = rules.length; i < len; i++) {
       ({hasArgument, argument, isList, name} = rules[i]);
       if (hasArgument) {
         if (isList) {
@@ -40,17 +37,16 @@ export OptionParser = class OptionParser {
   }
 
   help() {
-    let i, len, letPart, lines, ref, rule, spaces;
-    lines = [];
+    const lines = [];
     if (this.banner) {
       lines.unshift(`${this.banner}\n`);
     }
-    ref = this.rules.ruleList;
-    for (i = 0, len = ref.length; i < len; i++) {
-      rule = ref[i];
-      spaces = 15 - rule.longFlag.length;
+    const ref = this.rules.ruleList;
+    for (let i = 0, len = ref.length; i < len; i++) {
+      const rule = ref[i];
+      let spaces = 15 - rule.longFlag.length;
       spaces = spaces > 0 ? repeat(' ', spaces) : '';
-      letPart = rule.shortFlag ? rule.shortFlag + ', ' : '    ';
+      const letPart = rule.shortFlag ? rule.shortFlag + ', ' : '    ';
       lines.push('  ' + letPart + rule.longFlag + spaces + rule.description);
     }
     return `\n${lines.join('\n')}\n`;
@@ -58,21 +54,19 @@ export OptionParser = class OptionParser {
 
 };
 
-LONG_FLAG = /^(--\w[\w\-]*)/;
+const LONG_FLAG = /^(--\w[\w\-]*)/;
 
-SHORT_FLAG = /^(-\w)$/;
+const SHORT_FLAG = /^(-\w)$/;
 
-MULTI_FLAG = /^-(\w{2,})/;
+const MULTI_FLAG = /^-(\w{2,})/;
 
-OPTIONAL = /\[(\w+(\*?))\]/;
+const OPTIONAL = /\[(\w+(\*?))\]/;
 
-buildRules = function(ruleDeclarations) {
-  let flag, flagDict, i, j, len, len1, ref, rule, ruleList, tuple;
-  ruleList = (function() {
-    let i, len, results;
-    results = [];
-    for (i = 0, len = ruleDeclarations.length; i < len; i++) {
-      tuple = ruleDeclarations[i];
+const buildRules = function(ruleDeclarations) {
+  const ruleList = (function() {
+    let results = [];
+    for (let i = 0, len = ruleDeclarations.length; i < len; i++) {
+      const tuple = ruleDeclarations[i];
       if (tuple.length < 3) {
         tuple.unshift(null);
       }
@@ -80,12 +74,12 @@ buildRules = function(ruleDeclarations) {
     }
     return results;
   })();
-  flagDict = {};
-  for (i = 0, len = ruleList.length; i < len; i++) {
-    rule = ruleList[i];
-    ref = [rule.shortFlag, rule.longFlag];
-    for (j = 0, len1 = ref.length; j < len1; j++) {
-      flag = ref[j];
+  const flagDict = {};
+  for (let i = 0, len = ruleList.length; i < len; i++) {
+    const rule = ruleList[i];
+    const ref = [rule.shortFlag, rule.longFlag];
+    for (let j = 0, len1 = ref.length; j < len1; j++) {
+      const flag = ref[j];
       if (!(flag != null)) {
         continue;
       }
@@ -98,9 +92,8 @@ buildRules = function(ruleDeclarations) {
   return {ruleList, flagDict};
 };
 
-buildRule = function(shortFlag, longFlag, description) {
-  let match;
-  match = longFlag.match(OPTIONAL);
+const buildRule = function(shortFlag, longFlag, description) {
+  const match = longFlag.match(OPTIONAL);
   shortFlag = shortFlag != null ? shortFlag.match(SHORT_FLAG)[1] : void 0;
   longFlag = longFlag.match(LONG_FLAG)[1];
   return {
@@ -113,35 +106,33 @@ buildRule = function(shortFlag, longFlag, description) {
   };
 };
 
-normalizeArguments = function(args, flagDict) {
-  let arg, argIndex, flag, i, innerOpts, j, lastOpt, len, len1, multiFlags, multiOpts, needsArgOpt, positional, ref, rule, rules, singleRule, withArg;
-  rules = [];
-  positional = [];
-  needsArgOpt = null;
-  for (argIndex = i = 0, len = args.length; i < len; argIndex = ++i) {
-    arg = args[argIndex];
+const normalizeArguments = function(args, flagDict) {
+  const rules = [];
+  let positional = [];
+  let needsArgOpt = null;
+  for (let argIndex = i = 0, len = args.length; i < len; argIndex = ++i) {
+    const arg = args[argIndex];
     if (needsArgOpt != null) {
-      withArg = Object.assign({}, needsArgOpt.rule, {
+      const withArg = Object.assign({}, needsArgOpt.rule, {
         argument: arg
       });
       rules.push(withArg);
       needsArgOpt = null;
       continue;
     }
-    multiFlags = (ref = arg.match(MULTI_FLAG)) != null ? ref[1].split('').map(function(flagName) {
+    const multiFlags = (ref = arg.match(MULTI_FLAG)) != null ? ref[1].split('').map(function(flagName) {
       return `-${flagName}`;
     }) : void 0;
     if (multiFlags != null) {
-      multiOpts = multiFlags.map(function(flag) {
-        let rule;
-        rule = flagDict[flag];
+      const multiOpts = multiFlags.map(function(flag) {
+        const rule = flagDict[flag];
         if (rule == null) {
           throw new Error(`unrecognized option ${flag} in multi-flag ${arg}`);
         }
         return {rule, flag};
       });
       [...innerOpts] = multiOpts, [lastOpt] = splice.call(innerOpts, -1);
-      for (j = 0, len1 = innerOpts.length; j < len1; j++) {
+      for (let j = 0, len1 = innerOpts.length; j < len1; j++) {
         ({rule, flag} = innerOpts[j]);
         if (rule.hasArgument) {
           throw new Error(`cannot use option ${flag} in multi-flag ${arg} except as the last option, because it needs an argument`);
@@ -156,7 +147,7 @@ normalizeArguments = function(args, flagDict) {
     } else if ([LONG_FLAG, SHORT_FLAG].some(function(pat) {
       return arg.match(pat) != null;
     })) {
-      singleRule = flagDict[arg];
+      const singleRule = flagDict[arg];
       if (singleRule == null) {
         throw new Error(`unrecognized option ${arg}`);
       }

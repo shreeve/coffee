@@ -5,25 +5,21 @@
 
 import {Lexer} from './lexer'
 import {parser} from './parser'
-import * as helpers from './helpers'
+import * as helpersModule from './helpers'
 import {SourceMap} from './sourcemap'
 import {Backend} from './backend'
 import * as nodes from './nodes'
-# Require `package.json`, which is two levels above this file, as this file is
-# evaluated from `lib/coffeescript`.
-import packageJson from '../../package.json'
-
 # The current CoffeeScript version number.
-export VERSION = packageJson.version
+export VERSION = '3.0.0'
 
 export FILE_EXTENSIONS = ['.coffee', '.litcoffee', '.coffee.md']
 
-# Expose helpers for testing.
+# Expose helpers for testing - alias to avoid name conflict
+helpers = helpersModule
 export {helpers}
 
-# Export SourceMap static methods for stack trace support
-{getSourceMap, registerCompiled} = SourceMap
-export {registerCompiled, getSourceMap}
+# Re-export SourceMap static methods for stack trace support
+export {registerCompiled, getSourceMap} from './sourcemap'
 
 # Function that allows for btoa in both nodejs and the browser.
 base64encode = (src) -> switch
@@ -164,7 +160,7 @@ export tokens = withPrettyErrors (code, options) ->
 # Parse a string of CoffeeScript code or an array of lexed tokens, and
 # return the AST. You can then compile it by calling `.compile()` on the root,
 # or traverse it by using `.traverseChildren()` with a callback.
-export nodes = withPrettyErrors (source, options) ->
+export parseNodes = withPrettyErrors (source, options) ->
   source = lexer.tokenize source, options if typeof source is 'string'
   parser.yy.backend = new Backend(options, parser.yy) # Inject Solar backend
   parser.parse source

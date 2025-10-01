@@ -1,0 +1,13 @@
+{
+  "version": 3,
+  "file": "test.js",
+  "sourceRoot": "/",
+  "sources": [
+    "test.coffee"
+  ],
+  "names": [],
+  "mappings": ";AAAA,IAAA,CAAA,EAAA;;AAAA,CAAA,GAAI;;AACJ,CAAA,GAAI,CAAA,GAAI",
+  "sourcesContent": [
+    "x = 10\ny = x * 2\n"
+  ]
+}

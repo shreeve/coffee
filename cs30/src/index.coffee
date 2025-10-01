@@ -3,8 +3,9 @@ import * as CoffeeScript from './coffeescript'
 import fs from 'fs'
 import vm from 'vm'
 import path from 'path'
+import Module from 'module'
 
-helpers       = CoffeeScript.helpers
+helpers = CoffeeScript.helpers
 
 # The `compile` method is directly available from coffeescript module
 # No need for transpilation support
@@ -12,7 +13,9 @@ helpers       = CoffeeScript.helpers
 # Compile and execute a string of CoffeeScript (on the server), correctly
 # setting `__filename`, `__dirname`, and relative `require()`.
 CoffeeScript.run = (code, options = {}) ->
-  mainModule = require.main
+  # In ES modules, we can't use require.main
+  # Use process directly for similar functionality
+  mainModule = process.mainModule or {}
 
   # Set the filename.
   mainModule.filename = process.argv[1] =
@@ -26,7 +29,7 @@ CoffeeScript.run = (code, options = {}) ->
     path.dirname fs.realpathSync options.filename
   else
     fs.realpathSync '.'
-  mainModule.paths = require('module')._nodeModulePaths dir
+  mainModule.paths = Module._nodeModulePaths dir
 
   # Save the options for compiling child imports.
   mainModule.options = options
@@ -62,12 +65,11 @@ CoffeeScript.eval = (code, options = {}) ->
     sandbox.__dirname  = path.dirname sandbox.__filename
     # define module/require only if they chose not to specify their own
     unless sandbox isnt global or sandbox.module or sandbox.require
-      Module = require 'module'
-      sandbox.module  = _module  = new Module(options.modulename || 'eval')
-      sandbox.require = _require = (path) ->  Module._load path, _module, true
+      _module  = new Module(options.modulename || 'eval')
+      sandbox.module  = _module
+      _require = (path) ->  Module._load path, _module, true
+      sandbox.require = _require
       _module.filename = sandbox.__filename
-      for r in Object.getOwnPropertyNames require when r not in ['paths', 'arguments', 'caller']
-        _require[r] = require[r]
       # use the same hack node uses for module resolution
       _require.paths = _module.paths = Module._nodeModulePaths process.cwd()
       _require.resolve = (request) -> Module._resolveFilename request, _module
@@ -124,12 +126,20 @@ export {
   registerCompiled,
   compile,
   tokens,
-  nodes,
+  parseNodes as nodes,
   patchStackTrace
 } from './coffeescript'
 
 # Export the modified functions from this module
-export {CoffeeScript.eval as eval}
-export {CoffeeScript.run as run}
-export {CoffeeScript._compileRawFileContent as _compileRawFileContent}
-export {CoffeeScript._compileFile as _compileFile}
+# First create local bindings, then export them
+coffeeEval = CoffeeScript.eval
+coffeeRun = CoffeeScript.run
+coffeeCompileRawFileContent = CoffeeScript._compileRawFileContent
+coffeeCompileFile = CoffeeScript._compileFile
+
+export {
+  coffeeEval as eval,
+  coffeeRun as run,
+  coffeeCompileRawFileContent as _compileRawFileContent,
+  coffeeCompileFile as _compileFile
+}

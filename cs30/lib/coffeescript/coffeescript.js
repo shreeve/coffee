@@ -13,29 +13,25 @@ import {
   Backend
 } from './backend.js';
 import * as nodes from './nodes.js';
-import packageJson from '../../package.json';
 
 
-let base64encode, checkShebangLine, getSourceMap, helpers, lexer, registerCompiled, withPrettyErrors;
 
-export const VERSION = packageJson.version;
+export const VERSION = '3.0.0';
 
 export const FILE_EXTENSIONS = ['.coffee', '.litcoffee', '.coffee.md'];
 
-helpers = helpersModule;
+const helpers = helpersModule;
 
 export {
   helpers
 };
 
-({getSourceMap, registerCompiled} = SourceMap);
-
 export {
   registerCompiled,
   getSourceMap
-};
+} from './sourcemap.js';
 
-base64encode = function(src) {
+const base64encode = function(src) {
   switch (false) {
     case typeof Buffer !== 'function':
       return Buffer.from(src).toString('base64');
@@ -48,13 +44,12 @@ base64encode = function(src) {
   }
 };
 
-withPrettyErrors = function(fn) {
+const withPrettyErrors = function(fn) {
   return function(code, options = {}) {
-    let err;
     try {
       return fn.call(this, code, options);
     } catch (error) {
-      err = error;
+      const err = error;
       if (typeof code !== 'string') {
         throw err;
       }
@@ -64,20 +59,18 @@ withPrettyErrors = function(fn) {
 };
 
 export const compile = withPrettyErrors(function(code, options = {}) {
-  let ast, currentColumn, currentLine, encoded, filename, fragment, fragments, generateSourceMap, header, i, j, js, len, len1, map, newLines, nodes, range, ref, sourceCodeLastLine, sourceCodeNumberOfLines, sourceMapDataURI, sourceURL, token, tokens, v3SourceMap;
   options = Object.assign({}, options);
-  generateSourceMap = options.sourceMap || options.inlineMap || (options.filename == null);
-  filename = options.filename || helpers.anonymousFileName();
+  const generateSourceMap = options.sourceMap || options.inlineMap || (options.filename == null);
+  const filename = options.filename || helpers.anonymousFileName();
   checkShebangLine(filename, code);
   if (generateSourceMap) {
-    map = new SourceMap();
+    const map = new SourceMap();
   }
-  tokens = lexer.tokenize(code, options);
+  const tokens = lexer.tokenize(code, options);
   options.referencedVars = (function() {
-    let i, len, results;
-    results = [];
-    for (i = 0, len = tokens.length; i < len; i++) {
-      token = tokens[i];
+    let results = [];
+    for (let i = 0, len = tokens.length; i < len; i++) {
+      const token = tokens[i];
       if (token[0] === 'IDENTIFIER') {
         results.push(token[1]);
       }
@@ -85,8 +78,8 @@ export const compile = withPrettyErrors(function(code, options = {}) {
     return results;
   })();
   if (!((options.bare != null) && options.bare === true)) {
-    for (i = 0, len = tokens.length; i < len; i++) {
-      token = tokens[i];
+    for (let i = 0, len = tokens.length; i < len; i++) {
+      const token = tokens[i];
       if ((ref = token[0]) === 'IMPORT' || ref === 'EXPORT') {
         options.bare = true;
         break;
@@ -94,13 +87,13 @@ export const compile = withPrettyErrors(function(code, options = {}) {
     }
   }
   parser.yy.backend = new Backend(options, parser.yy);
-  nodes = parser.parse(tokens);
+  const nodes = parser.parse(tokens);
   if (options.ast) {
     nodes.allCommentTokens = helpers.extractAllCommentTokens(tokens);
-    sourceCodeNumberOfLines = (code.match(/\r?\n/g) || '').length + 1;
-    sourceCodeLastLine = /.*$/.exec(code)[0];
-    ast = nodes.ast(options);
-    range = [0, code.length];
+    const sourceCodeNumberOfLines = (code.match(/\r?\n/g) || '').length + 1;
+    const sourceCodeLastLine = /.*$/.exec(code)[0];
+    const ast = nodes.ast(options);
+    const range = [0, code.length];
     ast.start = ast.program.start = range[0];
     ast.end = ast.program.end = range[1];
     ast.range = ast.program.range = range;
@@ -113,25 +106,25 @@ export const compile = withPrettyErrors(function(code, options = {}) {
     ast.tokens = tokens;
     return ast;
   }
-  fragments = nodes.compileToFragments(options);
-  currentLine = 0;
+  const fragments = nodes.compileToFragments(options);
+  let currentLine = 0;
   if (options.header) {
     currentLine = currentLine + 1;
   }
   if (options.shiftLine) {
     currentLine = currentLine + 1;
   }
-  currentColumn = 0;
-  js = "";
-  for (j = 0, len1 = fragments.length; j < len1; j++) {
-    fragment = fragments[j];
+  let currentColumn = 0;
+  let js = "";
+  for (let j = 0, len1 = fragments.length; j < len1; j++) {
+    const fragment = fragments[j];
     if (generateSourceMap) {
       if (fragment.locationData && !/^[;\s]*$/.test(fragment.code)) {
         map.add([fragment.locationData.first_line, fragment.locationData.first_column], [currentLine, currentColumn], {
           noReplace: true
         });
       }
-      newLines = helpers.count(fragment.code, "\n");
+      const newLines = helpers.count(fragment.code, "\n");
       currentLine = currentLine + newLines;
       if (newLines) {
         currentColumn = fragment.code.length - (fragment.code.lastIndexOf("\n") + 1);
@@ -142,16 +135,16 @@ export const compile = withPrettyErrors(function(code, options = {}) {
     js = js + fragment.code;
   }
   if (options.header) {
-    header = `Generated by CoffeeScript ${this.VERSION}`;
+    const header = `Generated by CoffeeScript ${this.VERSION}`;
     js = `// ${header}\n${js}`;
   }
   if (generateSourceMap) {
-    v3SourceMap = map.generate(options, code);
+    const v3SourceMap = map.generate(options, code);
   }
   if (options.inlineMap) {
-    encoded = base64encode(JSON.stringify(v3SourceMap));
-    sourceMapDataURI = `//# sourceMappingURL=data:application/json;base64,${encoded}`;
-    sourceURL = `//# sourceURL=${filename}`;
+    const encoded = base64encode(JSON.stringify(v3SourceMap));
+    const sourceMapDataURI = `//# sourceMappingURL=data:application/json;base64,${encoded}`;
+    const sourceURL = `//# sourceURL=${filename}`;
     js = `${js}\n${sourceMapDataURI}\n${sourceURL}`;
   }
   registerCompiled(filename, code, map);
@@ -186,7 +179,7 @@ export {
   run as eval
 };
 
-lexer = new Lexer();
+const lexer = new Lexer();
 
 parser.lexer = {
   yylloc: {
@@ -196,14 +189,13 @@ parser.lexer = {
     ranges: true
   },
   lex: function() {
-    let tag, token;
-    token = parser.tokens[this.pos++];
+    const token = parser.tokens[this.pos++];
     if (token) {
       [tag, this.yytext, this.yylloc] = token;
       parser.errorToken = token.origin || token;
       this.yylineno = this.yylloc.first_line;
     } else {
-      tag = '';
+      let tag = '';
     }
     return tag;
   },
@@ -219,10 +211,9 @@ parser.lexer = {
 parser.yy = nodes;
 
 parser.yy.parseError = function(message, {token}) {
-  let errorLoc, errorTag, errorText, errorToken;
   ({errorToken, tokens} = parser);
   [errorTag, errorText, errorLoc] = errorToken;
-  errorText = (function() {
+  let errorText = (function() {
     switch (false) {
       case errorToken !== tokens[tokens.length - 1]:
         return 'end of input';
@@ -238,11 +229,9 @@ parser.yy.parseError = function(message, {token}) {
 };
 
 export const patchStackTrace = function() {
-  let formatSourcePosition, getSourceMapping;
-  formatSourcePosition = function(frame, getSourceMapping) {
-    let as, column, fileLocation, filename, functionName, isConstructor, isMethodCall, line, methodName, source, tp, typeName;
-    filename = void 0;
-    fileLocation = '';
+  const formatSourcePosition = function(frame, getSourceMapping) {
+    let filename = void 0;
+    let fileLocation = '';
     if (frame.isNative()) {
       fileLocation = "native";
     } else {
@@ -255,24 +244,24 @@ export const patchStackTrace = function() {
         filename = frame.getFileName();
       }
       filename = filename || "<anonymous>";
-      line = frame.getLineNumber();
-      column = frame.getColumnNumber();
-      source = getSourceMapping(filename, line, column);
+      const line = frame.getLineNumber();
+      const column = frame.getColumnNumber();
+      const source = getSourceMapping(filename, line, column);
       fileLocation = source ? `${filename}:${source[0]}:${source[1]}` : `${filename}:${line}:${column}`;
     }
-    functionName = frame.getFunctionName();
-    isConstructor = frame.isConstructor();
-    isMethodCall = !(frame.isToplevel() || isConstructor);
+    const functionName = frame.getFunctionName();
+    const isConstructor = frame.isConstructor();
+    const isMethodCall = !(frame.isToplevel() || isConstructor);
     if (isMethodCall) {
-      methodName = frame.getMethodName();
-      typeName = frame.getTypeName();
+      const methodName = frame.getMethodName();
+      const typeName = frame.getTypeName();
       if (functionName) {
-        tp = as = '';
+        let tp = as = '';
         if (typeName && functionName.indexOf(typeName)) {
           tp = `${typeName}.`;
         }
         if (methodName && functionName.indexOf(`.${methodName}`) !== functionName.length - methodName.length - 1) {
-          as = ` [as ${methodName}]`;
+          let as = ` [as ${methodName}]`;
         }
         return `${tp}${functionName}${as} (${fileLocation})`;
       } else {
@@ -286,11 +275,10 @@ export const patchStackTrace = function() {
       return fileLocation;
     }
   };
-  getSourceMapping = function(filename, line, column) {
-    let answer, sourceMap;
-    sourceMap = getSourceMap(filename, line, column);
+  const getSourceMapping = function(filename, line, column) {
+    const sourceMap = getSourceMap(filename, line, column);
     if (sourceMap != null) {
-      answer = sourceMap.sourceLocation([line - 1, column - 1]);
+      const answer = sourceMap.sourceLocation([line - 1, column - 1]);
     }
     if (answer != null) {
       return [answer[0] + 1, answer[1] + 1];
@@ -299,12 +287,10 @@ export const patchStackTrace = function() {
     }
   };
   return Error.prepareStackTrace = function(err, stack) {
-    let frame, frames;
-    frames = (function() {
-      let i, len, results;
+    const frames = (function() {
       results = [];
-      for (i = 0, len = stack.length; i < len; i++) {
-        frame = stack[i];
+      for (let i = 0, len = stack.length; i < len; i++) {
+        const frame = stack[i];
         if (frame.getFunction() === exports.run) {
           break;
         }
@@ -316,11 +302,10 @@ export const patchStackTrace = function() {
   };
 };
 
-checkShebangLine = function(file, input) {
-  let args, firstLine, ref, rest;
-  firstLine = input.split(/$/m, 1)[0];
-  rest = firstLine != null ? firstLine.match(/^#!\s*([^\s]+\s*)(.*)/) : void 0;
-  args = rest != null ? (ref = rest[2]) != null ? ref.split(/\s/).filter(function(s) {
+const checkShebangLine = function(file, input) {
+  const firstLine = input.split(/$/m, 1)[0];
+  const rest = firstLine != null ? firstLine.match(/^#!\s*([^\s]+\s*)(.*)/) : void 0;
+  const args = rest != null ? (ref = rest[2]) != null ? ref.split(/\s/).filter(function(s) {
     return s !== '';
   }) : void 0 : void 0;
   if ((args != null ? args.length : void 0) > 1) {
