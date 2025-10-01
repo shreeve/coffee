@@ -34,23 +34,6 @@
       return node;
     }
 
-    // Helper to convert primitive values to AST nodes
-    _toNode(value) {
-      if (value instanceof this.ast.Base) {
-        return value;
-      }
-      if (typeof value === 'string') {
-        return new this.ast.IdentifierLiteral(value);
-      }
-      if (typeof value === 'number') {
-        return new this.ast.NumberLiteral(value);
-      }
-      if (typeof value === 'boolean') {
-        return new this.ast.BooleanLiteral(value);
-      }
-      return value;
-    }
-
     // Helper to convert base + properties to Value node
     _toValue(base, properties) {
       var props;
@@ -62,10 +45,7 @@
         }
         return base;
       }
-      if ((base != null) && !(base instanceof this.ast.Base)) {
-        // Ensure base is a node
-        base = this._toNode(base);
-      }
+      // In a properly working grammar, base should always be a node already
       return new this.ast.Value(base, props);
     }
 
@@ -139,7 +119,7 @@
 
     // Smart resolver - handles all types of references
     $(value) {
-      var item, key, result, val;
+      var i, item, key, len, resolved, result, results, val;
       if (value == null) {
         return value;
       }
@@ -150,17 +130,22 @@
         }
         return value;
       }
+      // Arrays - resolve each item, filtering out undefined/null/non-nodes
       if (Array.isArray(value)) {
-        return (function() {
-          var i, len, results;
-          results = [];
-          for (i = 0, len = value.length; i < len; i++) {
-            item = value[i];
-            // Arrays - resolve each item
-            results.push(this.$(item));
+        results = [];
+        for (i = 0, len = value.length; i < len; i++) {
+          item = value[i];
+          resolved = this.$(item);
+          if (resolved == null) {
+            continue;
           }
-          return results;
-        }).call(this);
+          // ONLY include actual AST Base nodes
+          // This prevents circular references and ensures arrays only contain proper nodes
+          if (resolved instanceof this.ast.Base) {
+            results.push(resolved);
+          }
+        }
+        return results;
       }
       // Objects with directives - process them (but not null)
       if (typeof value === 'object' && (value != null)) {
@@ -436,7 +421,7 @@
         case 'Code':
           return new this.ast.Code(this.$(o.params) || [], this.ast.Block.wrap(this.$(o.body)));
         case 'FuncGlyph':
-          return new this.ast.FuncGlyph(this.$(o.value) || '->');
+          return new this.ast.FuncGlyph(this.$(o.glyph) || this.$(o.value) || '->');
         case 'Class':
           return new this.ast.Class(this.$(o.variable), this.$(o.parent), this.$(o.body));
         case 'Param':
