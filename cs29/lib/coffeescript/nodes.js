@@ -1191,7 +1191,7 @@
       // Wrap up the given nodes as a **Block**, unless it already happens
       // to be one.
       static wrap(nodes) {
-        var block, first, last, ref1, ref2, ref3, ref4, ref5, ref6;
+        var block, first, last, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8;
         if (nodes instanceof Block) {
           return nodes;
         }
@@ -1214,9 +1214,9 @@
           block.locationData = {
             first_line: first.locationData.first_line,
             first_column: first.locationData.first_column,
-            last_line: last.locationData.last_line,
-            last_column: last.locationData.last_column,
-            range: [(ref3 = (ref4 = first.locationData.range) != null ? ref4[0] : void 0) != null ? ref3 : 0, (ref5 = (ref6 = last.locationData.range) != null ? ref6[1] : void 0) != null ? ref5 : 0]
+            last_line_exclusive: (ref3 = last.locationData.last_line_exclusive) != null ? ref3 : last.locationData.last_line,
+            last_column_exclusive: (ref4 = last.locationData.last_column_exclusive) != null ? ref4 : last.locationData.last_column + 1,
+            range: [(ref5 = (ref6 = first.locationData.range) != null ? ref6[0] : void 0) != null ? ref5 : 0, (ref7 = (ref8 = last.locationData.range) != null ? ref8[1] : void 0) != null ? ref7 : 0]
           };
         }
         return block;

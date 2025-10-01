@@ -32,7 +32,7 @@
 
     // Main entry point (called by parser as 'reduce')
     reduce(values, positions, stackTop, symbolCount, directive) {
-      var firstPos, handler, lastPos, lookup, lookupPos, o, outName, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, result, util;
+      var firstPos, handler, lastPos, lookup, lookupPos, o, outName, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, result, util;
       // Create lookup function to access stack values
       lookup = function(index) {
         return values[stackTop - symbolCount + 1 + index];
@@ -54,9 +54,9 @@
           this.currentLocationData = {
             first_line: firstPos.first_line,
             first_column: firstPos.first_column,
-            last_line: lastPos.last_line,
-            last_column: lastPos.last_column,
-            range: [(ref = (ref1 = firstPos.range) != null ? ref1[0] : void 0) != null ? ref : 0, (ref2 = (ref3 = lastPos.range) != null ? ref3[1] : void 0) != null ? ref2 : 0]
+            last_line_exclusive: (ref = lastPos.last_line_exclusive) != null ? ref : lastPos.last_line,
+            last_column_exclusive: (ref1 = lastPos.last_column_exclusive) != null ? ref1 : lastPos.last_column + 1,
+            range: [(ref2 = (ref3 = firstPos.range) != null ? ref3[0] : void 0) != null ? ref2 : 0, (ref4 = (ref5 = lastPos.range) != null ? ref5[1] : void 0) != null ? ref4 : 0]
           };
         }
       } else {
@@ -98,9 +98,9 @@
           result.updateLocationDataIfMissing(this.currentLocationData);
         }
       }
-      if ((ref4 = global.process) != null ? (ref5 = ref4.env) != null ? ref5.SOLAR_DEBUG : void 0 : void 0) {
+      if ((ref6 = global.process) != null ? (ref7 = ref6.env) != null ? ref7.SOLAR_DEBUG : void 0 : void 0) {
         util = require('util');
-        outName = (ref6 = result != null ? (ref7 = result.constructor) != null ? ref7.name : void 0 : void 0) != null ? ref6 : typeof result;
+        outName = (ref8 = result != null ? (ref9 = result.constructor) != null ? ref9.name : void 0 : void 0) != null ? ref8 : typeof result;
         console.log("[Solar] result:", outName, util.inspect(result, {
           depth: 3,
           colors: true
@@ -187,10 +187,17 @@
 
     // Process $use directives
     processUse(o) {
-      var name1, ref, target;
+      var name1, ref, ref1, ref2, target;
       target = this.$(o.$use);
+      if (((ref = global.process) != null ? (ref1 = ref.env) != null ? ref1.SOLAR_DEBUG_IMPLICIT : void 0 : void 0) && o.prop === 'generated') {
+        console.log("[Solar] processUse for 'generated':", {
+          target,
+          prop: o.prop,
+          value: target != null ? target[o.prop] : void 0
+        });
+      }
       if (o.method != null) {
-        return target != null ? typeof target[name1 = o.method] === "function" ? target[name1](...((ref = o.args) != null ? ref : [])) : void 0 : void 0;
+        return target != null ? typeof target[name1 = o.method] === "function" ? target[name1](...((ref2 = o.args) != null ? ref2 : [])) : void 0 : void 0;
       }
       if (o.prop != null) {
         return target != null ? target[o.prop] : void 0;
@@ -226,6 +233,10 @@
             [ifNode, elseBody] = o.addElse.map((item) => {
               return this.$(item);
             });
+            // Ensure elseBody has location data
+            if (elseBody && !elseBody.locationData && this.currentLocationData) {
+              elseBody.locationData = this.currentLocationData;
+            }
             ifNode.addElse(elseBody);
             return ifNode;
           }
