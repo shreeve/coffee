@@ -168,7 +168,24 @@ test """
 
 # Compilation output tests
 code "->", "(function() {});"
+code "=>", "(() => {});"
 code "(x) -> x", "(function(x) {\n  return x;\n});"
+code "(x) => x", "((x) => {\n  return x;\n});"
+
+# Critical test: Arrow functions MUST compile to arrow syntax to preserve 'this'
+# This test catches bugs where funcGlyph isn't passed to Code constructor
+test """
+  class Timer
+    constructor: ->
+      @seconds = 0
+      @tick = => @seconds++
+    start: ->
+      @tick()
+      @seconds
+
+  timer = new Timer()
+  timer.start()
+""", 1
 
 # Invalid syntax tests
 fail "function foo() {}"  # function keyword not allowed
