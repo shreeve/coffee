@@ -3629,16 +3629,19 @@ exports.Assign = class Assign extends Base
     # ES6: Smart const/let analysis
     needsDeclaration = false
     declarationKeyword = 'let' # Default to let for safety
-    
+
     # Check if this is a simple identifier assignment
     varName = null
-    if @variable.unwrapAll() instanceof IdentifierLiteral and not @context and not @moduleDeclaration
+    # Don't add declarations to chained assignments (e.g., the 'as' in 'tp = as = ""')
+    isChainedAssignment = @value instanceof Assign and not @value.context
+
+    if @variable.unwrapAll() instanceof IdentifierLiteral and not @context and not @moduleDeclaration and not isChainedAssignment
       varName = @variable.unwrapAll().value
-      
+
       # Check if variable needs declaration (first assignment)
       if not o.scope.check(varName)
         needsDeclaration = true
-        
+
         # Smart const/let determination:
         # 1. Functions and classes are always const (immutable by nature)
         # 2. For other values, scan ahead to see if reassigned
@@ -3648,7 +3651,7 @@ exports.Assign = class Assign extends Base
           # Check if this variable will be reassigned in the current scope
           # We do this WITHOUT modifying scope.litcoffee!
           declarationKeyword = if @willBeReassignedInScope(o, varName) then 'let' else 'const'
-    
+
     @addScopeVariables o
     if @value instanceof Code
       if @value.isStatic
@@ -3667,7 +3670,7 @@ exports.Assign = class Assign extends Base
       return compiledName.concat @makeCode(': '), val
 
     answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
-    
+
     # Prepend declaration if needed
     if needsDeclaration
       answer.unshift @makeCode "#{declarationKeyword} "
@@ -3957,30 +3960,30 @@ exports.Assign = class Assign extends Base
       ret.operator = @originalContext ? '='
 
     ret
-  
+
   # ES6: Check if a variable will be reassigned in the current scope
   # This method is self-contained and doesn't rely on scope.litcoffee modifications!
   willBeReassignedInScope: (o, varName) ->
     # Track how many times this variable is assigned
     assignmentCount = 0
-    
+
     # Helper to check if a node is an assignment to our variable
     checkNode = (node) =>
-      if node instanceof Assign and 
-         node.variable.unwrapAll() instanceof IdentifierLiteral and 
+      if node instanceof Assign and
+         node.variable.unwrapAll() instanceof IdentifierLiteral and
          node.variable.unwrapAll().value is varName and
          not node.context
         assignmentCount++
-      
+
       # Continue traversing
       true
-    
+
     # Look through all expressions in the current scope
     if o.scope.expressions
       o.scope.expressions.traverseChildren false, (child) ->
         checkNode child
         true
-    
+
     # If we find more than one assignment, it's reassigned
     assignmentCount > 1
 
