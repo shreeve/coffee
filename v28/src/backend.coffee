@@ -26,23 +26,17 @@ class Backend
     @currentRule      = directive
     @currentLookup    = (index) -> values[stackTop - symbolCount + 1 + index]
 
-    # Get the location data for this production in ESTree format
+    # Get the location data for this production (combines all positions)
     if positions and symbolCount > 0
       firstPos = positions[stackTop - symbolCount + 1]
       lastPos  = positions[stackTop]
       if firstPos and lastPos
         @currentLocationData =
-          loc:
-            start:
-              line:   firstPos.first_line + 1
-              column: firstPos.first_column
-            end:
-              line:   (lastPos.last_line_exclusive ? lastPos.last_line) + 1
-              column: lastPos.last_column_exclusive ? (lastPos.last_column + 1)
-          range: [
-            firstPos.range?[0] ? 0
-            lastPos.range?[1] ? 0
-          ]
+          first_line:            firstPos.first_line
+          first_column:          firstPos.first_column
+          last_line_exclusive:   lastPos.last_line_exclusive   ?  lastPos.last_line
+          last_column_exclusive: lastPos.last_column_exclusive ? (lastPos.last_column + 1)
+          range:                [firstPos.range?[0] ? 0, lastPos.range?[1] ? 0]
     else
       @currentLocationData = null
 
@@ -73,6 +67,7 @@ class Backend
     # Attach location data to the result if it's an AST node
     if result instanceof @ast.Base and @currentLocationData
       result.locationData = @currentLocationData
+      result.updateLocationDataIfMissing?(@currentLocationData)
 
     if global.process?.env?.SOLAR_DEBUG
       util = require 'util'

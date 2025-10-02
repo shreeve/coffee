@@ -424,8 +424,10 @@ exports.Base = class Base
   # The AST location data converts our internal format to ESTree format,
   # which is the standard for JavaScript tooling (VSCode, ESLint, etc).
   astLocationData: ->
-    # Location data is already in ESTree format from backend
-    @locationData
+    # Some nodes are created synthetically during compilation and don't have
+    # location data (e.g., implicit 'this' in bound functions)
+    return undefined unless @locationData?
+    convertLocationDataToAst @locationData
 
   # Determines whether an AST node needs an `ExpressionStatement` wrapper.
   # Typically matches our `isStatement()` logic but this allows overriding.
@@ -525,10 +527,18 @@ exports.Base = class Base
 
   # For this node and all descendents, set the location data to `locationData`
   # if the location data is not already set.
-  # Simplified: just set location data if provided
+  updateLocationDataIfMissing: (locationData, force) ->
+    @forceUpdateLocation = yes if force
+    return this if @locationData and not @forceUpdateLocation
+    delete @forceUpdateLocation
+    @locationData = locationData
+
+    @eachChild (child) ->
+      child.updateLocationDataIfMissing locationData
+
+  # Add location data from another node
   withLocationDataFrom: ({locationData}) ->
-    @locationData = locationData if locationData
-    this
+    @updateLocationDataIfMissing locationData
 
   # Add location data and comments from another node
   withLocationDataAndCommentsFrom: (node) ->
@@ -1924,8 +1934,8 @@ exports.JSXNamespacedName = class JSXNamespacedName extends Base
   constructor: (tag) ->
     super()
     [namespace, name] = tag.value.split ':'
-    @namespace = new JSXIdentifier(namespace).withLocationDataFrom tag
-    @name      = new JSXIdentifier(name     ).withLocationDataFrom tag
+    @namespace = new JSXIdentifier(namespace).withLocationDataFrom locationData: extractSameLineLocationDataFirst(namespace.length) tag.locationData
+    @name      = new JSXIdentifier(name     ).withLocationDataFrom locationData: extractSameLineLocationDataLast(name.length      ) tag.locationData
     @locationData = tag.locationData
 
   children: ['namespace', 'name']
@@ -2057,7 +2067,11 @@ exports.JSXElement = class JSXElement extends Base
             {expression} = element
             unless expression?
               emptyExpression = new JSXEmptyExpression()
-              emptyExpression.locationData = element.locationData
+              emptyExpression.locationData = emptyExpressionLocationData {
+                interpolationNode: element
+                openingBrace: '{'
+                closingBrace: '}'
+              }
 
               new JSXExpressionContainer emptyExpression, locationData: element.locationData
             else
@@ -3172,13 +3186,7 @@ exports.Class = class Class extends Base
     @declareName o
     @name = @determineName()
     @body.isClassBody = yes
-    # For generated body, use the end of the class location
-    if @hasGeneratedBody and @locationData
-      @body.locationData =
-        loc:
-          start: @locationData.loc.end
-          end: @locationData.loc.end
-        range: [@locationData.range[1], @locationData.range[1]]
+    @body.locationData = zeroWidthLocationDataFromEndLocation @locationData if @hasGeneratedBody
     @walkBody o
     sniffDirectives @body.expressions
     @ctor?.noReturn = yes
@@ -5545,7 +5553,11 @@ exports.StringWithInterpolations = class StringWithInterpolations extends Base
         node =
           unless expression?
             emptyInterpolation = new EmptyInterpolation()
-            emptyInterpolation.locationData = element.locationData
+            emptyInterpolation.locationData = emptyExpressionLocationData {
+              interpolationNode: element
+              openingBrace: '#{'
+              closingBrace: '}'
+            }
             emptyInterpolation
           else
             expression.unwrapAll()
@@ -6336,7 +6348,36 @@ exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, firs
     end:   range[1]
   }
 
+# Generate a zero-width location data that corresponds to the end of another node's location.
+zeroWidthLocationDataFromEndLocation = ({range: [, endRange], last_line_exclusive, last_column_exclusive}) -> {
+  first_line: last_line_exclusive
+  first_column: last_column_exclusive
+  last_line: last_line_exclusive
+  last_column: last_column_exclusive
+  last_line_exclusive
+  last_column_exclusive
+  range: [endRange, endRange]
+}
 
+extractSameLineLocationDataFirst = (numChars) -> ({range: [startRange], first_line, first_column}) -> {
+  first_line
+  first_column
+  last_line: first_line
+  last_column: first_column + numChars - 1
+  last_line_exclusive: first_line
+  last_column_exclusive: first_column + numChars
+  range: [startRange, startRange + numChars]
+}
+
+extractSameLineLocationDataLast = (numChars) -> ({range: [, endRange], last_line, last_column, last_line_exclusive, last_column_exclusive}) -> {
+  first_line: last_line
+  first_column: last_column - (numChars - 1)
+  last_line: last_line
+  last_column: last_column
+  last_line_exclusive
+  last_column_exclusive
+  range: [endRange - numChars, endRange]
+}
 
 # We don't currently have a token corresponding to the empty space
 # between interpolation/JSX expression braces, so piece together the location
@@ -6344,4 +6385,14 @@ exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, firs
 # Technically the last_line/last_column calculation here could be
 # incorrect if the ending brace is preceded by a newline, but
 # last_line/last_column aren't used for AST generation anyway.
-
+emptyExpressionLocationData = ({interpolationNode: element, openingBrace, closingBrace}) ->
+  first_line:            element.locationData.first_line
+  first_column:          element.locationData.first_column + openingBrace.length
+  last_line:             element.locationData.last_line
+  last_column:           element.locationData.last_column - closingBrace.length
+  last_line_exclusive:   element.locationData.last_line
+  last_column_exclusive: element.locationData.last_column
+  range: [
+    element.locationData.range[0] + openingBrace.length
+    element.locationData.range[1] - closingBrace.length
+  ]

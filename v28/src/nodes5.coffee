@@ -424,8 +424,10 @@ exports.Base = class Base
   # The AST location data converts our internal format to ESTree format,
   # which is the standard for JavaScript tooling (VSCode, ESLint, etc).
   astLocationData: ->
-    # Location data is already in ESTree format from backend
-    @locationData
+    # Some nodes are created synthetically during compilation and don't have
+    # location data (e.g., implicit 'this' in bound functions)
+    return undefined unless @locationData?
+    convertLocationDataToAst @locationData
 
   # Determines whether an AST node needs an `ExpressionStatement` wrapper.
   # Typically matches our `isStatement()` logic but this allows overriding.
@@ -525,10 +527,18 @@ exports.Base = class Base
 
   # For this node and all descendents, set the location data to `locationData`
   # if the location data is not already set.
-  # Simplified: just set location data if provided
+  updateLocationDataIfMissing: (locationData, force) ->
+    @forceUpdateLocation = yes if force
+    return this if @locationData and not @forceUpdateLocation
+    delete @forceUpdateLocation
+    @locationData = locationData
+
+    @eachChild (child) ->
+      child.updateLocationDataIfMissing locationData
+
+  # Add location data from another node
   withLocationDataFrom: ({locationData}) ->
-    @locationData = locationData if locationData
-    this
+    @updateLocationDataIfMissing locationData
 
   # Add location data and comments from another node
   withLocationDataAndCommentsFrom: (node) ->
@@ -1679,8 +1689,11 @@ exports.Value = class Value extends Base
 
   astLocationData: ->
     return super() unless @isJSXTag()
-    # For JSX tags, use the base location data if available
-    @base.tagNameLocationData or @locationData
+    # don't include leading < of JSX tag in location data
+    mergeAstLocationData(
+      convertLocationDataToAst(@base.tagNameLocationData),
+      convertLocationDataToAst(@properties[@properties.length - 1].locationData)
+    )
 
 exports.MetaProperty = class MetaProperty extends Base
   constructor: (@meta, @property) ->
@@ -1906,8 +1919,8 @@ exports.JSXNamespacedName = class JSXNamespacedName extends Base
   constructor: (tag) ->
     super()
     [namespace, name] = tag.value.split ':'
-    @namespace = new JSXIdentifier(namespace).withLocationDataFrom tag
-    @name      = new JSXIdentifier(name     ).withLocationDataFrom tag
+    @namespace = new JSXIdentifier(namespace).withLocationDataFrom locationData: extractSameLineLocationDataFirst(namespace.length) tag.locationData
+    @name      = new JSXIdentifier(name     ).withLocationDataFrom locationData: extractSameLineLocationDataLast(name.length      ) tag.locationData
     @locationData = tag.locationData
 
   children: ['namespace', 'name']
@@ -1943,12 +1956,15 @@ exports.JSXElement = class JSXElement extends Base
   astNode: (o) ->
     # The location data spanning the opening element < ... > is captured by
     # the generated Arr which contains the element's attributes
-    @openingElementLocationData = @attributes.locationData
+    @openingElementLocationData = convertLocationDataToAst @attributes.locationData
 
     tagName = @tagName.base
     tagName.locationData = tagName.tagNameLocationData
     if @content?
-      @closingElementLocationData = tagName.closingTagClosingBracketLocationData or @locationData
+      @closingElementLocationData = mergeAstLocationData(
+        convertLocationDataToAst tagName.closingTagOpeningBracketLocationData
+        convertLocationDataToAst tagName.closingTagClosingBracketLocationData
+      )
 
     super o
 
@@ -1978,7 +1994,7 @@ exports.JSXElement = class JSXElement extends Base
         type: 'JSXClosingElement'
         name: Object.assign(
           tagNameAst(),
-          @tagName.base.closingTagNameLocationData or {}
+          convertLocationDataToAst @tagName.base.closingTagNameLocationData
         )
       }, @closingElementLocationData
       if closingElement.name.type in ['JSXMemberExpression', 'JSXNamespacedName']
@@ -2036,7 +2052,11 @@ exports.JSXElement = class JSXElement extends Base
             {expression} = element
             unless expression?
               emptyExpression = new JSXEmptyExpression()
-              emptyExpression.locationData = element.locationData
+              emptyExpression.locationData = emptyExpressionLocationData {
+                interpolationNode: element
+                openingBrace: '{'
+                closingBrace: '}'
+              }
 
               new JSXExpressionContainer emptyExpression, locationData: element.locationData
             else
@@ -2061,7 +2081,10 @@ exports.JSXElement = class JSXElement extends Base
     )
 
   astLocationData: ->
-    @closingElementLocationData or @openingElementLocationData
+    if @closingElementLocationData?
+      mergeAstLocationData @openingElementLocationData, @closingElementLocationData
+    else
+      @openingElementLocationData
 
 #### Call
 
@@ -3147,13 +3170,7 @@ exports.Class = class Class extends Base
     @declareName o
     @name = @determineName()
     @body.isClassBody = yes
-    # For generated body, use the end of the class location
-    if @hasGeneratedBody and @locationData
-      @body.locationData =
-        loc:
-          start: @locationData.loc.end
-          end: @locationData.loc.end
-        range: [@locationData.range[1], @locationData.range[1]]
+    @body.locationData = zeroWidthLocationDataFromEndLocation @locationData if @hasGeneratedBody
     @walkBody o
     sniffDirectives @body.expressions
     @ctor?.noReturn = yes
@@ -4438,8 +4455,10 @@ exports.Code = class Code extends Base
     functionLocationData = super()
     return functionLocationData unless @isMethod
 
-    # Just use the function's location data
-    functionLocationData
+    astLocationData = mergeAstLocationData @name.astLocationData(), functionLocationData
+    if @isStatic.staticClassName?
+      astLocationData = mergeAstLocationData @isStatic.staticClassName.astLocationData(), astLocationData
+    astLocationData
 
 #### Param
 
@@ -5107,7 +5126,12 @@ exports.Try = class Try extends Base
       handler: @catch?.ast(o) ? null
       finalizer:
         if @ensure?
-          @ensure.ast(o, LEVEL_TOP)
+          Object.assign @ensure.ast(o, LEVEL_TOP),
+            # Include `finally` keyword in location data.
+            mergeAstLocationData(
+              convertLocationDataToAst(@finallyTag.locationData),
+              @ensure.astLocationData()
+            )
         else
           null
 
@@ -5401,7 +5425,11 @@ exports.StringWithInterpolations = class StringWithInterpolations extends Base
         node =
           unless expression?
             emptyInterpolation = new EmptyInterpolation()
-            emptyInterpolation.locationData = element.locationData
+            emptyInterpolation.locationData = emptyExpressionLocationData {
+              interpolationNode: element
+              openingBrace: '#{'
+              closingBrace: '}'
+            }
             emptyInterpolation
           else
             expression.unwrapAll()
@@ -6043,3 +6071,200 @@ astAsBlockIfNeeded = (node, o) ->
     unwrapped.ast o, LEVEL_TOP
   else
     node.ast o, LEVEL_PAREN
+
+# Helpers for `mergeLocationData` and `mergeAstLocationData` below.
+lesser  = (a, b) -> if a < b then a else b
+greater = (a, b) -> if a > b then a else b
+
+isAstLocGreater = (a, b) ->
+  return yes if a.line > b.line
+  return no unless a.line is b.line
+  a.column > b.column
+
+isLocationDataStartGreater = (a, b) ->
+  return yes if a.first_line > b.first_line
+  return no unless a.first_line is b.first_line
+  a.first_column > b.first_column
+
+isLocationDataEndGreater = (a, b) ->
+  return yes if a.last_line > b.last_line
+  return no unless a.last_line is b.last_line
+  a.last_column > b.last_column
+
+# Take two nodes' location data and return a new `locationData` object that
+# encompasses the location data of both nodes. So the new `first_line` value
+# will be the earlier of the two nodes' `first_line` values, the new
+# `last_column` the later of the two nodes' `last_column` values, etc.
+#
+# If you only want to extend the first node's location data with the start or
+# end location data of the second node, pass the `justLeading` or `justEnding`
+# options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
+# you'd get:
+# ```
+# mergeLocationData(first, second).range                   # [1, 10]
+# mergeLocationData(first, second, justLeading: yes).range # [1, 5]
+# mergeLocationData(first, second, justEnding:  yes).range # [4, 10]
+# ```
+exports.mergeLocationData = mergeLocationData = (locationDataA, locationDataB, {justLeading, justEnding} = {}) ->
+  return Object.assign(
+    if justEnding
+      first_line:   locationDataA.first_line
+      first_column: locationDataA.first_column
+    else
+      if isLocationDataStartGreater locationDataA, locationDataB
+        first_line:   locationDataB.first_line
+        first_column: locationDataB.first_column
+      else
+        first_line:   locationDataA.first_line
+        first_column: locationDataA.first_column
+  ,
+    if justLeading
+      last_line:             locationDataA.last_line
+      last_column:           locationDataA.last_column
+      last_line_exclusive:   locationDataA.last_line_exclusive
+      last_column_exclusive: locationDataA.last_column_exclusive
+    else
+      if isLocationDataEndGreater locationDataA, locationDataB
+        last_line:             locationDataA.last_line
+        last_column:           locationDataA.last_column
+        last_line_exclusive:   locationDataA.last_line_exclusive
+        last_column_exclusive: locationDataA.last_column_exclusive
+      else
+        last_line:             locationDataB.last_line
+        last_column:           locationDataB.last_column
+        last_line_exclusive:   locationDataB.last_line_exclusive
+        last_column_exclusive: locationDataB.last_column_exclusive
+  ,
+    range: [
+      if justEnding
+        locationDataA.range[0]
+      else
+        lesser locationDataA.range[0], locationDataB.range[0]
+    ,
+      if justLeading
+        locationDataA.range[1]
+      else
+        greater locationDataA.range[1], locationDataB.range[1]
+    ]
+  )
+
+# Take two AST nodes, or two AST nodes' location data objects, and return a new
+# location data object that encompasses the location data of both nodes. So the
+# new `start` value will be the earlier of the two nodes' `start` values, the
+# new `end` value will be the later of the two nodes' `end` values, etc.
+#
+# If you only want to extend the first node's location data with the start or
+# end location data of the second node, pass the `justLeading` or `justEnding`
+# options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
+# you'd get:
+# ```
+# mergeAstLocationData(first, second).range                   # [1, 10]
+# mergeAstLocationData(first, second, justLeading: yes).range # [1, 5]
+# mergeAstLocationData(first, second, justEnding:  yes).range # [4, 10]
+# ```
+exports.mergeAstLocationData = mergeAstLocationData = (nodeA, nodeB, {justLeading, justEnding} = {}) ->
+  return
+    loc:
+      start:
+        if justEnding
+          nodeA.loc.start
+        else
+          if isAstLocGreater nodeA.loc.start, nodeB.loc.start
+            nodeB.loc.start
+          else
+            nodeA.loc.start
+      end:
+        if justLeading
+          nodeA.loc.end
+        else
+          if isAstLocGreater nodeA.loc.end, nodeB.loc.end
+            nodeA.loc.end
+          else
+            nodeB.loc.end
+    range: [
+      if justEnding
+        nodeA.range[0]
+      else
+        lesser nodeA.range[0], nodeB.range[0]
+    ,
+      if justLeading
+        nodeA.range[1]
+      else
+        greater nodeA.range[1], nodeB.range[1]
+    ]
+    start:
+      if justEnding
+        nodeA.start
+      else
+        lesser nodeA.start, nodeB.start
+    end:
+      if justLeading
+        nodeA.end
+      else
+        greater nodeA.end, nodeB.end
+
+# Convert internal location data format to ESTree-compatible AST location data format
+exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) -> {
+    loc:
+      start:
+        line:   first_line + 1
+        column: first_column
+      end:
+        line:   last_line_exclusive + 1
+        column: last_column_exclusive
+    range: [
+      range[0]
+      range[1]
+    ]
+    start: range[0]
+    end:   range[1]
+  }
+
+# Generate a zero-width location data that corresponds to the end of another node's location.
+zeroWidthLocationDataFromEndLocation = ({range: [, endRange], last_line_exclusive, last_column_exclusive}) -> {
+  first_line: last_line_exclusive
+  first_column: last_column_exclusive
+  last_line: last_line_exclusive
+  last_column: last_column_exclusive
+  last_line_exclusive
+  last_column_exclusive
+  range: [endRange, endRange]
+}
+
+extractSameLineLocationDataFirst = (numChars) -> ({range: [startRange], first_line, first_column}) -> {
+  first_line
+  first_column
+  last_line: first_line
+  last_column: first_column + numChars - 1
+  last_line_exclusive: first_line
+  last_column_exclusive: first_column + numChars
+  range: [startRange, startRange + numChars]
+}
+
+extractSameLineLocationDataLast = (numChars) -> ({range: [, endRange], last_line, last_column, last_line_exclusive, last_column_exclusive}) -> {
+  first_line: last_line
+  first_column: last_column - (numChars - 1)
+  last_line: last_line
+  last_column: last_column
+  last_line_exclusive
+  last_column_exclusive
+  range: [endRange - numChars, endRange]
+}
+
+# We don't currently have a token corresponding to the empty space
+# between interpolation/JSX expression braces, so piece together the location
+# data by trimming the braces from the Interpolation's location data.
+# Technically the last_line/last_column calculation here could be
+# incorrect if the ending brace is preceded by a newline, but
+# last_line/last_column aren't used for AST generation anyway.
+emptyExpressionLocationData = ({interpolationNode: element, openingBrace, closingBrace}) ->
+  first_line:            element.locationData.first_line
+  first_column:          element.locationData.first_column + openingBrace.length
+  last_line:             element.locationData.last_line
+  last_column:           element.locationData.last_column - closingBrace.length
+  last_line_exclusive:   element.locationData.last_line
+  last_column_exclusive: element.locationData.last_column
+  range: [
+    element.locationData.range[0] + openingBrace.length
+    element.locationData.range[1] - closingBrace.length
+  ]

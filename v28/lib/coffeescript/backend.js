@@ -38,22 +38,16 @@
       this.currentLookup = function(index) {
         return values[stackTop - symbolCount + 1 + index];
       };
-      // Get the location data for this production in ESTree format
+      // Get the location data for this production (combines all positions)
       if (positions && symbolCount > 0) {
         firstPos = positions[stackTop - symbolCount + 1];
         lastPos = positions[stackTop];
         if (firstPos && lastPos) {
           this.currentLocationData = {
-            loc: {
-              start: {
-                line: firstPos.first_line + 1,
-                column: firstPos.first_column
-              },
-              end: {
-                line: ((ref = lastPos.last_line_exclusive) != null ? ref : lastPos.last_line) + 1,
-                column: (ref1 = lastPos.last_column_exclusive) != null ? ref1 : lastPos.last_column + 1
-              }
-            },
+            first_line: firstPos.first_line,
+            first_column: firstPos.first_column,
+            last_line_exclusive: (ref = lastPos.last_line_exclusive) != null ? ref : lastPos.last_line,
+            last_column_exclusive: (ref1 = lastPos.last_column_exclusive) != null ? ref1 : lastPos.last_column + 1,
             range: [(ref2 = (ref3 = firstPos.range) != null ? ref3[0] : void 0) != null ? ref2 : 0, (ref4 = (ref5 = lastPos.range) != null ? ref5[1] : void 0) != null ? ref4 : 0]
           };
         }
@@ -92,6 +86,9 @@
       // Attach location data to the result if it's an AST node
       if (result instanceof this.ast.Base && this.currentLocationData) {
         result.locationData = this.currentLocationData;
+        if (typeof result.updateLocationDataIfMissing === "function") {
+          result.updateLocationDataIfMissing(this.currentLocationData);
+        }
       }
       if ((ref6 = global.process) != null ? (ref7 = ref6.env) != null ? ref7.SOLAR_DEBUG : void 0 : void 0) {
         util = require('util');
