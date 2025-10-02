@@ -526,6 +526,11 @@ exports.Base = class Base
   # For this node and all descendents, set the location data to `locationData`
   # if the location data is not already set.
   # Simplified: just set location data if provided
+  # Update location data only if it's missing
+  updateLocationDataIfMissing: (locationData) ->
+    @locationData = locationData if locationData and not @locationData
+    this
+
   withLocationDataFrom: ({locationData}) ->
     @locationData = locationData if locationData
     this
@@ -1692,14 +1697,6 @@ exports.Value = class Value extends Base
       shorthand: !!property.shorthand
     }
 
-  astLocationData: ->
-    return super() unless @isJSXTag()
-    # don't include leading < of JSX tag in location data
-    mergeAstLocationData(
-      convertLocationDataToAst(@base.tagNameLocationData),
-      convertLocationDataToAst(@properties[@properties.length - 1].locationData)
-    )
-
 exports.MetaProperty = class MetaProperty extends Base
   constructor: (@meta, @property) ->
     super()
@@ -1961,14 +1958,14 @@ exports.JSXElement = class JSXElement extends Base
   astNode: (o) ->
     # The location data spanning the opening element < ... > is captured by
     # the generated Arr which contains the element's attributes
-    @openingElementLocationData = convertLocationDataToAst @attributes.locationData
+    @openingElementLocationData = @attributes.locationData
 
     tagName = @tagName.base
     tagName.locationData = tagName.tagNameLocationData
     if @content?
-      @closingElementLocationData = mergeAstLocationData(
-        convertLocationDataToAst tagName.closingTagOpeningBracketLocationData
-        convertLocationDataToAst tagName.closingTagClosingBracketLocationData
+      @closingElementLocationData = mergeLocationData(
+        tagName.closingTagOpeningBracketLocationData,
+        tagName.closingTagClosingBracketLocationData
       )
 
     super o
@@ -1999,7 +1996,7 @@ exports.JSXElement = class JSXElement extends Base
         type: 'JSXClosingElement'
         name: Object.assign(
           tagNameAst(),
-          convertLocationDataToAst @tagName.base.closingTagNameLocationData
+          @tagName.base.closingTagNameLocationData
         )
       }, @closingElementLocationData
       if closingElement.name.type in ['JSXMemberExpression', 'JSXNamespacedName']
@@ -2083,7 +2080,7 @@ exports.JSXElement = class JSXElement extends Base
 
   astLocationData: ->
     if @closingElementLocationData?
-      mergeAstLocationData @openingElementLocationData, @closingElementLocationData
+      mergeLocationData @openingElementLocationData, @closingElementLocationData
     else
       @openingElementLocationData
 
@@ -3095,7 +3092,7 @@ exports.Class = class Class extends Base
     else
       methodName  = variable.base
       method.name = new (if methodName.shouldCache() then Index else Access) methodName
-      method.name.updateLocationDataIfMissing methodName.locationData
+      method.name.locationData = methodName.locationData if methodName.locationData
       isConstructor =
         if methodName instanceof StringLiteral
           methodName.originalValue is 'constructor'
@@ -4575,9 +4572,9 @@ exports.Code = class Code extends Base
     functionLocationData = super()
     return functionLocationData unless @isMethod
 
-    astLocationData = mergeAstLocationData @name.astLocationData(), functionLocationData
+    astLocationData = mergeLocationData @name.astLocationData(), functionLocationData
     if @isStatic.staticClassName?
-      astLocationData = mergeAstLocationData @isStatic.staticClassName.astLocationData(), astLocationData
+      astLocationData = mergeLocationData @isStatic.staticClassName.astLocationData(), astLocationData
     astLocationData
 
 #### Param
@@ -5248,8 +5245,8 @@ exports.Try = class Try extends Base
         if @ensure?
           Object.assign @ensure.ast(o, LEVEL_TOP),
             # Include `finally` keyword in location data.
-            mergeAstLocationData(
-              convertLocationDataToAst(@finallyTag.locationData),
+            mergeLocationData(
+              @finallyTag.locationData,
               @ensure.astLocationData()
             )
         else
@@ -5814,8 +5811,8 @@ exports.Switch = class Switch extends Base
 
         caseLocationData = test.locationData
         caseLocationData = mergeLocationData caseLocationData, testConsequent.expressions[testConsequent.expressions.length - 1].locationData if testConsequent?.expressions.length
-        caseLocationData = mergeLocationData caseLocationData, kase.locationData, justLeading: yes if testIndex is 0
-        caseLocationData = mergeLocationData caseLocationData, kase.locationData, justEnding:  yes if testIndex is lastTestIndex
+        caseLocationData = mergeLocationData caseLocationData, kase.locationData, growHead: yes if testIndex is 0
+        caseLocationData = mergeLocationData caseLocationData, kase.locationData, growTail: yes if testIndex is lastTestIndex
 
         cases.push new SwitchCase(test, testConsequent, trailing: testIndex is lastTestIndex).withLocationDataFrom locationData: caseLocationData
 
@@ -6188,160 +6185,19 @@ astAsBlockIfNeeded = (node, o) ->
   else
     node.ast o, LEVEL_PAREN
 
-# Helpers for `mergeLocationData` and `mergeAstLocationData` below.
-lesser  = (a, b) -> if a < b then a else b
-greater = (a, b) -> if a > b then a else b
+# Merge location data helper function
+mergeLocationData = (a, b, {growHead, growTail} = {}) ->
+  return a unless b
+  return b unless a
+  return a unless a.loc and b.loc
 
-isAstLocGreater = (a, b) ->
-  return yes if a.line > b.line
-  return no unless a.line is b.line
-  a.column > b.column
+  locStart = (x) -> x.loc.start.line * 100000 + x.loc.start.column
+  locEnd   = (x) -> x.loc.end.line   * 100000 + x.loc.end.column
 
-isLocationDataStartGreater = (a, b) ->
-  return yes if a.first_line > b.first_line
-  return no unless a.first_line is b.first_line
-  a.first_column > b.first_column
-
-isLocationDataEndGreater = (a, b) ->
-  return yes if a.last_line > b.last_line
-  return no unless a.last_line is b.last_line
-  a.last_column > b.last_column
-
-# Take two nodes' location data and return a new `locationData` object that
-# encompasses the location data of both nodes. So the new `first_line` value
-# will be the earlier of the two nodes' `first_line` values, the new
-# `last_column` the later of the two nodes' `last_column` values, etc.
-#
-# If you only want to extend the first node's location data with the start or
-# end location data of the second node, pass the `justLeading` or `justEnding`
-# options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
-# you'd get:
-# ```
-# mergeLocationData(first, second).range                   # [1, 10]
-# mergeLocationData(first, second, justLeading: yes).range # [1, 5]
-# mergeLocationData(first, second, justEnding:  yes).range # [4, 10]
-# ```
-exports.mergeLocationData = mergeLocationData = (locationDataA, locationDataB, {justLeading, justEnding} = {}) ->
-  return Object.assign(
-    if justEnding
-      first_line:   locationDataA.first_line
-      first_column: locationDataA.first_column
-    else
-      if isLocationDataStartGreater locationDataA, locationDataB
-        first_line:   locationDataB.first_line
-        first_column: locationDataB.first_column
-      else
-        first_line:   locationDataA.first_line
-        first_column: locationDataA.first_column
-  ,
-    if justLeading
-      last_line:             locationDataA.last_line
-      last_column:           locationDataA.last_column
-      last_line_exclusive:   locationDataA.last_line_exclusive
-      last_column_exclusive: locationDataA.last_column_exclusive
-    else
-      if isLocationDataEndGreater locationDataA, locationDataB
-        last_line:             locationDataA.last_line
-        last_column:           locationDataA.last_column
-        last_line_exclusive:   locationDataA.last_line_exclusive
-        last_column_exclusive: locationDataA.last_column_exclusive
-      else
-        last_line:             locationDataB.last_line
-        last_column:           locationDataB.last_column
-        last_line_exclusive:   locationDataB.last_line_exclusive
-        last_column_exclusive: locationDataB.last_column_exclusive
-  ,
-    range: [
-      if justEnding
-        locationDataA.range[0]
-      else
-        lesser locationDataA.range[0], locationDataB.range[0]
-    ,
-      if justLeading
-        locationDataA.range[1]
-      else
-        greater locationDataA.range[1], locationDataB.range[1]
-    ]
-  )
-
-# Take two AST nodes, or two AST nodes' location data objects, and return a new
-# location data object that encompasses the location data of both nodes. So the
-# new `start` value will be the earlier of the two nodes' `start` values, the
-# new `end` value will be the later of the two nodes' `end` values, etc.
-#
-# If you only want to extend the first node's location data with the start or
-# end location data of the second node, pass the `justLeading` or `justEnding`
-# options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
-# you'd get:
-# ```
-# mergeAstLocationData(first, second).range                   # [1, 10]
-# mergeAstLocationData(first, second, justLeading: yes).range # [1, 5]
-# mergeAstLocationData(first, second, justEnding:  yes).range # [4, 10]
-# ```
-exports.mergeAstLocationData = mergeAstLocationData = (nodeA, nodeB, {justLeading, justEnding} = {}) ->
-  return
-    loc:
-      start:
-        if justEnding
-          nodeA.loc.start
-        else
-          if isAstLocGreater nodeA.loc.start, nodeB.loc.start
-            nodeB.loc.start
-          else
-            nodeA.loc.start
-      end:
-        if justLeading
-          nodeA.loc.end
-        else
-          if isAstLocGreater nodeA.loc.end, nodeB.loc.end
-            nodeA.loc.end
-          else
-            nodeB.loc.end
-    range: [
-      if justEnding
-        nodeA.range[0]
-      else
-        lesser nodeA.range[0], nodeB.range[0]
-    ,
-      if justLeading
-        nodeA.range[1]
-      else
-        greater nodeA.range[1], nodeB.range[1]
-    ]
-    start:
-      if justEnding
-        nodeA.start
-      else
-        lesser nodeA.start, nodeB.start
-    end:
-      if justLeading
-        nodeA.end
-      else
-        greater nodeA.end, nodeB.end
-
-# Convert internal location data format to ESTree-compatible AST location data format
-exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) -> {
-    loc:
-      start:
-        line:   first_line + 1
-        column: first_column
-      end:
-        line:   last_line_exclusive + 1
-        column: last_column_exclusive
-    range: [
-      range[0]
-      range[1]
-    ]
-    start: range[0]
-    end:   range[1]
-  }
-
-
-
-# We don't currently have a token corresponding to the empty space
-# between interpolation/JSX expression braces, so piece together the location
-# data by trimming the braces from the Interpolation's location data.
-# Technically the last_line/last_column calculation here could be
-# incorrect if the ending brace is preceded by a newline, but
-# last_line/last_column aren't used for AST generation anyway.
-
+  loc:
+    start: if growTail then a.loc.start else if locStart(a) <= locStart(b) then a.loc.start else b.loc.start
+    end:   if growHead then a.loc.end   else if locEnd(a)   >= locEnd(b)   then a.loc.end   else b.loc.end
+  range: [
+    if growTail then a.range[0] else Math.min(a.range[0], b.range[0])
+    if growHead then a.range[1] else Math.max(a.range[1], b.range[1])
+  ]

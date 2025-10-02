@@ -4,7 +4,7 @@
   // nodes are created as the result of actions in the [grammar](grammar.html),
   // but some are created by other nodes as a method of code generation. To convert
   // the syntax tree into a string of JavaScript code, call `compile()` on the root.
-  var Access, Arr, Assign, AwaitReturn, Base, Block, BooleanLiteral, Call, Catch, Class, ClassProperty, ClassPrototypeProperty, Code, CodeFragment, ComputedPropertyName, DefaultLiteral, Directive, DynamicImport, DynamicImportCall, Elision, EmptyInterpolation, ExecutableClassBody, Existence, Expansion, ExportAllDeclaration, ExportDeclaration, ExportDefaultDeclaration, ExportNamedDeclaration, ExportSpecifier, ExportSpecifierList, Extends, For, FuncDirectiveReturn, FuncGlyph, HEREGEX_OMIT, HereComment, HoistTarget, IdentifierLiteral, If, ImportClause, ImportDeclaration, ImportDefaultSpecifier, ImportNamespaceSpecifier, ImportSpecifier, ImportSpecifierList, In, Index, InfinityLiteral, Interpolation, JSXAttribute, JSXAttributes, JSXElement, JSXEmptyExpression, JSXExpressionContainer, JSXIdentifier, JSXNamespacedName, JSXTag, JSXText, JS_FORBIDDEN, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, LineComment, Literal, MetaProperty, ModuleDeclaration, ModuleSpecifier, ModuleSpecifierList, NEGATE, NO, NaNLiteral, NullLiteral, NumberLiteral, Obj, ObjectProperty, Op, Param, Parens, PassthroughLiteral, PropertyName, Range, RegexLiteral, RegexWithInterpolations, Return, Root, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, Scope, Sequence, Slice, Splat, StatementLiteral, StringLiteral, StringWithInterpolations, Super, SuperCall, Switch, SwitchCase, SwitchWhen, TAB, THIS, TRAILING_BLANK_LINE, TaggedTemplateCall, TemplateElement, ThisLiteral, Throw, Try, UTILITIES, UndefinedLiteral, Value, While, YES, YieldReturn, addDataToNode, astAsBlockIfNeeded, attachCommentsToNode, compact, del, ends, extend, flatten, fragmentsToText, hasLineComments, indentInitial, isFunction, isLiteralArguments, isLiteralThis, isNumber, isPlainObject, isUnassignable, locationDataToString, makeDelimitedLiteral, merge, moveComments, multident, parseNumber, replaceUnicodeCodePointEscapes, shouldCacheOrIsAssignable, sniffDirectives, some, starts, throwSyntaxError, unfoldSoak, unshiftAfterComments, utility,
+  var Access, Arr, Assign, AwaitReturn, Base, Block, BooleanLiteral, Call, Catch, Class, ClassProperty, ClassPrototypeProperty, Code, CodeFragment, ComputedPropertyName, DefaultLiteral, Directive, DynamicImport, DynamicImportCall, Elision, EmptyInterpolation, ExecutableClassBody, Existence, Expansion, ExportAllDeclaration, ExportDeclaration, ExportDefaultDeclaration, ExportNamedDeclaration, ExportSpecifier, ExportSpecifierList, Extends, For, FuncDirectiveReturn, FuncGlyph, HEREGEX_OMIT, HereComment, HoistTarget, IdentifierLiteral, If, ImportClause, ImportDeclaration, ImportDefaultSpecifier, ImportNamespaceSpecifier, ImportSpecifier, ImportSpecifierList, In, Index, InfinityLiteral, Interpolation, JSXAttribute, JSXAttributes, JSXElement, JSXEmptyExpression, JSXExpressionContainer, JSXIdentifier, JSXNamespacedName, JSXTag, JSXText, JS_FORBIDDEN, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, LineComment, Literal, MetaProperty, ModuleDeclaration, ModuleSpecifier, ModuleSpecifierList, NEGATE, NO, NaNLiteral, NullLiteral, NumberLiteral, Obj, ObjectProperty, Op, Param, Parens, PassthroughLiteral, PropertyName, Range, RegexLiteral, RegexWithInterpolations, Return, Root, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, Scope, Sequence, Slice, Splat, StatementLiteral, StringLiteral, StringWithInterpolations, Super, SuperCall, Switch, SwitchCase, SwitchWhen, TAB, THIS, TRAILING_BLANK_LINE, TaggedTemplateCall, TemplateElement, ThisLiteral, Throw, Try, UTILITIES, UndefinedLiteral, Value, While, YES, YieldReturn, addDataToNode, astAsBlockIfNeeded, attachCommentsToNode, compact, del, ends, extend, flatten, fragmentsToText, hasLineComments, indentInitial, isFunction, isLiteralArguments, isLiteralThis, isNumber, isPlainObject, isUnassignable, locationDataToString, makeDelimitedLiteral, merge, mergeLocationData, moveComments, multident, parseNumber, replaceUnicodeCodePointEscapes, shouldCacheOrIsAssignable, sniffDirectives, some, starts, throwSyntaxError, unfoldSoak, unshiftAfterComments, utility,
     indexOf = [].indexOf,
     splice = [].splice,
     slice1 = [].slice;
@@ -707,6 +707,14 @@
       // For this node and all descendents, set the location data to `locationData`
       // if the location data is not already set.
       // Simplified: just set location data if provided
+      // Update location data only if it's missing
+      updateLocationDataIfMissing(locationData) {
+        if (locationData && !this.locationData) {
+          this.locationData = locationData;
+        }
+        return this;
+      }
+
       withLocationDataFrom({locationData}) {
         if (locationData) {
           this.locationData = locationData;
@@ -2490,14 +2498,6 @@
         };
       }
 
-      astLocationData() {
-        if (!this.isJSXTag()) {
-          return super.astLocationData();
-        }
-        // For JSX tags, use the base location data if available
-        return this.base.tagNameLocationData || this.locationData;
-      }
-
     };
 
     Value.prototype.children = ['base', 'properties'];
@@ -2931,7 +2931,7 @@
         tagName = this.tagName.base;
         tagName.locationData = tagName.tagNameLocationData;
         if (this.content != null) {
-          this.closingElementLocationData = tagName.closingTagClosingBracketLocationData || this.locationData;
+          this.closingElementLocationData = mergeLocationData(tagName.closingTagOpeningBracketLocationData, tagName.closingTagClosingBracketLocationData);
         }
         return super.astNode(o);
       }
@@ -2964,7 +2964,7 @@
         if (this.closingElementLocationData != null) {
           closingElement = Object.assign({
             type: 'JSXClosingElement',
-            name: Object.assign(tagNameAst(), this.tagName.base.closingTagNameLocationData || {})
+            name: Object.assign(tagNameAst(), this.tagName.base.closingTagNameLocationData)
           }, this.closingElementLocationData);
           if ((ref1 = closingElement.name.type) === 'JSXMemberExpression' || ref1 === 'JSXNamespacedName') {
             rangeDiff = closingElement.range[0] - openingElement.range[0] + '/'.length;
@@ -3073,7 +3073,11 @@
       }
 
       astLocationData() {
-        return this.closingElementLocationData || this.openingElementLocationData;
+        if (this.closingElementLocationData != null) {
+          return mergeLocationData(this.openingElementLocationData, this.closingElementLocationData);
+        } else {
+          return this.openingElementLocationData;
+        }
       }
 
     };
@@ -4612,7 +4616,9 @@
         } else {
           methodName = variable.base;
           method.name = new (methodName.shouldCache() ? Index : Access)(methodName);
-          method.name.updateLocationDataIfMissing(methodName.locationData);
+          if (methodName.locationData) {
+            method.name.locationData = methodName.locationData;
+          }
           isConstructor = methodName instanceof StringLiteral ? methodName.originalValue === 'constructor' : methodName.value === 'constructor';
           if (isConstructor) {
             method.ctor = (this.parent ? 'derived' : 'base');
@@ -6640,13 +6646,16 @@
       }
 
       astLocationData() {
-        var functionLocationData;
+        var astLocationData, functionLocationData;
         functionLocationData = super.astLocationData();
         if (!this.isMethod) {
           return functionLocationData;
         }
-        // Just use the function's location data
-        return functionLocationData;
+        astLocationData = mergeLocationData(this.name.astLocationData(), functionLocationData);
+        if (this.isStatic.staticClassName != null) {
+          astLocationData = mergeLocationData(this.isStatic.staticClassName.astLocationData(), astLocationData);
+        }
+        return astLocationData;
       }
 
     };
@@ -7671,7 +7680,8 @@
         return {
           block: this.attempt.ast(o, LEVEL_TOP),
           handler: (ref1 = (ref2 = this.catch) != null ? ref2.ast(o) : void 0) != null ? ref1 : null,
-          finalizer: this.ensure != null ? this.ensure.ast(o, LEVEL_TOP) : null
+          // Include `finally` keyword in location data.
+          finalizer: this.ensure != null ? Object.assign(this.ensure.ast(o, LEVEL_TOP), mergeLocationData(this.finallyTag.locationData, this.ensure.astLocationData())) : null
         };
       }
 
@@ -8595,12 +8605,12 @@
             }
             if (testIndex === 0) {
               caseLocationData = mergeLocationData(caseLocationData, kase.locationData, {
-                justLeading: true
+                growHead: true
               });
             }
             if (testIndex === lastTestIndex) {
               caseLocationData = mergeLocationData(caseLocationData, kase.locationData, {
-                justEnding: true
+                growTail: true
               });
             }
             cases.push(new SwitchCase(test, testConsequent, {
@@ -9174,6 +9184,33 @@
     } else {
       return node.ast(o, LEVEL_PAREN);
     }
+  };
+
+  // Merge location data helper function
+  mergeLocationData = function(a, b, {growHead, growTail} = {}) {
+    var locEnd, locStart;
+    if (!b) {
+      return a;
+    }
+    if (!a) {
+      return b;
+    }
+    if (!(a.loc && b.loc)) {
+      return a;
+    }
+    locStart = function(x) {
+      return x.loc.start.line * 100000 + x.loc.start.column;
+    };
+    locEnd = function(x) {
+      return x.loc.end.line * 100000 + x.loc.end.column;
+    };
+    return {
+      loc: {
+        start: growTail ? a.loc.start : locStart(a) <= locStart(b) ? a.loc.start : b.loc.start,
+        end: growHead ? a.loc.end : locEnd(a) >= locEnd(b) ? a.loc.end : b.loc.end
+      },
+      range: [growTail ? a.range[0] : Math.min(a.range[0], b.range[0]), growHead ? a.range[1] : Math.max(a.range[1], b.range[1])]
+    };
   };
 
 }).call(this);
