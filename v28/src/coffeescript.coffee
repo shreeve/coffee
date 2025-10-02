@@ -16,7 +16,7 @@ packageJson   = require '../../package.json'
 # The current CoffeeScript version number.
 exports.VERSION = packageJson.version
 
-exports.FILE_EXTENSIONS = FILE_EXTENSIONS = ['.coffee', '.litcoffee', '.coffee.md']
+exports.FILE_EXTENSIONS = FILE_EXTENSIONS = ['.coffee']
 
 # Expose helpers for testing.
 exports.helpers = helpers

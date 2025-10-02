@@ -84,7 +84,7 @@
   CoffeeScript.runScripts = function() {
     var coffees, coffeetypes, execute, i, index, j, len, s, script, scripts;
     scripts = window.document.getElementsByTagName('script');
-    coffeetypes = ['text/coffeescript', 'text/literate-coffeescript'];
+    coffeetypes = ['text/coffeescript'];
     coffees = (function() {
       var j, len, ref, results;
       results = [];
@@ -110,9 +110,7 @@
       script = coffees[i];
       (function(script, i) {
         var options, source;
-        options = {
-          literate: script.type === coffeetypes[1]
-        };
+        options = {};
         source = script.src || script.getAttribute('data-src');
         if (source) {
           options.filename = source;
