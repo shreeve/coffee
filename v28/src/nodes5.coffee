@@ -526,11 +526,6 @@ exports.Base = class Base
   # For this node and all descendents, set the location data to `locationData`
   # if the location data is not already set.
   # Simplified: just set location data if provided
-  # Update location data only if it's missing
-  updateLocationDataIfMissing: (locationData) ->
-    @locationData = locationData if locationData and not @locationData
-    this
-
   withLocationDataFrom: ({locationData}) ->
     @locationData = locationData if locationData
     this
@@ -1682,6 +1677,11 @@ exports.Value = class Value extends Base
       shorthand: !!property.shorthand
     }
 
+  astLocationData: ->
+    return super() unless @isJSXTag()
+    # For JSX tags, use the base location data if available
+    @base.tagNameLocationData or @locationData
+
 exports.MetaProperty = class MetaProperty extends Base
   constructor: (@meta, @property) ->
     super()
@@ -1948,10 +1948,7 @@ exports.JSXElement = class JSXElement extends Base
     tagName = @tagName.base
     tagName.locationData = tagName.tagNameLocationData
     if @content?
-      @closingElementLocationData = mergeLocationData(
-        tagName.closingTagOpeningBracketLocationData,
-        tagName.closingTagClosingBracketLocationData
-      )
+      @closingElementLocationData = tagName.closingTagClosingBracketLocationData or @locationData
 
     super o
 
@@ -1981,7 +1978,7 @@ exports.JSXElement = class JSXElement extends Base
         type: 'JSXClosingElement'
         name: Object.assign(
           tagNameAst(),
-          @tagName.base.closingTagNameLocationData
+          @tagName.base.closingTagNameLocationData or {}
         )
       }, @closingElementLocationData
       if closingElement.name.type in ['JSXMemberExpression', 'JSXNamespacedName']
@@ -2064,10 +2061,7 @@ exports.JSXElement = class JSXElement extends Base
     )
 
   astLocationData: ->
-    if @closingElementLocationData?
-      mergeLocationData @openingElementLocationData, @closingElementLocationData
-    else
-      @openingElementLocationData
+    @closingElementLocationData or @openingElementLocationData
 
 #### Call
 
@@ -3076,7 +3070,7 @@ exports.Class = class Class extends Base
     else
       methodName  = variable.base
       method.name = new (if methodName.shouldCache() then Index else Access) methodName
-      method.name.locationData = methodName.locationData if methodName.locationData
+      method.name.updateLocationDataIfMissing methodName.locationData
       isConstructor =
         if methodName instanceof StringLiteral
           methodName.originalValue is 'constructor'
@@ -4444,10 +4438,8 @@ exports.Code = class Code extends Base
     functionLocationData = super()
     return functionLocationData unless @isMethod
 
-    astLocationData = mergeLocationData @name.astLocationData(), functionLocationData
-    if @isStatic.staticClassName?
-      astLocationData = mergeLocationData @isStatic.staticClassName.astLocationData(), astLocationData
-    astLocationData
+    # Just use the function's location data
+    functionLocationData
 
 #### Param
 
@@ -5115,12 +5107,7 @@ exports.Try = class Try extends Base
       handler: @catch?.ast(o) ? null
       finalizer:
         if @ensure?
-          Object.assign @ensure.ast(o, LEVEL_TOP),
-            # Include `finally` keyword in location data.
-            mergeLocationData(
-              @finallyTag.locationData,
-              @ensure.astLocationData()
-            )
+          @ensure.ast(o, LEVEL_TOP)
         else
           null
 
@@ -5683,8 +5670,8 @@ exports.Switch = class Switch extends Base
 
         caseLocationData = test.locationData
         caseLocationData = mergeLocationData caseLocationData, testConsequent.expressions[testConsequent.expressions.length - 1].locationData if testConsequent?.expressions.length
-        caseLocationData = mergeLocationData caseLocationData, kase.locationData, growHead: yes if testIndex is 0
-        caseLocationData = mergeLocationData caseLocationData, kase.locationData, growTail: yes if testIndex is lastTestIndex
+        caseLocationData = mergeLocationData caseLocationData, kase.locationData, justLeading: yes if testIndex is 0
+        caseLocationData = mergeLocationData caseLocationData, kase.locationData, justEnding:  yes if testIndex is lastTestIndex
 
         cases.push new SwitchCase(test, testConsequent, trailing: testIndex is lastTestIndex).withLocationDataFrom locationData: caseLocationData
 
@@ -6056,20 +6043,3 @@ astAsBlockIfNeeded = (node, o) ->
     unwrapped.ast o, LEVEL_TOP
   else
     node.ast o, LEVEL_PAREN
-
-# Merge location data helper function
-mergeLocationData = (a, b, {growHead, growTail} = {}) ->
-  return a unless b
-  return b unless a
-  return a unless a.loc and b.loc
-
-  locStart = (x) -> x.loc.start.line * 100000 + x.loc.start.column
-  locEnd   = (x) -> x.loc.end.line   * 100000 + x.loc.end.column
-
-  loc:
-    start: if growTail then a.loc.start else if locStart(a) <= locStart(b) then a.loc.start else b.loc.start
-    end:   if growHead then a.loc.end   else if locEnd(a)   >= locEnd(b)   then a.loc.end   else b.loc.end
-  range: [
-    if growTail then a.range[0] else Math.min(a.range[0], b.range[0])
-    if growHead then a.range[1] else Math.max(a.range[1], b.range[1])
-  ]

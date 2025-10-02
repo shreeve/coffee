@@ -4,7 +4,7 @@
   // nodes are created as the result of actions in the [grammar](grammar.html),
   // but some are created by other nodes as a method of code generation. To convert
   // the syntax tree into a string of JavaScript code, call `compile()` on the root.
-  var Access, Arr, Assign, AwaitReturn, Base, Block, BooleanLiteral, Call, Catch, Class, ClassProperty, ClassPrototypeProperty, Code, CodeFragment, ComputedPropertyName, DefaultLiteral, Directive, DynamicImport, DynamicImportCall, Elision, EmptyInterpolation, ExecutableClassBody, Existence, Expansion, ExportAllDeclaration, ExportDeclaration, ExportDefaultDeclaration, ExportNamedDeclaration, ExportSpecifier, ExportSpecifierList, Extends, For, FuncDirectiveReturn, FuncGlyph, HEREGEX_OMIT, HereComment, HoistTarget, IdentifierLiteral, If, ImportClause, ImportDeclaration, ImportDefaultSpecifier, ImportNamespaceSpecifier, ImportSpecifier, ImportSpecifierList, In, Index, InfinityLiteral, Interpolation, JSXAttribute, JSXAttributes, JSXElement, JSXEmptyExpression, JSXExpressionContainer, JSXIdentifier, JSXNamespacedName, JSXTag, JSXText, JS_FORBIDDEN, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, LineComment, Literal, MetaProperty, ModuleDeclaration, ModuleSpecifier, ModuleSpecifierList, NEGATE, NO, NaNLiteral, NullLiteral, NumberLiteral, Obj, ObjectProperty, Op, Param, Parens, PassthroughLiteral, PropertyName, Range, RegexLiteral, RegexWithInterpolations, Return, Root, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, Scope, Sequence, Slice, Splat, StatementLiteral, StringLiteral, StringWithInterpolations, Super, SuperCall, Switch, SwitchCase, SwitchWhen, TAB, THIS, TRAILING_BLANK_LINE, TaggedTemplateCall, TemplateElement, ThisLiteral, Throw, Try, UTILITIES, UndefinedLiteral, Value, While, YES, YieldReturn, addDataToNode, astAsBlockIfNeeded, attachCommentsToNode, compact, del, ends, extend, flatten, fragmentsToText, hasLineComments, indentInitial, isFunction, isLiteralArguments, isLiteralThis, isNumber, isPlainObject, isUnassignable, locationDataToString, makeDelimitedLiteral, merge, mergeLocationData, moveComments, multident, parseNumber, replaceUnicodeCodePointEscapes, shouldCacheOrIsAssignable, sniffDirectives, some, starts, throwSyntaxError, unfoldSoak, unshiftAfterComments, utility,
+  var Access, Arr, Assign, AwaitReturn, Base, Block, BooleanLiteral, Call, Catch, Class, ClassProperty, ClassPrototypeProperty, Code, CodeFragment, ComputedPropertyName, DefaultLiteral, Directive, DynamicImport, DynamicImportCall, Elision, EmptyInterpolation, ExecutableClassBody, Existence, Expansion, ExportAllDeclaration, ExportDeclaration, ExportDefaultDeclaration, ExportNamedDeclaration, ExportSpecifier, ExportSpecifierList, Extends, For, FuncDirectiveReturn, FuncGlyph, HEREGEX_OMIT, HereComment, HoistTarget, IdentifierLiteral, If, ImportClause, ImportDeclaration, ImportDefaultSpecifier, ImportNamespaceSpecifier, ImportSpecifier, ImportSpecifierList, In, Index, InfinityLiteral, Interpolation, JSXAttribute, JSXAttributes, JSXElement, JSXEmptyExpression, JSXExpressionContainer, JSXIdentifier, JSXNamespacedName, JSXTag, JSXText, JS_FORBIDDEN, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVEL_OP, LEVEL_PAREN, LEVEL_TOP, LineComment, Literal, MetaProperty, ModuleDeclaration, ModuleSpecifier, ModuleSpecifierList, NEGATE, NO, NaNLiteral, NullLiteral, NumberLiteral, Obj, ObjectProperty, Op, Param, Parens, PassthroughLiteral, PropertyName, Range, RegexLiteral, RegexWithInterpolations, Return, Root, SIMPLENUM, SIMPLE_STRING_OMIT, STRING_OMIT, Scope, Sequence, Slice, Splat, StatementLiteral, StringLiteral, StringWithInterpolations, Super, SuperCall, Switch, SwitchCase, SwitchWhen, TAB, THIS, TRAILING_BLANK_LINE, TaggedTemplateCall, TemplateElement, ThisLiteral, Throw, Try, UTILITIES, UndefinedLiteral, Value, While, YES, YieldReturn, addDataToNode, astAsBlockIfNeeded, attachCommentsToNode, compact, convertLocationDataToAst, del, ends, extend, flatten, fragmentsToText, greater, hasLineComments, indentInitial, isAstLocGreater, isFunction, isLiteralArguments, isLiteralThis, isLocationDataEndGreater, isLocationDataStartGreater, isNumber, isPlainObject, isUnassignable, lesser, locationDataToString, makeDelimitedLiteral, merge, mergeAstLocationData, mergeLocationData, moveComments, multident, parseNumber, replaceUnicodeCodePointEscapes, shouldCacheOrIsAssignable, sniffDirectives, some, starts, throwSyntaxError, unfoldSoak, unshiftAfterComments, utility,
     indexOf = [].indexOf,
     splice = [].splice,
     slice1 = [].slice;
@@ -707,14 +707,6 @@
       // For this node and all descendents, set the location data to `locationData`
       // if the location data is not already set.
       // Simplified: just set location data if provided
-      // Update location data only if it's missing
-      updateLocationDataIfMissing(locationData) {
-        if (locationData && !this.locationData) {
-          this.locationData = locationData;
-        }
-        return this;
-      }
-
       withLocationDataFrom({locationData}) {
         if (locationData) {
           this.locationData = locationData;
@@ -2511,6 +2503,14 @@
         };
       }
 
+      astLocationData() {
+        if (!this.isJSXTag()) {
+          return super.astLocationData();
+        }
+        // don't include leading < of JSX tag in location data
+        return mergeAstLocationData(convertLocationDataToAst(this.base.tagNameLocationData), convertLocationDataToAst(this.properties[this.properties.length - 1].locationData));
+      }
+
     };
 
     Value.prototype.children = ['base', 'properties'];
@@ -2940,11 +2940,11 @@
         var tagName;
         // The location data spanning the opening element < ... > is captured by
         // the generated Arr which contains the element's attributes
-        this.openingElementLocationData = this.attributes.locationData;
+        this.openingElementLocationData = convertLocationDataToAst(this.attributes.locationData);
         tagName = this.tagName.base;
         tagName.locationData = tagName.tagNameLocationData;
         if (this.content != null) {
-          this.closingElementLocationData = mergeLocationData(tagName.closingTagOpeningBracketLocationData, tagName.closingTagClosingBracketLocationData);
+          this.closingElementLocationData = mergeAstLocationData(convertLocationDataToAst(tagName.closingTagOpeningBracketLocationData), convertLocationDataToAst(tagName.closingTagClosingBracketLocationData));
         }
         return super.astNode(o);
       }
@@ -2977,7 +2977,7 @@
         if (this.closingElementLocationData != null) {
           closingElement = Object.assign({
             type: 'JSXClosingElement',
-            name: Object.assign(tagNameAst(), this.tagName.base.closingTagNameLocationData)
+            name: Object.assign(tagNameAst(), convertLocationDataToAst(this.tagName.base.closingTagNameLocationData))
           }, this.closingElementLocationData);
           if ((ref1 = closingElement.name.type) === 'JSXMemberExpression' || ref1 === 'JSXNamespacedName') {
             rangeDiff = closingElement.range[0] - openingElement.range[0] + '/'.length;
@@ -3087,7 +3087,7 @@
 
       astLocationData() {
         if (this.closingElementLocationData != null) {
-          return mergeLocationData(this.openingElementLocationData, this.closingElementLocationData);
+          return mergeAstLocationData(this.openingElementLocationData, this.closingElementLocationData);
         } else {
           return this.openingElementLocationData;
         }
@@ -4630,9 +4630,7 @@
         } else {
           methodName = variable.base;
           method.name = new (methodName.shouldCache() ? Index : Access)(methodName);
-          if (methodName.locationData) {
-            method.name.locationData = methodName.locationData;
-          }
+          method.name.updateLocationDataIfMissing(methodName.locationData);
           isConstructor = methodName instanceof StringLiteral ? methodName.originalValue === 'constructor' : methodName.value === 'constructor';
           if (isConstructor) {
             method.ctor = (this.parent ? 'derived' : 'base');
@@ -6786,9 +6784,9 @@
         if (!this.isMethod) {
           return functionLocationData;
         }
-        astLocationData = mergeLocationData(this.name.astLocationData(), functionLocationData);
+        astLocationData = mergeAstLocationData(this.name.astLocationData(), functionLocationData);
         if (this.isStatic.staticClassName != null) {
-          astLocationData = mergeLocationData(this.isStatic.staticClassName.astLocationData(), astLocationData);
+          astLocationData = mergeAstLocationData(this.isStatic.staticClassName.astLocationData(), astLocationData);
         }
         return astLocationData;
       }
@@ -7816,7 +7814,7 @@
           block: this.attempt.ast(o, LEVEL_TOP),
           handler: (ref1 = (ref2 = this.catch) != null ? ref2.ast(o) : void 0) != null ? ref1 : null,
           // Include `finally` keyword in location data.
-          finalizer: this.ensure != null ? Object.assign(this.ensure.ast(o, LEVEL_TOP), mergeLocationData(this.finallyTag.locationData, this.ensure.astLocationData())) : null
+          finalizer: this.ensure != null ? Object.assign(this.ensure.ast(o, LEVEL_TOP), mergeAstLocationData(convertLocationDataToAst(this.finallyTag.locationData), this.ensure.astLocationData())) : null
         };
       }
 
@@ -8740,12 +8738,12 @@
             }
             if (testIndex === 0) {
               caseLocationData = mergeLocationData(caseLocationData, kase.locationData, {
-                growHead: true
+                justLeading: true
               });
             }
             if (testIndex === lastTestIndex) {
               caseLocationData = mergeLocationData(caseLocationData, kase.locationData, {
-                growTail: true
+                justEnding: true
               });
             }
             cases.push(new SwitchCase(test, testConsequent, {
@@ -9321,31 +9319,147 @@
     }
   };
 
-  // Merge location data helper function
-  mergeLocationData = function(a, b, {growHead, growTail} = {}) {
-    var locEnd, locStart;
-    if (!b) {
+  // Helpers for `mergeLocationData` and `mergeAstLocationData` below.
+  lesser = function(a, b) {
+    if (a < b) {
       return a;
-    }
-    if (!a) {
+    } else {
       return b;
     }
-    if (!(a.loc && b.loc)) {
+  };
+
+  greater = function(a, b) {
+    if (a > b) {
       return a;
+    } else {
+      return b;
     }
-    locStart = function(x) {
-      return x.loc.start.line * 100000 + x.loc.start.column;
-    };
-    locEnd = function(x) {
-      return x.loc.end.line * 100000 + x.loc.end.column;
-    };
+  };
+
+  isAstLocGreater = function(a, b) {
+    if (a.line > b.line) {
+      return true;
+    }
+    if (a.line !== b.line) {
+      return false;
+    }
+    return a.column > b.column;
+  };
+
+  isLocationDataStartGreater = function(a, b) {
+    if (a.first_line > b.first_line) {
+      return true;
+    }
+    if (a.first_line !== b.first_line) {
+      return false;
+    }
+    return a.first_column > b.first_column;
+  };
+
+  isLocationDataEndGreater = function(a, b) {
+    if (a.last_line > b.last_line) {
+      return true;
+    }
+    if (a.last_line !== b.last_line) {
+      return false;
+    }
+    return a.last_column > b.last_column;
+  };
+
+  // Take two nodes' location data and return a new `locationData` object that
+  // encompasses the location data of both nodes. So the new `first_line` value
+  // will be the earlier of the two nodes' `first_line` values, the new
+  // `last_column` the later of the two nodes' `last_column` values, etc.
+
+  // If you only want to extend the first node's location data with the start or
+  // end location data of the second node, pass the `justLeading` or `justEnding`
+  // options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
+  // you'd get:
+  // ```
+  // mergeLocationData(first, second).range                   # [1, 10]
+  // mergeLocationData(first, second, justLeading: yes).range # [1, 5]
+  // mergeLocationData(first, second, justEnding:  yes).range # [4, 10]
+  // ```
+  exports.mergeLocationData = mergeLocationData = function(locationDataA, locationDataB, {justLeading, justEnding} = {}) {
+    return Object.assign(justEnding ? {
+      first_line: locationDataA.first_line,
+      first_column: locationDataA.first_column
+    } : isLocationDataStartGreater(locationDataA, locationDataB) ? {
+      first_line: locationDataB.first_line,
+      first_column: locationDataB.first_column
+    } : {
+      first_line: locationDataA.first_line,
+      first_column: locationDataA.first_column
+    }, justLeading ? {
+      last_line: locationDataA.last_line,
+      last_column: locationDataA.last_column,
+      last_line_exclusive: locationDataA.last_line_exclusive,
+      last_column_exclusive: locationDataA.last_column_exclusive
+    } : isLocationDataEndGreater(locationDataA, locationDataB) ? {
+      last_line: locationDataA.last_line,
+      last_column: locationDataA.last_column,
+      last_line_exclusive: locationDataA.last_line_exclusive,
+      last_column_exclusive: locationDataA.last_column_exclusive
+    } : {
+      last_line: locationDataB.last_line,
+      last_column: locationDataB.last_column,
+      last_line_exclusive: locationDataB.last_line_exclusive,
+      last_column_exclusive: locationDataB.last_column_exclusive
+    }, {
+      range: [justEnding ? locationDataA.range[0] : lesser(locationDataA.range[0], locationDataB.range[0]), justLeading ? locationDataA.range[1] : greater(locationDataA.range[1], locationDataB.range[1])]
+    });
+  };
+
+  // Take two AST nodes, or two AST nodes' location data objects, and return a new
+  // location data object that encompasses the location data of both nodes. So the
+  // new `start` value will be the earlier of the two nodes' `start` values, the
+  // new `end` value will be the later of the two nodes' `end` values, etc.
+
+  // If you only want to extend the first node's location data with the start or
+  // end location data of the second node, pass the `justLeading` or `justEnding`
+  // options. So e.g. if `first`'s range is [4, 5] and `second`'s range is [1, 10],
+  // you'd get:
+  // ```
+  // mergeAstLocationData(first, second).range                   # [1, 10]
+  // mergeAstLocationData(first, second, justLeading: yes).range # [1, 5]
+  // mergeAstLocationData(first, second, justEnding:  yes).range # [4, 10]
+  // ```
+  exports.mergeAstLocationData = mergeAstLocationData = function(nodeA, nodeB, {justLeading, justEnding} = {}) {
     return {
       loc: {
-        start: growTail ? a.loc.start : locStart(a) <= locStart(b) ? a.loc.start : b.loc.start,
-        end: growHead ? a.loc.end : locEnd(a) >= locEnd(b) ? a.loc.end : b.loc.end
+        start: justEnding ? nodeA.loc.start : isAstLocGreater(nodeA.loc.start, nodeB.loc.start) ? nodeB.loc.start : nodeA.loc.start,
+        end: justLeading ? nodeA.loc.end : isAstLocGreater(nodeA.loc.end, nodeB.loc.end) ? nodeA.loc.end : nodeB.loc.end
       },
-      range: [growTail ? a.range[0] : Math.min(a.range[0], b.range[0]), growHead ? a.range[1] : Math.max(a.range[1], b.range[1])]
+      range: [justEnding ? nodeA.range[0] : lesser(nodeA.range[0], nodeB.range[0]), justLeading ? nodeA.range[1] : greater(nodeA.range[1], nodeB.range[1])],
+      start: justEnding ? nodeA.start : lesser(nodeA.start, nodeB.start),
+      end: justLeading ? nodeA.end : greater(nodeA.end, nodeB.end)
     };
   };
+
+  // Convert internal location data format to ESTree-compatible AST location data format
+  exports.convertLocationDataToAst = convertLocationDataToAst = function({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) {
+    return {
+      loc: {
+        start: {
+          line: first_line + 1,
+          column: first_column
+        },
+        end: {
+          line: last_line_exclusive + 1,
+          column: last_column_exclusive
+        }
+      },
+      range: [range[0], range[1]],
+      start: range[0],
+      end: range[1]
+    };
+  };
+
+  // We don't currently have a token corresponding to the empty space
+// between interpolation/JSX expression braces, so piece together the location
+// data by trimming the braces from the Interpolation's location data.
+// Technically the last_line/last_column calculation here could be
+// incorrect if the ending brace is preceded by a newline, but
+// last_line/last_column aren't used for AST generation anyway.
 
 }).call(this);
