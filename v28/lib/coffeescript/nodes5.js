@@ -8781,12 +8781,6 @@
   // mergeAstLocationData(first, second, justEnding:  yes).range # [4, 10]
   // ```
   exports.mergeAstLocationData = mergeAstLocationData = function(nodeA, nodeB, {justLeading, justEnding} = {}) {
-    if (nodeA == null) {
-      return nodeB;
-    }
-    if (nodeB == null) {
-      return nodeA;
-    }
     return {
       loc: {
         start: justEnding ? nodeA.loc.start : isAstLocGreater(nodeA.loc.start, nodeB.loc.start) ? nodeB.loc.start : nodeA.loc.start,
@@ -8801,10 +8795,6 @@
   // Convert internal location data format to ESTree-compatible AST location data format
   exports.convertLocationDataToAst = convertLocationDataToAst = function({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) {
     return {
-      // exports.convertLocationDataToAst = convertLocationDataToAst = (locationData) ->
-      //   return undefined unless locationData?
-
-      //   {first_line, first_column, last_line_exclusive, last_column_exclusive, range} = locationData
       loc: {
         start: {
           line: first_line + 1,

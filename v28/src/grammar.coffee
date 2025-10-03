@@ -690,10 +690,10 @@ grammar =
   Switch: [
     o 'SWITCH Expression INDENT Whens OUTDENT'               , $ast: '@', subject: 2   , cases: 4
     o 'SWITCH ExpressionLine INDENT Whens OUTDENT'           , $ast: '@', subject: 2   , cases: 4
-    o 'SWITCH Expression INDENT Whens ELSE Block OUTDENT'    , $ast: '@', subject: 2   , cases: 4, otherwise: 6, $loc: [5, 6]
-    o 'SWITCH ExpressionLine INDENT Whens ELSE Block OUTDENT', $ast: '@', subject: 2   , cases: 4, otherwise: 6, $loc: [5, 6]
+    o 'SWITCH Expression INDENT Whens ELSE Block OUTDENT'    , $ast: '@', subject: 2   , cases: 4, otherwise: {$ast: 'Block', expressions: {$use: 6, prop: 'expressions'}, $loc: [5, 6]}
+    o 'SWITCH ExpressionLine INDENT Whens ELSE Block OUTDENT', $ast: '@', subject: 2   , cases: 4, otherwise: {$ast: 'Block', expressions: {$use: 6, prop: 'expressions'}, $loc: [5, 6]}
     o 'SWITCH INDENT Whens OUTDENT'                          , $ast: '@', subject: null, cases: 3
-    o 'SWITCH INDENT Whens ELSE Block OUTDENT'               , $ast: '@', subject: null, cases: 3, otherwise: 5, $loc: [4, 5]
+    o 'SWITCH INDENT Whens ELSE Block OUTDENT'               , $ast: '@', subject: null, cases: 3, otherwise: {$ast: 'Block', expressions: {$use: 5, prop: 'expressions'}, $loc: [4, 5]}
   ]
 
   Whens: [

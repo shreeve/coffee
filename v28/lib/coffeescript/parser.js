@@ -397,11 +397,11 @@ return r(4,{source:2,guard:4,from:true});
 case 351: case 352:
 return r(5,{$ast:"Switch",subject:2,cases:4});
 case 353: case 354:
-return r(7,{$ast:"Switch",subject:2,cases:4,otherwise:6,$loc:[5,6]});
+return r(7,{$ast:"Switch",subject:2,cases:4,otherwise:{$ast:"Block",expressions:{$use:6,prop:"expressions"},$loc:[5,6]}});
 case 355:
 return r(4,{$ast:"Switch",subject:null,cases:3});
 case 356:
-return r(6,{$ast:"Switch",subject:null,cases:3,otherwise:5,$loc:[4,5]});
+return r(6,{$ast:"Switch",subject:null,cases:3,otherwise:{$ast:"Block",expressions:{$use:5,prop:"expressions"},$loc:[4,5]}});
 case 359:
 return r(3,{$ast:"SwitchWhen",conditions:2,body:3});
 case 360:
