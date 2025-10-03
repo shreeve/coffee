@@ -66,8 +66,8 @@ global.code = (coffeeCode, expectedJs) ->
 # Simple test function: test "code", expected_value
 global.test = (code, expected) ->
   try
-    # Use CoffeeScript's eval which properly handles returns
-    # This evaluates the code and returns the last expression value
+    # Use CoffeeScript.eval for natural behavior
+    # This returns the actual value of the last expression
     actual = CoffeeScript.eval code
 
     # Handle function expected values (for validation tests like Object.defineProperty)
