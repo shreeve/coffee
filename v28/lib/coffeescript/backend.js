@@ -535,7 +535,7 @@
 
             // Advanced literals
           case 'InfinityLiteral':
-            return new this.ast.InfinityLiteral();
+            return new this.ast.InfinityLiteral('Infinity');
           case 'NaNLiteral':
             return new this.ast.NaNLiteral();
           case 'DefaultLiteral':

@@ -343,7 +343,7 @@ class Backend
       # === ADVANCED/RARE FEATURES (Very Low Frequency) ===
 
       # Advanced literals
-      when 'InfinityLiteral'          then new @ast.InfinityLiteral
+      when 'InfinityLiteral'          then new @ast.InfinityLiteral 'Infinity'
       when 'NaNLiteral'               then new @ast.NaNLiteral
       when 'DefaultLiteral'           then new @ast.DefaultLiteral @$(o.value) or 'default'
 
