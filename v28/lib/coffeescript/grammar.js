@@ -555,9 +555,7 @@
       o('RETURN INDENT Object OUTDENT',
       {
         $ast: '@',
-        value: {
-          $ast: 'Value'
-        }
+        expression: 3
       }),
       o('RETURN',
       {
@@ -1894,7 +1892,7 @@
       o('CATCH Object Block',
       {
         $ast: '@',
-        body: 3,
+        recovery: 3,
         errorVariable: {
           $ast: 'Value',
           base: 2
@@ -1916,9 +1914,7 @@
       o('THROW INDENT Object OUTDENT',
       {
         $ast: '@',
-        value: {
-          $ast: 'Value'
-        }
+        expression: 3
       })
     ],
     // Parenthetical expressions. Note that the **Parenthetical** is a **Value**,
