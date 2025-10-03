@@ -21,7 +21,7 @@ class Backend
       range:                [from.range?[0] ? 0, till.range?[1] ? 0]
 
   # Helper to convert base + properties to Value node
-  _toValue: (base, properties) ->
+  _toValue: (base, properties, tag = null, isDefaultValue = false) ->
     props = if Array.isArray(properties) then properties else []
 
     # Handle existing Value
@@ -30,7 +30,7 @@ class Backend
       return base
 
     # Base should already be a node
-    new @ast.Value base, props
+    new @ast.Value base, props, tag, isDefaultValue
 
   # Parser reducer: call as r(...) = reduce(values, positions, stackTop, ...)
   # Called ONCE per grammar rule match (e.g., 'TRY Block FINALLY Block'). This
