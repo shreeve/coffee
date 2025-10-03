@@ -164,10 +164,10 @@ for file in testFiles
   filePassed = passed
   fileFailed = failed
 
-  # Read the test file and compile it with v28 CoffeeScript
+  # Read the test file and compile it
   testCode = fs.readFileSync(file, 'utf8')
   try
-    # Compile the test file with v28
+    # Compile the test file
     compiledTest = CoffeeScript.compile testCode,
       filename: file
       bare: true
