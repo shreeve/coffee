@@ -8,13 +8,14 @@ o = (pattern, action, options) ->
 
 grammar =
   Root: [
-    o ''    , $ast: '@', body: {$ast: 'Block', expressions: []}
+    o ''    , $ast: '@', body: {$ast: 'Block'}
     o 'Body', $ast: '@', body: 1
   ]
 
   Body: [
     o 'Line'                , $ast: 'Block', expressions: {$arr: [1]}
     o 'Body TERMINATOR Line', $ast: 'Block', expressions: {$ops: 'array', append: [{$use: 1, prop: 'expressions'}, 3]}
+    # o 'Body TERMINATOR Line', {$use: 1, method: 'push', pos: [3]} # TODO: Use pos for token array, args for literal values
     o 'Body TERMINATOR'
   ]
 
@@ -153,8 +154,8 @@ grammar =
 
   ObjAssignable: [
     o 'SimpleObjAssignable'
-    o '[ Expression ]'  , $ast: 'Value', base: {$ast: 'ComputedPropertyName', expression: 2}
-    o '@ [ Expression ]', $ast: 'Value', base: {$ast: 'ThisLiteral', value: 1}, properties: [{$ast: 'ComputedPropertyName', name: 3}], context: 'this'
+    o '[ Expression ]'  , $ast: 'Value', base: {$ast: 'ComputedPropertyName', value: 2}
+    o '@ [ Expression ]', $ast: 'Value', base: {$ast: 'ThisLiteral', value: 1}, properties: [{$ast: 'ComputedPropertyName', value: 3}], this: true
     o 'AlphaNumeric'
   ]
 
@@ -172,7 +173,7 @@ grammar =
     o 'Parenthetical'
     o 'Super'
     o 'This'
-    o 'SUPER OptFuncExist Arguments'              , $ast: 'SuperCall', variable: {$ast: 'Super'}, args: 3, soak: {$use: 2, prop: 'soak'}, token: 1
+    o 'SUPER OptFuncExist Arguments'              , $ast: 'SuperCall', variable: {$ast: 'Super'}, args: 3, soak: {$use: 2, prop: 'soak'}
     o 'DYNAMIC_IMPORT Arguments'                  , $ast: 'DynamicImportCall', variable: {$ast: 'DynamicImport'}, args: 2
     o 'SimpleObjAssignable OptFuncExist Arguments', $ast: 'Call', variable: {$ast: 'Value', base: 1}, args: 3, soak: {$use: 2, prop: 'soak'}
     o 'ObjSpreadExpr OptFuncExist Arguments'      , $ast: 'Call', variable: 1, args: 3, soak: {$use: 2, prop: 'soak'}
@@ -186,7 +187,7 @@ grammar =
   # A return statement from a function body.
   Return: [
     o 'RETURN Expression'           , $ast: '@', expression: 2
-    o 'RETURN INDENT Object OUTDENT', $ast: '@', expression: 3
+    o 'RETURN INDENT Object OUTDENT', $ast: '@', expression: {$ast: 'Value', base: 3}
     o 'RETURN'                      , $ast: '@'
   ]
 
@@ -281,9 +282,9 @@ grammar =
 
   # A `super`-based expression that can be used as a value.
   Super: [
-    o 'SUPER . Property'                                     , $ast: '@', accessor: {$ast: 'Access', name: 3}, literal: {$ast: 'Literal', value: 1}
-    o 'SUPER INDEX_START Expression INDEX_END'               , $ast: '@', accessor: {$ast: 'Index', name: 3}, literal: {$ast: 'Literal', value: 1}
-    o 'SUPER INDEX_START INDENT Expression OUTDENT INDEX_END', $ast: '@', accessor: {$ast: 'Index', name: 4}, literal: {$ast: 'Literal', value: 1}
+    o 'SUPER . Property'                                     , $ast: '@', accessor: {$ast: 'Access', name: 3}, superLiteral: {$ast: 'Literal', value: 1}
+    o 'SUPER INDEX_START Expression INDEX_END'               , $ast: '@', accessor: {$ast: 'Index', name: 3}, superLiteral: {$ast: 'Literal', value: 1}
+    o 'SUPER INDEX_START INDENT Expression OUTDENT INDEX_END', $ast: '@', accessor: {$ast: 'Index', name: 4}, superLiteral: {$ast: 'Literal', value: 1}
   ]
 
   # A "meta-property" access e.g. `new.target` or `import.meta`, where
@@ -370,12 +371,12 @@ grammar =
   ImportSpecifier: [
     o 'Identifier'              , $ast: '@', imported: 1
     o 'Identifier AS Identifier', $ast: '@', imported: 1, local: 3
-    o 'DEFAULT'                 , $ast: '@', value: {$ast: 'DefaultLiteral'}
+    o 'DEFAULT'                 , $ast: '@', imported: {$ast: 'DefaultLiteral'}
     o 'DEFAULT AS Identifier'   , $ast: '@', imported: {$ast: 'DefaultLiteral'}, local: 3
   ]
 
   ImportDefaultSpecifier: [
-    o 'Identifier', $ast: '@', value: 1
+    o 'Identifier', $ast: '@', name: 1
   ]
 
   ImportNamespaceSpecifier: [
@@ -390,7 +391,7 @@ grammar =
     o 'EXPORT Identifier = TERMINATOR Expression'                        , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 5, moduleDeclaration: 'export'}
     o 'EXPORT Identifier = INDENT Expression OUTDENT'                    , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 5, moduleDeclaration: 'export'}
     o 'EXPORT DEFAULT Expression'                                        , $ast: 'ExportDefaultDeclaration', declaration: 3
-    o 'EXPORT DEFAULT INDENT Object OUTDENT'                             , $ast: 'ExportDefaultDeclaration', value: {$ast: 'Value'}
+    o 'EXPORT DEFAULT INDENT Object OUTDENT'                             , $ast: 'ExportDefaultDeclaration', value: {$ast: 'Value', base: 4}
     o 'EXPORT EXPORT_ALL FROM String'                                    , $ast: 'ExportAllDeclaration', exported: {$ast: 'Literal', value: 2}, source: 4
     o 'EXPORT EXPORT_ALL FROM String ASSERT Object'                      , $ast: 'ExportAllDeclaration', exported: {$ast: 'Literal', value: 2}, source: 4, assertions: 6
     o 'EXPORT { } FROM String'                                           , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList'}, source: 5
@@ -411,7 +412,7 @@ grammar =
     o 'Identifier'              , $ast: '@', local: 1
     o 'Identifier AS Identifier', $ast: '@', local: 1, exported: 3
     o 'Identifier AS DEFAULT'   , $ast: '@', local: 1, exported: {$ast: 'DefaultLiteral', value: 3}
-    o 'DEFAULT'                 , $ast: '@', value: {$ast: 'DefaultLiteral'}
+    o 'DEFAULT'                 , $ast: '@', local: {$ast: 'DefaultLiteral'}
     o 'DEFAULT AS Identifier'   , $ast: '@', local: {$ast: 'DefaultLiteral'}, exported: 3
   ]
 
@@ -419,7 +420,7 @@ grammar =
   Invocation: [
     o 'Value OptFuncExist String'   , $ast: 'TaggedTemplateCall', variable: 1, template: 3, soak: {$use: 2, prop: 'soak'}
     o 'Value OptFuncExist Arguments', $ast: 'Call', variable: 1, args: 3, soak: {$use: 2, prop: 'soak'}
-    o 'SUPER OptFuncExist Arguments', $ast: 'SuperCall', variable: {$ast: 'Super'}, args: 3, soak: {$use: 2, prop: 'soak'}, token: 1
+    o 'SUPER OptFuncExist Arguments', $ast: 'SuperCall', variable: {$ast: 'Super'}, args: 3, soak: {$use: 2, prop: 'soak'}
     o 'DYNAMIC_IMPORT Arguments'    , $ast: 'DynamicImportCall', variable: {$ast: 'DynamicImport'}, args: 2
   ]
 
@@ -443,14 +444,14 @@ grammar =
 
   # A reference to a property on *this*
   ThisProperty: [
-    o '@ Property', $ast: 'Value', this: true, base: {$ast: 'ThisLiteral', value: 1}, properties: [ { $ast: 'Access', name: 2 } ], bareLiteral: {$ast: 'ThisLiteral', value: 1}
+    o '@ Property', $ast: 'Value', this: true, base: {$ast: 'ThisLiteral', value: 1}, properties: [ { $ast: 'Access', name: 2 } ]
   ]
 
   # The array literal.
   Array: [
     o '[ ]'                           , $ast: 'Arr', objects: []
     o '[ Elisions ]'                  , $ast: 'Arr', objects: 2
-    o '[ ArgElisionList OptElisions ]', $ast: 'Arr', objects: 2
+    o '[ ArgElisionList OptElisions ]', $ast: 'Arr', objects: {$ops: 'array', append: [2, 3]}
   ]
 
   # Inclusive and exclusive range dots.
@@ -509,7 +510,7 @@ grammar =
   ]
 
   OptElisions: [
-    o 'OptComma'  , $arr: [{}]
+    o 'OptComma'  , $arr: []
     o ', Elisions', $ops: 'array', append: [[], 2]
   ]
 
@@ -551,7 +552,7 @@ grammar =
   # Throw an exception object.
   Throw: [
     o 'THROW Expression'           , $ast: '@', expression: 2
-    o 'THROW INDENT Object OUTDENT', $ast: '@', expression: 3
+    o 'THROW INDENT Object OUTDENT', $ast: '@', expression: {$ast: 'Value', base: 3}
   ]
 
   # Parenthetical expressions. Note that the **Parenthetical** is a **Value**,

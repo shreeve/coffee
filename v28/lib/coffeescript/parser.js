@@ -11,7 +11,7 @@ var parserInstance = {
 var r = yy.backend && function(count, directive) { return yy.backend.reduce($$, _$, $$.length - 1, count, directive); };
 switch (yystate) {
 case 1:
-return r(1,{$ast:"Root",body:{$ast:"Block",expressions:[]}});
+return r(1,{$ast:"Root",body:{$ast:"Block"}});
 case 2:
 return r(1,{$ast:"Root",body:1});
 case 3:
@@ -89,9 +89,9 @@ return r(3,{$ast:"Assign",variable:{$ast:"Value",base:1},value:3,operatorToken:{
 case 67:
 return r(5,{$ast:"Assign",variable:{$ast:"Value",base:1},value:4,operatorToken:{$ast:"Literal",value:2}});
 case 72:
-return r(3,{$ast:"Value",base:{$ast:"ComputedPropertyName",expression:2}});
+return r(3,{$ast:"Value",base:{$ast:"ComputedPropertyName",value:2}});
 case 73:
-return r(4,{$ast:"Value",base:{$ast:"ThisLiteral",value:1},properties:[{$ast:"ComputedPropertyName",name:3}],context:"this"});
+return r(4,{$ast:"Value",base:{$ast:"ThisLiteral",value:1},properties:[{$ast:"ComputedPropertyName",value:3}],this:true});
 case 75:
 return r(2,{$ast:"Splat",name:{$ast:"Value",base:1},postfix:false});
 case 76:
@@ -101,7 +101,7 @@ return r(2,{$ast:"Splat",name:1});
 case 78: case 120:
 return r(2,{$ast:"Splat",name:2,postfix:false});
 case 84: case 219:
-return r(3,{$ast:"SuperCall",variable:{$ast:"Super"},args:3,soak:{$use:2,prop:"soak"},token:1});
+return r(3,{$ast:"SuperCall",variable:{$ast:"Super"},args:3,soak:{$use:2,prop:"soak"}});
 case 85: case 220:
 return r(2,{$ast:"DynamicImportCall",variable:{$ast:"DynamicImport"},args:2});
 case 86:
@@ -113,7 +113,7 @@ return r(2,{$ops:"value",add:[1,2]});
 case 90:
 return r(2,{$ast:"Return",expression:2});
 case 91:
-return r(4,{$ast:"Return",expression:3});
+return r(4,{$ast:"Return",expression:{$ast:"Value",base:3}});
 case 92:
 return r(1,{$ast:"Return"});
 case 93:
@@ -134,7 +134,7 @@ case 100:
 return r(2,{$ast:"Code",params:[],body:[2],funcGlyph:1});
 case 101: case 102:
 return r(1,{$ast:"FuncGlyph",glyph:1});
-case 105: case 155:
+case 105: case 155: case 257:
 return r(1,{$arr:[]});
 case 107: case 157: case 183: case 208: case 242: case 251: case 265: case 266:
 return r(3,{$ops:"array",append:[1,3]});
@@ -153,11 +153,11 @@ return r(3,{$ast:"Param",name:1,value:3});
 case 114: case 249:
 return r(1,{$ast:"Expansion"});
 case 137:
-return r(3,{$ast:"Super",accessor:{$ast:"Access",name:3},literal:{$ast:"Literal",value:1}});
+return r(3,{$ast:"Super",accessor:{$ast:"Access",name:3},superLiteral:{$ast:"Literal",value:1}});
 case 138:
-return r(4,{$ast:"Super",accessor:{$ast:"Index",name:3},literal:{$ast:"Literal",value:1}});
+return r(4,{$ast:"Super",accessor:{$ast:"Index",name:3},superLiteral:{$ast:"Literal",value:1}});
 case 139:
-return r(6,{$ast:"Super",accessor:{$ast:"Index",name:4},literal:{$ast:"Literal",value:1}});
+return r(6,{$ast:"Super",accessor:{$ast:"Index",name:4},superLiteral:{$ast:"Literal",value:1}});
 case 140: case 141:
 return r(3,{$ast:"MetaProperty",identifier:{$ast:"IdentifierLiteral",value:1},accessor:{$ast:"Access",name:3}});
 case 142:
@@ -235,11 +235,11 @@ return r(1,{$ast:"ImportSpecifier",imported:1});
 case 188:
 return r(3,{$ast:"ImportSpecifier",imported:1,local:3});
 case 189:
-return r(1,{$ast:"ImportSpecifier",value:{$ast:"DefaultLiteral"}});
+return r(1,{$ast:"ImportSpecifier",imported:{$ast:"DefaultLiteral"}});
 case 190:
 return r(3,{$ast:"ImportSpecifier",imported:{$ast:"DefaultLiteral"},local:3});
 case 191:
-return r(1,{$ast:"ImportDefaultSpecifier",value:1});
+return r(1,{$ast:"ImportDefaultSpecifier",name:1});
 case 192:
 return r(3,{$ast:"ImportNamespaceSpecifier",star:{$ast:"Literal",value:1},local:3});
 case 193:
@@ -257,7 +257,7 @@ return r(6,{$ast:"ExportNamedDeclaration",clause:{$ast:"Assign",variable:2,value
 case 199:
 return r(3,{$ast:"ExportDefaultDeclaration",declaration:3});
 case 200:
-return r(5,{$ast:"ExportDefaultDeclaration",value:{$ast:"Value"}});
+return r(5,{$ast:"ExportDefaultDeclaration",value:{$ast:"Value",base:4}});
 case 201:
 return r(4,{$ast:"ExportAllDeclaration",exported:{$ast:"Literal",value:2},source:4});
 case 202:
@@ -277,7 +277,7 @@ return r(3,{$ast:"ExportSpecifier",local:1,exported:3});
 case 214:
 return r(3,{$ast:"ExportSpecifier",local:1,exported:{$ast:"DefaultLiteral",value:3}});
 case 215:
-return r(1,{$ast:"ExportSpecifier",value:{$ast:"DefaultLiteral"}});
+return r(1,{$ast:"ExportSpecifier",local:{$ast:"DefaultLiteral"}});
 case 216:
 return r(3,{$ast:"ExportSpecifier",local:{$ast:"DefaultLiteral"},exported:3});
 case 217:
@@ -293,13 +293,13 @@ return r(4,{$arr:2,implicit:{$use:1,prop:"generated"}});
 case 225: case 226:
 return r(1,{$ast:"Value",base:{$ast:"ThisLiteral",value:1}});
 case 227:
-return r(2,{$ast:"Value",this:true,base:{$ast:"ThisLiteral",value:1},properties:[{$ast:"Access",name:2}],bareLiteral:{$ast:"ThisLiteral",value:1}});
+return r(2,{$ast:"Value",this:true,base:{$ast:"ThisLiteral",value:1},properties:[{$ast:"Access",name:2}]});
 case 228:
 return r(2,{$ast:"Arr",objects:[]});
 case 229:
 return r(3,{$ast:"Arr",objects:2});
 case 230:
-return r(4,{$ast:"Arr",objects:2});
+return r(4,{$ast:"Arr",objects:{$ops:"array",append:[2,3]}});
 case 231:
 return r(1,{exclusive:false});
 case 232:
@@ -318,8 +318,6 @@ case 253:
 return r(4,{$ops:"array",append:[2,3]});
 case 254:
 return r(6,{$ops:"array",append:[1,2,4,5]});
-case 257:
-return r(1,{$arr:[{}]});
 case 258:
 return r(2,{$ops:"array",append:[[],2]});
 case 261:
@@ -341,7 +339,7 @@ return r(2,{$ast:"Catch",recovery:2});
 case 274:
 return r(2,{$ast:"Throw",expression:2});
 case 275:
-return r(4,{$ast:"Throw",expression:3});
+return r(4,{$ast:"Throw",expression:{$ast:"Value",base:3}});
 case 276:
 return r(3,{$ast:"Parens",body:2});
 case 277:
