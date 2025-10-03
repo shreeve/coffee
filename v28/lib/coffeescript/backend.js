@@ -33,7 +33,7 @@
     }
 
     // Helper to convert base + properties to Value node
-    _toValue(base, properties) {
+    _toValue(base, properties, tag = null, isDefaultValue = false) {
       var props;
       props = Array.isArray(properties) ? properties : [];
       // Handle existing Value
@@ -44,7 +44,7 @@
         return base;
       }
       // Base should already be a node
-      return new this.ast.Value(base, props);
+      return new this.ast.Value(base, props, tag, isDefaultValue);
     }
 
     // Parser reducer: call as r(...) = reduce(values, positions, stackTop, ...)
@@ -273,23 +273,19 @@
     processAst(o) {
       var args, body, context, expression, expressions, forNode, ifNode, k, loc, name, node, operator, options, pos, value, variable, whileNode;
       node = (function() {
-        var i, j, len, len1, ref, ref1, ref2, ref3;
+        var i, j, len, len1, ref, ref1, ref2, ref3, ref4;
         switch (o.$ast) {
           // === CORE EXPRESSIONS (Very High Frequency) ===
 
             // Values and property access - the most fundamental operations
+          case 'Value':
+            return this._toValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : [], o.this && 'this', (ref1 = this.$(o.isDefaultValue)) != null ? ref1 : false);
           case 'IdentifierLiteral':
             return new this.ast.IdentifierLiteral(this.$(o.value));
           case 'NumberLiteral':
             return new this.ast.NumberLiteral(this.$(o.value), {
               parsedValue: this.$(o.parsedValue)
             });
-          case 'Value':
-            value = this._toValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : []);
-            if (o.this) {
-              value.this = true;
-            }
-            return value;
           case 'Literal': // Literal location data maps to just one token in the rule
             node = new this.ast.Literal(this.$(pos = o.value));
             if (typeof pos === 'number') {
@@ -326,9 +322,9 @@
               context = operator;
             }
             options = {};
-            ref1 = ['operatorToken', 'moduleDeclaration', 'originalContext'];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              k = ref1[i];
+            ref2 = ['operatorToken', 'moduleDeclaration', 'originalContext'];
+            for (i = 0, len = ref2.length; i < len; i++) {
+              k = ref2[i];
               if (o[k] != null) {
                 options[k] = this.$(o[k]);
               }
@@ -337,7 +333,7 @@
           case 'Call':
             return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
           case 'Op':
-            args = ((ref2 = o.args) != null ? ref2.map((arg) => {
+            args = ((ref3 = o.args) != null ? ref3.map((arg) => {
               return this.$(arg);
             }) : void 0) || [];
             if ((o.invertOperator != null) || (o.originalOperator != null)) {
@@ -402,9 +398,9 @@
               index: this.$(o.index),
               source: this.$(o.source)
             });
-            ref3 = ['await', 'awaitTag', 'own', 'ownTag', 'step', 'from', 'object', 'guard'];
-            for (j = 0, len1 = ref3.length; j < len1; j++) {
-              k = ref3[j];
+            ref4 = ['await', 'awaitTag', 'own', 'ownTag', 'step', 'from', 'object', 'guard'];
+            for (j = 0, len1 = ref4.length; j < len1; j++) {
+              k = ref4[j];
               if (o[k] != null) {
                 forNode[k] = this.$(o[k]);
               }
@@ -461,7 +457,7 @@
           case 'StatementLiteral':
             return new this.ast.StatementLiteral(this.$(o.value));
           case 'ComputedPropertyName':
-            return new this.ast.ComputedPropertyName(this.$(o.expression) || this.$(o.name) || this.$(o.value));
+            return new this.ast.ComputedPropertyName(this.$(o.value));
           // === STRING INTERPOLATION (Low-Medium Frequency) ===
           case 'StringWithInterpolations':
             return new this.ast.StringWithInterpolations(this.ast.Block.wrap(this.$(o.body)), {

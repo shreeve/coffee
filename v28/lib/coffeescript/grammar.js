@@ -22,8 +22,7 @@
       {
         $ast: '@',
         body: {
-          $ast: 'Block',
-          expressions: []
+          $ast: 'Block'
         }
       }),
       o('Body',
@@ -54,6 +53,7 @@
           ]
         }
       }),
+      // o 'Body TERMINATOR Line', {$use: 1, method: 'push', pos: [3]} # TODO: Use pos for token array, args for literal values
       o('Body TERMINATOR')
     ],
     Line: [o('Expression'), o('ExpressionLine'), o('Statement'), o('FuncDirective')],
@@ -428,7 +428,7 @@
         $ast: 'Value',
         base: {
           $ast: 'ComputedPropertyName',
-          expression: 2
+          value: 2
         }
       }),
       o('@ [ Expression ]',
@@ -441,10 +441,10 @@
         properties: [
           {
             $ast: 'ComputedPropertyName',
-            name: 3
+            value: 3
           }
         ],
-        context: 'this'
+        this: true
       }),
       o('AlphaNumeric')
     ],
@@ -496,8 +496,7 @@
         soak: {
           $use: 2,
           prop: 'soak'
-        },
-        token: 1
+        }
       }),
       o('DYNAMIC_IMPORT Arguments',
       {
@@ -555,7 +554,10 @@
       o('RETURN INDENT Object OUTDENT',
       {
         $ast: '@',
-        expression: 3
+        expression: {
+          $ast: 'Value',
+          base: 3
+        }
       }),
       o('RETURN',
       {
@@ -816,7 +818,7 @@
           $ast: 'Access',
           name: 3
         },
-        literal: {
+        superLiteral: {
           $ast: 'Literal',
           value: 1
         }
@@ -828,7 +830,7 @@
           $ast: 'Index',
           name: 3
         },
-        literal: {
+        superLiteral: {
           $ast: 'Literal',
           value: 1
         }
@@ -840,7 +842,7 @@
           $ast: 'Index',
           name: 4
         },
-        literal: {
+        superLiteral: {
           $ast: 'Literal',
           value: 1
         }
@@ -1268,7 +1270,7 @@
       o('DEFAULT',
       {
         $ast: '@',
-        value: {
+        imported: {
           $ast: 'DefaultLiteral'
         }
       }),
@@ -1285,7 +1287,7 @@
       o('Identifier',
       {
         $ast: '@',
-        value: 1
+        name: 1
       })
     ],
     ImportNamespaceSpecifier: [
@@ -1359,7 +1361,8 @@
       {
         $ast: 'ExportDefaultDeclaration',
         value: {
-          $ast: 'Value'
+          $ast: 'Value',
+          base: 4
         }
       }),
       o('EXPORT EXPORT_ALL FROM String',
@@ -1470,7 +1473,7 @@
       o('DEFAULT',
       {
         $ast: '@',
-        value: {
+        local: {
           $ast: 'DefaultLiteral'
         }
       }),
@@ -1515,8 +1518,7 @@
         soak: {
           $use: 2,
           prop: 'soak'
-        },
-        token: 1
+        }
       }),
       o('DYNAMIC_IMPORT Arguments',
       {
@@ -1587,11 +1589,7 @@
             $ast: 'Access',
             name: 2
           }
-        ],
-        bareLiteral: {
-          $ast: 'ThisLiteral',
-          value: 1
-        }
+        ]
       })
     ],
     // The array literal.
@@ -1609,7 +1607,11 @@
       o('[ ArgElisionList OptElisions ]',
       {
         $ast: 'Arr',
-        objects: 2
+        objects: {
+          $ops: 'array',
+          append: [2,
+      3]
+        }
       })
     ],
     // Inclusive and exclusive range dots.
@@ -1795,7 +1797,7 @@
     OptElisions: [
       o('OptComma',
       {
-        $arr: [{}]
+        $arr: []
       }),
       o(', Elisions',
       {
@@ -1914,7 +1916,10 @@
       o('THROW INDENT Object OUTDENT',
       {
         $ast: '@',
-        expression: 3
+        expression: {
+          $ast: 'Value',
+          base: 3
+        }
       })
     ],
     // Parenthetical expressions. Note that the **Parenthetical** is a **Value**,
