@@ -4,9 +4,21 @@
 
 class Backend
   constructor: (@options = {}, @ast = {}) ->
-    @currentDirective = null
-    @currentRule      = null
-    @currentLookup    = null
+
+  # Helper to set location data for a node
+  _toLocation: (pos) ->
+    if Array.isArray(pos)
+      from = @pos pos[0]
+      till = @pos pos[1]
+    else if typeof pos is 'number'
+      from = till = @pos pos
+
+    if from and till
+      first_line:            from.first_line
+      first_column:          from.first_column
+      last_line_exclusive:   till.last_line_exclusive   ?  till.last_line
+      last_column_exclusive: till.last_column_exclusive ? (till.last_column + 1)
+      range:                [from.range?[0] ? 0, till.range?[1] ? 0]
 
   # Helper to convert base + properties to Value node
   _toValue: (base, properties) ->
@@ -20,54 +32,32 @@ class Backend
     # Base should already be a node
     new @ast.Value base, props
 
-  # Main entry point (called by parser as 'reduce')
+  # Parser reducer: call as r(...) = reduce(values, positions, stackTop, ...)
+  # Called ONCE per grammar rule match (e.g., 'TRY Block FINALLY Block'). This
+  # sets @loc (current location) to span the ENTIRE rule (first to last token).
+  # All AST nodes created during this call inherit this rule-wide location info
+  # unless manually overridden. Without any override, a 'finally' keyword would
+  # incorrectly span the entire try/finally block. This is why Literal is the
+  # only AST type used to capture raw tokens by position (e.g., finallyTag,
+  # operatorToken, returnKeyword).
   reduce: (values, positions, stackTop, symbolCount, directive) ->
-    @currentDirective = directive
-    @currentRule      = directive
-    @currentLookup    = (index) -> values[stackTop - symbolCount + 1 + index]
+    @tok = (pos) ->    values[stackTop - symbolCount + pos] # 1-based index
+    @pos = (pos) -> positions[stackTop - symbolCount + pos] # 1-based index
+    @loc = @_toLocation [1, symbolCount] if positions and symbolCount > 0
 
-    # Get the location data for this production (combines all positions)
-    if positions and symbolCount > 0
-      firstPos = positions[stackTop - symbolCount + 1]
-      lastPos  = positions[stackTop]
-      if firstPos and lastPos
-        @currentLocationData =
-          first_line:            firstPos.first_line
-          first_column:          firstPos.first_column
-          last_line_exclusive:   lastPos.last_line_exclusive   ?  lastPos.last_line
-          last_column_exclusive: lastPos.last_column_exclusive ? (lastPos.last_column + 1)
-          range:                [firstPos.range?[0] ? 0, lastPos.range?[1] ? 0]
-    else
-      @currentLocationData = null
-
-    # Create smart proxy that auto-resolves properties
-    handler =
-      get: (target, prop) ->
-        # Return directive properties first
-        return target[prop] if prop of target
-
-        # Handle numeric indices for stack access
-        if typeof prop is 'string' and /^\d+$/.test(prop)
-          idx = parseInt(prop, 10) - 1  # Convert to 0-based
-          return @currentLookup(idx) if idx >= 0
-
-        # Handle $N syntax
-        if typeof prop is 'string' and prop[0] is '$'
-          idx = parseInt(prop.slice(1), 10) - 1  # Convert to 0-based
-          return @currentLookup(idx) if idx >= 0
-
-        undefined
-
-    # Create smart directive object
-    o = new Proxy directive, handler
+    # Create a smart directive proxy that can auto-resolve its properties
+    o = new Proxy directive, get: (target, prop) =>
+      return target[prop]                  if prop of target   # props first
+      return @tok(parseInt(prop     , 10)) if /^\d+$/.test(prop) # token index
+      return @tok(parseInt(prop[1..], 10)) if prop[0] is '$'     # $N syntax
+      return undefined # not needed, but just to be obvious
 
     # Process the directive
     result = @process o
 
-    # Attach location data to the result if it's an AST node
-    if result instanceof @ast.Base and @currentLocationData
-      result.locationData = @currentLocationData
-      result.updateLocationDataIfMissing?(@currentLocationData)
+    # Only set if missing - don't overwrite!
+    if result instanceof @ast.Base and not result.locationData and @loc
+      result.locationData = @loc
 
     if global.process?.env?.SOLAR_DEBUG
       util = require 'util'
@@ -88,10 +78,9 @@ class Backend
   $: (value) ->
     return value unless value?
 
-    # Numbers are stack positions (1-based)
+    # Numbers are token positions (1-based)
     if typeof value is 'number'
-      return @currentLookup(value - 1) if @currentLookup
-      return value
+      return @tok(value)
 
     # Arrays - resolve each item, filtering out undefined/null/non-nodes
     if Array.isArray value
@@ -148,8 +137,8 @@ class Backend
       when 'if'
         if o.addElse?
           [ifNode, elseBody] = o.addElse.map (item) => @$(item)
-          if elseBody and not elseBody.locationData and @currentLocationData
-            elseBody.locationData = @currentLocationData
+          if elseBody and not elseBody.locationData and @loc
+            elseBody.locationData = @loc
           ifNode.addElse elseBody
           return ifNode
 
@@ -165,23 +154,13 @@ class Backend
       # Handle different loop operations
       when 'loop'
         if o.addSource?
-          # addSource: [1, 2] means ForStart is at position 1, ForSource at position 2
           [loopNode, sourceInfo] = o.addSource.map (item) => @$(item)
           loopNode.addSource sourceInfo if loopNode?.addSource?
           return loopNode
 
         if o.addBody?
-          if global.process?.env?.SOLAR_DEBUG
-            console.log "[Solar] loop.addBody operation:", o.addBody
           [loopNode, body] = o.addBody.map (item) => @$(item)
-          body = @ast.Block.wrap body
-
-          if global.process?.env?.SOLAR_DEBUG
-            util = require 'util'
-            console.log "[Solar] loop.addBody loopNode:", loopNode?.constructor?.name
-            console.log "[Solar] loop.addBody body:", util.inspect(body, {depth: 2, colors: true})
-
-          loopNode.addBody body
+          loopNode.addBody @ast.Block.wrap(body)
           loopNode.postfix = @$(o.postfix) if o.postfix?
           return loopNode
 
@@ -189,9 +168,8 @@ class Backend
       when 'prop'
         if o.set?
           target = @$(o.set.target)
-          property = o.set.property
-          value = @$(o.set.value)
-          target[property] = value if target?
+          value  = @$(o.set.value )
+          target[o.set.property] = value if target?
           return target
 
     # Catchall for any missing $ops directive handlers
@@ -200,18 +178,21 @@ class Backend
 
   # Process $ast directives - the main AST node creation
   processAst: (o) ->
-    switch o.$ast
+    node = switch o.$ast
 
       # === CORE EXPRESSIONS (Very High Frequency) ===
 
       # Values and property access - the most fundamental operations
+      when 'IdentifierLiteral' then new @ast.IdentifierLiteral @$(o.value)
+      when 'NumberLiteral'     then new @ast.NumberLiteral     @$(o.value), {parsedValue: @$(o.parsedValue)}
       when 'Value'
         value = @_toValue @$(o.base), @$(o.properties) ? []
         value.this = true if o.this
         value
-      when 'IdentifierLiteral' then new @ast.IdentifierLiteral @$(o.value)
-      when 'Literal'           then new @ast.Literal          @$(o.value)
-      when 'NumberLiteral'     then new @ast.NumberLiteral    @$(o.value), {parsedValue: @$(o.parsedValue)}
+      when 'Literal' # Literal location data maps to just one token in the rule
+        node = new @ast.Literal @$(pos = o.value)
+        node.locationData = @_toLocation(pos) if typeof pos is 'number'
+        node
       when 'StringLiteral'
         new @ast.StringLiteral @$(o.value), {
           quote: @$(o.quote), initialChunk: @$(o.initialChunk), finalChunk: @$(o.finalChunk),
@@ -306,11 +287,7 @@ class Backend
       # === COMMON LITERALS (Medium Frequency) ===
 
       when 'BooleanLiteral'           then new @ast.BooleanLiteral       @$(o.value), {originalValue: @$(o.originalValue)}
-      when 'ThisLiteral'
-        result = new @ast.ThisLiteral @$(o.value)
-        # Attach location data for nested AST nodes that don't go through reduce
-        result.locationData = @currentLocationData if @currentLocationData and not result.locationData
-        result
+      when 'ThisLiteral'              then new @ast.ThisLiteral          @$(o.value)
       when 'NullLiteral'              then new @ast.NullLiteral
       when 'UndefinedLiteral'         then new @ast.UndefinedLiteral
       when 'RegexLiteral'             then new @ast.RegexLiteral         @$(o.value), {delimiter: @$(o.delimiter), heregexCommentTokens: @$(o.heregexCommentTokens)}
@@ -342,8 +319,8 @@ class Backend
 
       # === ERROR HANDLING (Low Frequency) ===
 
-      when 'Try'                      then new @ast.Try   @$(o.attempt ),   @$(o.catch), @$(o.ensure  ), {finallyTag: @$(o.finallyTag   )}
-      when 'Catch'                    then new @ast.Catch @$(o.recovery) or @$(o.body ), @$(o.variable) or            @$(o.errorVariable)
+      when 'Try'                      then new @ast.Try   @$(o.attempt ), @$(o.catch), @$(o.ensure), @$(o.finallyTag)
+      when 'Catch'                    then new @ast.Catch @$(o.recovery), @$(o.variable) or @$(o.errorVariable)
       when 'Throw'                    then new @ast.Throw @$(o.expression)
 
       # === MODULES (Low Frequency) ===
@@ -385,5 +362,14 @@ class Backend
       else
         console.warn "Unknown $ast type:", o.$ast
         new @ast.Literal "# Missing AST node: #{o.$ast}"
+
+    # Possibly override AST node location data
+    if node instanceof @ast.Base
+      if (pos = o.$pos)? and loc = @_toLocation(pos)
+        node.locationData = loc
+      else if not node.locationData and @loc
+        node.locationData = @loc
+
+    node
 
 module.exports = Backend
