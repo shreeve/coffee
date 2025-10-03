@@ -544,14 +544,14 @@ grammar =
   # A catch clause names its error and runs a block of code.
   Catch: [
     o 'CATCH Identifier Block', $ast: '@', recovery: 3, variable: 2
-    o 'CATCH Object Block'    , $ast: '@', body: 3, errorVariable: {$ast: 'Value', base: 2}
+    o 'CATCH Object Block'    , $ast: '@', recovery: 3, errorVariable: {$ast: 'Value', base: 2}
     o 'CATCH Block'           , $ast: '@', recovery: 2
   ]
 
   # Throw an exception object.
   Throw: [
     o 'THROW Expression'           , $ast: '@', expression: 2
-    o 'THROW INDENT Object OUTDENT', $ast: '@', value: {$ast: 'Value'}
+    o 'THROW INDENT Object OUTDENT', $ast: '@', expression: 3
   ]
 
   # Parenthetical expressions. Note that the **Parenthetical** is a **Value**,

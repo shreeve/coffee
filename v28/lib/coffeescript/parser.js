@@ -335,13 +335,13 @@ return r(5,{$ast:"Try",attempt:2,catch:3,ensure:5,finallyTag:{$ast:"Literal",val
 case 271:
 return r(3,{$ast:"Catch",recovery:3,variable:2});
 case 272:
-return r(3,{$ast:"Catch",body:3,errorVariable:{$ast:"Value",base:2}});
+return r(3,{$ast:"Catch",recovery:3,errorVariable:{$ast:"Value",base:2}});
 case 273:
 return r(2,{$ast:"Catch",recovery:2});
 case 274:
 return r(2,{$ast:"Throw",expression:2});
 case 275:
-return r(4,{$ast:"Throw",value:{$ast:"Value"}});
+return r(4,{$ast:"Throw",expression:3});
 case 276:
 return r(3,{$ast:"Parens",body:2});
 case 277:
