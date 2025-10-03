@@ -66,9 +66,27 @@ global.code = (coffeeCode, expectedJs) ->
 # Simple test function: test "code", expected_value
 global.test = (code, expected) ->
   try
-    # Use CoffeeScript.eval for natural behavior
-    # This returns the actual value of the last expression
-    actual = CoffeeScript.eval code
+    # Use CoffeeScript.eval with a fresh sandbox for isolation
+    # This prevents variable pollution between tests
+    vm = require 'vm'
+    sandbox = vm.createContext({
+      console: console
+      require: require
+      global: global
+      process: process
+      Buffer: Buffer
+      Math: Math
+      Date: Date
+      Array: Array
+      Object: Object
+      String: String
+      Number: Number
+      Boolean: Boolean
+      RegExp: RegExp
+      Error: Error
+      JSON: JSON
+    })
+    actual = CoffeeScript.eval code, {sandbox}
 
     # Handle function expected values (for validation tests like Object.defineProperty)
     if typeof expected == 'function'

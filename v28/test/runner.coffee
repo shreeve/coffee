@@ -6,7 +6,7 @@
 
 fs = require 'fs'
 path = require 'path'
-CoffeeScript = require '../lib/coffeescript'
+CoffeeScript = require '../../v28/lib/coffeescript'
 
 # ANSI colors
 green = '\x1B[0;32m'
@@ -66,9 +66,27 @@ global.code = (coffeeCode, expectedJs) ->
 # Simple test function: test "code", expected_value
 global.test = (code, expected) ->
   try
-    # Use CoffeeScript.eval for natural behavior
-    # This returns the actual value of the last expression
-    actual = CoffeeScript.eval code
+    # Use CoffeeScript.eval with a fresh sandbox for isolation
+    # This prevents variable pollution between tests
+    vm = require 'vm'
+    sandbox = vm.createContext({
+      console: console
+      require: require
+      global: global
+      process: process
+      Buffer: Buffer
+      Math: Math
+      Date: Date
+      Array: Array
+      Object: Object
+      String: String
+      Number: Number
+      Boolean: Boolean
+      RegExp: RegExp
+      Error: Error
+      JSON: JSON
+    })
+    actual = CoffeeScript.eval code, {sandbox}
 
     # Handle function expected values (for validation tests like Object.defineProperty)
     if typeof expected == 'function'
@@ -146,8 +164,21 @@ for file in testFiles
   filePassed = passed
   fileFailed = failed
 
-  # Load and run the test file
-  require path.resolve(file)
+  # Read the test file and compile it with v28 CoffeeScript
+  testCode = fs.readFileSync(file, 'utf8')
+  try
+    # Compile the test file with v28
+    compiledTest = CoffeeScript.compile testCode,
+      filename: file
+      bare: true
+
+    # Evaluate the compiled test in the current context
+    # This ensures test(), fail(), and code() are available
+    eval compiledTest
+  catch e
+    console.log "#{red}Error compiling/running test file: #{e.message}#{reset}"
+    if e.location
+      console.log "  at line #{e.location.first_line + 1}, column #{e.location.first_column + 1}"
 
   # Show file summary
   filePassCount = passed - filePassed
