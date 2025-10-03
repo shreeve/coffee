@@ -209,7 +209,8 @@
           value: {
             $use: 1,
             method: 'toString'
-          }
+          },
+          $pos: 1
         }
       })
     ],
@@ -370,7 +371,8 @@
         $ast: 'Assign',
         variable: {
           $ast: 'Value',
-          base: 1
+          base: 1,
+          $pos: 1
         },
         value: 3,
         context: 'object',
@@ -384,7 +386,8 @@
         $ast: 'Assign',
         variable: {
           $ast: 'Value',
-          base: 1
+          base: 1,
+          $pos: 1
         },
         value: 4,
         context: 'object',
@@ -398,7 +401,8 @@
         $ast: 'Assign',
         variable: {
           $ast: 'Value',
-          base: 1
+          base: 1,
+          $pos: 1
         },
         value: 3,
         operatorToken: {
@@ -411,7 +415,8 @@
         $ast: 'Assign',
         variable: {
           $ast: 'Value',
-          base: 1
+          base: 1,
+          $pos: 1
         },
         value: 4,
         operatorToken: {
@@ -441,7 +446,8 @@
         properties: [
           {
             $ast: 'ComputedPropertyName',
-            value: 3
+            value: 3,
+            $pos: 3
           }
         ],
         this: true
@@ -490,7 +496,8 @@
       {
         $ast: 'SuperCall',
         variable: {
-          $ast: 'Super'
+          $ast: 'Super',
+          $pos: 1
         },
         args: 3,
         soak: {
@@ -856,11 +863,13 @@
         $ast: '@',
         identifier: {
           $ast: 'IdentifierLiteral',
-          value: 1
+          value: 1,
+          $pos: 1
         },
         accessor: {
           $ast: 'Access',
-          name: 3
+          name: 3,
+          $pos: 3
         }
       }),
       o('IMPORT_META . Property',
@@ -868,11 +877,13 @@
         $ast: '@',
         identifier: {
           $ast: 'IdentifierLiteral',
-          value: 1
+          value: 1,
+          $pos: 1
         },
         accessor: {
           $ast: 'Access',
-          name: 3
+          name: 3,
+          $pos: 3
         }
       })
     ],
@@ -897,11 +908,13 @@
               $ast: 'PropertyName',
               value: 'prototype'
             },
-            shorthand: true
+            shorthand: true,
+            $pos: 1
           },
           {
             $ast: 'Access',
-            name: 2
+            name: 2,
+            $pos: 2
           }
         ]
       }),
@@ -915,11 +928,13 @@
               value: 'prototype'
             },
             shorthand: true,
-            soak: true
+            soak: true,
+            $pos: 1
           },
           {
             $ast: 'Access',
-            name: 2
+            name: 2,
+            $pos: 2
           }
         ]
       }),
@@ -1271,14 +1286,16 @@
       {
         $ast: '@',
         imported: {
-          $ast: 'DefaultLiteral'
+          $ast: 'DefaultLiteral',
+          $pos: 1
         }
       }),
       o('DEFAULT AS Identifier',
       {
         $ast: '@',
         imported: {
-          $ast: 'DefaultLiteral'
+          $ast: 'DefaultLiteral',
+          $pos: 1
         },
         local: 3
       })
@@ -1329,7 +1346,9 @@
           $ast: 'Assign',
           variable: 2,
           value: 4,
-          moduleDeclaration: 'export'
+          moduleDeclaration: 'export',
+          $pos: [2,
+      4]
         }
       }),
       o('EXPORT Identifier = TERMINATOR Expression',
@@ -1339,7 +1358,9 @@
           $ast: 'Assign',
           variable: 2,
           value: 5,
-          moduleDeclaration: 'export'
+          moduleDeclaration: 'export',
+          $pos: [2,
+      5]
         }
       }),
       o('EXPORT Identifier = INDENT Expression OUTDENT',
@@ -1349,7 +1370,9 @@
           $ast: 'Assign',
           variable: 2,
           value: 5,
-          moduleDeclaration: 'export'
+          moduleDeclaration: 'export',
+          $pos: [2,
+      6]
         }
       }),
       o('EXPORT DEFAULT Expression',
@@ -1474,14 +1497,16 @@
       {
         $ast: '@',
         local: {
-          $ast: 'DefaultLiteral'
+          $ast: 'DefaultLiteral',
+          $pos: 1
         }
       }),
       o('DEFAULT AS Identifier',
       {
         $ast: '@',
         local: {
-          $ast: 'DefaultLiteral'
+          $ast: 'DefaultLiteral',
+          $pos: 1
         },
         exported: 3
       })
@@ -1512,7 +1537,8 @@
       {
         $ast: 'SuperCall',
         variable: {
-          $ast: 'Super'
+          $ast: 'Super',
+          $pos: 1
         },
         args: 3,
         soak: {
@@ -1587,7 +1613,8 @@
         properties: [
           {
             $ast: 'Access',
-            name: 2
+            name: 2,
+            $pos: 2
           }
         ]
       })
@@ -1897,7 +1924,8 @@
         recovery: 3,
         errorVariable: {
           $ast: 'Value',
-          base: 2
+          base: 2,
+          $pos: 2
         }
       }),
       o('CATCH Block',
@@ -2044,7 +2072,8 @@
         $ast: 'While',
         condition: {
           $ast: 'BooleanLiteral',
-          value: 'true'
+          value: 'true',
+          $pos: 1
         },
         isLoop: true,
         body: 2
@@ -2054,7 +2083,8 @@
         $ast: 'While',
         condition: {
           $ast: 'BooleanLiteral',
-          value: 'true'
+          value: 'true',
+          $pos: 1
         },
         isLoop: true,
         body: [2]
@@ -2100,7 +2130,8 @@
         },
         source: {
           $ast: 'Value',
-          base: 2
+          base: 2,
+          $pos: 2
         }
       }),
       o('FOR Range BY Expression',
@@ -2111,7 +2142,8 @@
         },
         source: {
           $ast: 'Value',
-          base: 2
+          base: 2,
+          $pos: 2
         },
         step: 4
       }),
@@ -2131,7 +2163,8 @@
         },
         source: {
           $ast: 'Value',
-          base: 2
+          base: 2,
+          $pos: 2
         },
         step: 4
       }),

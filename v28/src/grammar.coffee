@@ -93,7 +93,7 @@ grammar =
 
   String: [
     o 'STRING'                                , $ast: 'StringLiteral', value: {$use: 1, method: 'slice', args: [1, -1]}, quote: {$use: 1, prop: 'quote'}, initialChunk: {$use: 1, prop: 'initialChunk'}, finalChunk: {$use: 1, prop: 'finalChunk'}, indent: {$use: 1, prop: 'indent'}, double: {$use: 1, prop: 'double'}, heregex: {$use: 1, prop: 'heregex'}
-    o 'STRING_START Interpolations STRING_END', $ast: 'StringWithInterpolations', body: 2, quote: {$use: 1, prop: 'quote'}, startQuote: {$ast: 'Literal', value: {$use: 1, method: 'toString'}}
+    o 'STRING_START Interpolations STRING_END', $ast: 'StringWithInterpolations', body: 2, quote: {$use: 1, prop: 'quote'}, startQuote: {$ast: 'Literal', value: {$use: 1, method: 'toString'}, $pos: 1}
   ]
 
   Interpolations: [
@@ -140,10 +140,10 @@ grammar =
   AssignObj: [
     o 'ObjAssignable'                                  , $ast: 'Value', base: 1
     o 'ObjRestValue'
-    o 'ObjAssignable : Expression'                     , $ast: 'Assign', variable: {$ast: 'Value', base: 1}, value: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2}
-    o 'ObjAssignable : INDENT Expression OUTDENT'      , $ast: 'Assign', variable: {$ast: 'Value', base: 1}, value: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2}
-    o 'SimpleObjAssignable = Expression'               , $ast: 'Assign', variable: {$ast: 'Value', base: 1}, value: 3, operatorToken: {$ast: 'Literal', value: 2}
-    o 'SimpleObjAssignable = INDENT Expression OUTDENT', $ast: 'Assign', variable: {$ast: 'Value', base: 1}, value: 4, operatorToken: {$ast: 'Literal', value: 2}
+    o 'ObjAssignable : Expression'                     , $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 3, context: 'object', operatorToken: {$ast: 'Literal', value: 2}
+    o 'ObjAssignable : INDENT Expression OUTDENT'      , $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 4, context: 'object', operatorToken: {$ast: 'Literal', value: 2}
+    o 'SimpleObjAssignable = Expression'               , $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 3, operatorToken: {$ast: 'Literal', value: 2}
+    o 'SimpleObjAssignable = INDENT Expression OUTDENT', $ast: 'Assign', variable: {$ast: 'Value', base: 1, $pos: 1}, value: 4, operatorToken: {$ast: 'Literal', value: 2}
   ]
 
   SimpleObjAssignable: [
@@ -155,7 +155,7 @@ grammar =
   ObjAssignable: [
     o 'SimpleObjAssignable'
     o '[ Expression ]'  , $ast: 'Value', base: {$ast: 'ComputedPropertyName', value: 2}
-    o '@ [ Expression ]', $ast: 'Value', base: {$ast: 'ThisLiteral', value: 1}, properties: [{$ast: 'ComputedPropertyName', value: 3}], this: true
+    o '@ [ Expression ]', $ast: 'Value', base: {$ast: 'ThisLiteral', value: 1}, properties: [{$ast: 'ComputedPropertyName', value: 3, $pos: 3}], this: true
     o 'AlphaNumeric'
   ]
 
@@ -173,7 +173,7 @@ grammar =
     o 'Parenthetical'
     o 'Super'
     o 'This'
-    o 'SUPER OptFuncExist Arguments'              , $ast: 'SuperCall', variable: {$ast: 'Super'}, args: 3, soak: {$use: 2, prop: 'soak'}
+    o 'SUPER OptFuncExist Arguments'              , $ast: 'SuperCall', variable: {$ast: 'Super', $pos: 1}, args: 3, soak: {$use: 2, prop: 'soak'}
     o 'DYNAMIC_IMPORT Arguments'                  , $ast: 'DynamicImportCall', variable: {$ast: 'DynamicImport'}, args: 2
     o 'SimpleObjAssignable OptFuncExist Arguments', $ast: 'Call', variable: {$ast: 'Value', base: 1}, args: 3, soak: {$use: 2, prop: 'soak'}
     o 'ObjSpreadExpr OptFuncExist Arguments'      , $ast: 'Call', variable: 1, args: 3, soak: {$use: 2, prop: 'soak'}
@@ -290,15 +290,15 @@ grammar =
   # A "meta-property" access e.g. `new.target` or `import.meta`, where
   # something that looks like a property is referenced on a keyword.
   MetaProperty: [
-    o 'NEW_TARGET . Property' , $ast: '@', identifier: {$ast: 'IdentifierLiteral', value: 1}, accessor: {$ast: 'Access', name: 3}
-    o 'IMPORT_META . Property', $ast: '@', identifier: {$ast: 'IdentifierLiteral', value: 1}, accessor: {$ast: 'Access', name: 3}
+    o 'NEW_TARGET . Property' , $ast: '@', identifier: {$ast: 'IdentifierLiteral', value: 1, $pos: 1}, accessor: {$ast: 'Access', name: 3, $pos: 3}
+    o 'IMPORT_META . Property', $ast: '@', identifier: {$ast: 'IdentifierLiteral', value: 1, $pos: 1}, accessor: {$ast: 'Access', name: 3, $pos: 3}
   ]
 
   Accessor: [
     o '.  Property' , $ast: 'Access', name: 2
     o '?. Property' , $ast: 'Access', name: 2, soak: true
-    o ':: Property' , $arr: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true}, {$ast: 'Access', name: 2}]
-    o '?:: Property', $arr: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true}, {$ast: 'Access', name: 2}]
+    o ':: Property' , $arr: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
+    o '?:: Property', $arr: [{$ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true, $pos: 1}, {$ast: 'Access', name: 2, $pos: 2}]
     o '::'          , $ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true
     o '?::'         , $ast: 'Access', name: {$ast: 'PropertyName', value: 'prototype'}, shorthand: true, soak: true
     o 'Index'
@@ -371,8 +371,8 @@ grammar =
   ImportSpecifier: [
     o 'Identifier'              , $ast: '@', imported: 1
     o 'Identifier AS Identifier', $ast: '@', imported: 1, local: 3
-    o 'DEFAULT'                 , $ast: '@', imported: {$ast: 'DefaultLiteral'}
-    o 'DEFAULT AS Identifier'   , $ast: '@', imported: {$ast: 'DefaultLiteral'}, local: 3
+    o 'DEFAULT'                 , $ast: '@', imported: {$ast: 'DefaultLiteral', $pos: 1}
+    o 'DEFAULT AS Identifier'   , $ast: '@', imported: {$ast: 'DefaultLiteral', $pos: 1}, local: 3
   ]
 
   ImportDefaultSpecifier: [
@@ -387,9 +387,9 @@ grammar =
     o 'EXPORT { }'                                                       , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList'}
     o 'EXPORT { ExportSpecifierList OptComma }'                          , $ast: 'ExportNamedDeclaration', clause: {$ast: 'ExportSpecifierList', specifiers: 3}
     o 'EXPORT Class'                                                     , $ast: 'ExportNamedDeclaration', clause: 2
-    o 'EXPORT Identifier = Expression'                                   , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 4, moduleDeclaration: 'export'}
-    o 'EXPORT Identifier = TERMINATOR Expression'                        , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 5, moduleDeclaration: 'export'}
-    o 'EXPORT Identifier = INDENT Expression OUTDENT'                    , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 5, moduleDeclaration: 'export'}
+    o 'EXPORT Identifier = Expression'                                   , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 4, moduleDeclaration: 'export', $pos: [2, 4]}
+    o 'EXPORT Identifier = TERMINATOR Expression'                        , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 5, moduleDeclaration: 'export', $pos: [2, 5]}
+    o 'EXPORT Identifier = INDENT Expression OUTDENT'                    , $ast: 'ExportNamedDeclaration', clause: {$ast: 'Assign', variable: 2, value: 5, moduleDeclaration: 'export', $pos: [2, 6]}
     o 'EXPORT DEFAULT Expression'                                        , $ast: 'ExportDefaultDeclaration', declaration: 3
     o 'EXPORT DEFAULT INDENT Object OUTDENT'                             , $ast: 'ExportDefaultDeclaration', value: {$ast: 'Value', base: 4}
     o 'EXPORT EXPORT_ALL FROM String'                                    , $ast: 'ExportAllDeclaration', exported: {$ast: 'Literal', value: 2}, source: 4
@@ -412,15 +412,15 @@ grammar =
     o 'Identifier'              , $ast: '@', local: 1
     o 'Identifier AS Identifier', $ast: '@', local: 1, exported: 3
     o 'Identifier AS DEFAULT'   , $ast: '@', local: 1, exported: {$ast: 'DefaultLiteral', value: 3}
-    o 'DEFAULT'                 , $ast: '@', local: {$ast: 'DefaultLiteral'}
-    o 'DEFAULT AS Identifier'   , $ast: '@', local: {$ast: 'DefaultLiteral'}, exported: 3
+    o 'DEFAULT'                 , $ast: '@', local: {$ast: 'DefaultLiteral', $pos: 1}
+    o 'DEFAULT AS Identifier'   , $ast: '@', local: {$ast: 'DefaultLiteral', $pos: 1}, exported: 3
   ]
 
   # Ordinary function invocation, or a chained series of calls.
   Invocation: [
     o 'Value OptFuncExist String'   , $ast: 'TaggedTemplateCall', variable: 1, template: 3, soak: {$use: 2, prop: 'soak'}
     o 'Value OptFuncExist Arguments', $ast: 'Call', variable: 1, args: 3, soak: {$use: 2, prop: 'soak'}
-    o 'SUPER OptFuncExist Arguments', $ast: 'SuperCall', variable: {$ast: 'Super'}, args: 3, soak: {$use: 2, prop: 'soak'}
+    o 'SUPER OptFuncExist Arguments', $ast: 'SuperCall', variable: {$ast: 'Super', $pos: 1}, args: 3, soak: {$use: 2, prop: 'soak'}
     o 'DYNAMIC_IMPORT Arguments'    , $ast: 'DynamicImportCall', variable: {$ast: 'DynamicImport'}, args: 2
   ]
 
@@ -444,7 +444,7 @@ grammar =
 
   # A reference to a property on *this*
   ThisProperty: [
-    o '@ Property', $ast: 'Value', this: true, base: {$ast: 'ThisLiteral', value: 1}, properties: [ { $ast: 'Access', name: 2 } ]
+    o '@ Property', $ast: 'Value', this: true, base: {$ast: 'ThisLiteral', value: 1}, properties: [ { $ast: 'Access', name: 2, $pos: 2 } ]
   ]
 
   # The array literal.
@@ -545,7 +545,7 @@ grammar =
   # A catch clause names its error and runs a block of code.
   Catch: [
     o 'CATCH Identifier Block', $ast: '@', recovery: 3, variable: 2
-    o 'CATCH Object Block'    , $ast: '@', recovery: 3, errorVariable: {$ast: 'Value', base: 2}
+    o 'CATCH Object Block'    , $ast: '@', recovery: 3, errorVariable: {$ast: 'Value', base: 2, $pos: 2}
     o 'CATCH Block'           , $ast: '@', recovery: 2
   ]
 
@@ -592,8 +592,8 @@ grammar =
   ]
 
   Loop: [
-    o 'LOOP Block'     , $ast: 'While', condition: {$ast: 'BooleanLiteral', value: 'true'}, isLoop: true, body: 2
-    o 'LOOP Expression', $ast: 'While', condition: {$ast: 'BooleanLiteral', value: 'true'}, isLoop: true, body: [2]
+    o 'LOOP Block'     , $ast: 'While', condition: {$ast: 'BooleanLiteral', value: 'true', $pos: 1}, isLoop: true, body: 2
+    o 'LOOP Expression', $ast: 'While', condition: {$ast: 'BooleanLiteral', value: 'true', $pos: 1}, isLoop: true, body: [2]
   ]
 
   # Array, object, and range comprehensions, at the most generic level.
@@ -607,13 +607,13 @@ grammar =
   ]
 
   ForBody: [
-    o 'FOR Range'              , $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2}
-    o 'FOR Range BY Expression', $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2}, step: 4
+    o 'FOR Range'              , $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2, $pos: 2}
+    o 'FOR Range BY Expression', $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2, $pos: 2}, step: 4
     o 'ForStart ForSource'     , $ops: 'loop', addSource: [1, 2]
   ]
 
   ForLineBody: [
-    o 'FOR Range BY ExpressionLine', $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2}, step: 4
+    o 'FOR Range BY ExpressionLine', $ast: 'For', body: {$arr: []}, source: {$ast: 'Value', base: 2, $pos: 2}, step: 4
     o 'ForStart ForLineSource'     , $ops: 'loop', addSource: [1, 2]
   ]
 

@@ -147,7 +147,10 @@ class Backend
         if o.add?
           [value, accessor] = o.add.map (item) => @$(item)
           if value instanceof @ast.Value
-            return value.add accessor
+            result = value.add accessor
+            # When properties are added, the Value needs its location updated to span the full rule
+            result.updateLocationDataIfMissing @loc if result.forceUpdateLocation
+            return result
           else
             return @_toValue value, [accessor]
 

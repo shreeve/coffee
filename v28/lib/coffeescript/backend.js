@@ -225,7 +225,12 @@
               return this.$(item);
             });
             if (value instanceof this.ast.Value) {
-              return value.add(accessor);
+              result = value.add(accessor);
+              if (result.forceUpdateLocation) {
+                // When properties are added, the Value needs its location updated to span the full rule
+                result.updateLocationDataIfMissing(this.loc);
+              }
+              return result;
             } else {
               return this._toValue(value, [accessor]);
             }
