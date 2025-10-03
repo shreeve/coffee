@@ -66,13 +66,7 @@ global.code = (coffeeCode, expectedJs) ->
 # Simple test function: test "code", expected_value
 global.test = (code, expected) ->
   try
-    # Compile the CoffeeScript code in bare mode
-    # For testing, we need the value of expressions, so compile with returns
-    compiled = CoffeeScript.compile code, bare: true, makeReturn: true
-
-    # Wrap everything in a function and call it
-    # This handles all cases: returns, control flow, assignments, etc.
-    actual = eval("(function() { #{compiled} })()")
+    actual = CoffeeScript.eval code
 
     # Handle function expected values (for validation tests like Object.defineProperty)
     if typeof expected == 'function'
