@@ -23,10 +23,10 @@ class Backend
   # Helper for extending a Value or returning a new one
   _toValue: (base, properties, tag, isDefaultValue) ->
     props = if Array.isArray(properties) then properties else []
-    if base instanceof Value
+    if base instanceof @ast.Value
       if props.length then base.add props else base
     else
-      new Value base, props, tag, isDefaultValue
+      new @ast.Value base, props, tag, isDefaultValue
 
   # Parser reducer: call as r(...) = reduce(values, positions, stackTop, ...)
   # Called ONCE per grammar rule match (e.g., 'TRY Block FINALLY Block'). This

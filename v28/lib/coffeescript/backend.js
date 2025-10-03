@@ -36,14 +36,14 @@
     _toValue(base, properties, tag, isDefaultValue) {
       var props;
       props = Array.isArray(properties) ? properties : [];
-      if (base instanceof Value) {
+      if (base instanceof this.ast.Value) {
         if (props.length) {
           return base.add(props);
         } else {
           return base;
         }
       } else {
-        return new Value(base, props, tag, isDefaultValue);
+        return new this.ast.Value(base, props, tag, isDefaultValue);
       }
     }
 
