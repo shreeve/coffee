@@ -183,12 +183,9 @@ class Backend
       # === CORE EXPRESSIONS (Very High Frequency) ===
 
       # Values and property access - the most fundamental operations
+      when 'Value'             then @_toValue @$(o.base), @$(o.properties) ? [], (o.this and 'this'), @$(o.isDefaultValue) ? false
       when 'IdentifierLiteral' then new @ast.IdentifierLiteral @$(o.value)
       when 'NumberLiteral'     then new @ast.NumberLiteral     @$(o.value), {parsedValue: @$(o.parsedValue)}
-      when 'Value'
-        value = @_toValue @$(o.base), @$(o.properties) ? []
-        value.this = true if o.this
-        value
       when 'Literal' # Literal location data maps to just one token in the rule
         node = new @ast.Literal @$(pos = o.value)
         node.locationData = @_toLocation(pos) if typeof pos is 'number'
