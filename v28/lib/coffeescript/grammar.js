@@ -210,7 +210,7 @@
             $use: 1,
             method: 'toString'
           },
-          $pos: 1
+          $loc: 1
         }
       })
     ],
@@ -372,7 +372,7 @@
         variable: {
           $ast: 'Value',
           base: 1,
-          $pos: 1
+          $loc: 1
         },
         value: 3,
         context: 'object',
@@ -387,7 +387,7 @@
         variable: {
           $ast: 'Value',
           base: 1,
-          $pos: 1
+          $loc: 1
         },
         value: 4,
         context: 'object',
@@ -402,7 +402,7 @@
         variable: {
           $ast: 'Value',
           base: 1,
-          $pos: 1
+          $loc: 1
         },
         value: 3,
         operatorToken: {
@@ -416,7 +416,7 @@
         variable: {
           $ast: 'Value',
           base: 1,
-          $pos: 1
+          $loc: 1
         },
         value: 4,
         operatorToken: {
@@ -447,7 +447,7 @@
           {
             $ast: 'ComputedPropertyName',
             value: 3,
-            $pos: 3
+            $loc: 3
           }
         ],
         this: true
@@ -497,7 +497,7 @@
         $ast: 'SuperCall',
         variable: {
           $ast: 'Super',
-          $pos: 1
+          $loc: 1
         },
         args: 3,
         soak: {
@@ -864,12 +864,12 @@
         identifier: {
           $ast: 'IdentifierLiteral',
           value: 1,
-          $pos: 1
+          $loc: 1
         },
         accessor: {
           $ast: 'Access',
           name: 3,
-          $pos: 3
+          $loc: 3
         }
       }),
       o('IMPORT_META . Property',
@@ -878,12 +878,12 @@
         identifier: {
           $ast: 'IdentifierLiteral',
           value: 1,
-          $pos: 1
+          $loc: 1
         },
         accessor: {
           $ast: 'Access',
           name: 3,
-          $pos: 3
+          $loc: 3
         }
       })
     ],
@@ -909,12 +909,12 @@
               value: 'prototype'
             },
             shorthand: true,
-            $pos: 1
+            $loc: 1
           },
           {
             $ast: 'Access',
             name: 2,
-            $pos: 2
+            $loc: 2
           }
         ]
       }),
@@ -929,12 +929,12 @@
             },
             shorthand: true,
             soak: true,
-            $pos: 1
+            $loc: 1
           },
           {
             $ast: 'Access',
             name: 2,
-            $pos: 2
+            $loc: 2
           }
         ]
       }),
@@ -1287,7 +1287,7 @@
         $ast: '@',
         imported: {
           $ast: 'DefaultLiteral',
-          $pos: 1
+          $loc: 1
         }
       }),
       o('DEFAULT AS Identifier',
@@ -1295,7 +1295,7 @@
         $ast: '@',
         imported: {
           $ast: 'DefaultLiteral',
-          $pos: 1
+          $loc: 1
         },
         local: 3
       })
@@ -1347,7 +1347,7 @@
           variable: 2,
           value: 4,
           moduleDeclaration: 'export',
-          $pos: [2,
+          $loc: [2,
       4]
         }
       }),
@@ -1359,7 +1359,7 @@
           variable: 2,
           value: 5,
           moduleDeclaration: 'export',
-          $pos: [2,
+          $loc: [2,
       5]
         }
       }),
@@ -1371,7 +1371,7 @@
           variable: 2,
           value: 5,
           moduleDeclaration: 'export',
-          $pos: [2,
+          $loc: [2,
       6]
         }
       }),
@@ -1498,7 +1498,7 @@
         $ast: '@',
         local: {
           $ast: 'DefaultLiteral',
-          $pos: 1
+          $loc: 1
         }
       }),
       o('DEFAULT AS Identifier',
@@ -1506,7 +1506,7 @@
         $ast: '@',
         local: {
           $ast: 'DefaultLiteral',
-          $pos: 1
+          $loc: 1
         },
         exported: 3
       })
@@ -1538,7 +1538,7 @@
         $ast: 'SuperCall',
         variable: {
           $ast: 'Super',
-          $pos: 1
+          $loc: 1
         },
         args: 3,
         soak: {
@@ -1614,7 +1614,7 @@
           {
             $ast: 'Access',
             name: 2,
-            $pos: 2
+            $loc: 2
           }
         ]
       })
@@ -1925,7 +1925,7 @@
         errorVariable: {
           $ast: 'Value',
           base: 2,
-          $pos: 2
+          $loc: 2
         }
       }),
       o('CATCH Block',
@@ -2073,7 +2073,7 @@
         condition: {
           $ast: 'BooleanLiteral',
           value: 'true',
-          $pos: 1
+          $loc: 1
         },
         isLoop: true,
         body: 2
@@ -2084,7 +2084,7 @@
         condition: {
           $ast: 'BooleanLiteral',
           value: 'true',
-          $pos: 1
+          $loc: 1
         },
         isLoop: true,
         body: [2]
@@ -2131,7 +2131,7 @@
         source: {
           $ast: 'Value',
           base: 2,
-          $pos: 2
+          $loc: 2
         }
       }),
       o('FOR Range BY Expression',
@@ -2143,7 +2143,7 @@
         source: {
           $ast: 'Value',
           base: 2,
-          $pos: 2
+          $loc: 2
         },
         step: 4
       }),
@@ -2164,7 +2164,7 @@
         source: {
           $ast: 'Value',
           base: 2,
-          $pos: 2
+          $loc: 2
         },
         step: 4
       }),
@@ -2500,7 +2500,7 @@
         subject: 2,
         cases: 4,
         otherwise: 6,
-        $pos: [5,
+        $loc: [5,
       6]
       }),
       o('SWITCH ExpressionLine INDENT Whens ELSE Block OUTDENT',
@@ -2509,7 +2509,7 @@
         subject: 2,
         cases: 4,
         otherwise: 6,
-        $pos: [5,
+        $loc: [5,
       6]
       }),
       o('SWITCH INDENT Whens OUTDENT',
@@ -2524,7 +2524,7 @@
         subject: null,
         cases: 3,
         otherwise: 5,
-        $pos: [4,
+        $loc: [4,
       5]
       })
     ],
@@ -2553,7 +2553,7 @@
         $ast: 'SwitchWhen',
         conditions: 2,
         body: 3,
-        $pos: [1,
+        $loc: [1,
       3]
       })
     ],
@@ -2584,7 +2584,7 @@
               $use: 3,
               prop: 'invert'
             },
-            $pos: [3,
+            $loc: [3,
           5]
           }
         ]
@@ -2634,7 +2634,7 @@
             condition: 4,
             body: 5,
             type: 3,
-            $pos: [3,
+            $loc: [3,
           5]
           }
         ]

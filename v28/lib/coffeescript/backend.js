@@ -54,7 +54,7 @@
     // unless manually overridden. Without any override, a 'finally' keyword would
     // incorrectly span the entire try/finally block. This is why Literal is the
     // only AST type used to capture raw tokens by position (e.g., finallyTag,
-    // operatorToken, returnKeyword).
+    // operatorToken, returnKeyword). The $loc directive provides surgical overrides.
     reduce(values, positions, stackTop, symbolCount, directive) {
       var o, outName, ref, ref1, ref2, ref3, result, util;
       this.tok = function(pos) {
@@ -571,7 +571,7 @@
       }).call(this);
       // Possibly override AST node location data
       if (node instanceof this.ast.Base) {
-        if (((pos = o.$pos) != null) && (loc = this._toLocation(pos))) {
+        if (((pos = o.$loc) != null) && (loc = this._toLocation(pos))) {
           node.locationData = loc;
         } else if (!node.locationData && this.loc) {
           node.locationData = this.loc;
