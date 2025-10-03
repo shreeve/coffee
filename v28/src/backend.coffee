@@ -39,7 +39,7 @@ class Backend
   # unless manually overridden. Without any override, a 'finally' keyword would
   # incorrectly span the entire try/finally block. This is why Literal is the
   # only AST type used to capture raw tokens by position (e.g., finallyTag,
-  # operatorToken, returnKeyword).
+  # operatorToken, returnKeyword). The $loc directive provides surgical overrides.
   reduce: (values, positions, stackTop, symbolCount, directive) ->
     @tok = (pos) ->    values[stackTop - symbolCount + pos] # 1-based index
     @pos = (pos) -> positions[stackTop - symbolCount + pos] # 1-based index
@@ -365,7 +365,7 @@ class Backend
 
     # Possibly override AST node location data
     if node instanceof @ast.Base
-      if (pos = o.$pos)? and loc = @_toLocation(pos)
+      if (pos = o.$loc)? and loc = @_toLocation(pos)
         node.locationData = loc
       else if not node.locationData and @loc
         node.locationData = @loc
