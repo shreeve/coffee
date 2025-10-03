@@ -290,7 +290,7 @@ class Backend
       when 'RegexLiteral'             then new @ast.RegexLiteral         @$(o.value), {delimiter: @$(o.delimiter), heregexCommentTokens: @$(o.heregexCommentTokens)}
       when 'PassthroughLiteral'       then new @ast.PassthroughLiteral   @$(o.value), {here: @$(o.here), generated: @$(o.generated)}
       when 'StatementLiteral'         then new @ast.StatementLiteral     @$(o.value)
-      when 'ComputedPropertyName'     then new @ast.ComputedPropertyName @$(o.expression) or @$(o.name) or @$(o.value)
+      when 'ComputedPropertyName'     then new @ast.ComputedPropertyName @$(o.value)
 
       # === STRING INTERPOLATION (Low-Medium Frequency) ===
 
