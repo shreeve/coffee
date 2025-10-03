@@ -12,7 +12,7 @@
       this.ast = ast;
     }
 
-    // Helper to set location data for a node
+    // Helper for location data
     _toLocation(pos) {
       var from, ref, ref1, ref2, ref3, ref4, ref5, till;
       if (Array.isArray(pos)) {
@@ -32,19 +32,19 @@
       }
     }
 
-    // Helper to convert base + properties to Value node
-    _toValue(base, properties, tag = null, isDefaultValue = false) {
+    // Helper for extending a Value or returning a new one
+    _toValue(base, properties, tag, isDefaultValue) {
       var props;
       props = Array.isArray(properties) ? properties : [];
-      // Handle existing Value
-      if (base instanceof this.ast.Value) {
+      if (base instanceof Value) {
         if (props.length) {
-          base.add(props);
+          return base.add(props);
+        } else {
+          return base;
         }
-        return base;
+      } else {
+        return new Value(base, props, tag, isDefaultValue);
       }
-      // Base should already be a node
-      return new this.ast.Value(base, props, tag, isDefaultValue);
     }
 
     // Parser reducer: call as r(...) = reduce(values, positions, stackTop, ...)

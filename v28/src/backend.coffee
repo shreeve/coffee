@@ -5,7 +5,7 @@
 class Backend
   constructor: (@options = {}, @ast = {}) ->
 
-  # Helper to set location data for a node
+  # Helper for location data
   _toLocation: (pos) ->
     if Array.isArray(pos)
       from = @pos pos[0]
@@ -20,17 +20,13 @@ class Backend
       last_column_exclusive: till.last_column_exclusive ? (till.last_column + 1)
       range:                [from.range?[0] ? 0, till.range?[1] ? 0]
 
-  # Helper to convert base + properties to Value node
-  _toValue: (base, properties, tag = null, isDefaultValue = false) ->
+  # Helper for extending a Value or returning a new one
+  _toValue: (base, properties, tag, isDefaultValue) ->
     props = if Array.isArray(properties) then properties else []
-
-    # Handle existing Value
-    if base instanceof @ast.Value
-      base.add props if props.length
-      return base
-
-    # Base should already be a node
-    new @ast.Value base, props, tag, isDefaultValue
+    if base instanceof Value
+      if props.length then base.add props else base
+    else
+      new Value base, props, tag, isDefaultValue
 
   # Parser reducer: call as r(...) = reduce(values, positions, stackTop, ...)
   # Called ONCE per grammar rule match (e.g., 'TRY Block FINALLY Block'). This
