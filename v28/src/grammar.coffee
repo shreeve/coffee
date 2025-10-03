@@ -186,7 +186,7 @@ grammar =
   # A return statement from a function body.
   Return: [
     o 'RETURN Expression'           , $ast: '@', expression: 2
-    o 'RETURN INDENT Object OUTDENT', $ast: '@', value: {$ast: 'Value'}
+    o 'RETURN INDENT Object OUTDENT', $ast: '@', expression: 3
     o 'RETURN'                      , $ast: '@'
   ]
 

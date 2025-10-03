@@ -113,7 +113,7 @@ return r(2,{$ops:"value",add:[1,2]});
 case 90:
 return r(2,{$ast:"Return",expression:2});
 case 91:
-return r(4,{$ast:"Return",value:{$ast:"Value"}});
+return r(4,{$ast:"Return",expression:3});
 case 92:
 return r(1,{$ast:"Return"});
 case 93:
