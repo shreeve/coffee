@@ -194,11 +194,11 @@ parser.yy.parseError = (message, {token}) ->
   # Disregard the parser's message, it contains redundant line number information.
   # Disregard the token, we take its value directly from the lexer in case
   # the error is caused by a generated token which might refer to its origin.
-  {errorToken, tokens} = parser
+  {errorToken, tokens: parserTokens} = parser
   [errorTag, errorText, errorLoc] = errorToken
 
   errorText = switch
-    when errorToken is tokens[tokens.length - 1]
+    when errorToken is parserTokens[parserTokens.length - 1]
       'end of input'
     when errorTag in ['INDENT', 'OUTDENT']
       'indentation'
