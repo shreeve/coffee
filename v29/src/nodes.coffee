@@ -2609,7 +2609,8 @@ export class Class extends Base
 
     node = @
 
-    if executableBody or @hasNameClash
+    # Don't wrap in ExecutableClassBody for ES6 module exports
+    if (executableBody or @hasNameClash) and not @moduleDeclaration
       node = new ExecutableClassBody node, executableBody
     else if not @name? and o.level is LEVEL_TOP
       # Anonymous classes are only valid in expressions
