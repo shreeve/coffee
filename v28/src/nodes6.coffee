@@ -3127,6 +3127,10 @@ exports.ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
         code.push @makeCode 'const '
         @clause.moduleDeclaration = 'export'
       # For other constructs like functions, no additional keyword needed
+    else
+      # For export default, never add 'const', 'let', or 'var'
+      # The syntax is just "export default <expression>"
+      @clause.moduleDeclaration = 'export default' if @clause instanceof Class
 
     if @clause.body? and @clause.body instanceof Block
       code = code.concat @clause.compileToFragments o, LEVEL_TOP
