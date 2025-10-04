@@ -154,10 +154,11 @@ export locationDataToString = (obj) ->
 
 # Generate a unique anonymous file name so we can distinguish source map cache
 # entries for any number of anonymous scripts.
-export anonymousFileName = do ->
+anonymousFileName = do ->
   n = 0
   ->
     "<anonymous-#{n++}>"
+export {anonymousFileName}
 
 # A version of `basename`, that returns the file sans-extension.
 export baseFileName = (file, stripExt = no, useWinPathSep = no) ->
