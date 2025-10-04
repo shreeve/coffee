@@ -191,11 +191,14 @@ parser.lexer = {
 parser.yy = nodesModule;
 
 parser.yy.parseError = function(message, {token}) {
-  ({errorToken, tokens} = parser);
+  ({
+    errorToken,
+    tokens: parserTokens
+  } = parser);
   [errorTag, errorText, errorLoc] = errorToken;
   errorText = (function() {
     switch (false) {
-      case errorToken !== tokens[tokens.length - 1]:
+      case errorToken !== parserTokens[parserTokens.length - 1]:
         return 'end of input';
       case errorTag !== 'INDENT' && errorTag !== 'OUTDENT':
         return 'indentation';

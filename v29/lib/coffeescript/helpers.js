@@ -183,12 +183,16 @@ export const locationDataToString = function(obj) {
   }
 };
 
-export const anonymousFileName = (function() {
+const anonymousFileName = (function() {
   const n = 0;
   return function() {
     return `<anonymous-${n++}>`;
   };
 })();
+
+export {
+  anonymousFileName
+};
 
 export const baseFileName = function(file, stripExt = false, useWinPathSep = false) {
   const pathSep = useWinPathSep ? /\\|\// : /\//;
