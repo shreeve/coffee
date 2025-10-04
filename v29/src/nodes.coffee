@@ -115,10 +115,6 @@ addDataToNode, attachCommentsToNode, locationDataToString,
 throwSyntaxError, replaceUnicodeCodePointEscapes,
 isFunction, isPlainObject, isNumber, parseNumber} from './helpers'
 
-# Functions required by parser.
-export {extend}
-export {addDataToNode}
-
 # Constant functions for nodes that don't need customization.
 YES     = -> yes
 NO      = -> no
