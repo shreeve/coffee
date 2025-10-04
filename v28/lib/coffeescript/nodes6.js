@@ -5133,13 +5133,13 @@
               needsDeclaration = true;
               // Smart const/let determination:
               // 1. Functions and classes are always const (immutable by nature)
-              // 2. For other values, scan ahead to see if reassigned
+              // 2. For other values, use 'let' for safety (const detection needs improvement)
               if (this.value instanceof Code || this.value instanceof Class) {
                 declarationKeyword = 'const';
               } else {
-                // Check if this variable will be reassigned in the current scope
-                // We do this without modifying the Scope class!
-                declarationKeyword = this.willBeReassignedInScope(o, varName) ? 'let' : 'const';
+                // TODO: Improve reassignment detection for const/let determination
+                // For now, default to 'let' to avoid runtime errors
+                declarationKeyword = 'let';
               }
             }
           }

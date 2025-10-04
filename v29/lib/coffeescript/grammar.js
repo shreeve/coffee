@@ -12,7 +12,7 @@ const o = function(pattern, action, options) {
   ];
 };
 
-const grammar = {
+let grammar = {
   Root: [
     o('',
     {
@@ -2904,7 +2904,7 @@ const grammar = {
   ]
 };
 
-const operators = `right       DO_IIFE
+let operators = `right       DO_IIFE
 left        . ?. :: ?::
 left        CALL_START CALL_END
 nonassoc    ++ --

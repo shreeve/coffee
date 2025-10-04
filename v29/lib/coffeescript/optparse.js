@@ -12,7 +12,7 @@ export class OptionParser {
 
   parse(args) {
     ({rules, positional} = normalizeArguments(args, this.rules.flagDict));
-    const options = {};
+    let options = {};
     for (let i = 0, len = rules.length; i < len; i++) {
       ({hasArgument, argument, isList, name} = rules[i]);
       if (hasArgument) {
@@ -37,7 +37,7 @@ export class OptionParser {
   }
 
   help() {
-    const lines = [];
+    let lines = [];
     if (this.banner) {
       lines.unshift(`${this.banner}\n`);
     }
@@ -46,7 +46,7 @@ export class OptionParser {
       const rule = ref[i];
       let spaces = 15 - rule.longFlag.length;
       spaces = spaces > 0 ? repeat(' ', spaces) : '';
-      const letPart = rule.shortFlag ? rule.shortFlag + ', ' : '    ';
+      let letPart = rule.shortFlag ? rule.shortFlag + ', ' : '    ';
       lines.push('  ' + letPart + rule.longFlag + spaces + rule.description);
     }
     return `\n${lines.join('\n')}\n`;
@@ -54,16 +54,16 @@ export class OptionParser {
 
 };
 
-const LONG_FLAG = /^(--\w[\w\-]*)/;
+let LONG_FLAG = /^(--\w[\w\-]*)/;
 
-const SHORT_FLAG = /^(-\w)$/;
+let SHORT_FLAG = /^(-\w)$/;
 
-const MULTI_FLAG = /^-(\w{2,})/;
+let MULTI_FLAG = /^-(\w{2,})/;
 
-const OPTIONAL = /\[(\w+(\*?))\]/;
+let OPTIONAL = /\[(\w+(\*?))\]/;
 
 const buildRules = function(ruleDeclarations) {
-  const ruleList = (function() {
+  let ruleList = (function() {
     results = [];
     for (let i = 0, len = ruleDeclarations.length; i < len; i++) {
       const tuple = ruleDeclarations[i];
@@ -74,7 +74,7 @@ const buildRules = function(ruleDeclarations) {
     }
     return results;
   })();
-  const flagDict = {};
+  let flagDict = {};
   for (let i = 0, len = ruleList.length; i < len; i++) {
     const rule = ruleList[i];
     const ref = [rule.shortFlag, rule.longFlag];
@@ -93,7 +93,7 @@ const buildRules = function(ruleDeclarations) {
 };
 
 const buildRule = function(shortFlag, longFlag, description) {
-  const match = longFlag.match(OPTIONAL);
+  let match = longFlag.match(OPTIONAL);
   shortFlag = shortFlag != null ? shortFlag.match(SHORT_FLAG)[1] : void 0;
   longFlag = longFlag.match(LONG_FLAG)[1];
   return {
@@ -107,25 +107,25 @@ const buildRule = function(shortFlag, longFlag, description) {
 };
 
 const normalizeArguments = function(args, flagDict) {
-  const rules = [];
+  let rules = [];
   let positional = [];
   let needsArgOpt = null;
   for (let argIndex = i = 0, len = args.length; i < len; argIndex = ++i) {
     const arg = args[argIndex];
     if (needsArgOpt != null) {
-      const withArg = Object.assign({}, needsArgOpt.rule, {
+      let withArg = Object.assign({}, needsArgOpt.rule, {
         argument: arg
       });
       rules.push(withArg);
       needsArgOpt = null;
       continue;
     }
-    const multiFlags = (ref = arg.match(MULTI_FLAG)) != null ? ref[1].split('').map(function(flagName) {
+    let multiFlags = (ref = arg.match(MULTI_FLAG)) != null ? ref[1].split('').map(function(flagName) {
       return `-${flagName}`;
     }) : void 0;
     if (multiFlags != null) {
-      const multiOpts = multiFlags.map(function(flag) {
-        const rule = flagDict[flag];
+      let multiOpts = multiFlags.map(function(flag) {
+        let rule = flagDict[flag];
         if (rule == null) {
           throw new Error(`unrecognized option ${flag} in multi-flag ${arg}`);
         }
@@ -147,7 +147,7 @@ const normalizeArguments = function(args, flagDict) {
     } else if ([LONG_FLAG, SHORT_FLAG].some(function(pat) {
       return arg.match(pat) != null;
     })) {
-      const singleRule = flagDict[arg];
+      let singleRule = flagDict[arg];
       if (singleRule == null) {
         throw new Error(`unrecognized option ${arg}`);
       }

@@ -26,7 +26,7 @@ const Backend = class Backend {
   }
 
   _toValue(base, properties, tag, isDefaultValue) {
-    const props = Array.isArray(properties) ? properties : [];
+    let props = Array.isArray(properties) ? properties : [];
     if (base instanceof this.ast.Value) {
       if (props.length) {
         return base.add(props);
@@ -48,7 +48,7 @@ const Backend = class Backend {
     if (positions && symbolCount > 0) {
       this.loc = this._toLocation([1, symbolCount]);
     }
-    const o = new Proxy(directive, {
+    let o = new Proxy(directive, {
       get: (target, prop) => {
         if (prop in target) {
           return target[prop];
@@ -62,7 +62,7 @@ const Backend = class Backend {
         return void 0;
       }
     });
-    const result = this.process(o);
+    let result = this.process(o);
     if (result instanceof this.ast.Base && !result.locationData && this.loc) {
       result.locationData = this.loc;
     }
@@ -93,10 +93,10 @@ const Backend = class Backend {
       return this.tok(value);
     }
     if (Array.isArray(value)) {
-      const results = [];
+      let results = [];
       for (let i = 0, len = value.length; i < len; i++) {
         const item = value[i];
-        const resolved = this.$(item);
+        let resolved = this.$(item);
         if (resolved == null) {
           continue;
         }
@@ -110,7 +110,7 @@ const Backend = class Backend {
       if (value.$ast || value.$ops || value.$use || value.$arr) {
         return this.process(value);
       }
-      const result = {};
+      let result = {};
       for (let key in value) {
         if (!hasProp.call(value, key)) continue;
         const val = value[key];
@@ -122,8 +122,8 @@ const Backend = class Backend {
   }
 
   processArr(o) {
-    const items = this.$(o.$arr);
-    const result = Array.isArray(items) ? items : [items];
+    let items = this.$(o.$arr);
+    let result = Array.isArray(items) ? items : [items];
     if (o.implicit != null) {
       result.implicit = !!this.$(o.implicit);
     }
@@ -131,7 +131,7 @@ const Backend = class Backend {
   }
 
   processUse(o) {
-    const target = this.$(o.$use);
+    let target = this.$(o.$use);
     if (o.method != null) {
       return target != null ? typeof target[name1 = o.method] === "function" ? target[name1](...((ref = o.args) != null ? ref : [])) : void 0 : void 0;
     }
@@ -152,7 +152,7 @@ const Backend = class Backend {
           const ref = o.append;
           for (let i = 0, len = ref.length; i < len; i++) {
             const item = ref[i];
-            const resolved = this.$(item);
+            let resolved = this.$(item);
             if (Array.isArray(resolved)) {
               result.push(...resolved);
             } else if (resolved != null) {
@@ -212,7 +212,7 @@ const Backend = class Backend {
         break;
       case 'prop':
         if (o.set != null) {
-          const target = this.$(o.set.target);
+          let target = this.$(o.set.target);
           value = this.$(o.set.value);
           if (target != null) {
             target[o.set.property] = value;
@@ -251,8 +251,8 @@ const Backend = class Backend {
             heregex: this.$(o.heregex)
           });
         case 'Assign':
-          const variable = this.$(o.variable);
-          const operator = this.$(o.operator);
+          let variable = this.$(o.variable);
+          let operator = this.$(o.operator);
           let value = this.$(o.value);
           let context = this.$(o.context);
           if (context === 'object' && variable instanceof this.ast.Value && variable.base instanceof this.ast.ThisLiteral) {
@@ -278,7 +278,7 @@ const Backend = class Backend {
         case 'Call':
           return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
         case 'Op':
-          const args = ((ref3 = o.args) != null ? ref3.map((arg) => {
+          let args = ((ref3 = o.args) != null ? ref3.map((arg) => {
             return this.$(arg);
           }) : void 0) || [];
           if ((o.invertOperator != null) || (o.originalOperator != null)) {
@@ -306,7 +306,7 @@ const Backend = class Backend {
         case 'PropertyName':
           return new this.ast.PropertyName(this.$(o.value));
         case 'Block':
-          const expressions = this.$(o.expressions);
+          let expressions = this.$(o.expressions);
           return new this.ast.Block((expressions instanceof this.ast.Block ? expressions.expressions : expressions) || []);
         case 'Root':
           let body = this.ast.Block.wrap(this.$(o.body));
@@ -315,7 +315,7 @@ const Backend = class Backend {
           }
           return new this.ast.Root(body);
         case 'If':
-          const ifNode = new this.ast.If(this.$(o.condition), this.ast.Block.wrap(this.$(o.body)), {
+          let ifNode = new this.ast.If(this.$(o.condition), this.ast.Block.wrap(this.$(o.body)), {
             type: (this.$(o.invert) ? 'unless' : this.$(o.type)),
             postfix: this.$(o.postfix)
           });
@@ -324,7 +324,7 @@ const Backend = class Backend {
           }
           return ifNode;
         case 'While':
-          const whileNode = new this.ast.While(this.$(o.condition), {
+          let whileNode = new this.ast.While(this.$(o.condition), {
             invert: this.$(o.invert),
             guard: this.$(o.guard),
             isLoop: this.$(o.isLoop)
@@ -333,7 +333,7 @@ const Backend = class Backend {
           return whileNode;
         case 'For':
           body = this.ast.Block.wrap(this.$(o.body));
-          const forNode = new this.ast.For(body, {
+          let forNode = new this.ast.For(body, {
             name: this.$(o.name),
             index: this.$(o.index),
             source: this.$(o.source)
@@ -400,7 +400,7 @@ const Backend = class Backend {
             startQuote: this.$(o.startQuote)
           });
         case 'Interpolation':
-          const expression = this.$(o.expression);
+          let expression = this.$(o.expression);
           if (expression != null) {
             return new this.ast.Interpolation(expression);
           } else {

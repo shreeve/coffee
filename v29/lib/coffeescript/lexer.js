@@ -46,7 +46,7 @@ export class Lexer {
     code = this.clean(code);
     let i = 0;
     while (this.chunk = code.slice(i)) {
-      const consumed = this.identifierToken() || this.commentToken() || this.whitespaceToken() || this.lineToken() || this.stringToken() || this.numberToken() || this.regexToken() || this.jsToken() || this.literalToken();
+      let consumed = this.identifierToken() || this.commentToken() || this.whitespaceToken() || this.lineToken() || this.stringToken() || this.numberToken() || this.regexToken() || this.jsToken() || this.literalToken();
       [this.chunkLine, this.chunkColumn, this.chunkOffset] = this.getLineAndColumnFromChunk(consumed);
       i += consumed;
       if (opts.untilBalanced && this.ends.length === 0) {
@@ -93,7 +93,7 @@ export class Lexer {
       return 0;
     }
     [input, id, colon] = match;
-    const idLength = id.length;
+    let idLength = id.length;
     let poppedToken = void 0;
     if (id === 'own' && this.tag() === 'FOR') {
       this.token('OWN', id);
@@ -144,7 +144,7 @@ export class Lexer {
     }
     prev = this.prev();
     let tag = colon || (prev != null) && (((ref5 = prev[0]) === '.' || ref5 === '?.' || ref5 === '::' || ref5 === '?::') || !prev.spaced && prev[0] === '@') ? 'PROPERTY' : 'IDENTIFIER';
-    const tokenData = {};
+    let tokenData = {};
     if (tag === 'IDENTIFIER' && (indexOf.call(JS_KEYWORDS, id) >= 0 || indexOf.call(COFFEE_KEYWORDS, id) >= 0) && !(this.exportSpecifierList && indexOf.call(COFFEE_KEYWORDS, id) >= 0)) {
       tag = id.toUpperCase();
       if (tag === 'WHEN' && (ref6 = this.tag(), indexOf.call(LINE_BREAK, ref6) >= 0)) {
@@ -198,7 +198,7 @@ export class Lexer {
     }
     if (!(tag === 'PROPERTY' || this.exportSpecifierList || this.importSpecifierList)) {
       if (indexOf.call(COFFEE_ALIASES, id) >= 0) {
-        const alias = id;
+        let alias = id;
         id = COFFEE_ALIAS_MAP[id];
         tokenData.original = alias;
       }
@@ -224,7 +224,7 @@ export class Lexer {
         }
       })();
     }
-    const tagToken = this.token(tag, id, {
+    let tagToken = this.token(tag, id, {
       length: idLength,
       data: tokenData
     });
@@ -235,8 +235,8 @@ export class Lexer {
       [tagToken[2].first_line, tagToken[2].first_column, tagToken[2].range[0]] = [poppedToken[2].first_line, poppedToken[2].first_column, poppedToken[2].range[0]];
     }
     if (colon) {
-      const colonOffset = input.lastIndexOf(':');
-      const colonToken = this.token(':', ':', {
+      let colonOffset = input.lastIndexOf(':');
+      let colonToken = this.token(':', ':', {
         offset: colonOffset
       });
     }
@@ -247,8 +247,8 @@ export class Lexer {
     if (!(match = NUMBER.exec(this.chunk))) {
       return 0;
     }
-    const number = match[0];
-    const lexedLength = number.length;
+    let number = match[0];
+    let lexedLength = number.length;
     switch (false) {
       case !/^0[BOX]/.test(number):
         this.error(`radix prefix in '${number}' must be lowercase`, {
@@ -265,9 +265,9 @@ export class Lexer {
           length: lexedLength
         });
     }
-    const parsedValue = parseNumber(number);
-    const tokenData = {parsedValue};
-    const tag = parsedValue === 2e308 ? 'INFINITY' : 'NUMBER';
+    let parsedValue = parseNumber(number);
+    let tokenData = {parsedValue};
+    let tag = parsedValue === 2e308 ? 'INFINITY' : 'NUMBER';
     if (tag === 'INFINITY') {
       tokenData.original = number;
     }
@@ -283,11 +283,11 @@ export class Lexer {
     if (!quote) {
       return 0;
     }
-    const prev = this.prev();
+    let prev = this.prev();
     if (prev && this.value() === 'from' && (this.seenImport || this.seenExport)) {
       prev[0] = 'FROM';
     }
-    const regex = (function() {
+    let regex = (function() {
       switch (quote) {
         case "'":
           return STRING_SINGLE;
@@ -303,10 +303,10 @@ export class Lexer {
       tokens,
       index: end
     } = this.matchWithInterpolations(regex, quote));
-    const heredoc = quote.length === 3;
+    let heredoc = quote.length === 3;
     if (heredoc) {
       let indent = null;
-      const doc = ((function() {
+      let doc = ((function() {
         results = [];
         for (let i = j = 0, len = tokens.length; j < len; i = ++j) {
           const token = tokens[i];
@@ -317,13 +317,13 @@ export class Lexer {
         return results;
       })()).join('#{}');
       while (match = HEREDOC_INDENT.exec(doc)) {
-        const attempt = match[1];
+        let attempt = match[1];
         if (indent === null || (0 < (ref = attempt.length) && ref < indent.length)) {
           indent = attempt;
         }
       }
     }
-    const delimiter = quote.charAt(0);
+    let delimiter = quote.charAt(0);
     this.mergeInterpolationTokens(tokens, {
       quote,
       indent,
@@ -342,9 +342,9 @@ export class Lexer {
     }
     [commentWithSurroundingWhitespace, hereLeadingWhitespace, hereComment, hereTrailingWhitespace, lineComment] = match;
     let contents = null;
-    const leadingNewline = /^\s*\n+\s*#/.test(commentWithSurroundingWhitespace);
+    let leadingNewline = /^\s*\n+\s*#/.test(commentWithSurroundingWhitespace);
     if (hereComment) {
-      const matchIllegal = HERECOMMENT_ILLEGAL.exec(hereComment);
+      let matchIllegal = HERECOMMENT_ILLEGAL.exec(hereComment);
       if (matchIllegal) {
         this.error(`block comments cannot contain ${matchIllegal[0]}`, {
           offset: '###'.length + matchIllegal.index,
@@ -363,24 +363,24 @@ export class Lexer {
         }
       ];
     } else {
-      const leadingNewlines = '';
+      let leadingNewlines = '';
       content = lineComment.replace(/^(\n*)/, function(leading) {
         leadingNewlines = leading;
         return '';
       });
-      const precedingNonCommentLines = '';
-      const hasSeenFirstCommentLine = false;
+      let precedingNonCommentLines = '';
+      let hasSeenFirstCommentLine = false;
       contents = content.split('\n').map(function(line, index) {
         if (!(line.indexOf('#') > -1)) {
           precedingNonCommentLines += `\n${line}`;
           return;
         }
-        const leadingWhitespace = '';
+        let leadingWhitespace = '';
         content = line.replace(/^([ |\t]*)#/, function(_, whitespace) {
           leadingWhitespace = whitespace;
           return '';
         });
-        const comment = {
+        let comment = {
           content,
           length: '#'.length + content.length,
           leadingWhitespace: `${!hasSeenFirstCommentLine ? leadingNewlines : ''}${precedingNonCommentLines}${leadingWhitespace}`,
@@ -406,16 +406,16 @@ export class Lexer {
       }
       return leadingWhitespace.length - 1 - lastNewlineIndex;
     };
-    const commentAttachments = (function() {
+    let commentAttachments = (function() {
       results = [];
       for (let i = j = 0, len = contents.length; j < len; i = ++j) {
         ({content, length, leadingWhitespace, precededByBlankLine} = contents[i]);
-        const nonInitial = i !== 0;
-        const leadingNewlineOffset = nonInitial ? 1 : 0;
+        let nonInitial = i !== 0;
+        let leadingNewlineOffset = nonInitial ? 1 : 0;
         offsetInChunk += leadingNewlineOffset + leadingWhitespace.length;
-        const indentSize = getIndentSize({leadingWhitespace, nonInitial});
-        const noIndent = (indentSize == null) || indentSize === -1;
-        const commentAttachment = {
+        let indentSize = getIndentSize({leadingWhitespace, nonInitial});
+        let noIndent = (indentSize == null) || indentSize === -1;
+        let commentAttachment = {
           content,
           here: hereComment != null,
           newLine: leadingNewline || nonInitial,
@@ -433,14 +433,14 @@ export class Lexer {
       }
       return results;
     }).call(this);
-    const prev = this.prev();
+    let prev = this.prev();
     if (!prev) {
       commentAttachments[0].newLine = true;
       this.lineToken({
         chunk: this.chunk.slice(commentWithSurroundingWhitespace.length),
         offset: commentWithSurroundingWhitespace.length
       });
-      const placeholderToken = this.makeToken('JS', '', {
+      let placeholderToken = this.makeToken('JS', '', {
         offset: commentWithSurroundingWhitespace.length,
         generated: true
       });
@@ -460,7 +460,7 @@ export class Lexer {
     if (!(this.chunk.charAt(0) === '`' && (match = (matchedHere = HERE_JSTOKEN.exec(this.chunk)) || JSTOKEN.exec(this.chunk)))) {
       return 0;
     }
-    const script = match[1];
+    let script = match[1];
     ({length} = match[0]);
     this.token('JS', script, {
       length,
@@ -480,7 +480,7 @@ export class Lexer {
         break;
       case !(match = this.matchWithInterpolations(HEREGEX, '///')):
         ({tokens, index} = match);
-        const comments = [];
+        let comments = [];
         while (matchedComment = HEREGEX_COMMENT.exec(this.chunk.slice(0, index))) {
           ({
             index: commentIndex
@@ -491,7 +491,7 @@ export class Lexer {
             offsetInChunk: commentIndex + leadingWhitespace.length
           });
         }
-        const commentTokens = flatten((function() {
+        let commentTokens = flatten((function() {
           results = [];
           for (let j = 0, len = comments.length; j < len; j++) {
             const commentOpts = comments[j];
@@ -510,7 +510,7 @@ export class Lexer {
           offsetInChunk: 1
         });
         index = regex.length;
-        const prev = this.prev();
+        let prev = this.prev();
         if (prev) {
           if (prev.spaced && (ref = prev[0], indexOf.call(CALLABLE, ref) >= 0)) {
             if (!closed || POSSIBLY_DIVISION.test(regex)) {
@@ -528,8 +528,8 @@ export class Lexer {
         return 0;
     }
     [flags] = REGEX_FLAGS.exec(this.chunk.slice(index));
-    const end = index + flags.length;
-    const origin = this.makeToken('REGEX', null, {
+    let end = index + flags.length;
+    let origin = this.makeToken('REGEX', null, {
       length: end
     });
     switch (false) {
@@ -540,7 +540,7 @@ export class Lexer {
         });
         break;
       case !(regex || tokens.length === 1):
-        const delimiter = body ? '/' : '///';
+        let delimiter = body ? '/' : '///';
         if (body == null) {
           body = tokens[0][1];
         }
@@ -607,9 +607,9 @@ export class Lexer {
     if (!(match = MULTI_DENT.exec(chunk))) {
       return 0;
     }
-    const indent = match[0];
-    const prev = this.prev();
-    const backslash = (prev != null ? prev[0] : void 0) === '\\';
+    let indent = match[0];
+    let prev = this.prev();
+    let backslash = (prev != null ? prev[0] : void 0) === '\\';
     if (!((backslash || ((ref = this.seenFor) != null ? ref.endsLength : void 0) < this.ends.length) && this.seenFor)) {
       this.seenFor = false;
     }
@@ -619,16 +619,16 @@ export class Lexer {
     if (!((backslash && this.seenExport) || this.exportSpecifierList)) {
       this.seenExport = false;
     }
-    const size = indent.length - 1 - indent.lastIndexOf('\n');
-    const noNewlines = this.unfinished();
-    const newIndentLiteral = size > 0 ? indent.slice(-size) : '';
+    let size = indent.length - 1 - indent.lastIndexOf('\n');
+    let noNewlines = this.unfinished();
+    let newIndentLiteral = size > 0 ? indent.slice(-size) : '';
     if (!/^(.?)\1*$/.exec(newIndentLiteral)) {
       this.error('mixed indentation', {
         offset: indent.length
       });
       return indent.length;
     }
-    const minLiteralLength = Math.min(newIndentLiteral.length, this.indentLiteral.length);
+    let minLiteralLength = Math.min(newIndentLiteral.length, this.indentLiteral.length);
     if (newIndentLiteral.slice(0, minLiteralLength) !== this.indentLiteral.slice(0, minLiteralLength)) {
       this.error('indentation mismatch', {
         offset: indent.length
@@ -659,7 +659,7 @@ export class Lexer {
         this.indentLiteral = newIndentLiteral;
         return indent.length;
       }
-      const diff = size - this.indent + this.outdebt;
+      let diff = size - this.indent + this.outdebt;
       this.token('INDENT', diff, {
         offset: offset + indent.length - size,
         length: size
@@ -676,7 +676,7 @@ export class Lexer {
         offset: offset + indent.length
       });
     } else {
-      const endsContinuationLineIndentation = this.continuationLineAdditionalIndent > 0;
+      let endsContinuationLineIndentation = this.continuationLineAdditionalIndent > 0;
       this.continuationLineAdditionalIndent = 0;
       this.outdentToken({
         moveOut: this.indent - size,
@@ -693,14 +693,14 @@ export class Lexer {
   outdentToken({moveOut, noNewlines, outdentLength = 0, offset = 0, indentSize, endsContinuationLineIndentation}) {
     let decreasedIndent = this.indent - moveOut;
     while (moveOut > 0) {
-      const lastIndent = this.indents[this.indents.length - 1];
+      let lastIndent = this.indents[this.indents.length - 1];
       if (!lastIndent) {
         this.outdebt = moveOut = 0;
       } else if (this.outdebt && moveOut <= this.outdebt) {
         this.outdebt -= moveOut;
         moveOut = 0;
       } else {
-        const dent = this.indents.pop() + this.outdebt;
+        let dent = this.indents.pop() + this.outdebt;
         if (outdentLength && (ref = this.chunk[outdentLength], indexOf.call(INDENTABLE_CLOSERS, ref) >= 0)) {
           decreasedIndent -= dent - moveOut;
           moveOut = dent;
@@ -719,7 +719,7 @@ export class Lexer {
     }
     this.suppressSemicolons();
     if (!(this.tag() === 'TERMINATOR' || noNewlines)) {
-      const terminatorToken = this.token('TERMINATOR', '\n', {
+      let terminatorToken = this.token('TERMINATOR', '\n', {
         offset: offset + outdentLength,
         length: 0
       });
@@ -738,7 +738,7 @@ export class Lexer {
     if (!((match = WHITESPACE.exec(this.chunk)) || (nline = this.chunk.charAt(0) === '\n'))) {
       return 0;
     }
-    const prev = this.prev();
+    let prev = this.prev();
     if (prev) {
       prev[match ? 'spaced' : 'newLine'] = true;
     }
@@ -761,7 +761,7 @@ export class Lexer {
   }
 
   suppressNewlines() {
-    const prev = this.prev();
+    let prev = this.prev();
     if (prev[1] === '\\') {
       if (prev.comments && this.tokens.length > 1) {
         attachCommentsToNode(prev.comments, this.tokens[this.tokens.length - 2]);
@@ -797,8 +797,8 @@ export class Lexer {
         skipToken = true;
       }
       if (prev && prev[0] !== 'PROPERTY') {
-        const origin = (ref2 = prev.origin) != null ? ref2 : prev;
-        const message = isUnassignable(prev[1], origin[1]);
+        let origin = (ref2 = prev.origin) != null ? ref2 : prev;
+        let message = isUnassignable(prev[1], origin[1]);
         if (message) {
           this.error(message, origin[2]);
         }
@@ -855,7 +855,7 @@ export class Lexer {
         }
       }
     }
-    const token = this.makeToken(tag, value);
+    let token = this.makeToken(tag, value);
     switch (value) {
       case '(':
       case '{':
@@ -878,10 +878,10 @@ export class Lexer {
     if (this.tag() !== ')') {
       return this.tagDoIife();
     }
-    const stack = [];
+    let stack = [];
     ({tokens} = this);
     let i = tokens.length;
-    const paramEndToken = tokens[--i];
+    let paramEndToken = tokens[--i];
     paramEndToken[0] = 'PARAM_END';
     while (tok = tokens[--i]) {
       switch (tok[0]) {
@@ -905,7 +905,7 @@ export class Lexer {
   }
 
   tagDoIife(tokenIndex) {
-    const tok = this.tokens[tokenIndex != null ? tokenIndex : this.tokens.length - 1];
+    let tok = this.tokens[tokenIndex != null ? tokenIndex : this.tokens.length - 1];
     if ((tok != null ? tok[0] : void 0) !== 'DO') {
       return this;
     }
@@ -921,7 +921,7 @@ export class Lexer {
   }
 
   matchWithInterpolations(regex, delimiter, closingDelimiter = delimiter, interpolators = /^#\{/) {
-    const tokens = [];
+    let tokens = [];
     let offsetInChunk = delimiter.length;
     if (this.chunk.slice(0, offsetInChunk) !== delimiter) {
       return null;
@@ -942,9 +942,9 @@ export class Lexer {
         break;
       }
       [interpolator] = match;
-      const interpolationOffset = interpolator.length - 1;
+      let interpolationOffset = interpolator.length - 1;
       [line, column, offset] = this.getLineAndColumnFromChunk(offsetInChunk + interpolationOffset);
-      const rest = str.slice(interpolationOffset);
+      let rest = str.slice(interpolationOffset);
       ({
         tokens: nested,
         index
@@ -956,7 +956,7 @@ export class Lexer {
         locationDataCompensations: this.locationDataCompensations
       }));
       index += interpolationOffset;
-      const braceInterpolator = str[index - 1] === '}';
+      let braceInterpolator = str[index - 1] === '}';
       if (braceInterpolator) {
         [open] = nested, [close] = slice.call(nested, -1);
         open[0] = 'INTERPOLATION_START';
@@ -1004,21 +1004,21 @@ export class Lexer {
   mergeInterpolationTokens(tokens, options, fn) {
     ({quote, indent, double, heregex, endOffset} = options);
     if (tokens.length > 1) {
-      const lparen = this.token('STRING_START', '(', {
+      let lparen = this.token('STRING_START', '(', {
         length: (ref = quote != null ? quote.length : void 0) != null ? ref : 0,
         data: {quote},
         generated: !(quote != null ? quote.length : void 0)
       });
     }
-    const firstIndex = this.tokens.length;
-    const $ = tokens.length - 1;
+    let firstIndex = this.tokens.length;
+    let $ = tokens.length - 1;
     for (let i = j = 0, len = tokens.length; j < len; i = ++j) {
       const token = tokens[i];
       [tag, value] = token;
       switch (tag) {
         case 'TOKENS':
           if (value.length === 2 && (value[0].comments || value[1].comments)) {
-            const placeholderToken = this.makeToken('JS', '', {
+            let placeholderToken = this.makeToken('JS', '', {
               generated: true
             });
             placeholderToken[2] = value[0][2];
@@ -1038,7 +1038,7 @@ export class Lexer {
           let tokensToPush = value;
           break;
         case 'NEOSTRING':
-          const converted = fn.call(this, token[1], i);
+          let converted = fn.call(this, token[1], i);
           if (i === 0) {
             addTokenData(token, {
               initialChunk: true
@@ -1119,13 +1119,13 @@ export class Lexer {
 
   getLocationDataCompensation(start, end) {
     let totalCompensation = 0;
-    const initialEnd = end;
+    let initialEnd = end;
     let current = start;
     while (current <= end) {
       if (current === end && start !== initialEnd) {
         break;
       }
-      const compensation = this.locationDataCompensations[current];
+      let compensation = this.locationDataCompensations[current];
       if (compensation != null) {
         totalCompensation += compensation;
         end += compensation;
@@ -1136,7 +1136,7 @@ export class Lexer {
   }
 
   getLineAndColumnFromChunk(offset) {
-    const compensation = this.getLocationDataCompensation(this.chunkOffset, this.chunkOffset + offset);
+    let compensation = this.getLocationDataCompensation(this.chunkOffset, this.chunkOffset + offset);
     if (offset === 0) {
       return [this.chunkLine, this.chunkColumn + compensation, this.chunkOffset + compensation];
     }
@@ -1145,7 +1145,7 @@ export class Lexer {
     } else {
       string = this.chunk.slice(0, +(offset - 1) + 1 || 9e9);
     }
-    const lineCount = count(string, '\n');
+    let lineCount = count(string, '\n');
     let column = this.chunkColumn;
     if (lineCount > 0) {
       ref = string.split('\n'), [lastLine] = slice.call(ref, -1);
@@ -1163,11 +1163,11 @@ export class Lexer {
   }
 
   makeLocationData({offsetInChunk, length}) {
-    const locationData = {
+    let locationData = {
       range: []
     };
     [locationData.first_line, locationData.first_column, locationData.range[0]] = this.getLineAndColumnFromChunk(offsetInChunk);
-    const lastCharacter = length > 0 ? length - 1 : 0;
+    let lastCharacter = length > 0 ? length - 1 : 0;
     [locationData.last_line, locationData.last_column, endOffset] = this.getLineAndColumnFromChunk(offsetInChunk + lastCharacter);
     [locationData.last_line_exclusive, locationData.last_column_exclusive] = this.getLineAndColumnFromChunk(offsetInChunk + lastCharacter + (length > 0 ? 1 : 0));
     locationData.range[1] = length > 0 ? endOffset + 1 : endOffset;
@@ -1181,7 +1181,7 @@ export class Lexer {
       generated,
       indentSize
     } = {}) {
-    const token = [tag, value, this.makeLocationData({offsetInChunk, length})];
+    let token = [tag, value, this.makeLocationData({offsetInChunk, length})];
     if (origin) {
       token.origin = origin;
     }
@@ -1195,7 +1195,7 @@ export class Lexer {
   }
 
   token(tag, value, {offset, length, origin, data, generated, indentSize} = {}) {
-    const token = this.makeToken(tag, value, {offset, length, origin, generated, indentSize});
+    let token = this.makeToken(tag, value, {offset, length, origin, generated, indentSize});
     if (data) {
       addTokenData(token, data);
     }
@@ -1230,14 +1230,14 @@ export class Lexer {
   }
 
   validateEscapes(str, options = {}) {
-    const invalidEscapeRegex = options.isRegex ? REGEX_INVALID_ESCAPE : STRING_INVALID_ESCAPE;
-    const match = invalidEscapeRegex.exec(str);
+    let invalidEscapeRegex = options.isRegex ? REGEX_INVALID_ESCAPE : STRING_INVALID_ESCAPE;
+    let match = invalidEscapeRegex.exec(str);
     if (!match) {
       return;
     }
     match[0], before = match[1], octal = match[2], hex = match[3], unicodeCodePoint = match[4], unicode = match[5];
-    const message = octal ? "octal escape sequences are not allowed" : "invalid escape sequence";
-    const invalidEscape = `\\${octal || hex || unicodeCodePoint || unicode}`;
+    let message = octal ? "octal escape sequences are not allowed" : "invalid escape sequence";
+    let invalidEscape = `\\${octal || hex || unicodeCodePoint || unicode}`;
     return this.error(`${message} ${invalidEscape}`, {
       offset: ((ref = options.offsetInChunk) != null ? ref : 0) + match.index + before.length,
       length: invalidEscape.length
@@ -1258,7 +1258,7 @@ export class Lexer {
   }
 
   error(message, options = {}) {
-    const location = 'first_line' in options ? options : ([first_line, first_column] = this.getLineAndColumnFromChunk((ref = options.offset) != null ? ref : 0), {
+    let location = 'first_line' in options ? options : ([first_line, first_column] = this.getLineAndColumnFromChunk((ref = options.offset) != null ? ref : 0), {
       first_line,
       first_column,
       last_column: first_column + ((ref1 = options.length) != null ? ref1 : 1) - 1
@@ -1301,11 +1301,11 @@ const addTokenData = function(token, data) {
   return Object.assign((token.data != null ? token.data : token.data = {}), data);
 };
 
-const JS_KEYWORDS = ['true', 'false', 'null', 'this', 'new', 'delete', 'typeof', 'in', 'instanceof', 'return', 'throw', 'break', 'continue', 'debugger', 'yield', 'await', 'if', 'else', 'switch', 'for', 'while', 'do', 'try', 'catch', 'finally', 'class', 'extends', 'super', 'import', 'export', 'default'];
+let JS_KEYWORDS = ['true', 'false', 'null', 'this', 'new', 'delete', 'typeof', 'in', 'instanceof', 'return', 'throw', 'break', 'continue', 'debugger', 'yield', 'await', 'if', 'else', 'switch', 'for', 'while', 'do', 'try', 'catch', 'finally', 'class', 'extends', 'super', 'import', 'export', 'default'];
 
 let COFFEE_KEYWORDS = ['undefined', 'Infinity', 'NaN', 'then', 'unless', 'until', 'loop', 'of', 'by', 'when'];
 
-const COFFEE_ALIAS_MAP = {
+let COFFEE_ALIAS_MAP = {
   and: '&&',
   or: '||',
   is: '==',
@@ -1317,7 +1317,7 @@ const COFFEE_ALIAS_MAP = {
   off: 'false'
 };
 
-const COFFEE_ALIASES = (function() {
+let COFFEE_ALIASES = (function() {
   results = [];
   for (let key in COFFEE_ALIAS_MAP) {
     results.push(key);
@@ -1327,92 +1327,92 @@ const COFFEE_ALIASES = (function() {
 
 COFFEE_KEYWORDS = COFFEE_KEYWORDS.concat(COFFEE_ALIASES);
 
-const RESERVED = ['case', 'function', 'var', 'void', 'with', 'const', 'let', 'enum', 'native', 'implements', 'interface', 'package', 'private', 'protected', 'public', 'static'];
+let RESERVED = ['case', 'function', 'var', 'void', 'with', 'const', 'let', 'enum', 'native', 'implements', 'interface', 'package', 'private', 'protected', 'public', 'static'];
 
-const STRICT_PROSCRIBED = ['arguments', 'eval'];
+let STRICT_PROSCRIBED = ['arguments', 'eval'];
 
 export const JS_FORBIDDEN = JS_KEYWORDS.concat(RESERVED).concat(STRICT_PROSCRIBED);
 
-const BOM = 65279;
+let BOM = 65279;
 
-const IDENTIFIER = /^(?!\d)((?:(?!\s)[$\w\x7f-\uffff])+)([^\n\S]*:(?!:))?/;
+let IDENTIFIER = /^(?!\d)((?:(?!\s)[$\w\x7f-\uffff])+)([^\n\S]*:(?!:))?/;
 
-const NUMBER = /^0b[01](?:_?[01])*n?|^0o[0-7](?:_?[0-7])*n?|^0x[\da-f](?:_?[\da-f])*n?|^\d+(?:_\d+)*n|^(?:\d+(?:_\d+)*)?\.?\d+(?:_\d+)*(?:e[+-]?\d+(?:_\d+)*)?/i;
+let NUMBER = /^0b[01](?:_?[01])*n?|^0o[0-7](?:_?[0-7])*n?|^0x[\da-f](?:_?[\da-f])*n?|^\d+(?:_\d+)*n|^(?:\d+(?:_\d+)*)?\.?\d+(?:_\d+)*(?:e[+-]?\d+(?:_\d+)*)?/i;
 
-const OPERATOR = /^(?:[-=]>|[-+*\/%<>&|^!?=]=|>>>=?|([-+:])\1|([&|<>*\/%])\2=?|\?(\.|::)|\.{2,3})/;
+let OPERATOR = /^(?:[-=]>|[-+*\/%<>&|^!?=]=|>>>=?|([-+:])\1|([&|<>*\/%])\2=?|\?(\.|::)|\.{2,3})/;
 
-const WHITESPACE = /^[^\n\S]+/;
+let WHITESPACE = /^[^\n\S]+/;
 
-const COMMENT = /^(\s*)###([^#][\s\S]*?)(?:###([^\n\S]*)|###$)|^((?:\s*#(?!##[^#]).*)+)/;
+let COMMENT = /^(\s*)###([^#][\s\S]*?)(?:###([^\n\S]*)|###$)|^((?:\s*#(?!##[^#]).*)+)/;
 
-const CODE = /^[-=]>/;
+let CODE = /^[-=]>/;
 
-const MULTI_DENT = /^(?:\n[^\n\S]*)+/;
+let MULTI_DENT = /^(?:\n[^\n\S]*)+/;
 
-const JSTOKEN = /^`(?!``)((?:[^`\\]|\\[\s\S])*)`/;
+let JSTOKEN = /^`(?!``)((?:[^`\\]|\\[\s\S])*)`/;
 
-const HERE_JSTOKEN = /^```((?:[^`\\]|\\[\s\S]|`(?!``))*)```/;
+let HERE_JSTOKEN = /^```((?:[^`\\]|\\[\s\S]|`(?!``))*)```/;
 
-const STRING_START = /^(?:'''|"""|'|")/;
+let STRING_START = /^(?:'''|"""|'|")/;
 
-const STRING_SINGLE = /^(?:[^\\']|\\[\s\S])*/;
+let STRING_SINGLE = /^(?:[^\\']|\\[\s\S])*/;
 
-const STRING_DOUBLE = /^(?:[^\\"#]|\\[\s\S]|\#(?!\{))*/;
+let STRING_DOUBLE = /^(?:[^\\"#]|\\[\s\S]|\#(?!\{))*/;
 
-const HEREDOC_SINGLE = /^(?:[^\\']|\\[\s\S]|'(?!''))*/;
+let HEREDOC_SINGLE = /^(?:[^\\']|\\[\s\S]|'(?!''))*/;
 
-const HEREDOC_DOUBLE = /^(?:[^\\"#]|\\[\s\S]|"(?!"")|\#(?!\{))*/;
+let HEREDOC_DOUBLE = /^(?:[^\\"#]|\\[\s\S]|"(?!"")|\#(?!\{))*/;
 
-const HEREDOC_INDENT = /\n+([^\n\S]*)(?=\S)/g;
+let HEREDOC_INDENT = /\n+([^\n\S]*)(?=\S)/g;
 
-const REGEX = /^\/(?!\/)((?:[^[\/\n\\]|\\[^\n]|\[(?:\\[^\n]|[^\]\n\\])*\])*)(\/)?/;
+let REGEX = /^\/(?!\/)((?:[^[\/\n\\]|\\[^\n]|\[(?:\\[^\n]|[^\]\n\\])*\])*)(\/)?/;
 
-const REGEX_FLAGS = /^\w*/;
+let REGEX_FLAGS = /^\w*/;
 
-const VALID_FLAGS = /^(?!.*(.).*\1)[gimsuy]*$/;
+let VALID_FLAGS = /^(?!.*(.).*\1)[gimsuy]*$/;
 
-const HEREGEX = /^(?:[^\\\/#\s]|\\[\s\S]|\/(?!\/\/)|\#(?!\{)|\s+(?:#(?!\{).*)?)*/;
+let HEREGEX = /^(?:[^\\\/#\s]|\\[\s\S]|\/(?!\/\/)|\#(?!\{)|\s+(?:#(?!\{).*)?)*/;
 
-const HEREGEX_COMMENT = /(\s+)(#(?!{).*)/gm;
+let HEREGEX_COMMENT = /(\s+)(#(?!{).*)/gm;
 
-const REGEX_ILLEGAL = /^(\/|\/{3}\s*)(\*)/;
+let REGEX_ILLEGAL = /^(\/|\/{3}\s*)(\*)/;
 
-const POSSIBLY_DIVISION = /^\/=?\s/;
+let POSSIBLY_DIVISION = /^\/=?\s/;
 
-const HERECOMMENT_ILLEGAL = /\*\//;
+let HERECOMMENT_ILLEGAL = /\*\//;
 
-const LINE_CONTINUER = /^\s*(?:,|\??\.(?![.\d])|\??::)/;
+let LINE_CONTINUER = /^\s*(?:,|\??\.(?![.\d])|\??::)/;
 
-const STRING_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d|[1-7])|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/;
+let STRING_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d|[1-7])|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/;
 
-const REGEX_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d)|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/;
+let REGEX_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d)|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/;
 
-const TRAILING_SPACES = /\s+$/;
+let TRAILING_SPACES = /\s+$/;
 
-const COMPOUND_ASSIGN = ['-=', '+=', '/=', '*=', '%=', '||=', '&&=', '?=', '<<=', '>>=', '>>>=', '&=', '^=', '|=', '**=', '//=', '%%='];
+let COMPOUND_ASSIGN = ['-=', '+=', '/=', '*=', '%=', '||=', '&&=', '?=', '<<=', '>>=', '>>>=', '&=', '^=', '|=', '**=', '//=', '%%='];
 
-const UNARY = ['NEW', 'TYPEOF', 'DELETE'];
+let UNARY = ['NEW', 'TYPEOF', 'DELETE'];
 
-const UNARY_MATH = ['!', '~'];
+let UNARY_MATH = ['!', '~'];
 
-const SHIFT = ['<<', '>>', '>>>'];
+let SHIFT = ['<<', '>>', '>>>'];
 
-const COMPARE = ['==', '!=', '<', '>', '<=', '>='];
+let COMPARE = ['==', '!=', '<', '>', '<=', '>='];
 
-const MATH = ['*', '/', '%', '//', '%%'];
+let MATH = ['*', '/', '%', '//', '%%'];
 
-const RELATION = ['IN', 'OF', 'INSTANCEOF'];
+let RELATION = ['IN', 'OF', 'INSTANCEOF'];
 
-const BOOL = ['TRUE', 'FALSE'];
+let BOOL = ['TRUE', 'FALSE'];
 
-const CALLABLE = ['IDENTIFIER', 'PROPERTY', ')', ']', '?', '@', 'THIS', 'SUPER', 'DYNAMIC_IMPORT'];
+let CALLABLE = ['IDENTIFIER', 'PROPERTY', ')', ']', '?', '@', 'THIS', 'SUPER', 'DYNAMIC_IMPORT'];
 
-const INDEXABLE = CALLABLE.concat(['NUMBER', 'INFINITY', 'NAN', 'STRING', 'STRING_END', 'REGEX', 'REGEX_END', 'BOOL', 'NULL', 'UNDEFINED', '}', '::']);
+let INDEXABLE = CALLABLE.concat(['NUMBER', 'INFINITY', 'NAN', 'STRING', 'STRING_END', 'REGEX', 'REGEX_END', 'BOOL', 'NULL', 'UNDEFINED', '}', '::']);
 
-const COMPARABLE_LEFT_SIDE = ['IDENTIFIER', ')', ']', 'NUMBER'];
+let COMPARABLE_LEFT_SIDE = ['IDENTIFIER', ')', ']', 'NUMBER'];
 
-const NOT_REGEX = INDEXABLE.concat(['++', '--']);
+let NOT_REGEX = INDEXABLE.concat(['++', '--']);
 
-const LINE_BREAK = ['INDENT', 'OUTDENT', 'TERMINATOR'];
+let LINE_BREAK = ['INDENT', 'OUTDENT', 'TERMINATOR'];
 
-const INDENTABLE_CLOSERS = [')', '}', ']'];
+let INDENTABLE_CLOSERS = [')', '}', ']'];

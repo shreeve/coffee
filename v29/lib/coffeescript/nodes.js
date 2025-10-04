@@ -86,12 +86,12 @@ const Scope = class Scope {
 
   temporary(name, index, single = false) {
     if (single) {
-      const startCode = name.charCodeAt(0);
-      const endCode = 'z'.charCodeAt(0);
-      const diff = endCode - startCode;
-      const newCode = startCode + index % (diff + 1);
-      const letter = String.fromCharCode(newCode);
-      const num = Math.floor(index / (diff + 1));
+      let startCode = name.charCodeAt(0);
+      let endCode = 'z'.charCodeAt(0);
+      let diff = endCode - startCode;
+      let newCode = startCode + index % (diff + 1);
+      let letter = String.fromCharCode(newCode);
+      let num = Math.floor(index / (diff + 1));
       return `${letter}${num || ''}`;
     } else {
       return `${name}${index || ''}`;
@@ -112,7 +112,7 @@ const Scope = class Scope {
   freeVariable(name, options = {}) {
     let index = 0;
     while (true) {
-      const temp = this.temporary(name, index, options.single);
+      let temp = this.temporary(name, index, options.single);
       if (!(this.check(temp) || indexOf.call(this.root.referencedVars, temp) >= 0)) {
         break;
       }
@@ -486,7 +486,7 @@ export class NaNLiteral extends NumberLiteral {
   }
 
   compileNode(o) {
-    const code = [this.makeCode('0/0')];
+    let code = [this.makeCode('0/0')];
     if (o.level >= LEVEL_OP) {
       return this.wrapInParentheses(code);
     } else {
@@ -531,7 +531,7 @@ export class StringLiteral extends Literal {
     if (this.quote == null) {
       this.quote = '"';
     }
-    const heredoc = this.isFromHeredoc();
+    let heredoc = this.isFromHeredoc();
     let val = this.originalValue;
     if (this.heregex) {
       val = val.replace(HEREGEX_OMIT, '$1$2');
@@ -567,8 +567,8 @@ export class StringLiteral extends Literal {
   }
 
   withoutQuotesInLocationData() {
-    const endsWithNewline = this.originalValue.slice(-1) === '\n';
-    const locationData = Object.assign({}, this.locationData);
+    let endsWithNewline = this.originalValue.slice(-1) === '\n';
+    let locationData = Object.assign({}, this.locationData);
     locationData.first_column += this.quote.length;
     if (endsWithNewline) {
       locationData.last_line -= 1;
@@ -578,7 +578,7 @@ export class StringLiteral extends Literal {
     }
     locationData.last_column_exclusive -= this.quote.length;
     locationData.range = [locationData.range[0] + this.quote.length, locationData.range[1] - this.quote.length];
-    const copy = new StringLiteral(this.originalValue, {quote: this.quote, initialChunk: this.initialChunk, finalChunk: this.finalChunk, indent: this.indent, double: this.double, heregex: this.heregex});
+    let copy = new StringLiteral(this.originalValue, {quote: this.quote, initialChunk: this.initialChunk, finalChunk: this.finalChunk, indent: this.indent, double: this.double, heregex: this.heregex});
     copy.locationData = locationData;
     return copy;
   }
@@ -688,7 +688,7 @@ export class ThisLiteral extends Literal {
   }
 
   compileNode(o) {
-    const code = ((ref1 = o.scope.method) != null ? ref1.bound : void 0) ? o.scope.method.context : this.value;
+    let code = ((ref1 = o.scope.method) != null ? ref1.bound : void 0) ? o.scope.method.context : this.value;
     return [this.makeCode(code)];
   }
 
@@ -890,13 +890,13 @@ export class HereComment extends Base {
   }
 
   compileNode(o) {
-    const multiline = indexOf.call(this.content, '\n') >= 0;
+    let multiline = indexOf.call(this.content, '\n') >= 0;
     if (multiline) {
       let indent = null;
       const ref1 = this.content.split('\n');
       for (let j = 0, len1 = ref1.length; j < len1; j++) {
         const line = ref1[j];
-        const leadingWhitespace = /^\s*/.exec(line)[0];
+        let leadingWhitespace = /^\s*/.exec(line)[0];
         if (!indent || leadingWhitespace.length < indent.length) {
           indent = leadingWhitespace;
         }
@@ -905,12 +905,12 @@ export class HereComment extends Base {
         this.content = this.content.replace(RegExp(`\\n${indent}`, "g"), '\n');
       }
     }
-    const hasLeadingMarks = /\n\s*[#|\*]/.test(this.content);
+    let hasLeadingMarks = /\n\s*[#|\*]/.test(this.content);
     if (hasLeadingMarks) {
       this.content = this.content.replace(/^([ \t]*)#(?=\s)/gm, ' *');
     }
     this.content = `/*${this.content}${hasLeadingMarks ? ' ' : ''}*/`;
-    const fragment = this.makeCode(this.content);
+    let fragment = this.makeCode(this.content);
     fragment.newLine = this.newLine;
     fragment.unshift = this.unshift;
     fragment.multiline = multiline;
@@ -947,7 +947,7 @@ export class LineComment extends Base {
   }
 
   compileNode(o) {
-    const fragment = this.makeCode(/^\s*$/.test(this.content) ? '' : `${this.precededByBlankLine ? `\n${o.indent}` : ''}//${this.content}`);
+    let fragment = this.makeCode(/^\s*$/.test(this.content) ? '' : `${this.precededByBlankLine ? `\n${o.indent}` : ''}//${this.content}`);
     fragment.newLine = this.newLine;
     fragment.unshift = this.unshift;
     fragment.trail = !this.newLine && !this.unshift;
@@ -1150,8 +1150,8 @@ export class ObjectProperty extends Base {
   }
 
   astProperties(o) {
-    const isComputedPropertyName = (this.key instanceof Value && this.key.base instanceof ComputedPropertyName) || this.key.unwrap() instanceof StringWithInterpolations;
-    const keyAst = this.key.ast(o, LEVEL_LIST);
+    let isComputedPropertyName = (this.key instanceof Value && this.key.base instanceof ComputedPropertyName) || this.key.unwrap() instanceof StringWithInterpolations;
+    let keyAst = this.key.ast(o, LEVEL_LIST);
     return {
       key: (keyAst != null ? keyAst.declaration : void 0) ? Object.assign({}, keyAst, {
         declaration: false
@@ -1271,7 +1271,7 @@ export class ImportDeclaration extends ModuleDeclaration {
   compileNode(o) {
     this.checkScope(o, 'import');
     o.importedSymbols = [];
-    const code = [];
+    let code = [];
     code.push(this.makeCode(`${this.tab}import `));
     if (this.clause != null) {
       code.push(...this.clause.compileNode(o));
@@ -1282,9 +1282,9 @@ export class ImportDeclaration extends ModuleDeclaration {
       }
       let sourceValue = this.source.value;
       if (sourceValue.match(/^['"]\.\.?\//) != null) {
-        const unquoted = sourceValue.slice(1, -1);
+        let unquoted = sourceValue.slice(1, -1);
         if (unquoted.match(/\.\w+$/) == null) {
-          const quoteMark = sourceValue[0];
+          let quoteMark = sourceValue[0];
           sourceValue = `${quoteMark}${unquoted}.js${quoteMark}`;
         }
       }
@@ -1304,7 +1304,7 @@ export class ImportDeclaration extends ModuleDeclaration {
   }
 
   astProperties(o) {
-    const ret = {
+    let ret = {
       specifiers: (ref1 = (ref2 = this.clause) != null ? ref2.ast(o) : void 0) != null ? ref1 : [],
       source: this.source.ast(o),
       assertions: this.astAssertions(o)
@@ -1355,9 +1355,9 @@ export class ExportDeclaration extends ModuleDeclaration {
     if (((ref1 = this.source) != null ? ref1.value : void 0) != null) {
       let sourceValue = this.source.value;
       if (sourceValue.match(/^['"]\.\.?\//) != null) {
-        const unquoted = sourceValue.slice(1, -1);
+        let unquoted = sourceValue.slice(1, -1);
         if (unquoted.match(/\.\w+$/) == null) {
-          const quoteMark = sourceValue[0];
+          let quoteMark = sourceValue[0];
           sourceValue = `${quoteMark}${unquoted}.js${quoteMark}`;
         }
       }
@@ -1386,12 +1386,12 @@ export class ExportDeclaration extends ModuleDeclaration {
 
 export class ExportNamedDeclaration extends ExportDeclaration {
   astProperties(o) {
-    const ret = {
+    let ret = {
       source: (ref1 = (ref2 = this.source) != null ? ref2.ast(o) : void 0) != null ? ref1 : null,
       assertions: this.astAssertions(o),
       exportKind: 'value'
     };
-    const clauseAst = this.clause.ast(o);
+    let clauseAst = this.clause.ast(o);
     if (this.clause instanceof ExportSpecifierList) {
       ret.specifiers = clauseAst;
       ret.declaration = null;
@@ -1464,7 +1464,7 @@ export class ImportSpecifier extends ModuleSpecifier {
   }
 
   astProperties(o) {
-    const originalAst = this.original.ast(o);
+    let originalAst = this.original.ast(o);
     return {
       imported: originalAst,
       local: (ref1 = (ref2 = this.alias) != null ? ref2.ast(o) : void 0) != null ? ref1 : originalAst,
@@ -1498,7 +1498,7 @@ export class ExportSpecifier extends ModuleSpecifier {
   }
 
   astProperties(o) {
-    const originalAst = this.original.ast(o);
+    let originalAst = this.original.ast(o);
     return {
       local: originalAst,
       exported: (ref1 = (ref2 = this.alias) != null ? ref2.ast(o) : void 0) != null ? ref1 : originalAst
@@ -1958,7 +1958,7 @@ export class Switch extends Base {
 
 };
 
-const SwitchCase = (function() {
+let SwitchCase = (function() {
   class SwitchCase extends Base {
     constructor(test1, block1, {trailing} = {}) {
       super();
@@ -2034,7 +2034,7 @@ export class Sequence extends Base {
 
 };
 
-const UTILITIES = {
+let UTILITIES = {
   modulo: function() {
     return 'function(a, b) { return (+a % (b = +b) + b) % b; }';
   },
@@ -2055,45 +2055,45 @@ const UTILITIES = {
   }
 };
 
-const LEVEL_TOP = 1;
+let LEVEL_TOP = 1;
 
-const LEVEL_PAREN = 2;
+let LEVEL_PAREN = 2;
 
-const LEVEL_LIST = 3;
+let LEVEL_LIST = 3;
 
-const LEVEL_COND = 4;
+let LEVEL_COND = 4;
 
-const LEVEL_OP = 5;
+let LEVEL_OP = 5;
 
-const LEVEL_ACCESS = 6;
+let LEVEL_ACCESS = 6;
 
-const TAB = '  ';
+let TAB = '  ';
 
-const SIMPLENUM = /^[+-]?\d+(?:_\d+)*$/;
+let SIMPLENUM = /^[+-]?\d+(?:_\d+)*$/;
 
-const SIMPLE_STRING_OMIT = /\s*\n\s*/g;
+let SIMPLE_STRING_OMIT = /\s*\n\s*/g;
 
-const LEADING_BLANK_LINE = /^[^\n\S]*\n/;
+let LEADING_BLANK_LINE = /^[^\n\S]*\n/;
 
-const TRAILING_BLANK_LINE = /\n[^\n\S]*$/;
+let TRAILING_BLANK_LINE = /\n[^\n\S]*$/;
 
-const STRING_OMIT = /((?:\\\\)+)|\\[^\S\n]*\n\s*/g;
+let STRING_OMIT = /((?:\\\\)+)|\\[^\S\n]*\n\s*/g;
 
-const HEREGEX_OMIT = /((?:\\\\)+)|\\(\s)|\s+(?:#.*)?/g;
+let HEREGEX_OMIT = /((?:\\\\)+)|\\(\s)|\s+(?:#.*)?/g;
 
 const utility = function(name, o) {
   ({root} = o.scope);
   if (name in root.utilities) {
     return root.utilities[name];
   } else {
-    const ref = root.freeVariable(name);
+    let ref = root.freeVariable(name);
     root.assign(ref, UTILITIES[name](o));
     return root.utilities[name] = ref;
   }
 };
 
 const multident = function(code, tab, includingFirstLine = true) {
-  const endsWithNewLine = code[code.length - 1] === '\n';
+  let endsWithNewLine = code[code.length - 1] === '\n';
   code = (includingFirstLine ? tab : '') + code.replace(/\n/g, `$&${tab}`);
   code = code.replace(/\s+$/, '');
   if (endsWithNewLine) {
@@ -2186,13 +2186,13 @@ const makeDelimitedLiteral = function(body, {
   if (body === '' && delimiterOption === '/') {
     body = '(?:)';
   }
-  const escapeTemplateLiteralCurlies = delimiterOption === '`';
-  const regex = RegExp(`(\\\\\\\\)|(\\\\0(?=\\d))${convertTrailingNullEscapes ? /|(\\0)$/.source : ''}${escapeDelimiter ? RegExp(`|\\\\?(${delimiterOption})`).source : ''}${escapeTemplateLiteralCurlies ? /|\\?(\$\{)/.source : ''}|\\\\?(?:${escapeNewlines ? '(\n)|' : ''}(\\r)|(\\u2028)|(\\u2029))|(\\\\.)`, "g");
+  let escapeTemplateLiteralCurlies = delimiterOption === '`';
+  let regex = RegExp(`(\\\\\\\\)|(\\\\0(?=\\d))${convertTrailingNullEscapes ? /|(\\0)$/.source : ''}${escapeDelimiter ? RegExp(`|\\\\?(${delimiterOption})`).source : ''}${escapeTemplateLiteralCurlies ? /|\\?(\$\{)/.source : ''}|\\\\?(?:${escapeNewlines ? '(\n)|' : ''}(\\r)|(\\u2028)|(\\u2029))|(\\\\.)`, "g");
   body = body.replace(regex, function(match, backslash, nul, ...args) {
-    const trailingNullEscape = convertTrailingNullEscapes ? args.shift() : void 0;
-    const delimiter = escapeDelimiter ? args.shift() : void 0;
-    const templateLiteralCurly = escapeTemplateLiteralCurlies ? args.shift() : void 0;
-    const lf = escapeNewlines ? args.shift() : void 0;
+    let trailingNullEscape = convertTrailingNullEscapes ? args.shift() : void 0;
+    let delimiter = escapeDelimiter ? args.shift() : void 0;
+    let templateLiteralCurly = escapeTemplateLiteralCurlies ? args.shift() : void 0;
+    let lf = escapeNewlines ? args.shift() : void 0;
     [cr, ls, ps, other] = args;
     switch (false) {
       case !backslash:
@@ -2225,19 +2225,19 @@ const makeDelimitedLiteral = function(body, {
         }
     }
   });
-  const printedDelimiter = includeDelimiters ? delimiterOption : '';
+  let printedDelimiter = includeDelimiters ? delimiterOption : '';
   return `${printedDelimiter}${body}${printedDelimiter}`;
 };
 
 const sniffDirectives = function(expressions, {notFinalExpression} = {}) {
   let index = 0;
-  const lastIndex = expressions.length - 1;
+  let lastIndex = expressions.length - 1;
   results1 = [];
   while (index <= lastIndex) {
     if (index === lastIndex && notFinalExpression) {
       break;
     }
-    const expression = expressions[index];
+    let expression = expressions[index];
     if ((unwrapped = expression != null ? typeof expression.unwrap === "function" ? expression.unwrap() : void 0 : void 0) instanceof PassthroughLiteral && unwrapped.generated) {
       index++;
       continue;
@@ -2252,7 +2252,7 @@ const sniffDirectives = function(expressions, {notFinalExpression} = {}) {
 };
 
 const astAsBlockIfNeeded = function(node, o) {
-  const unwrapped = node.unwrap();
+  let unwrapped = node.unwrap();
   if (unwrapped instanceof Block && unwrapped.expressions.length > 1) {
     unwrapped.makeReturn(null, true);
     return unwrapped.ast(o, LEVEL_TOP);

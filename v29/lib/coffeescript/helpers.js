@@ -6,7 +6,7 @@ export const starts = function(string, literal, start) {
 };
 
 export const ends = function(string, literal, back) {
-  const len = literal.length;
+  let len = literal.length;
   return literal === string.substr(string.length - len - (back || 0), len);
 };
 
@@ -61,7 +61,7 @@ export const flatten = function(array) {
 };
 
 export const del = function(obj, key) {
-  const val = obj[key];
+  let val = obj[key];
   delete obj[key];
   return val;
 };
@@ -94,19 +94,19 @@ const buildLocationData = function(first, last) {
 };
 
 export const extractAllCommentTokens = function(tokens) {
-  const allCommentsObj = {};
+  let allCommentsObj = {};
   for (let i = 0, len1 = tokens.length; i < len1; i++) {
     const token = tokens[i];
     if (token.comments) {
       const ref1 = token.comments;
       for (let j = 0, len2 = ref1.length; j < len2; j++) {
         const comment = ref1[j];
-        const commentKey = comment.locationData.range[0];
+        let commentKey = comment.locationData.range[0];
         allCommentsObj[commentKey] = comment;
       }
     }
   }
-  const sortedKeys = Object.keys(allCommentsObj).sort(function(a, b) {
+  let sortedKeys = Object.keys(allCommentsObj).sort(function(a, b) {
     return a - b;
   });
   results = [];
@@ -122,13 +122,13 @@ const buildLocationHash = function(loc) {
 };
 
 export const buildTokenDataDictionary = function(tokens) {
-  const tokenData = {};
+  let tokenData = {};
   for (let i = 0, len1 = tokens.length; i < len1; i++) {
     const token = tokens[i];
     if (!token.comments) {
       continue;
     }
-    const tokenHash = buildLocationHash(token[2]);
+    let tokenHash = buildLocationHash(token[2]);
     if (tokenData[tokenHash] == null) {
       tokenData[tokenHash] = {};
     }
@@ -141,7 +141,7 @@ export const buildTokenDataDictionary = function(tokens) {
 
 export const addDataToNode = function(parserState, firstLocationData, firstValue, lastLocationData, lastValue, forceUpdateLocation = true) {
   return function(obj) {
-    const locationData = buildLocationData((ref1 = firstValue != null ? firstValue.locationData : void 0) != null ? ref1 : firstLocationData, (ref2 = lastValue != null ? lastValue.locationData : void 0) != null ? ref2 : lastLocationData);
+    let locationData = buildLocationData((ref1 = firstValue != null ? firstValue.locationData : void 0) != null ? ref1 : firstLocationData, (ref2 = lastValue != null ? lastValue.locationData : void 0) != null ? ref2 : lastLocationData);
     if (((obj != null ? obj.updateLocationDataIfMissing : void 0) != null) && (firstLocationData != null)) {
       obj.updateLocationDataIfMissing(locationData, forceUpdateLocation);
     } else {
@@ -151,7 +151,7 @@ export const addDataToNode = function(parserState, firstLocationData, firstValue
       parserState.tokenData = buildTokenDataDictionary(parserState.parser.tokens);
     }
     if (obj.locationData != null) {
-      const objHash = buildLocationHash(obj.locationData);
+      let objHash = buildLocationHash(obj.locationData);
       if (((ref3 = parserState.tokenData[objHash]) != null ? ref3.comments : void 0) != null) {
         attachCommentsToNode(parserState.tokenData[objHash].comments, obj);
       }
@@ -183,7 +183,7 @@ export const locationDataToString = function(obj) {
   }
 };
 
-const anonymousFileName = (function() {
+let anonymousFileName = (function() {
   let n = 0;
   n += 0;
   return function() {
@@ -196,7 +196,7 @@ export {
 };
 
 export const baseFileName = function(file, stripExt = false, useWinPathSep = false) {
-  const pathSep = useWinPathSep ? /\\|\// : /\//;
+  let pathSep = useWinPathSep ? /\\|\// : /\//;
   let parts = file.split(pathSep);
   file = parts[parts.length - 1];
   if (!(stripExt && file.indexOf('.') >= 0)) {
@@ -215,7 +215,7 @@ export const isCoffee = function(file) {
 };
 
 export const throwSyntaxError = function(message, location) {
-  const error = new SyntaxError(message);
+  let error = new SyntaxError(message);
   error.location = location;
   error.toString = syntaxErrorToString;
   error.stack = error.toString();
@@ -248,11 +248,11 @@ const syntaxErrorToString = function() {
     filename = this.filename || '[stdin]';
   }
   let codeLine = this.code.split('\n')[first_line];
-  const start = first_column;
-  const end = first_line === last_line ? last_column + 1 : codeLine.length;
+  let start = first_column;
+  let end = first_line === last_line ? last_column + 1 : codeLine.length;
   let marker = codeLine.slice(0, start).replace(/[^\s]/g, ' ') + repeat('^', end - start);
   if (typeof process !== "undefined" && process !== null) {
-    const colorsEnabled = ((ref2 = process.stdout) != null ? ref2.isTTY : void 0) && !((ref3 = process.env) != null ? ref3.NODE_DISABLE_COLORS : void 0);
+    let colorsEnabled = ((ref2 = process.stdout) != null ? ref2.isTTY : void 0) && !((ref3 = process.env) != null ? ref3.NODE_DISABLE_COLORS : void 0);
   }
   if ((ref4 = this.colorful) != null ? ref4 : colorsEnabled) {
     const colorize = function(str) {
@@ -285,7 +285,7 @@ export const parseNumber = function(string) {
   if (string == null) {
     return 0/0;
   }
-  const base = (function() {
+  let base = (function() {
     switch (string.charAt(1)) {
       case 'b':
         return 2;
@@ -326,24 +326,24 @@ export const isPlainObject = function(obj) {
 
 const unicodeCodePointToUnicodeEscapes = function(codePoint) {
   const toUnicodeEscape = function(val) {
-    const str = val.toString(16);
+    let str = val.toString(16);
     return `\\u${repeat('0', 4 - str.length)}${str}`;
   };
   if (codePoint < 0x10000) {
     return toUnicodeEscape(codePoint);
   }
-  const high = Math.floor((codePoint - 0x10000) / 0x400) + 0xD800;
-  const low = (codePoint - 0x10000) % 0x400 + 0xDC00;
+  let high = Math.floor((codePoint - 0x10000) / 0x400) + 0xD800;
+  let low = (codePoint - 0x10000) % 0x400 + 0xDC00;
   return `${toUnicodeEscape(high)}${toUnicodeEscape(low)}`;
 };
 
 export const replaceUnicodeCodePointEscapes = function(str, {flags, error, delimiter = ''} = {}) {
-  const shouldReplace = (flags != null) && indexOf.call(flags, 'u') < 0;
+  let shouldReplace = (flags != null) && indexOf.call(flags, 'u') < 0;
   return str.replace(UNICODE_CODE_POINT_ESCAPE, function(match, escapedBackslash, codePointHex, offset) {
     if (escapedBackslash) {
       return escapedBackslash;
     }
-    const codePointDecimal = parseInt(codePointHex, 16);
+    let codePointDecimal = parseInt(codePointHex, 16);
     if (codePointDecimal > 0x10ffff) {
       error("unicode code point escapes greater than \\u{10ffff} are not allowed", {
         offset: offset + delimiter.length,
@@ -357,4 +357,4 @@ export const replaceUnicodeCodePointEscapes = function(str, {flags, error, delim
   });
 };
 
-const UNICODE_CODE_POINT_ESCAPE = /(\\\\)|\\u\{([\da-fA-F]+)\}/g;
+let UNICODE_CODE_POINT_ESCAPE = /(\\\\)|\\u\{([\da-fA-F]+)\}/g;
