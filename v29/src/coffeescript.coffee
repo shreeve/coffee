@@ -3,10 +3,13 @@
 # parsing, and compiling source CoffeeScript into JavaScript.
 
 import {Lexer} from './lexer'
-import {parser} from './parser'
+import {Parser} from './parser'
 import * as helpers from './helpers'
 import SourceMap from './sourcemap'
 import Backend from './backend'
+
+# Create our own parser instance that we can modify
+parser = Parser()
 
 # Import `package.json`, which is two levels above this file, as this file is
 # evaluated from `lib/coffeescript`.
@@ -17,7 +20,8 @@ export VERSION = packageJson.version
 
 export FILE_EXTENSIONS = ['.coffee']
 
-{getSourceMap} = SourceMap
+# Use static method directly from SourceMap class
+getSourceMap = SourceMap.getSourceMap
 
 # Function for base64 encoding in Node.js
 base64encode = (src) ->
@@ -187,30 +191,32 @@ parser.lexer =
 
 # Make all the AST nodes visible to the parser.
 import * as nodesModule from './nodes'
-parser.yy = nodesModule
 
-# Override the parser's default error handling function.
-parser.yy.parseError = (message, {token}) ->
-  # Disregard the parser's message, it contains redundant line number information.
-  # Disregard the token, we take its value directly from the lexer in case
-  # the error is caused by a generated token which might refer to its origin.
-  {errorToken, tokens: parserTokens} = parser
-  [errorTag, errorText, errorLoc] = errorToken
+# Create a mutable yy object with nodes and parseError
+parser.yy = {
+  ...nodesModule,  # Spread all the node classes
+  parseError: (message, {token}) ->
+    # Disregard the parser's message, it contains redundant line number information.
+    # Disregard the token, we take its value directly from the lexer in case
+    # the error is caused by a generated token which might refer to its origin.
+    {errorToken, tokens: parserTokens} = parser
+    [errorTag, errorText, errorLoc] = errorToken
 
-  errorText = switch
-    when errorToken is parserTokens[parserTokens.length - 1]
-      'end of input'
-    when errorTag in ['INDENT', 'OUTDENT']
-      'indentation'
-    when errorTag in ['IDENTIFIER', 'NUMBER', 'INFINITY', 'STRING', 'STRING_START', 'REGEX', 'REGEX_START']
-      errorTag.replace(/_START$/, '').toLowerCase()
-    else
-      helpers.nameWhitespaceCharacter errorText
+    errorText = switch
+      when errorToken is parserTokens[parserTokens.length - 1]
+        'end of input'
+      when errorTag in ['INDENT', 'OUTDENT']
+        'indentation'
+      when errorTag in ['IDENTIFIER', 'NUMBER', 'INFINITY', 'STRING', 'STRING_START', 'REGEX', 'REGEX_START']
+        errorTag.replace(/_START$/, '').toLowerCase()
+      else
+        helpers.nameWhitespaceCharacter errorText
 
-  # The second argument has a `loc` property, which should have the location
-  # data for this token. We take the location information directly
-  # from the lexer for accuracy.
-  helpers.throwSyntaxError "unexpected #{errorText}", errorLoc
+    # The second argument has a `loc` property, which should have the location
+    # data for this token. We take the location information directly
+    # from the lexer for accuracy.
+    helpers.throwSyntaxError "unexpected #{errorText}", errorLoc
+}
 
 export patchStackTrace = ->
   # Based on http://v8.googlecode.com/svn/branches/bleeding_edge/src/messages.js

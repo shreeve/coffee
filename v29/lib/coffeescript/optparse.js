@@ -54,13 +54,13 @@ export class OptionParser {
 
 };
 
-let LONG_FLAG = /^(--\w[\w\-]*)/;
+const LONG_FLAG = /^(--\w[\w\-]*)/;
 
-let SHORT_FLAG = /^(-\w)$/;
+const SHORT_FLAG = /^(-\w)$/;
 
-let MULTI_FLAG = /^-(\w{2,})/;
+const MULTI_FLAG = /^-(\w{2,})/;
 
-let OPTIONAL = /\[(\w+(\*?))\]/;
+const OPTIONAL = /\[(\w+(\*?))\]/;
 
 const buildRules = function(ruleDeclarations) {
   let ruleList = (function() {

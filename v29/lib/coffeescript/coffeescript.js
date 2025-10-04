@@ -3,7 +3,7 @@ import {
   Lexer
 } from './lexer.js';
 import {
-  parser
+  Parser
 } from './parser.js';
 import * as helpers from './helpers.js';
 import SourceMap from './sourcemap.js';
@@ -13,11 +13,13 @@ import * as nodesModule from './nodes.js';
 
 
 
+let parser = Parser();
+
 export const VERSION = packageJson.version;
 
 export const FILE_EXTENSIONS = ['.coffee'];
 
-({getSourceMap} = SourceMap);
+let getSourceMap = SourceMap.getSourceMap;
 
 const base64encode = function(src) {
   if (typeof Buffer === 'function') {
@@ -188,27 +190,28 @@ parser.lexer = {
   }
 };
 
-parser.yy = nodesModule;
-
-parser.yy.parseError = function(message, {token}) {
-  ({
-    errorToken,
-    tokens: parserTokens
-  } = parser);
-  [errorTag, errorText, errorLoc] = errorToken;
-  errorText = (function() {
-    switch (false) {
-      case errorToken !== parserTokens[parserTokens.length - 1]:
-        return 'end of input';
-      case errorTag !== 'INDENT' && errorTag !== 'OUTDENT':
-        return 'indentation';
-      case errorTag !== 'IDENTIFIER' && errorTag !== 'NUMBER' && errorTag !== 'INFINITY' && errorTag !== 'STRING' && errorTag !== 'STRING_START' && errorTag !== 'REGEX' && errorTag !== 'REGEX_START':
-        return errorTag.replace(/_START$/, '').toLowerCase();
-      default:
-        return helpers.nameWhitespaceCharacter(errorText);
-    }
-  })();
-  return helpers.throwSyntaxError(`unexpected ${errorText}`, errorLoc);
+parser.yy = {
+  ...nodesModule,
+  parseError: function(message, {token}) {
+    ({
+      errorToken,
+      tokens: parserTokens
+    } = parser);
+    [errorTag, errorText, errorLoc] = errorToken;
+    errorText = (function() {
+      switch (false) {
+        case errorToken !== parserTokens[parserTokens.length - 1]:
+          return 'end of input';
+        case errorTag !== 'INDENT' && errorTag !== 'OUTDENT':
+          return 'indentation';
+        case errorTag !== 'IDENTIFIER' && errorTag !== 'NUMBER' && errorTag !== 'INFINITY' && errorTag !== 'STRING' && errorTag !== 'STRING_START' && errorTag !== 'REGEX' && errorTag !== 'REGEX_START':
+          return errorTag.replace(/_START$/, '').toLowerCase();
+        default:
+          return helpers.nameWhitespaceCharacter(errorText);
+      }
+    })();
+    return helpers.throwSyntaxError(`unexpected ${errorText}`, errorLoc);
+  }
 };
 
 export const patchStackTrace = function() {

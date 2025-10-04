@@ -797,7 +797,9 @@ export INVERSES = {}
 EXPRESSION_START = []
 EXPRESSION_END   = []
 
-for [left, right] in BALANCED_PAIRS
+for pair in BALANCED_PAIRS
+  left = pair[0]
+  right = pair[1]
   EXPRESSION_START.push INVERSES[right] = left
   EXPRESSION_END  .push INVERSES[left] = right
 

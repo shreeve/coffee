@@ -1582,8 +1582,6 @@ export class Assign extends Base {
 
 
 
-
-
 };
 
 export class FuncGlyph extends Base {
@@ -2034,7 +2032,7 @@ export class Sequence extends Base {
 
 };
 
-let UTILITIES = {
+const UTILITIES = {
   modulo: function() {
     return 'function(a, b) { return (+a % (b = +b) + b) % b; }';
   },
@@ -2055,31 +2053,31 @@ let UTILITIES = {
   }
 };
 
-let LEVEL_TOP = 1;
+const LEVEL_TOP = 1;
 
-let LEVEL_PAREN = 2;
+const LEVEL_PAREN = 2;
 
-let LEVEL_LIST = 3;
+const LEVEL_LIST = 3;
 
-let LEVEL_COND = 4;
+const LEVEL_COND = 4;
 
-let LEVEL_OP = 5;
+const LEVEL_OP = 5;
 
-let LEVEL_ACCESS = 6;
+const LEVEL_ACCESS = 6;
 
-let TAB = '  ';
+const TAB = '  ';
 
-let SIMPLENUM = /^[+-]?\d+(?:_\d+)*$/;
+const SIMPLENUM = /^[+-]?\d+(?:_\d+)*$/;
 
-let SIMPLE_STRING_OMIT = /\s*\n\s*/g;
+const SIMPLE_STRING_OMIT = /\s*\n\s*/g;
 
-let LEADING_BLANK_LINE = /^[^\n\S]*\n/;
+const LEADING_BLANK_LINE = /^[^\n\S]*\n/;
 
-let TRAILING_BLANK_LINE = /\n[^\n\S]*$/;
+const TRAILING_BLANK_LINE = /\n[^\n\S]*$/;
 
-let STRING_OMIT = /((?:\\\\)+)|\\[^\S\n]*\n\s*/g;
+const STRING_OMIT = /((?:\\\\)+)|\\[^\S\n]*\n\s*/g;
 
-let HEREGEX_OMIT = /((?:\\\\)+)|\\(\s)|\s+(?:#.*)?/g;
+const HEREGEX_OMIT = /((?:\\\\)+)|\\(\s)|\s+(?:#.*)?/g;
 
 const utility = function(name, o) {
   ({root} = o.scope);

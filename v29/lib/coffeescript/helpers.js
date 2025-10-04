@@ -66,10 +66,10 @@ export const del = function(obj, key) {
   return val;
 };
 
-export const some = (ref = Array.prototype.some) != null ? ref : function(fn) {
-  const ref1 = this;
-  for (let i = 0, len1 = ref1.length; i < len1; i++) {
-    const e = ref1[i];
+export const some = Array.prototype.some != null ? Array.prototype.some : function(fn) {
+  const ref = this;
+  for (let i = 0, len1 = ref.length; i < len1; i++) {
+    const e = ref[i];
     if (fn(e)) {
       return true;
     }
@@ -98,9 +98,9 @@ export const extractAllCommentTokens = function(tokens) {
   for (let i = 0, len1 = tokens.length; i < len1; i++) {
     const token = tokens[i];
     if (token.comments) {
-      const ref1 = token.comments;
-      for (let j = 0, len2 = ref1.length; j < len2; j++) {
-        const comment = ref1[j];
+      const ref = token.comments;
+      for (let j = 0, len2 = ref.length; j < len2; j++) {
+        const comment = ref[j];
         let commentKey = comment.locationData.range[0];
         allCommentsObj[commentKey] = comment;
       }
@@ -141,7 +141,7 @@ export const buildTokenDataDictionary = function(tokens) {
 
 export const addDataToNode = function(parserState, firstLocationData, firstValue, lastLocationData, lastValue, forceUpdateLocation = true) {
   return function(obj) {
-    let locationData = buildLocationData((ref1 = firstValue != null ? firstValue.locationData : void 0) != null ? ref1 : firstLocationData, (ref2 = lastValue != null ? lastValue.locationData : void 0) != null ? ref2 : lastLocationData);
+    let locationData = buildLocationData((ref = firstValue != null ? firstValue.locationData : void 0) != null ? ref : firstLocationData, (ref1 = lastValue != null ? lastValue.locationData : void 0) != null ? ref1 : lastLocationData);
     if (((obj != null ? obj.updateLocationDataIfMissing : void 0) != null) && (firstLocationData != null)) {
       obj.updateLocationDataIfMissing(locationData, forceUpdateLocation);
     } else {
@@ -152,7 +152,7 @@ export const addDataToNode = function(parserState, firstLocationData, firstValue
     }
     if (obj.locationData != null) {
       let objHash = buildLocationHash(obj.locationData);
-      if (((ref3 = parserState.tokenData[objHash]) != null ? ref3.comments : void 0) != null) {
+      if (((ref2 = parserState.tokenData[objHash]) != null ? ref2.comments : void 0) != null) {
         attachCommentsToNode(parserState.tokenData[objHash].comments, obj);
       }
     }
@@ -185,7 +185,6 @@ export const locationDataToString = function(obj) {
 
 let anonymousFileName = (function() {
   let n = 0;
-  n += 0;
   return function() {
     return `<anonymous-${n++}>`;
   };
@@ -242,7 +241,7 @@ const syntaxErrorToString = function() {
   if (last_column == null) {
     last_column = first_column;
   }
-  if ((ref1 = this.filename) != null ? ref1.startsWith('<anonymous') : void 0) {
+  if ((ref = this.filename) != null ? ref.startsWith('<anonymous') : void 0) {
     let filename = '[stdin]';
   } else {
     filename = this.filename || '[stdin]';
@@ -252,9 +251,9 @@ const syntaxErrorToString = function() {
   let end = first_line === last_line ? last_column + 1 : codeLine.length;
   let marker = codeLine.slice(0, start).replace(/[^\s]/g, ' ') + repeat('^', end - start);
   if (typeof process !== "undefined" && process !== null) {
-    let colorsEnabled = ((ref2 = process.stdout) != null ? ref2.isTTY : void 0) && !((ref3 = process.env) != null ? ref3.NODE_DISABLE_COLORS : void 0);
+    let colorsEnabled = ((ref1 = process.stdout) != null ? ref1.isTTY : void 0) && !((ref2 = process.env) != null ? ref2.NODE_DISABLE_COLORS : void 0);
   }
-  if ((ref4 = this.colorful) != null ? ref4 : colorsEnabled) {
+  if ((ref3 = this.colorful) != null ? ref3 : colorsEnabled) {
     const colorize = function(str) {
       return `\x1B[1;31m${str}\x1B[0m`;
     };
@@ -357,4 +356,4 @@ export const replaceUnicodeCodePointEscapes = function(str, {flags, error, delim
   });
 };
 
-let UNICODE_CODE_POINT_ESCAPE = /(\\\\)|\\u\{([\da-fA-F]+)\}/g;
+const UNICODE_CODE_POINT_ESCAPE = /(\\\\)|\\u\{([\da-fA-F]+)\}/g;

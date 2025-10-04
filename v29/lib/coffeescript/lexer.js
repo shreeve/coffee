@@ -1301,11 +1301,11 @@ const addTokenData = function(token, data) {
   return Object.assign((token.data != null ? token.data : token.data = {}), data);
 };
 
-let JS_KEYWORDS = ['true', 'false', 'null', 'this', 'new', 'delete', 'typeof', 'in', 'instanceof', 'return', 'throw', 'break', 'continue', 'debugger', 'yield', 'await', 'if', 'else', 'switch', 'for', 'while', 'do', 'try', 'catch', 'finally', 'class', 'extends', 'super', 'import', 'export', 'default'];
+const JS_KEYWORDS = ['true', 'false', 'null', 'this', 'new', 'delete', 'typeof', 'in', 'instanceof', 'return', 'throw', 'break', 'continue', 'debugger', 'yield', 'await', 'if', 'else', 'switch', 'for', 'while', 'do', 'try', 'catch', 'finally', 'class', 'extends', 'super', 'import', 'export', 'default'];
 
-let COFFEE_KEYWORDS = ['undefined', 'Infinity', 'NaN', 'then', 'unless', 'until', 'loop', 'of', 'by', 'when'];
+let coffeeKeywords = ['undefined', 'Infinity', 'NaN', 'then', 'unless', 'until', 'loop', 'of', 'by', 'when'];
 
-let COFFEE_ALIAS_MAP = {
+const COFFEE_ALIAS_MAP = {
   and: '&&',
   or: '||',
   is: '==',
@@ -1317,102 +1317,96 @@ let COFFEE_ALIAS_MAP = {
   off: 'false'
 };
 
-let COFFEE_ALIASES = (function() {
-  results = [];
-  for (let key in COFFEE_ALIAS_MAP) {
-    results.push(key);
-  }
-  return results;
-})();
+const COFFEE_ALIASES = Object.keys(COFFEE_ALIAS_MAP);
 
-COFFEE_KEYWORDS = COFFEE_KEYWORDS.concat(COFFEE_ALIASES);
+const COFFEE_KEYWORDS = coffeeKeywords.concat(COFFEE_ALIASES);
 
-let RESERVED = ['case', 'function', 'var', 'void', 'with', 'const', 'let', 'enum', 'native', 'implements', 'interface', 'package', 'private', 'protected', 'public', 'static'];
+const RESERVED = ['case', 'function', 'var', 'void', 'with', 'const', 'let', 'enum', 'native', 'implements', 'interface', 'package', 'private', 'protected', 'public', 'static'];
 
-let STRICT_PROSCRIBED = ['arguments', 'eval'];
+const STRICT_PROSCRIBED = ['arguments', 'eval'];
 
 export const JS_FORBIDDEN = JS_KEYWORDS.concat(RESERVED).concat(STRICT_PROSCRIBED);
 
-let BOM = 65279;
+const BOM = 65279;
 
-let IDENTIFIER = /^(?!\d)((?:(?!\s)[$\w\x7f-\uffff])+)([^\n\S]*:(?!:))?/;
+const IDENTIFIER = /^(?!\d)((?:(?!\s)[$\w\x7f-\uffff])+)([^\n\S]*:(?!:))?/;
 
-let NUMBER = /^0b[01](?:_?[01])*n?|^0o[0-7](?:_?[0-7])*n?|^0x[\da-f](?:_?[\da-f])*n?|^\d+(?:_\d+)*n|^(?:\d+(?:_\d+)*)?\.?\d+(?:_\d+)*(?:e[+-]?\d+(?:_\d+)*)?/i;
+const NUMBER = /^0b[01](?:_?[01])*n?|^0o[0-7](?:_?[0-7])*n?|^0x[\da-f](?:_?[\da-f])*n?|^\d+(?:_\d+)*n|^(?:\d+(?:_\d+)*)?\.?\d+(?:_\d+)*(?:e[+-]?\d+(?:_\d+)*)?/i;
 
-let OPERATOR = /^(?:[-=]>|[-+*\/%<>&|^!?=]=|>>>=?|([-+:])\1|([&|<>*\/%])\2=?|\?(\.|::)|\.{2,3})/;
+const OPERATOR = /^(?:[-=]>|[-+*\/%<>&|^!?=]=|>>>=?|([-+:])\1|([&|<>*\/%])\2=?|\?(\.|::)|\.{2,3})/;
 
-let WHITESPACE = /^[^\n\S]+/;
+const WHITESPACE = /^[^\n\S]+/;
 
-let COMMENT = /^(\s*)###([^#][\s\S]*?)(?:###([^\n\S]*)|###$)|^((?:\s*#(?!##[^#]).*)+)/;
+const COMMENT = /^(\s*)###([^#][\s\S]*?)(?:###([^\n\S]*)|###$)|^((?:\s*#(?!##[^#]).*)+)/;
 
-let CODE = /^[-=]>/;
+const CODE = /^[-=]>/;
 
-let MULTI_DENT = /^(?:\n[^\n\S]*)+/;
+const MULTI_DENT = /^(?:\n[^\n\S]*)+/;
 
-let JSTOKEN = /^`(?!``)((?:[^`\\]|\\[\s\S])*)`/;
+const JSTOKEN = /^`(?!``)((?:[^`\\]|\\[\s\S])*)`/;
 
-let HERE_JSTOKEN = /^```((?:[^`\\]|\\[\s\S]|`(?!``))*)```/;
+const HERE_JSTOKEN = /^```((?:[^`\\]|\\[\s\S]|`(?!``))*)```/;
 
-let STRING_START = /^(?:'''|"""|'|")/;
+const STRING_START = /^(?:'''|"""|'|")/;
 
-let STRING_SINGLE = /^(?:[^\\']|\\[\s\S])*/;
+const STRING_SINGLE = /^(?:[^\\']|\\[\s\S])*/;
 
-let STRING_DOUBLE = /^(?:[^\\"#]|\\[\s\S]|\#(?!\{))*/;
+const STRING_DOUBLE = /^(?:[^\\"#]|\\[\s\S]|\#(?!\{))*/;
 
-let HEREDOC_SINGLE = /^(?:[^\\']|\\[\s\S]|'(?!''))*/;
+const HEREDOC_SINGLE = /^(?:[^\\']|\\[\s\S]|'(?!''))*/;
 
-let HEREDOC_DOUBLE = /^(?:[^\\"#]|\\[\s\S]|"(?!"")|\#(?!\{))*/;
+const HEREDOC_DOUBLE = /^(?:[^\\"#]|\\[\s\S]|"(?!"")|\#(?!\{))*/;
 
-let HEREDOC_INDENT = /\n+([^\n\S]*)(?=\S)/g;
+const HEREDOC_INDENT = /\n+([^\n\S]*)(?=\S)/g;
 
-let REGEX = /^\/(?!\/)((?:[^[\/\n\\]|\\[^\n]|\[(?:\\[^\n]|[^\]\n\\])*\])*)(\/)?/;
+const REGEX = /^\/(?!\/)((?:[^[\/\n\\]|\\[^\n]|\[(?:\\[^\n]|[^\]\n\\])*\])*)(\/)?/;
 
-let REGEX_FLAGS = /^\w*/;
+const REGEX_FLAGS = /^\w*/;
 
-let VALID_FLAGS = /^(?!.*(.).*\1)[gimsuy]*$/;
+const VALID_FLAGS = /^(?!.*(.).*\1)[gimsuy]*$/;
 
-let HEREGEX = /^(?:[^\\\/#\s]|\\[\s\S]|\/(?!\/\/)|\#(?!\{)|\s+(?:#(?!\{).*)?)*/;
+const HEREGEX = /^(?:[^\\\/#\s]|\\[\s\S]|\/(?!\/\/)|\#(?!\{)|\s+(?:#(?!\{).*)?)*/;
 
-let HEREGEX_COMMENT = /(\s+)(#(?!{).*)/gm;
+const HEREGEX_COMMENT = /(\s+)(#(?!{).*)/gm;
 
-let REGEX_ILLEGAL = /^(\/|\/{3}\s*)(\*)/;
+const REGEX_ILLEGAL = /^(\/|\/{3}\s*)(\*)/;
 
-let POSSIBLY_DIVISION = /^\/=?\s/;
+const POSSIBLY_DIVISION = /^\/=?\s/;
 
-let HERECOMMENT_ILLEGAL = /\*\//;
+const HERECOMMENT_ILLEGAL = /\*\//;
 
-let LINE_CONTINUER = /^\s*(?:,|\??\.(?![.\d])|\??::)/;
+const LINE_CONTINUER = /^\s*(?:,|\??\.(?![.\d])|\??::)/;
 
-let STRING_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d|[1-7])|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/;
+const STRING_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d|[1-7])|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/;
 
-let REGEX_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d)|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/;
+const REGEX_INVALID_ESCAPE = /((?:^|[^\\])(?:\\\\)*)\\(?:(0\d)|(x(?![\da-fA-F]{2}).{0,2})|(u\{(?![\da-fA-F]{1,}\})[^}]*\}?)|(u(?!\{|[\da-fA-F]{4}).{0,4}))/;
 
-let TRAILING_SPACES = /\s+$/;
+const TRAILING_SPACES = /\s+$/;
 
-let COMPOUND_ASSIGN = ['-=', '+=', '/=', '*=', '%=', '||=', '&&=', '?=', '<<=', '>>=', '>>>=', '&=', '^=', '|=', '**=', '//=', '%%='];
+const COMPOUND_ASSIGN = ['-=', '+=', '/=', '*=', '%=', '||=', '&&=', '?=', '<<=', '>>=', '>>>=', '&=', '^=', '|=', '**=', '//=', '%%='];
 
-let UNARY = ['NEW', 'TYPEOF', 'DELETE'];
+const UNARY = ['NEW', 'TYPEOF', 'DELETE'];
 
-let UNARY_MATH = ['!', '~'];
+const UNARY_MATH = ['!', '~'];
 
-let SHIFT = ['<<', '>>', '>>>'];
+const SHIFT = ['<<', '>>', '>>>'];
 
-let COMPARE = ['==', '!=', '<', '>', '<=', '>='];
+const COMPARE = ['==', '!=', '<', '>', '<=', '>='];
 
-let MATH = ['*', '/', '%', '//', '%%'];
+const MATH = ['*', '/', '%', '//', '%%'];
 
-let RELATION = ['IN', 'OF', 'INSTANCEOF'];
+const RELATION = ['IN', 'OF', 'INSTANCEOF'];
 
-let BOOL = ['TRUE', 'FALSE'];
+const BOOL = ['TRUE', 'FALSE'];
 
-let CALLABLE = ['IDENTIFIER', 'PROPERTY', ')', ']', '?', '@', 'THIS', 'SUPER', 'DYNAMIC_IMPORT'];
+const CALLABLE = ['IDENTIFIER', 'PROPERTY', ')', ']', '?', '@', 'THIS', 'SUPER', 'DYNAMIC_IMPORT'];
 
-let INDEXABLE = CALLABLE.concat(['NUMBER', 'INFINITY', 'NAN', 'STRING', 'STRING_END', 'REGEX', 'REGEX_END', 'BOOL', 'NULL', 'UNDEFINED', '}', '::']);
+const INDEXABLE = CALLABLE.concat(['NUMBER', 'INFINITY', 'NAN', 'STRING', 'STRING_END', 'REGEX', 'REGEX_END', 'BOOL', 'NULL', 'UNDEFINED', '}', '::']);
 
-let COMPARABLE_LEFT_SIDE = ['IDENTIFIER', ')', ']', 'NUMBER'];
+const COMPARABLE_LEFT_SIDE = ['IDENTIFIER', ')', ']', 'NUMBER'];
 
-let NOT_REGEX = INDEXABLE.concat(['++', '--']);
+const NOT_REGEX = INDEXABLE.concat(['++', '--']);
 
-let LINE_BREAK = ['INDENT', 'OUTDENT', 'TERMINATOR'];
+const LINE_BREAK = ['INDENT', 'OUTDENT', 'TERMINATOR'];
 
-let INDENTABLE_CLOSERS = [')', '}', ']'];
+const INDENTABLE_CLOSERS = [')', '}', ']'];

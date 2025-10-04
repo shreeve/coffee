@@ -1090,8 +1090,8 @@ JS_KEYWORDS = [
   'import', 'export', 'default'
 ]
 
-# CoffeeScript-only keywords.
-COFFEE_KEYWORDS = [
+# CoffeeScript-only keywords (starts lowercase to allow mutation)
+coffeeKeywords = [
   'undefined', 'Infinity', 'NaN'
   'then', 'unless', 'until', 'loop', 'of', 'by', 'when'
 ]
@@ -1107,8 +1107,9 @@ COFFEE_ALIAS_MAP =
   on   : 'true'
   off  : 'false'
 
-COFFEE_ALIASES  = (key for key of COFFEE_ALIAS_MAP)
-COFFEE_KEYWORDS = COFFEE_KEYWORDS.concat COFFEE_ALIASES
+COFFEE_ALIASES  = Object.keys(COFFEE_ALIAS_MAP)
+# Combine keywords and aliases
+COFFEE_KEYWORDS = coffeeKeywords.concat COFFEE_ALIASES
 
 # The list of keywords that are reserved by JavaScript, but not used, or are
 # used by CoffeeScript internally. We throw an error when these are encountered,

@@ -5131,14 +5131,16 @@
               declarationKeyword = 'let';
             } else {
               needsDeclaration = true;
-              // Smart const/let determination:
-              // 1. Functions and classes are always const (immutable by nature)
-              // 2. For other values, use 'let' for safety (const detection needs improvement)
+              // Simple, predictable const rules:
+              // 1. Functions are always const
+              // 2. Classes are always const  
+              // 3. SCREAMING_SNAKE_CASE is const
+              // 4. Everything else is let (safe default)
               if (this.value instanceof Code || this.value instanceof Class) {
                 declarationKeyword = 'const';
+              } else if (varName.match(/^[A-Z][A-Z0-9_]*$/)) { // SCREAMING_SNAKE_CASE
+                declarationKeyword = 'const';
               } else {
-                // TODO: Improve reassignment detection for const/let determination
-                // For now, default to 'let' to avoid runtime errors
                 declarationKeyword = 'let';
               }
             }
@@ -5628,44 +5630,6 @@
           ret.operator = (ref1 = this.originalContext) != null ? ref1 : '=';
         }
         return ret;
-      }
-
-      // ES6: Check if a variable will be reassigned in the current scope
-      // This method is self-contained and doesn't rely on Scope class modifications!
-      willBeReassignedInScope(o, varName) {
-        var assignmentCount, checkNode;
-        // Track how many times this variable is assigned
-        assignmentCount = 0;
-        // Helper to check if a node is an assignment to our variable
-        checkNode = (node) => {
-          var ref1, ref2;
-          // Check for regular assignments
-          if (node instanceof Assign && node.variable.unwrapAll() instanceof IdentifierLiteral && node.variable.unwrapAll().value === varName) {
-            // Count initial assignment (no context) and compound assignments (+=, -=, etc)
-            assignmentCount++;
-          // Check for ++ and -- operators (which are reassignments)
-          } else if (node instanceof Op && ((ref1 = node.operator) === '++' || ref1 === '--' || ref1 === 'delete')) {
-            // Check if this operates on our variable
-            if (((ref2 = node.first) != null ? ref2.unwrapAll() : void 0) instanceof IdentifierLiteral && node.first.unwrapAll().value === varName) {
-              assignmentCount++;
-              if (assignmentCount > 1) {
-                // Since this is a reassignment operation, we already know it needs 'let'
-                return true;
-              }
-            }
-          }
-          // Continue traversing
-          return true;
-        };
-        // Look through all expressions in the current scope
-        if (o.scope.expressions) {
-          o.scope.expressions.traverseChildren(false, function(child) {
-            checkNode(child);
-            return true;
-          });
-        }
-        // If we find more than one assignment, it's reassigned
-        return assignmentCount > 1;
       }
 
     };
