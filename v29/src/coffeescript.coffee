@@ -17,9 +17,6 @@ export VERSION = packageJson.version
 
 export FILE_EXTENSIONS = ['.coffee']
 
-# Expose helpers for testing.
-export {helpers}
-
 {getSourceMap} = SourceMap
 
 # Function for base64 encoding in Node.js
