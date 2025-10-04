@@ -1,12 +1,11 @@
 # Import statements - ES6 module syntax in CoffeeScript
 import CoffeeScript from './coffeescript'
-import * as helpers from './helpers'
+
+# Re-export helpers module
+export * as helpers from './helpers'
 
 # Default export
 export default CoffeeScript
-
-# Named export
-export {helpers}
 
 # Destructuring assignment from the imported module
 {
