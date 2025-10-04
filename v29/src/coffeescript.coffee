@@ -157,15 +157,12 @@ export nodes = withPrettyErrors (source, options) ->
   parser.yy.backend = new Backend(options, parser.yy) # Inject Solar backend
   parser.parse source
 
-# This file used to export these methods; leave stubs that throw warnings
-# instead. These methods have been moved into `index.coffee` to provide
-# separate entrypoints for Node and non-Node environments, so that static
-# analysis tools don't choke on Node packages when compiling for a non-Node
-# environment.
-export run = ->
-  throw new Error 'require index.coffee, not this file'
-export {run as eval}
-  throw new Error 'require index.coffee, not this file'
+# Simple platform-agnostic eval function
+# Uses native JavaScript eval - works in any JavaScript environment
+export coffeeEval = (code, options = {}) ->
+  options.bare = true  # Ensure we get a returnable value
+  js = compile code, options
+  eval js
 
 # Instantiate a Lexer for our use here.
 lexer = new Lexer
