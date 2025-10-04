@@ -1,14 +1,15 @@
-# Pure ES6 CoffeeScript Compiler - Platform Agnostic
+# Import statements - ES6 module syntax in CoffeeScript
 import CoffeeScript from './coffeescript'
 import * as helpers from './helpers'
 
+# Default export
 export default CoffeeScript
 
-# Export helpers separately since it's not re-exported from coffeescript
+# Named export
 export {helpers}
 
-# Export only the core compiler methods as named exports
-export {
+# Destructuring assignment from the imported module
+{
   VERSION
   FILE_EXTENSIONS
   compile
@@ -18,3 +19,15 @@ export {
   transpile
   patchStackTrace
 } = CoffeeScript
+
+# Re-exporting the destructured properties as named exports
+export {
+  VERSION
+  FILE_EXTENSIONS
+  compile
+  tokens
+  nodes
+  coffeeEval
+  transpile
+  patchStackTrace
+}
