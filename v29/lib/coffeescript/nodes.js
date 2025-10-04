@@ -1342,6 +1342,10 @@ export class ExportDeclaration extends ModuleDeclaration {
         code.push(this.makeCode('const '));
         this.clause.moduleDeclaration = 'export';
       }
+    } else {
+      if (this.clause instanceof Class) {
+        this.clause.moduleDeclaration = 'export default';
+      }
     }
     if ((this.clause.body != null) && this.clause.body instanceof Block) {
       code = code.concat(this.clause.compileToFragments(o, LEVEL_TOP));

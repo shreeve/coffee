@@ -4691,8 +4691,14 @@
           code.push(this.makeCode('const '));
           this.clause.moduleDeclaration = 'export';
         }
+      } else {
+        if (this.clause instanceof Class) {
+          // For export default, never add 'const', 'let', or 'var'
+          // The syntax is just "export default <expression>"
+          // For other constructs like functions, no additional keyword needed
+          this.clause.moduleDeclaration = 'export default';
+        }
       }
-      // For other constructs like functions, no additional keyword needed
       if ((this.clause.body != null) && this.clause.body instanceof Block) {
         code = code.concat(this.clause.compileToFragments(o, LEVEL_TOP));
       } else {
