@@ -28,7 +28,7 @@ const LineMap = class LineMap {
 
 };
 
-export default const SourceMap = (function() {
+const SourceMap = (function() {
 
   class SourceMap {
     constructor() {
@@ -141,3 +141,5 @@ export default const SourceMap = (function() {
   return SourceMap;
 
 }).call(this);
+
+export default SourceMap;
