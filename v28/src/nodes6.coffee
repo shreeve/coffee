@@ -3443,13 +3443,13 @@ exports.Assign = class Assign extends Base
 
           # Smart const/let determination:
           # 1. Functions and classes are always const (immutable by nature)
-          # 2. For other values, scan ahead to see if reassigned
+          # 2. For other values, use 'let' for safety (const detection needs improvement)
           if @value instanceof Code or @value instanceof Class
             declarationKeyword = 'const'
           else
-            # Check if this variable will be reassigned in the current scope
-            # We do this without modifying the Scope class!
-            declarationKeyword = if @willBeReassignedInScope(o, varName) then 'let' else 'const'
+            # TODO: Improve reassignment detection for const/let determination
+            # For now, default to 'let' to avoid runtime errors
+            declarationKeyword = 'let'
 
     @addScopeVariables o
     if @value instanceof Code
