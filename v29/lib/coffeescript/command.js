@@ -8,15 +8,10 @@ import {
   spawn,
   exec
 } from 'child_process';
-import {
-  EventEmitter
-} from 'events';
 
 
 
 let useWinPathSep = path.sep === '\\';
-
-helpers.extend(CoffeeScript, new EventEmitter());
 
 const printLine = function(line) {
   return process.stdout.write(line + '\n');
@@ -119,8 +114,8 @@ with...
   const ref = opts.arguments;
   results = [];
   for (let i = 0, len = ref.length; i < len; i++) {
-    const source = ref[i];
-    source = path.resolve(source);
+    const sourcePath = ref[i];
+    let source = path.resolve(sourcePath);
     results.push(compilePath(source, true, source));
   }
   return results;
@@ -215,7 +210,6 @@ const compileScript = function(file, input, base = null) {
   let options = compileOptions(file, base);
   try {
     let task = {file, input, options};
-    CoffeeScript.emit('compile', task);
     if (opts.tokens) {
       return printTokens(CoffeeScript.tokens(task.input, task.options));
     } else if (opts.nodes) {
@@ -235,7 +229,6 @@ const compileScript = function(file, input, base = null) {
         task.output = compiled.js;
         task.sourceMap = compiled.v3SourceMap;
       }
-      CoffeeScript.emit('success', task);
       if (opts.print) {
         return printLine(task.output.trim());
       } else if (opts.compile || opts.map) {
@@ -245,10 +238,6 @@ const compileScript = function(file, input, base = null) {
     }
   } catch (error) {
     let err = error;
-    CoffeeScript.emit('failure', err, task);
-    if (CoffeeScript.listeners('failure').length) {
-      return;
-    }
     let message = (err != null ? err.stack : void 0) || `${err}`;
     if (opts.watch) {
       return printLine(message + '\x07');

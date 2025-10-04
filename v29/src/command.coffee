@@ -10,12 +10,10 @@ import * as helpers from './helpers'
 import * as optparse from './optparse'
 import * as CoffeeScript from './index'
 import {spawn, exec} from 'child_process'
-import {EventEmitter} from 'events'
-
 useWinPathSep  = path.sep is '\\'
 
-# Allow CoffeeScript to emit Node.js events.
-helpers.extend CoffeeScript, new EventEmitter
+# Note: EventEmitter support removed for ES6 module compatibility
+# If you need events, wrap CoffeeScript in your own EventEmitter
 
 printLine = (line) -> process.stdout.write line + '\n'
 printWarn = (line) -> process.stderr.write line + '\n'
@@ -121,8 +119,8 @@ export run = ->
         $ cat a.coffee b.coffee c.coffee | coffee --compile --stdio > bundle.js
 
     '''
-  for source in opts.arguments
-    source = path.resolve source
+  for sourcePath in opts.arguments
+    source = path.resolve sourcePath
     compilePath source, yes, source
 
 # Compile a path, which could be a script or a directory. If a directory
@@ -183,7 +181,7 @@ compileScript = (file, input, base = null) ->
   options = compileOptions file, base
   try
     task = {file, input, options}
-    CoffeeScript.emit 'compile', task
+    # Event: 'compile' (removed for ES6 compatibility)
     if opts.tokens
       printTokens CoffeeScript.tokens task.input, task.options
     else if opts.nodes
@@ -203,7 +201,7 @@ compileScript = (file, input, base = null) ->
         task.output = compiled.js
         task.sourceMap = compiled.v3SourceMap
 
-      CoffeeScript.emit 'success', task
+      # Event: 'success' (removed for ES6 compatibility)
       if opts.print
         printLine task.output.trim()
       else if opts.compile or opts.map
@@ -213,8 +211,8 @@ compileScript = (file, input, base = null) ->
           options.jsPath
         writeJs base, task.file, task.output, saveTo, task.sourceMap
   catch err
-    CoffeeScript.emit 'failure', err, task
-    return if CoffeeScript.listeners('failure').length
+    # Event: 'failure' (removed for ES6 compatibility)
+    # No longer checking for failure listeners
     message = err?.stack or "#{err}"
     if opts.watch
       printLine message + '\x07'

@@ -301,3 +301,17 @@ checkShebangLine = (file, input) ->
     '''
     console.error "The shebang line was: '#{firstLine}' in file '#{file}'"
     console.error "The arguments were: #{JSON.stringify args}"
+
+# Create CoffeeScript object with all exports for default export
+CoffeeScript = {
+  VERSION
+  FILE_EXTENSIONS
+  compile
+  tokens
+  nodes
+  coffeeEval
+  patchStackTrace
+}
+
+# Default export
+export default CoffeeScript
