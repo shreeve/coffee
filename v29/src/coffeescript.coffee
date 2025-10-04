@@ -1,7 +1,6 @@
-# CoffeeScript can be used both on the server, as a command-line compiler based
-# on Node.js/V8, or to run CoffeeScript directly in the browser. This module
-# contains the main entry functions for tokenizing, parsing, and compiling
-# source CoffeeScript into JavaScript.
+# CoffeeScript can be used on the server, as a command-line compiler based
+# on Node.js/V8. This module contains the main entry functions for tokenizing,
+# parsing, and compiling source CoffeeScript into JavaScript.
 
 {Lexer}       = require './lexer'
 {parser}      = require './parser'
@@ -21,23 +20,12 @@ exports.FILE_EXTENSIONS = FILE_EXTENSIONS = ['.coffee']
 # Expose helpers for testing.
 exports.helpers = helpers
 
-{getSourceMap, registerCompiled} = SourceMap
-# This is exported to enable an external module to implement caching of
-# sourcemaps. This is used only when `patchStackTrace` has been called to adjust
-# stack traces for files with cached source maps.
-exports.registerCompiled = registerCompiled
+{getSourceMap} = SourceMap
 
-# Function that allows for btoa in both nodejs and the browser.
-base64encode = (src) -> switch
-  when typeof Buffer is 'function'
+# Function for base64 encoding in Node.js
+base64encode = (src) ->
+  if typeof Buffer is 'function'
     Buffer.from(src).toString('base64')
-  when typeof btoa is 'function'
-    # The contents of a `<script>` block are encoded via UTF-16, so if any extended
-    # characters are used in the block, btoa will fail as it maxes out at UTF-8.
-    # See https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
-    # for the gory details, and for the solution implemented here.
-    btoa encodeURIComponent(src).replace /%([0-9A-F]{2})/g, (match, p1) ->
-      String.fromCharCode '0x' + p1
   else
     throw new Error('Unable to base64 encode inline sourcemap.')
 
@@ -148,8 +136,6 @@ exports.compile = compile = withPrettyErrors (code, options = {}) ->
     sourceURL = "//# sourceURL=#{filename}"
     js = "#{js}\n#{sourceMapDataURI}\n#{sourceURL}"
 
-  registerCompiled filename, code, map
-
   if options.sourceMap
     {
       js
@@ -176,7 +162,7 @@ exports.nodes = withPrettyErrors (source, options) ->
 # separate entrypoints for Node and non-Node environments, so that static
 # analysis tools don't choke on Node packages when compiling for a non-Node
 # environment.
-exports.run = exports.eval = exports.register = ->
+exports.run = exports.eval = ->
   throw new Error 'require index.coffee, not this file'
 
 # Instantiate a Lexer for our use here.

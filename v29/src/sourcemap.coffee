@@ -59,10 +59,6 @@ class SourceMap
   # compiled with the source maps option.
   @sourceMaps: Object.create null
 
-  @registerCompiled: (filename, source, sourcemap) =>
-    if sourcemap?
-      @sourceMaps[filename] = sourcemap
-
   @getSourceMap: (filename) =>
     @sourceMaps[filename]
 

@@ -38,7 +38,6 @@ CoffeeScript.run = (code, options = {}) ->
   mainModule._compile code, mainModule.filename
 
 # Compile and evaluate a string of CoffeeScript (in a Node.js-like environment).
-# The CoffeeScript REPL uses this to run the input.
 CoffeeScript.eval = (code, options = {}) ->
   return unless code = code.trim()
   createContext = vm.Script.createContext ? vm.createContext
@@ -78,16 +77,6 @@ CoffeeScript.eval = (code, options = {}) ->
   else
     vm.runInContext js, sandbox
 
-CoffeeScript.register = -> require './register'
-
-# Throw error with deprecation warning when depending upon implicit `require.extensions` registration
-if require.extensions
-  for ext in CoffeeScript.FILE_EXTENSIONS then do (ext) ->
-    require.extensions[ext] ?= ->
-      throw new Error """
-      Use CoffeeScript.register() or require the coffeescript/register module to require #{ext} files.
-      """
-
 CoffeeScript._compileRawFileContent = (raw, filename, options = {}) ->
 
   # Strip the Unicode byte order mark, if this file begins with one.
@@ -122,11 +111,9 @@ module.exports = CoffeeScript
 module.exports.VERSION = CoffeeScript.VERSION
 module.exports.FILE_EXTENSIONS = CoffeeScript.FILE_EXTENSIONS
 module.exports.helpers = CoffeeScript.helpers
-module.exports.registerCompiled = CoffeeScript.registerCompiled
 module.exports.compile = CoffeeScript.compile
 module.exports.tokens = CoffeeScript.tokens
 module.exports.nodes = CoffeeScript.nodes
-module.exports.register = CoffeeScript.register
 module.exports.eval = CoffeeScript.eval
 module.exports.run = CoffeeScript.run
 module.exports.transpile = CoffeeScript.transpile
