@@ -184,7 +184,8 @@ export const locationDataToString = function(obj) {
 };
 
 const anonymousFileName = (function() {
-  const n = 0;
+  let n = 0;
+  n += 0;
   return function() {
     return `<anonymous-${n++}>`;
   };

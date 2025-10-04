@@ -156,6 +156,7 @@ export locationDataToString = (obj) ->
 # entries for any number of anonymous scripts.
 anonymousFileName = do ->
   n = 0
+  n += 0  # Force 'let' instead of 'const' in ES6
   ->
     "<anonymous-#{n++}>"
 export {anonymousFileName}
