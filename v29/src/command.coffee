@@ -58,13 +58,13 @@ notSources   = {}
 watchedDirs  = {}
 optionParser = null
 
-exports.buildCSOptionParser = buildCSOptionParser = ->
+export buildCSOptionParser = ->
   new optparse.OptionParser SWITCHES, BANNER
 
 # Run `coffee` by parsing passed options and determining what action to take.
 # Many flags cause us to divert before compiling anything. Flags passed after
 # `--` will be passed verbatim to your script as arguments in `process.argv`
-exports.run = ->
+export run = ->
   optionParser = buildCSOptionParser()
   try parseOptions()
   catch err

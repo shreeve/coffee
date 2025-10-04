@@ -162,7 +162,7 @@ export nodes = withPrettyErrors (source, options) ->
 export coffeeEval = (code, options = {}) ->
   options.bare = true  # Ensure we get a returnable value
   js = compile code, options
-  eval js
+  eval js  # Uses native JavaScript eval
 
 # Instantiate a Lexer for our use here.
 lexer = new Lexer
@@ -280,9 +280,8 @@ export patchStackTrace = ->
   # sourceMap, so we must monkey-patch Error to display CoffeeScript source
   # positions.
   Error.prepareStackTrace = (err, stack) ->
-    frames = for frame in stack
-      # Don't display stack frames deeper than `CoffeeScript.run`.
-      break if frame.getFunction() is exports.run
+    frames = for frame, i in stack
+      break if i > 10 # Stop at 10 frames, used to stop at `CoffeeScript.run`.
       "    at #{formatSourcePosition frame, getSourceMapping}"
 
     "#{err.toString()}\n#{frames.join '\n'}\n"

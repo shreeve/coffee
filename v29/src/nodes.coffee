@@ -5874,7 +5874,7 @@ isLocationDataEndGreater = (a, b) ->
 # mergeLocationData(first, second, justLeading: yes).range # [1, 5]
 # mergeLocationData(first, second, justEnding:  yes).range # [4, 10]
 # ```
-exports.mergeLocationData = mergeLocationData = (locationDataA, locationDataB, {justLeading, justEnding} = {}) ->
+export mergeLocationData = (locationDataA, locationDataB, {justLeading, justEnding} = {}) ->
   return Object.assign(
     if justEnding
       first_line:   locationDataA.first_line
@@ -5931,7 +5931,7 @@ exports.mergeLocationData = mergeLocationData = (locationDataA, locationDataB, {
 # mergeAstLocationData(first, second, justLeading: yes).range # [1, 5]
 # mergeAstLocationData(first, second, justEnding:  yes).range # [4, 10]
 # ```
-exports.mergeAstLocationData = mergeAstLocationData = (nodeA, nodeB, {justLeading, justEnding} = {}) ->
+export mergeAstLocationData = (nodeA, nodeB, {justLeading, justEnding} = {}) ->
   return
     loc:
       start:
@@ -5973,7 +5973,7 @@ exports.mergeAstLocationData = mergeAstLocationData = (nodeA, nodeB, {justLeadin
         greater nodeA.end, nodeB.end
 
 # Convert internal location data format to ESTree-compatible AST location data format
-exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) -> {
+export convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) -> {
     loc:
       start:
         line:   first_line + 1
