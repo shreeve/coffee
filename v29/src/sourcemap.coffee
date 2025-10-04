@@ -33,7 +33,7 @@ class LineMap
 # This is intentionally agnostic towards how a source map might be represented on
 # disk. Once the compiler is ready to produce a "v3"-style source map, we can walk
 # through the arrays of line and column buffer to produce it.
-class SourceMap
+export default class SourceMap
   constructor: ->
     @lines = []
 
@@ -162,6 +162,3 @@ class SourceMap
 
   encodeBase64: (value) ->
     BASE64_CHARS[value] or throw new Error "Cannot Base64 encode value: #{value}"
-
-# Our API for source maps is just the SourceMap class.
-module.exports = SourceMap

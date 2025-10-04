@@ -8,12 +8,12 @@
 # where locationData is {first_line, first_column, last_line, last_column, last_line_exclusive, last_column_exclusive}.
 # These are read by the parser in the `parser.lexer` function defined in coffeescript.coffee.
 
-{Rewriter, INVERSES, UNFINISHED} = require './rewriter'
+import {Rewriter, INVERSES, UNFINISHED} from './rewriter'
 
 # Import the helpers we need.
-{count, starts, compact, repeat, merge,
-attachCommentsToNode, locationDataToString, throwSyntaxError
-replaceUnicodeCodePointEscapes, flatten, parseNumber} = require './helpers'
+import {count, starts, compact, repeat, merge,
+attachCommentsToNode, locationDataToString, throwSyntaxError,
+replaceUnicodeCodePointEscapes, flatten, parseNumber} from './helpers'
 
 # The Lexer Class
 # ---------------
@@ -21,7 +21,7 @@ replaceUnicodeCodePointEscapes, flatten, parseNumber} = require './helpers'
 # The Lexer class reads a stream of CoffeeScript and divvies it up into tagged
 # tokens. Some potential ambiguity in the grammar has been avoided by
 # pushing some extra smarts into the Lexer.
-exports.Lexer = class Lexer
+export class Lexer
 
   # **tokenize** is the Lexer's main method. Scan by attempting to match tokens
   # one at a time, using a regular expression anchored at the start of the
@@ -1055,7 +1055,7 @@ isUnassignable = (name, displayName = name) -> switch
   else
     false
 
-exports.isUnassignable = isUnassignable
+export {isUnassignable}
 
 # `from` isn't a CoffeeScript keyword, but it behaves like one in `import` and
 # `export` statements (handled above) and in the declaration line of a `for`
@@ -1123,7 +1123,7 @@ STRICT_PROSCRIBED = ['arguments', 'eval']
 
 # The superset of both JavaScript keywords and reserved words, none of which may
 # be used as identifiers or properties.
-exports.JS_FORBIDDEN = JS_KEYWORDS.concat(RESERVED).concat(STRICT_PROSCRIBED)
+export JS_FORBIDDEN = JS_KEYWORDS.concat(RESERVED).concat(STRICT_PROSCRIBED)
 
 # The character code of the nasty Microsoft madness otherwise known as the BOM.
 BOM = 65279

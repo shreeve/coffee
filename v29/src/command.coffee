@@ -4,13 +4,13 @@
 # token stream or as the syntax tree.
 
 # External dependencies.
-fs             = require 'fs'
-path           = require 'path'
-helpers        = require './helpers'
-optparse       = require './optparse'
-CoffeeScript   = require './'
-{spawn, exec}  = require 'child_process'
-{EventEmitter} = require 'events'
+import fs from 'fs'
+import path from 'path'
+import * as helpers from './helpers'
+import * as optparse from './optparse'
+import * as CoffeeScript from './index'
+import {spawn, exec} from 'child_process'
+import {EventEmitter} from 'events'
 
 useWinPathSep  = path.sep is '\\'
 
