@@ -5316,7 +5316,7 @@ export class For extends While
           increment = "#{if kvar isnt ivar then "++#{ivar}" else "#{ivar}++"}"
         forPartFragments = [@makeCode("#{declare}; #{compare}; #{kvarAssign}#{increment}")]
     if @returns
-      resultPart   = "#{@tab}#{rvar} = [];\n"
+      resultPart   = "#{@tab}const #{rvar} = [];\n"
       returnResult = "\n#{@tab}return #{rvar};"
       body.makeReturn rvar
     if @guard
