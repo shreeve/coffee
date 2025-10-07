@@ -1,3 +1,11 @@
 I have a copy of CoffeeScript 2.7.0 at @v27/ and then an upgraded version at @v28/ which swaps out Jison for Solar (a JSON-directive based parser for AST node creation and code emission), and I have a pure ES6 version now at @v29/ in the v29 compiled directory at @coffeescript/, where we have a bootstrapped and hand tuned version of parser.js (which we don't need to modify) and I have used the "npm run build6" script from @v28/ to read source *.coffee files from @src/ . The @nodes6.coffee file of v28 is responsible run as a bootstrap, which reads ES6-ized *.coffee files from @src/ and emits ES6 ready JS files to @coffeescript/ . The goal is to get all of the v29 *.coffee files converted by v28's nodes6.coffee to ES6 JS files in v29/lib/coffeescript and then to be able to run v29 at ES6! Note that type: "module" is set in v29's package.js file.
 
 Can you scan through all these files and, without making any changes or write to disk, tell me what your understanding is of this project.
+
+==
+
+# 1. Explicit const sigil (=!) forces const
+# 2. Functions are always const
+# 3. Classes are always const
+# 4. SCREAMING_SNAKE_CASE is const
+# 5. Everything else is let (safe default)
