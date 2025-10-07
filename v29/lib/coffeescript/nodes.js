@@ -139,7 +139,7 @@ const Scope = class Scope {
   declaredVariables() {
     return ((function() {
       const ref1 = this.variables;
-      results1 = [];
+      const results1 = [];
       for (let j = 0, len1 = ref1.length; j < len1; j++) {
         const v = ref1[j];
         if (v.type === 'var') {
@@ -152,7 +152,7 @@ const Scope = class Scope {
 
   assignedVariables() {
     const ref1 = this.variables;
-    results1 = [];
+    const results1 = [];
     for (let j = 0, len1 = ref1.length; j < len1; j++) {
       const v = ref1[j];
       if (v.type.assigned) {
@@ -197,7 +197,7 @@ export class CodeFragment {
 
 const fragmentsToText = function(fragments) {
   return ((function() {
-    results1 = [];
+    const results1 = [];
     for (let j = 0, len1 = fragments.length; j < len1; j++) {
       const fragment = fragments[j];
       results1.push(fragment.code);

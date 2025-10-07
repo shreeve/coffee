@@ -7991,7 +7991,7 @@
           }
         }
         if (this.returns) {
-          resultPart = `${this.tab}${rvar} = [];\n`;
+          resultPart = `${this.tab}const ${rvar} = [];\n`;
           returnResult = `\n${this.tab}return ${rvar};`;
           body.makeReturn(rvar);
         }
