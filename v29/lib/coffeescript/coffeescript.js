@@ -53,7 +53,7 @@ export const compile = withPrettyErrors(function(code, options = {}) {
   }
   let tokens = lexer.tokenize(code, options);
   options.referencedVars = (function() {
-    results = [];
+    const results = [];
     for (let j = 0, len = tokens.length; j < len; j++) {
       const token = tokens[j];
       if (token[0] === 'IDENTIFIER') {
@@ -274,7 +274,7 @@ export const patchStackTrace = function() {
   };
   return Error.prepareStackTrace = function(err, stack) {
     let frames = (function() {
-      results = [];
+      const results = [];
       for (let i = j = 0, len = stack.length; j < len; i = ++j) {
         const frame = stack[i];
         if (i > 10) {

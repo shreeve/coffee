@@ -64,7 +64,7 @@ const OPTIONAL = /\[(\w+(\*?))\]/;
 
 const buildRules = function(ruleDeclarations) {
   let ruleList = (function() {
-    results = [];
+    const results = [];
     for (let i = 0, len = ruleDeclarations.length; i < len; i++) {
       const tuple = ruleDeclarations[i];
       if (tuple.length < 3) {

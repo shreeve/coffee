@@ -112,7 +112,7 @@ with...
 `);
   }
   const ref = opts.arguments;
-  results = [];
+  const results = [];
   for (let i = 0, len = ref.length; i < len; i++) {
     const sourcePath = ref[i];
     let source = path.resolve(sourcePath);
@@ -157,7 +157,7 @@ const compilePath = function(source, topLevel, base) {
         throw err;
       }
     }
-    results = [];
+    const results = [];
     for (let i = 0, len = files.length; i < len; i++) {
       const file = files[i];
       results.push(compilePath(path.join(source, file), false, base));
@@ -364,7 +364,7 @@ const watchDir = function(source, base) {
           }
           return stopWatcher();
         }
-        results = [];
+        const results = [];
         for (let i = 0, len = files.length; i < len; i++) {
           const file = files[i];
           results.push(compilePath(path.join(source, file), false, base));
@@ -501,7 +501,7 @@ const timeLog = function(message) {
 
 const printTokens = function(tokens) {
   let strings = (function() {
-    results = [];
+    const results = [];
     for (let i = 0, len = tokens.length; i < len; i++) {
       const token = tokens[i];
       let tag = token[0];

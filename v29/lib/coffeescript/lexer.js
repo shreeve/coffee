@@ -307,7 +307,7 @@ export class Lexer {
     if (heredoc) {
       let indent = null;
       let doc = ((function() {
-        results = [];
+        const results = [];
         for (let i = j = 0, len = tokens.length; j < len; i = ++j) {
           const token = tokens[i];
           if (token[0] === 'NEOSTRING') {
@@ -407,7 +407,7 @@ export class Lexer {
       return leadingWhitespace.length - 1 - lastNewlineIndex;
     };
     let commentAttachments = (function() {
-      results = [];
+      const results = [];
       for (let i = j = 0, len = contents.length; j < len; i = ++j) {
         ({content, length, leadingWhitespace, precededByBlankLine} = contents[i]);
         let nonInitial = i !== 0;
@@ -492,7 +492,7 @@ export class Lexer {
           });
         }
         let commentTokens = flatten((function() {
-          results = [];
+          const results = [];
           for (let j = 0, len = comments.length; j < len; j++) {
             const commentOpts = comments[j];
             results.push(this.commentToken(commentOpts.comment, Object.assign(commentOpts, {

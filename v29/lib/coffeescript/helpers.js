@@ -23,7 +23,7 @@ export const repeat = function(str, n) {
 };
 
 export const compact = function(array) {
-  results = [];
+  const results = [];
   for (let i = 0, len1 = array.length; i < len1; i++) {
     const item = array[i];
     if (item) {
@@ -109,7 +109,7 @@ export const extractAllCommentTokens = function(tokens) {
   let sortedKeys = Object.keys(allCommentsObj).sort(function(a, b) {
     return a - b;
   });
-  results = [];
+  const results = [];
   for (let k = 0, len3 = sortedKeys.length; k < len3; k++) {
     const key = sortedKeys[k];
     results.push(allCommentsObj[key]);
