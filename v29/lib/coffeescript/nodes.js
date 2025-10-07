@@ -1289,8 +1289,10 @@ export class ImportDeclaration extends ModuleDeclaration {
         }
       }
       code.push(this.makeCode(sourceValue));
-      if (this.assertions != null) {
-        code.push(this.makeCode(' assert '));
+      if (this.source.value.match(/\.json['"]$/) && (this.assertions == null)) {
+        code.push(this.makeCode(" with { type: 'json' }"));
+      } else if (this.assertions != null) {
+        code.push(this.makeCode(' with '));
         code.push(...this.assertions.compileToFragments(o));
       }
     }

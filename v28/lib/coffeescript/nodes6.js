@@ -4604,8 +4604,11 @@
           } // Matches './...' or '../...'
         }
         code.push(this.makeCode(sourceValue));
-        if (this.assertions != null) {
-          code.push(this.makeCode(' assert '));
+        // Auto-add 'with' for JSON imports
+        if (this.source.value.match(/\.json['"]$/) && (this.assertions == null)) {
+          code.push(this.makeCode(" with { type: 'json' }"));
+        } else if (this.assertions != null) {
+          code.push(this.makeCode(' with '));
           code.push(...this.assertions.compileToFragments(o));
         }
       }
@@ -5133,7 +5136,7 @@
               needsDeclaration = true;
               // Simple, predictable const rules:
               // 1. Functions are always const
-              // 2. Classes are always const  
+              // 2. Classes are always const
               // 3. SCREAMING_SNAKE_CASE is const
               // 4. Everything else is let (safe default)
               if (this.value instanceof Code || this.value instanceof Class) {

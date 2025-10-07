@@ -8,7 +8,7 @@ import {
 import * as helpers from './helpers.js';
 import SourceMap from './sourcemap.js';
 import Backend from './backend.js';
-import packageJson from '../../package.json';
+import packageJson from '../../package.json' with { type: 'json' };
 import * as nodesModule from './nodes.js';
 
 

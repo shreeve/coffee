@@ -3059,8 +3059,11 @@ export class ImportDeclaration extends ModuleDeclaration
           quoteMark = sourceValue[0]
           sourceValue = "#{quoteMark}#{unquoted}.js#{quoteMark}"
       code.push @makeCode sourceValue
-      if @assertions?
-        code.push @makeCode ' assert '
+      # Auto-add 'with' for JSON imports
+      if @source.value.match(/\.json['"]$/) and not @assertions?
+        code.push @makeCode " with { type: 'json' }"
+      else if @assertions?
+        code.push @makeCode ' with '
         code.push @assertions.compileToFragments(o)...
 
     code.push @makeCode ';'
