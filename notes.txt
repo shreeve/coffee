@@ -1,0 +1,14 @@
+
+
+I have a copy of CoffeeScript 2.7.0 at @v27/ and an upgraded version at @v28/ which swaps out Jison for Solar (a JSON-directive based parser for AST node creation and code emission). I also have an ES6 version of CoffeeScript at @v29/ where we are using a hand tuned parser in v29/lib/coffeescript/parser.js (which we don't need to modify) and upgraded CoffeeScript source files in v29/src/*.coffee. In order to rebuild the v29/lib/coffeescript/*.js files we can do this as follows:
+
+cd /Users/shreeve/Data/Code/coffee/v28
+npm run build  # this will rebuild the v28/src/*.coffee files to v28/lib/coffeescript/*.js
+npm run build6 # this will rebuild the v29/src/*.coffee files to v29/lib/coffeescript/*.js
+
+So, v28 is responsible to run as a bootstrap, and reads our ES6-ized *.coffee files from v29/src/*.coffee and emits ES6 ready JS files to v29/lib/coffeescript/*.js.
+
+The goal is to get all of the v29 *.coffee files converted by v28's nodes6.coffee to ES6 JS files in v29/lib/coffeescript and then to be able to run v29 at ES6! Note that type: "module" is set in v29's package.js file. Also, not that v28/src/nodes6.coffee is very similar to v29/src/nodes.coffee (except v29 has other ES6 CoffeeScript fixes).
+
+Can you scan through all these files and, without making any changes or write to disk, tell me what your understanding is of this project?
+
