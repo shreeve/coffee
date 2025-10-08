@@ -295,3 +295,18 @@ checkShebangLine = (file, input) ->
     '''
     console.error "The shebang line was: '#{firstLine}' in file '#{file}'"
     console.error "The arguments were: #{JSON.stringify args}"
+
+# Create the default export object with all exported functions
+CoffeeScript = {
+  VERSION
+  FILE_EXTENSIONS
+  compile
+  tokens
+  nodes
+  coffeeEval
+  transpile: null  # Not needed for ES6, but index.coffee expects it
+  patchStackTrace
+}
+
+# Default export
+export default CoffeeScript

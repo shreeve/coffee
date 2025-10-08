@@ -8,26 +8,12 @@ export default CoffeeScript
 # Re-export helpers
 export helpers = helpersModule
 
-# Destructuring assignment from the imported module
-{
-  VERSION
-  FILE_EXTENSIONS
-  compile
-  tokens
-  nodes
-  coffeeEval
-  transpile
-  patchStackTrace
-} = CoffeeScript
-
-# Re-exporting the destructured properties as named exports
-export {
-  VERSION
-  FILE_EXTENSIONS
-  compile
-  tokens
-  nodes
-  coffeeEval
-  transpile
-  patchStackTrace
-}
+# Re-export individual properties from CoffeeScript
+export VERSION = CoffeeScript.VERSION
+export FILE_EXTENSIONS = CoffeeScript.FILE_EXTENSIONS
+export compile = CoffeeScript.compile
+export tokens = CoffeeScript.tokens
+export nodes = CoffeeScript.nodes
+export coffeeEval = CoffeeScript.coffeeEval
+export transpile = CoffeeScript.transpile
+export patchStackTrace = CoffeeScript.patchStackTrace

@@ -299,3 +299,16 @@ allow a single argument.`);
     return console.error(`The arguments were: ${JSON.stringify(args)}`);
   }
 };
+
+let CoffeeScript = {
+  VERSION,
+  FILE_EXTENSIONS,
+  compile,
+  tokens,
+  nodes,
+  coffeeEval,
+  transpile: null,
+  patchStackTrace
+};
+
+export default CoffeeScript;

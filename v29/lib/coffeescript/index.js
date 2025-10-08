@@ -3,20 +3,22 @@ import CoffeeScript from './coffeescript.js';
 import * as helpersModule from './helpers.js';
 
 
-
 export default CoffeeScript;
 
 export const helpers = helpersModule;
 
-({VERSION, FILE_EXTENSIONS, compile, tokens, nodes, coffeeEval, transpile, patchStackTrace} = CoffeeScript);
+export const VERSION = CoffeeScript.VERSION;
 
-export {
-  VERSION,
-  FILE_EXTENSIONS,
-  compile,
-  tokens,
-  nodes,
-  coffeeEval,
-  transpile,
-  patchStackTrace
-};
+export const FILE_EXTENSIONS = CoffeeScript.FILE_EXTENSIONS;
+
+export const compile = CoffeeScript.compile;
+
+export const tokens = CoffeeScript.tokens;
+
+export const nodes = CoffeeScript.nodes;
+
+export const coffeeEval = CoffeeScript.coffeeEval;
+
+export const transpile = CoffeeScript.transpile;
+
+export const patchStackTrace = CoffeeScript.patchStackTrace;
