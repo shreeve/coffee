@@ -8,9 +8,11 @@ import fs from 'fs'
 import path from 'path'
 import * as helpers from './helpers'
 import * as optparse from './optparse'
-import * as CoffeeScript from './index'
+import CoffeeScript from './index'
 import {spawn, exec} from 'child_process'
 import {EventEmitter} from 'events'
+
+# Note: Avoiding 'in' operator to prevent ES6 scoping issues
 
 useWinPathSep  = path.sep is '\\'
 
@@ -94,8 +96,8 @@ export run = ->
 
   if opts.output
     outputBasename = path.basename opts.output
-    if '.' in outputBasename and
-       outputBasename not in ['.', '..'] and
+    if outputBasename.indexOf('.') >= 0 and
+       ['.', '..'].indexOf(outputBasename) < 0 and
        not helpers.ends(opts.output, path.sep)
       # An output filename was specified, e.g. `/dist/scripts.js`.
       opts.outputFilename = outputBasename
@@ -129,9 +131,10 @@ export run = ->
 # is passed, recursively compile all '.coffee' extension source files in it
 # and all subdirectories.
 compilePath = (source, topLevel, base) ->
-  return if source in sources   or
+  return if sources.indexOf(source) >= 0 or
             watchedDirs[source] or
             not topLevel and (notSources[source] or hidden source)
+  stats = null
   try
     stats = fs.statSync source
   catch err
@@ -147,6 +150,7 @@ compilePath = (source, topLevel, base) ->
       compilePath findDirectoryIndex(source), topLevel, base
       return
     watchDir source, base if opts.watch
+    files = null
     try
       files = fs.readdirSync source
     catch err
@@ -158,6 +162,7 @@ compilePath = (source, topLevel, base) ->
     sourceCode.push null
     delete notSources[source]
     watch source, base if opts.watch
+    code = null
     try
       code = fs.readFileSync source
     catch err
@@ -181,6 +186,7 @@ findDirectoryIndex = (source) ->
 # `__dirname` and `module.filename` to be correct relative to the script's path.
 compileScript = (file, input, base = null) ->
   options = compileOptions file, base
+  task = null
   try
     task = {file, input, options}
     CoffeeScript.emit 'compile', task
@@ -255,7 +261,7 @@ watch = (source, base) ->
 
   watchErr = (err) ->
     throw err unless err.code is 'ENOENT'
-    return unless source in sources
+    return unless sources.indexOf(source) >= 0
     try
       rewatch()
       compile()

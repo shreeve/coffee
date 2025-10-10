@@ -791,7 +791,7 @@ BALANCED_PAIRS = [
 
 # The inverse mappings of `BALANCED_PAIRS` we're trying to fix up, so we can
 # look things up from either end.
-export INVERSES = {}
+INVERSES = {}
 
 # The tokens that signal the start/end of a balanced pair.
 EXPRESSION_START = []
@@ -800,6 +800,9 @@ EXPRESSION_END   = []
 for [left, right] in BALANCED_PAIRS
   EXPRESSION_START.push INVERSES[right] = left
   EXPRESSION_END  .push INVERSES[left] = right
+
+# Export INVERSES after it's been populated
+export {INVERSES}
 
 # Tokens that indicate the close of a clause of an expression.
 EXPRESSION_CLOSE = ['CATCH', 'THEN', 'ELSE', 'FINALLY'].concat EXPRESSION_END

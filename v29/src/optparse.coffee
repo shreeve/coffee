@@ -35,7 +35,9 @@ export class OptionParser
     # Note that executable scripts with a shebang (`#!`) line should use the
     # line `#!/usr/bin/env coffee`, or `#!/absolute/path/to/coffee`, without a
     # `--` argument after, because that will fail on Linux (see #3946).
-    {rules, positional} = normalizeArguments args, @rules.flagDict
+    normalized = normalizeArguments args, @rules.flagDict
+    rules = normalized.rules
+    positional = normalized.positional
     options = {}
 
     # The `argument` field is added to the rule instance non-destructively by
@@ -83,7 +85,7 @@ OPTIONAL   = /\[(\w+(\*?))\]/
 # Build and return the list of option rules. If the optional *short-flag* is
 # unspecified, leave it out by padding with `null`.
 buildRules = (ruleDeclarations) ->
-  ruleList = for tuple in ruleDeclarations
+  ruleList = ruleDeclarations.map (tuple) ->
     tuple.unshift null if tuple.length < 3
     buildRule tuple...
   flagDict = {}
@@ -116,7 +118,9 @@ normalizeArguments = (args, flagDict) ->
   rules = []
   positional = []
   needsArgOpt = null
-  for arg, argIndex in args
+  argIndex = 0
+  while argIndex < args.length
+    arg = args[argIndex]
     # If the previous argument given to the script was an option that uses the
     # next command-line argument as its argument, create copy of the option's
     # rule with an `argument` field.
@@ -124,11 +128,14 @@ normalizeArguments = (args, flagDict) ->
       withArg = Object.assign {}, needsArgOpt.rule, {argument: arg}
       rules.push withArg
       needsArgOpt = null
+      argIndex++
       continue
 
-    multiFlags = arg.match(MULTI_FLAG)?[1]
-      .split('')
-      .map (flagName) -> "-#{flagName}"
+    multiMatch = arg.match(MULTI_FLAG)
+    multiFlags = if multiMatch?
+      multiMatch[1].split('').map (flagName) -> "-#{flagName}"
+    else
+      null
     if multiFlags?
       multiOpts = multiFlags.map (flag) ->
         rule = flagDict[flag]
@@ -136,7 +143,8 @@ normalizeArguments = (args, flagDict) ->
           throw new Error "unrecognized option #{flag} in multi-flag #{arg}"
         {rule, flag}
       # Only the last flag in a multi-flag may have an argument.
-      [innerOpts..., lastOpt] = multiOpts
+      innerOpts = multiOpts[...multiOpts.length - 1]
+      lastOpt = multiOpts[multiOpts.length - 1]
       for {rule, flag} in innerOpts
         if rule.hasArgument
           throw new Error "cannot use option #{flag} in multi-flag #{arg} except
@@ -158,6 +166,7 @@ normalizeArguments = (args, flagDict) ->
       # This is a positional argument.
       positional = args[argIndex..]
       break
+    argIndex++
 
   if needsArgOpt?
     throw new Error "value required for #{needsArgOpt.flag}, but it was the last

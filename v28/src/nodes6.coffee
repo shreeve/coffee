@@ -26,6 +26,11 @@ class Scope
     # The @root is the top-level Scope object for a given file.
     @root = @parent?.root ? this
 
+    # Track child scopes for ES6 generated variable collection
+    if @parent
+      @parent.children ?= []
+      @parent.children.push this
+
   # Adds a new variable or overrides an existing one.
   add: (name, type, immediate) ->
     return @parent.add name, type, immediate if @shared and not immediate
@@ -88,12 +93,19 @@ class Scope
       break unless @check(temp) or temp in @root.referencedVars
       index++
     @add temp, 'var', yes if options.reserve ? true
+
+    # In ES6 mode, track that this is a compiler-generated variable that needs declaration
+    if process.env.ES6
+      @generatedVars ?= []
+      @generatedVars.push temp unless temp in @generatedVars
+
     temp
 
   # Ensure that an assignment is made at the top of this scope
   # (or at the top-level scope, if requested).
-  assign: (name, value) ->
-    @add name, {value, assigned: yes}, yes
+  assign: (name, value, isUtility = no) ->
+    # Mark utilities specially so we can declare them as const in ES6
+    @add name, {value, assigned: yes, isUtility}, yes
     @hasAssignments = yes
 
   # Does this scope have any declared variables?
@@ -729,6 +741,69 @@ exports.Block = class Block extends Base
 
     super o, lvl
 
+  # Collect ALL variable assignments in this block and its children
+  collectAllAssignments: (o) ->
+    return [] unless process.env.ES6
+    assignments = []
+
+    # Walk the entire AST collecting assignments
+    collectAssignments = (node, inCondition = no) =>
+      return unless node
+
+      # Special handling for Return statements with assignments
+      if node instanceof Return and node.expression
+        collectAssignments node.expression, inCondition
+
+      # Track if we're in a conditional context
+      else if node instanceof If or node instanceof While or node instanceof Switch
+        # Check condition for assignments
+        if node.condition
+          collectAssignments node.condition, yes
+        if node.processedCondition?()
+          collectAssignments node.processedCondition(), yes
+        # Then check body
+        collectAssignments node.body, no if node.body
+        collectAssignments node.elseBody, no if node.elseBody
+      # Check for assignments
+      else if node instanceof Assign and not node.context
+        varNode = node.variable.unwrapAll?() ? node.variable
+        if varNode instanceof IdentifierLiteral
+          varName = varNode.value
+          if not o.scope.check(varName) and varName not in (assignment.name for assignment in assignments)
+            assignments.push {name: varName, inCondition}
+        # Also check for destructuring
+        else if node.variable.isArray?() or node.variable.isObject?()
+          # Collect all variables from destructuring
+          collectDestructuringVars = (destNode) ->
+            vars = []
+            if destNode instanceof Value and destNode.base instanceof IdentifierLiteral
+              vars.push destNode.base.value
+            else if destNode instanceof Arr
+              for obj in destNode.base.objects when obj not instanceof Elision
+                vars = vars.concat collectDestructuringVars(obj)
+            else if destNode instanceof Obj
+              for prop in destNode.base.properties when prop instanceof Assign
+                if prop.context is 'object'
+                  vars = vars.concat collectDestructuringVars(prop.variable)
+            vars
+
+          # Add all destructured variables
+          for varName in collectDestructuringVars(node.variable)
+            if not o.scope.check(varName) and varName not in (assignment.name for assignment in assignments)
+              assignments.push {name: varName, inCondition}
+
+      # Recursively check children
+      if node.traverseChildren
+        node.traverseChildren no, (child) ->
+          collectAssignments child, inCondition
+          yes
+
+    # Collect from all expressions
+    for expr in @expressions
+      collectAssignments expr
+
+    assignments
+
   # Compile all expressions within the **Block** body. If we need to return
   # the result, and it's an expression, simply return it. If it's a statement,
   # ask the statement to do so.
@@ -736,6 +811,25 @@ exports.Block = class Block extends Base
     @tab  = o.indent
     top   = o.level is LEVEL_TOP
     compiledNodes = []
+
+    # In ES6 mode, collect and declare all assignments upfront
+    if process.env.ES6 and top and not o.isRootBlock
+      allAssignments = @collectAllAssignments(o)
+      if allAssignments.length > 0
+        # Get unique variable names
+        declaredVars = []
+        for assignment in allAssignments
+          declaredVars.push assignment.name unless assignment.name in declaredVars
+
+        # Add them to scope to prevent redeclaration
+        for varName in declaredVars
+          o.scope.add varName, 'var'
+
+        # Generate declaration
+        if declaredVars.length > 0
+          compiledNodes.push @makeCode "#{@tab}let #{declaredVars.join(', ')};\n"
+
+    o.isRootBlock = no  # Only do this for the outermost block
 
     for node, index in @expressions
       if node.hoisted
@@ -773,20 +867,40 @@ exports.Block = class Block extends Base
 
   compileRoot: (o) ->
     @spaced = yes
-    # Separate imports from other expressions
+    # Separate imports, exports, and other expressions
     imports = []
+    exports = []
     others = []
     for exp in @expressions
       if exp instanceof ImportDeclaration
         imports.push exp
+      else if exp instanceof ExportDeclaration
+        exports.push exp
       else
         others.push exp
 
-    # Temporarily replace expressions with just others, then restore
+    # Compile the main body (others + exports at the bottom)
     originalExpressions = @expressions
     @expressions = others
     fragments = @compileWithDeclarations o
     @expressions = originalExpressions
+
+    # Compile exports and add them after the main body
+    if exports.length > 0
+      # Add spacing before export block if there's other content
+      if others.length > 0
+        fragments.push @makeCode '\n\n'
+
+      # Group consecutive exports together with single newlines
+      for exp, i in exports
+        fragments.push exp.compileToFragments(o)...
+        # Only add single newline between exports in the same block
+        if i < exports.length - 1
+          fragments.push @makeCode '\n'
+
+      # Add extra newline after export block if there's content after
+      if exports.length > 0
+        fragments.push @makeCode '\n'
 
     # Compile imports and place them at the very top
     if imports.length > 0
@@ -794,7 +908,7 @@ exports.Block = class Block extends Base
       for imp in imports
         importFragments.push imp.compileToFragments(o)...
         importFragments.push @makeCode '\n'
-      if others.length > 0
+      if others.length > 0 or exports.length > 0
         importFragments.push @makeCode '\n'
       fragments = importFragments.concat fragments
 
@@ -806,6 +920,24 @@ exports.Block = class Block extends Base
   compileWithDeclarations: (o) ->
     fragments = []
     post = []
+
+    # In ES6 mode, collect ALL assignments first (including those in conditions)
+    if process.env.ES6
+      allAssignments = @collectAllAssignments(o)
+      if allAssignments.length > 0
+        # Get unique variable names
+        declaredVars = []
+        for assignment in allAssignments
+          declaredVars.push assignment.name unless assignment.name in declaredVars
+
+        # Add them to scope to prevent redeclaration
+        for varName in declaredVars
+          o.scope.add varName, 'var'
+
+        # Generate declaration at the top of the function
+        if declaredVars.length > 0
+          fragments.push @makeCode "#{@tab}let #{declaredVars.join(', ')};\n"
+
     for exp, i in @expressions
       exp = exp.unwrap()
       break unless exp instanceof Literal
@@ -818,6 +950,39 @@ exports.Block = class Block extends Base
     post = @compileNode o
     {scope} = o
     if scope.expressions is this
+      # In ES6 mode, declare utility functions at the top level
+      if process.env.ES6 and scope.parent is null
+        utilityDeclarations = []
+        for name, value of (scope.root.utilities ? {})
+          if value is name  # Only for ES6 utilities that use the base name
+            utilCode = UTILITIES[name]?(o)
+            if utilCode
+              utilityDeclarations.push @makeCode "const #{name} = #{utilCode};\n"
+        if utilityDeclarations.length > 0
+          fragments = utilityDeclarations.concat fragments
+          fragments.push @makeCode '\n'
+
+      # In ES6 mode, declare compiler-generated variables
+      if process.env.ES6 and scope.generatedVars?.length > 0
+        genVarDeclarations = []
+        # Collect all generated variables from this scope and child scopes
+        collectGeneratedVars = (s) ->
+          vars = []
+          vars = vars.concat(s.generatedVars) if s.generatedVars?.length > 0
+          for child in s.children ? []
+            vars = vars.concat(collectGeneratedVars(child))
+          vars
+
+        allGenVars = collectGeneratedVars(scope)
+        # Remove duplicates
+        uniqueGenVars = []
+        for v in allGenVars
+          uniqueGenVars.push v unless v in uniqueGenVars
+
+        if uniqueGenVars.length > 0
+          genVarDeclarations.push @makeCode "#{@tab}let #{uniqueGenVars.join(', ')};\n"
+          fragments = genVarDeclarations.concat fragments
+
       declars = o.scope.hasDeclarations()
       assigns = scope.hasAssignments
       if declars or assigns
@@ -3063,7 +3228,11 @@ exports.ImportDeclaration = class ImportDeclaration extends ModuleDeclaration
           quoteMark = sourceValue[0]
           sourceValue = "#{quoteMark}#{unquoted}.js#{quoteMark}"
       code.push @makeCode sourceValue
-      if @assertions?
+
+      # Automatically add JSON import assertion if importing a .json file
+      if sourceValue.match(/\.json['"]$/i)? and not @assertions?
+        code.push @makeCode " with { type: 'json' }"
+      else if @assertions?
         code.push @makeCode ' assert '
         code.push @assertions.compileToFragments(o)...
 
@@ -3203,11 +3372,30 @@ exports.ModuleSpecifierList = class ModuleSpecifierList extends Base
     compiledList = (specifier.compileToFragments o, LEVEL_LIST for specifier in @specifiers)
 
     if @specifiers.length isnt 0
-      code.push @makeCode "{\n#{o.indent}"
+      # Check if we should use single-line or multi-line format
+      # Calculate approximate length: "{ " + items + " }"
+      singleLineLength = 2 # for "{ "
       for fragments, index in compiledList
-        code.push @makeCode(",\n#{o.indent}") if index
-        code.push fragments...
-      code.push @makeCode "\n}"
+        singleLineLength += 2 if index # for ", "
+        for fragment in fragments
+          singleLineLength += fragment.code.length
+      singleLineLength += 2 # for " }"
+
+      # Use multi-line format if too long or multiple specifiers (for readability)
+      useMultiLine = singleLineLength > 50 or @specifiers.length > 3
+
+      if useMultiLine
+        code.push @makeCode "{\n#{o.indent}"
+        for fragments, index in compiledList
+          code.push @makeCode(",\n#{o.indent}") if index
+          code.push fragments...
+        code.push @makeCode "\n}"
+      else
+        code.push @makeCode '{ '
+        for fragments, index in compiledList
+          code.push @makeCode(', ') if index
+          code.push fragments...
+        code.push @makeCode ' }'
     else
       code.push @makeCode '{}'
     code
@@ -3405,6 +3593,8 @@ exports.Assign = class Assign extends Base
             return @compileObjectDestruct o
           else
             return @compileDestructuring o
+        # else IT'S ASSIGNABLE! This is the path for simple destructuring that ES6 supports
+        # Fall through to normal compilation
 
       return @compileSplice       o if @variable.isSplice()
       return @compileConditional  o if @isConditional()
@@ -3418,7 +3608,7 @@ exports.Assign = class Assign extends Base
     varName = null
     # For chained assignments (e.g., 'tp = as = ""'), we can't use inline declarations
     # because it would generate invalid code like "let tp = const as = ''"
-    # Instead, we need to handle this specially
+    # Instead, we need to handle this specially by collecting all variables and declaring them separately
     isChainedAssignment = @value instanceof Assign and not @value.context
 
     # Check if we're part of a chain (being compiled as the inner assignment)
@@ -3428,16 +3618,49 @@ exports.Assign = class Assign extends Base
     # LEVEL_PAREN and higher means we're in an expression context, not a statement
     isInsideExpression = o.level >= LEVEL_PAREN
 
+    # Special handling for for-loop pattern destructuring
+    if @forPattern and (@variable.isArray() or @variable.isObject())
+      needsDeclaration = true
+      declarationKeyword = 'let'
+
+    # Special handling for non-assignable destructuring patterns
+    # (These go through compileDestructuring and are handled there)
+    destructuringVars = []
+
+    # Collect all variables in a chained assignment
+    chainedVars = []
+    if isChainedAssignment and not isInsideExpression
+      # Collect the first variable
+      if @variable.unwrapAll() instanceof IdentifierLiteral
+        firstVar = @variable.unwrapAll().value
+        chainedVars.push firstVar if not o.scope.check(firstVar)
+
+      # Walk the chain to collect all variables
+      current = @value
+      while current instanceof Assign and not current.context
+        if current.variable.unwrapAll() instanceof IdentifierLiteral
+          innerVar = current.variable.unwrapAll().value
+          chainedVars.push innerVar if not o.scope.check(innerVar)
+        current = current.value
+
     if @variable.unwrapAll() instanceof IdentifierLiteral and not @context and not @moduleDeclaration and not isInnerChainedAssignment and not isInsideExpression
       varName = @variable.unwrapAll().value
 
       # Check if variable needs declaration (first assignment)
       if not o.scope.check(varName)
-        # For the outer variable in a chained assignment, use let
-        # We can't use const because the assignment form doesn't work with const
+        # For chained assignments, we'll handle declarations separately
         if isChainedAssignment
-          needsDeclaration = true
-          declarationKeyword = 'let'
+          # Don't add inline declaration for chains - we'll handle it separately
+          needsDeclaration = false
+        # Skip declaration for promoted try/catch variables
+        else if o.promotedTryVars and varName in o.promotedTryVars
+          needsDeclaration = false
+      # Skip declaration for hoisted if/else variables
+      else if o.hoistedIfVars and varName in o.hoistedIfVars
+        needsDeclaration = false
+      # Skip declaration for hoisted conditional assignment variables
+      else if o.hoistedCondVars and varName in o.hoistedCondVars
+        needsDeclaration = false
         else
           needsDeclaration = true
 
@@ -3451,6 +3674,9 @@ exports.Assign = class Assign extends Base
             # For now, default to 'let' to avoid runtime errors
             declarationKeyword = 'let'
 
+          # Add to scope to prevent duplicate declarations
+          o.scope.add varName, 'var'
+
     @addScopeVariables o
     if @value instanceof Code
       if @value.isStatic
@@ -3458,6 +3684,35 @@ exports.Assign = class Assign extends Base
       else if @variable.properties?.length >= 2
         [properties..., prototype, name] = @variable.properties
         @value.name = name if prototype.name?.value is 'prototype'
+
+    # Check if this is an assignable destructuring pattern that needs declarations
+    # This happens for top-level ES6 destructuring assignments like [a, b] = [1, 2]
+    assignableDestructuringVars = []
+    if process.env.ES6 and not @context and not isInsideExpression and isValue and
+       (@variable.isArray() or @variable.isObject()) and @variable.isAssignable()
+      # This is an assignable destructuring pattern - collect the variables
+      collectAssignableVars = (node) =>
+        if node instanceof Value and node.base instanceof IdentifierLiteral and not node.properties?.length
+          varName = node.base.value
+          if not o.scope.check(varName) and varName not in assignableDestructuringVars
+            assignableDestructuringVars.push varName
+            o.scope.add varName, 'var'
+        else if node instanceof Arr
+          for obj in node.objects when obj not instanceof Elision
+            collectAssignableVars obj
+        else if node instanceof Obj
+          for prop in node.properties when prop instanceof Assign
+            if prop.context is 'object'
+              collectAssignableVars prop.variable
+
+      # Collect variables from the destructuring pattern
+      if @variable.base instanceof Arr
+        for obj in @variable.base.objects when obj not instanceof Elision
+          collectAssignableVars obj
+      else if @variable.base instanceof Obj
+        for prop in @variable.base.properties when prop instanceof Assign
+          if prop.context is 'object'
+            collectAssignableVars prop.variable
 
     # If this is a chained assignment, compile the inner assignment without declarations
     if isChainedAssignment
@@ -3475,9 +3730,25 @@ exports.Assign = class Assign extends Base
 
     answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
 
-    # Prepend declaration if needed
-    # But check if the value already starts with a declaration keyword (for chained assignments)
-    if needsDeclaration
+    # Handle declarations for assignable destructuring patterns (e.g., [a, b] = [1, 2])
+    if assignableDestructuringVars.length > 0
+      # Generate separate declaration statement
+      declStatement = @makeCode "let #{assignableDestructuringVars.join(', ')}; "
+      answer.unshift declStatement
+    # Handle declarations for destructuring assignments (from non-assignable patterns)
+    else if destructuringVars.length > 0
+      # Generate separate declaration statement
+      declStatement = @makeCode "let #{destructuringVars.join(', ')}; "
+      answer.unshift declStatement
+    # Handle declarations for chained assignments
+    else if chainedVars.length > 0
+      # Register all variables in the scope first
+      o.scope.add(v, 'var') for v in chainedVars
+      # Generate separate declaration statement: let tp, as;
+      declStatement = @makeCode "let #{chainedVars.join(', ')}; "
+      answer.unshift declStatement
+    # Prepend declaration if needed for non-chained assignments
+    else if needsDeclaration
       # Check if the first fragment already contains a declaration keyword
       valText = val[0]?.code or ''
       if not valText.match(/^(const|let|var)\s/)
@@ -3486,7 +3757,9 @@ exports.Assign = class Assign extends Base
     # if we're destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
     # The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
     # (i.e. LEVEL_COND (4), LEVEL_OP (5) or LEVEL_ACCESS (6)), or if we're destructuring object, e.g. {a,b} = obj.
-    if o.level > LEVEL_LIST or isValue and @variable.base instanceof Obj and not @nestedLhs and not (@param is yes)
+    # BUT: Don't wrap if we just added a declaration keyword or destructuring declarations, as that would create invalid syntax
+    hasDeclarations = needsDeclaration or destructuringVars.length > 0 or chainedVars.length > 0 or assignableDestructuringVars.length > 0
+    if not hasDeclarations and (o.level > LEVEL_LIST or isValue and @variable.base instanceof Obj and not @nestedLhs and not (@param is yes))
       @wrapInParentheses answer
     else
       answer
@@ -3525,10 +3798,28 @@ exports.Assign = class Assign extends Base
     isSplat = splats?.length > 0
     isExpans = expans?.length > 0
 
+    # Collect all variables that need to be declared
+    declaredVars = [] if process.env.ES6
+    collectVar = (node) ->
+      return unless process.env.ES6
+      if node instanceof IdentifierLiteral
+        varName = node.value
+        # Only declare if not already in scope and not a reserved word
+        if not o.scope.check(varName) and varName not in declaredVars
+          declaredVars.push varName
+          o.scope.add varName, 'var'
+      else if node instanceof Value and node.base instanceof IdentifierLiteral
+        varName = node.base.value
+        if not o.scope.check(varName) and varName not in declaredVars
+          declaredVars.push varName
+          o.scope.add varName, 'var'
+
     vvar     = value.compileToFragments o, LEVEL_LIST
     vvarText = fragmentsToText vvar
     assigns  = []
     pushAssign = (variable, val) =>
+      # Collect variable for declaration in ES6 mode
+      collectVar variable.unwrap?() ? variable
       assigns.push new Assign(variable, val, null, param: @param, subpattern: yes).compileToFragments o, LEVEL_LIST
 
     if isSplat
@@ -3543,7 +3834,8 @@ exports.Assign = class Assign extends Base
     # variable if it isn't already.
     if value.unwrap() not instanceof IdentifierLiteral or @variable.assigns(vvarText)
       ref = o.scope.freeVariable 'ref'
-      assigns.push [@makeCode(ref + ' = '), vvar...]
+      # Add proper let declaration for the ref variable
+      assigns.push [@makeCode("let " + ref + ' = '), vvar...]
       vvar = [@makeCode ref]
       vvarText = ref
 
@@ -3647,6 +3939,12 @@ exports.Assign = class Assign extends Base
     splatVarAssign?()
     assigns.push vvar unless top or @subpattern
     fragments = @joinFragmentArrays assigns, ', '
+
+    # Prepend variable declarations in ES6 mode
+    if process.env.ES6 and declaredVars?.length > 0 and not @subpattern
+      declarations = @makeCode "let #{declaredVars.join(', ')}; "
+      fragments.unshift declarations
+
     if o.level < LEVEL_LIST then fragments else @wrapInParentheses fragments
 
   # Disallow `[...] = a` for some reason. (Could be equivalent to `[] = a`?)
@@ -4498,10 +4796,46 @@ exports.While = class While extends Base
       return jumpNode if jumpNode = node.jumps loop: yes
     no
 
+  # Analyze variables assigned in the while condition
+  analyzeConditionalAssignments: (o) ->
+    return [] unless process.env.ES6
+    conditionVars = []
+
+    # Analyze the condition for assignments
+    analyzeCondition = (node) ->
+      return unless node
+      node.traverseChildren no, (child) ->
+        if child instanceof Assign and not child.context
+          varNode = child.variable.unwrapAll?() ? child.variable
+          if varNode instanceof IdentifierLiteral
+            varName = varNode.value
+            if not o.scope.check(varName) and varName not in conditionVars
+              conditionVars.push varName
+        yes # Continue traversing
+
+    # Analyze the while condition
+    analyzeCondition @processedCondition()
+
+    # Also analyze guard if present
+    analyzeCondition @guard if @guard
+
+    conditionVars
+
   # The main difference from a JavaScript *while* is that the CoffeeScript
   # *while* can be used as a part of a larger expression -- while loops may
   # return an array containing the computed result of each iteration.
   compileNode: (o) ->
+    # Analyze and declare variables assigned in the condition (ES6)
+    declarations = []
+    if process.env.ES6
+      condVars = @analyzeConditionalAssignments(o)
+      if condVars.length > 0
+        # Mark these variables as already in scope
+        for varName in condVars
+          o.scope.add varName, 'var'
+        # Add conditional variable declarations
+        declarations.push @makeCode "#{@tab}let #{condVars.join(', ')};\n"
+
     o.indent += TAB
     set      = ''
     {body}   = this
@@ -4509,15 +4843,17 @@ exports.While = class While extends Base
       body = @makeCode ''
     else
       if @returns
-        body.makeReturn rvar = o.scope.freeVariable 'results'
-        set  = "#{@tab}#{rvar} = [];\n"
+        rvar = 'results'
+        # Don't use freeVariable to avoid scope tracking issues
+        body.makeReturn rvar
+        set  = "#{@tab}const #{rvar} = [];\n"  # Changed to const - results array is never reassigned
       if @guard
         if body.expressions.length > 1
           body.expressions.unshift new If (new Parens @guard).invert(), new StatementLiteral "continue"
         else
           body = Block.wrap [new If @guard, body] if @guard
       body = [].concat @makeCode("\n"), (body.compileToFragments o, LEVEL_TOP), @makeCode("\n#{@tab}")
-    answer = [].concat @makeCode(set + @tab + "while ("), @processedCondition().compileToFragments(o, LEVEL_PAREN),
+    answer = [].concat declarations, @makeCode(set + @tab + "while ("), @processedCondition().compileToFragments(o, LEVEL_PAREN),
       @makeCode(") {"), body, @makeCode("}")
     if @returns
       answer.push @makeCode "\n#{@tab}return #{rvar};"
@@ -4695,6 +5031,8 @@ exports.Op = class Op extends Base
 
   # Keep reference to the left expression, unless this an existential assignment
   compileExistence: (o, checkOnlyUndefined) ->
+    # Declare ref outside the if block to avoid scope issues
+    ref = null
     if @first.shouldCache()
       ref = new IdentifierLiteral o.scope.freeVariable 'ref'
       fst = new Parens new Assign ref, @first
@@ -4852,8 +5190,16 @@ exports.In = class In extends Base
 
   compileLoopTest: (o) ->
     [sub, ref] = @object.cache o, LEVEL_LIST
-    fragments = [].concat @makeCode(utility('indexOf', o) + ".call("), @array.compileToFragments(o, LEVEL_LIST),
-      @makeCode(", "), ref, @makeCode(") " + if @negated then '< 0' else '>= 0')
+
+    # In ES6, use native includes() instead of indexOf helper
+    if process.env.ES6
+      fragments = [].concat @array.compileToFragments(o, LEVEL_LIST),
+        @makeCode(".includes("), ref, @makeCode(")")
+      fragments = [@makeCode("!")] .concat @wrapInParentheses(fragments) if @negated
+    else
+      fragments = [].concat @makeCode(utility('indexOf', o) + ".call("), @array.compileToFragments(o, LEVEL_LIST),
+        @makeCode(", "), ref, @makeCode(") " + if @negated then '< 0' else '>= 0')
+
     return fragments if fragmentsToText(sub) is fragmentsToText(ref)
     fragments = sub.concat @makeCode(', '), fragments
     if o.level < LEVEL_LIST then fragments else @wrapInParentheses fragments
@@ -4883,12 +5229,64 @@ exports.Try = class Try extends Base
     @catch   = @catch  .makeReturn results if @catch
     this
 
+  # Analyze variables that need to be promoted from try block
+  analyzeAndPromoteVariables: (o) ->
+    return [] unless @catch or @ensure
+
+    promotedVars = []
+
+    # Find all variables that are assigned/declared in the try block
+    tryVars = {}
+    @attempt.traverseChildren no, (node) ->
+      if node instanceof Assign
+        varNode = node.variable.unwrapAll?() ? node.variable
+        if varNode instanceof IdentifierLiteral
+          tryVars[varNode.value] = yes
+      return yes  # Continue traversing
+
+    # Check if these variables are referenced in catch or ensure
+    for varName of tryVars
+      # Skip if already declared in outer scope
+      continue if o.scope.check(varName)
+
+      isUsedOutside = no
+
+      if @catch
+        @catch.traverseChildren no, (n) ->
+          if n instanceof IdentifierLiteral and n.value is varName
+            isUsedOutside = yes
+            return no  # Stop traversing
+          return yes  # Continue
+
+      if @ensure and not isUsedOutside
+        @ensure.traverseChildren no, (n) ->
+          if n instanceof IdentifierLiteral and n.value is varName
+            isUsedOutside = yes
+            return no  # Stop traversing
+          return yes  # Continue
+
+      if isUsedOutside
+        promotedVars.push varName
+
+    promotedVars
+
   # Compilation is more or less as you would expect -- the *finally* clause
   # is optional, the *catch* is not.
   compileNode: (o) ->
+    # Promote variables that are used outside try block
+    promotedVars = @analyzeAndPromoteVariables(o)
+
+    # Generate declarations for promoted variables
+    declarations = []
+    for varName in promotedVars
+      declarations.push @makeCode "#{@tab}let #{varName};\n"
+
+    # Pass promoted variables to the compilation context so they won't be redeclared
     originalIndent = o.indent
     o.indent  += TAB
+    o.promotedTryVars = promotedVars if promotedVars.length > 0
     tryPart   = @attempt.compileToFragments o, LEVEL_TOP
+    delete o.promotedTryVars
 
     catchPart = if @catch
       @catch.compileToFragments merge(o, indent: originalIndent), LEVEL_TOP
@@ -4901,9 +5299,11 @@ exports.Try = class Try extends Base
     ensurePart = if @ensure then ([].concat @makeCode(" finally {\n"), @ensure.compileToFragments(o, LEVEL_TOP),
       @makeCode("\n#{@tab}}")) else []
 
-    [].concat @makeCode("#{@tab}try {\n"),
+    # Prepend variable declarations if any were promoted
+    result = [].concat declarations, @makeCode("#{@tab}try {\n"),
       tryPart,
       @makeCode("\n#{@tab}}"), catchPart, ensurePart
+    result
 
   astType: -> 'TryStatement'
 
@@ -5274,6 +5674,7 @@ exports.For = class For extends While
     @name.unwrap().propagateLhs?(yes) if @pattern
     @index.error 'indexes do not apply to range loops' if @range and @index
     @name.error 'cannot pattern match over range loops' if @range and @pattern
+    # Initialize @returns to false; makeReturn() will set it to true if needed
     @returns = no
     # Move up any comments in the "`for` line", i.e. the line of code with `for`,
     # from any child nodes of that line up to the `for` node itself so that these
@@ -5297,14 +5698,17 @@ exports.For = class For extends While
   compileNode: (o) ->
     body        = Block.wrap [@body]
     [..., last] = body.expressions
-    @returns    = no if last?.jumps() instanceof Return
+    # If there's an explicit return in the loop body, disable implicit returns
+    @returns = no if last?.jumps() instanceof Return
     source      = if @range then @source.base else @source
     scope       = o.scope
     name        = @name  and (@name.compile o, LEVEL_LIST) if not @pattern
     index       = @index and (@index.compile o, LEVEL_LIST)
     scope.find(name)  if name and not @pattern
     scope.find(index) if index and @index not instanceof Value
-    rvar        = scope.freeVariable 'results' if @returns
+    if @returns
+      rvar = 'results'
+      # Don't use freeVariable to avoid scope tracking issues
     if @from
       ivar = scope.freeVariable 'x', single: true if @pattern
     else
@@ -5328,7 +5732,7 @@ exports.For = class For extends While
         defPart    += "#{@tab}const #{ref = scope.freeVariable 'ref'} = #{svar};\n"
         svar       = ref
       if name and not @pattern and not @from
-        namePart   = "const #{name} = #{svar}[#{kvar}]"
+        namePart   = "let #{name} = #{svar}[#{kvar}]"  # Use let for loop variables that might be reassigned
       if not @object and not @from
         defPart += "#{@tab}#{step};\n" if step isnt stepVar
         down = stepNum < 0
@@ -5350,7 +5754,7 @@ exports.For = class For extends While
           increment = "#{if kvar isnt ivar then "++#{ivar}" else "#{ivar}++"}"
         forPartFragments = [@makeCode("#{declare}; #{compare}; #{kvarAssign}#{increment}")]
     if @returns
-      resultPart   = "#{@tab}#{rvar} = [];\n"
+      # Don't add to defPart here - we'll do it below to avoid duplicates
       returnResult = "\n#{@tab}return #{rvar};"
       body.makeReturn rvar
     if @guard
@@ -5359,7 +5763,9 @@ exports.For = class For extends While
       else
         body = Block.wrap [new If @guard, body] if @guard
     if @pattern
-      body.expressions.unshift new Assign @name, if @from then new IdentifierLiteral kvar else new Literal "#{svar}[#{kvar}]"
+      assignment = new Assign @name, if @from then new IdentifierLiteral kvar else new Literal "#{svar}[#{kvar}]"
+      assignment.forPattern = yes  # Mark this as a for-loop pattern assignment
+      body.expressions.unshift assignment
 
     varPart = "\n#{idt1}#{namePart};" if namePart
     if @object
@@ -5375,8 +5781,14 @@ exports.For = class For extends While
     if bodyFragments and bodyFragments.length > 0
       bodyFragments = [].concat @makeCode('\n'), bodyFragments, @makeCode('\n')
 
+    # Add a unique marker to defPart to see if it's being output
+    defPart += "/* DEFPART_MARKER */\n"
+
+    # ALWAYS add results declaration if @returns is true
+    if @returns
+      defPart = "#{@tab}const results = []; /* FORCED_FIX */\n" + defPart
+
     fragments = [@makeCode(defPart)]
-    fragments.push @makeCode(resultPart) if resultPart
     forCode = if @await then 'for ' else 'for ('
     forClose = if @await then '' else ')'
     fragments = fragments.concat @makeCode(@tab), @makeCode( forCode),
@@ -5561,6 +5973,106 @@ exports.If = class If extends Base
   ensureBlock: (node) ->
     if node instanceof Block then node else new Block [node]
 
+  # Analyze variables assigned in conditions
+  analyzeConditionalAssignments: (o) ->
+    return [] unless process.env.ES6
+    conditionVars = []
+
+    # Analyze the condition for assignments
+    analyzeCondition = (node) ->
+      return unless node
+      node.traverseChildren no, (child) ->
+        if child instanceof Assign and not child.context
+          varNode = child.variable.unwrapAll?() ? child.variable
+          if varNode instanceof IdentifierLiteral
+            varName = varNode.value
+            if not o.scope.check(varName) and varName not in conditionVars
+              conditionVars.push varName
+        yes # Continue traversing
+
+    # Analyze main condition
+    analyzeCondition @processedCondition()
+
+    # Walk else-if chain for their conditions
+    current = @elseBody
+    while current
+      if current.expressions
+        unwrapped = current.unwrap()
+        if unwrapped instanceof If
+          analyzeCondition unwrapped.processedCondition()
+          current = unwrapped.elseBody
+        else
+          current = null
+      else
+        current = null
+
+    conditionVars
+
+  # Analyze variables that need hoisting in If statements for ES6
+  analyzeVariableHoisting: (o) ->
+    return [] unless process.env.ES6
+
+    # Collect ALL variables from ALL branches in the entire if-else chain
+    allBranches = []
+    varsByBranch = []
+
+    # Collect from the main body
+    bodyVars = {}
+    @body?.traverseChildren no, (node) ->
+      if node instanceof Assign and not node.context
+        varNode = node.variable.unwrapAll?() ? node.variable
+        if varNode instanceof IdentifierLiteral
+          bodyVars[varNode.value] = yes
+      yes
+    varsByBranch.push bodyVars
+
+    # Walk the entire else-if chain iteratively
+    current = @elseBody
+    while current
+      branchVars = {}
+
+      if current.expressions
+        # This is a Block, check if it contains an If (else-if)
+        unwrapped = current.unwrap()
+        if unwrapped instanceof If
+          # This is an else-if, collect from its body
+          unwrapped.body?.traverseChildren no, (node) ->
+            if node instanceof Assign and not node.context
+              varNode = node.variable.unwrapAll?() ? node.variable
+              if varNode instanceof IdentifierLiteral
+                branchVars[varNode.value] = yes
+            yes
+          varsByBranch.push branchVars
+          # Continue with the next else/else-if
+          current = unwrapped.elseBody
+        else
+          # This is a regular else block
+          current.traverseChildren no, (node) ->
+            if node instanceof Assign and not node.context
+              varNode = node.variable.unwrapAll?() ? node.variable
+              if varNode instanceof IdentifierLiteral
+                branchVars[varNode.value] = yes
+            yes
+          varsByBranch.push branchVars
+          current = null
+      else
+        # Shouldn't happen, but handle gracefully
+        current = null
+
+    # Now find variables that appear in ANY branches and need hoisting
+    allVars = {}
+    for branch in varsByBranch
+      for varName of branch
+        allVars[varName] = (allVars[varName] ? 0) + 1
+
+    # Hoist variables that appear in any branch and aren't already in scope
+    hoistedVars = []
+    for varName of allVars
+      if not o.scope.check(varName)
+        hoistedVars.push varName
+
+    hoistedVars
+
   # Compile the `If` as a regular *if-else* statement. Flattened chains
   # force inner *else* bodies into statement form.
   compileStatement: (o) ->
@@ -5570,19 +6082,57 @@ exports.If = class If extends Base
     if exeq
       return new If(@processedCondition().invert(), @elseBodyNode(), type: 'if').compileToFragments o
 
+    # Analyze and hoist variables for ES6
+    # Only do hoisting if we're not a child in an else-if chain
+    declarations = []
+    if not child
+      # First, analyze conditional assignments (variables assigned in conditions)
+      condVars = @analyzeConditionalAssignments(o)
+
+      if condVars.length > 0
+        # Mark these variables as already in scope
+        for varName in condVars
+          o.scope.add varName, 'var'
+
+        # Add conditional variable declarations
+        declarations.push @makeCode "#{@tab}let #{condVars.join(', ')};\n"
+
+        # Pass down that these are hoisted so they won't be redeclared
+        o = merge o, {hoistedCondVars: condVars}
+
+      # Then analyze body/branch variables
+      hoistedVars = @analyzeVariableHoisting(o)
+
+      if hoistedVars.length > 0
+        # Mark these variables as already in scope
+        for varName in hoistedVars
+          o.scope.add varName, 'var'
+
+        # Add hoisted variable declarations
+        declarations.push @makeCode "#{@tab}let #{hoistedVars.join(', ')};\n"
+
+        # Pass down that these are hoisted so they won't be redeclared
+        o = merge o, {hoistedIfVars: hoistedVars}
+
     indent   = o.indent + TAB
     cond     = @processedCondition().compileToFragments o, LEVEL_PAREN
     body     = @ensureBlock(@body).compileToFragments merge o, {indent}
     ifPart   = [].concat @makeCode("if ("), cond, @makeCode(") {\n"), body, @makeCode("\n#{@tab}}")
     ifPart.unshift @makeCode @tab unless child
-    return ifPart unless @elseBody
+
+    unless @elseBody
+      # Return with declarations prepended if needed
+      return if declarations.length > 0 then declarations.concat(ifPart) else ifPart
+
     answer = ifPart.concat @makeCode(' else ')
     if @isChain
       o.chainChild = yes
       answer = answer.concat @elseBody.unwrap().compileToFragments o, LEVEL_TOP
     else
       answer = answer.concat @makeCode("{\n"), @elseBody.compileToFragments(merge(o, {indent}), LEVEL_TOP), @makeCode("\n#{@tab}}")
-    answer
+
+    # Prepend declarations if we have any
+    if declarations.length > 0 then declarations.concat(answer) else answer
 
   # Compile the `If` as a conditional operator.
   compileExpression: (o) ->
@@ -5701,9 +6251,19 @@ utility = (name, o) ->
   if name of root.utilities
     root.utilities[name]
   else
-    ref = root.freeVariable name
-    root.assign ref, UTILITIES[name] o
-    root.utilities[name] = ref
+    # In ES6 mode, don't use numbered variants - just use the base name
+    if process.env.ES6
+      ref = name
+      # Only assign if not already in the utilities
+      unless root.utilities[name]?
+        root.assign ref, UTILITIES[name] o
+        root.utilities[name] = ref
+    else
+      # ES5 mode: use freeVariable for unique names
+      ref = root.freeVariable name
+      root.assign ref, UTILITIES[name] o
+      root.utilities[name] = ref
+    ref
 
 multident = (code, tab, includingFirstLine = yes) ->
   endsWithNewLine = code[code.length - 1] is '\n'

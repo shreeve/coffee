@@ -3059,8 +3059,11 @@ export class ImportDeclaration extends ModuleDeclaration
           quoteMark = sourceValue[0]
           sourceValue = "#{quoteMark}#{unquoted}.js#{quoteMark}"
       code.push @makeCode sourceValue
-      if @assertions?
-        code.push @makeCode ' assert '
+      # Auto-add import assertion for JSON files in ES6 mode
+      if process.env.ES6 and @source.value.match(/\.json['"]$/) and not @assertions?
+        code.push @makeCode " with { type: 'json' }"
+      else if @assertions?
+        code.push @makeCode ' with '
         code.push @assertions.compileToFragments(o)...
 
     code.push @makeCode ';'
@@ -3143,8 +3146,11 @@ export class ExportDeclaration extends ModuleDeclaration
           quoteMark = sourceValue[0]
           sourceValue = "#{quoteMark}#{unquoted}.js#{quoteMark}"
       code.push @makeCode " from #{sourceValue}"
-      if @assertions?
-        code.push @makeCode ' assert '
+      # Auto-add import assertion for JSON files in ES6 mode
+      if process.env.ES6 and @source.value.match(/\.json['"]$/) and not @assertions?
+        code.push @makeCode " with { type: 'json' }"
+      else if @assertions?
+        code.push @makeCode ' with '
         code.push @assertions.compileToFragments(o)...
 
     code.push @makeCode ';'
@@ -5346,7 +5352,7 @@ export class For extends While
           increment = "#{if kvar isnt ivar then "++#{ivar}" else "#{ivar}++"}"
         forPartFragments = [@makeCode("#{declare}; #{compare}; #{kvarAssign}#{increment}")]
     if @returns
-      resultPart   = "#{@tab}#{rvar} = [];\n"
+      resultPart   = "#{@tab}const #{rvar} = [];\n"
       returnResult = "\n#{@tab}return #{rvar};"
       body.makeReturn rvar
     if @guard
@@ -5483,7 +5489,7 @@ export class Switch extends Base
       discriminant: @subject?.ast(o, LEVEL_PAREN) ? null
       cases: @casesAst o
 
-class SwitchCase extends Base
+export class SwitchCase extends Base
   constructor: (@test, @block, {@trailing} = {}) ->
     super()
 

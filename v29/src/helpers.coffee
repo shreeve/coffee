@@ -57,7 +57,7 @@ export del = (obj, key) ->
   val
 
 # Typical Array::some
-export some = Array::some ? (fn) ->
+export some = if Array::some? then Array::some else (fn) ->
   return true for e in this when fn e
   false
 
@@ -154,12 +154,10 @@ export locationDataToString = (obj) ->
 
 # Generate a unique anonymous file name so we can distinguish source map cache
 # entries for any number of anonymous scripts.
-anonymousFileName = do ->
+export anonymousFileName = do ->
   n = 0
-  n += 0  # Force 'let' instead of 'const' in ES6
   ->
     "<anonymous-#{n++}>"
-export {anonymousFileName}
 
 # A version of `basename`, that returns the file sans-extension.
 export baseFileName = (file, stripExt = no, useWinPathSep = no) ->

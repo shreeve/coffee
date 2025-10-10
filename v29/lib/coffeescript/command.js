@@ -3,14 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import * as helpers from './helpers.js';
 import * as optparse from './optparse.js';
-import * as CoffeeScript from './index.js';
-import {
-  spawn,
-  exec
-} from 'child_process';
-import {
-  EventEmitter
-} from 'events';
+import CoffeeScript from './index.js';
+import { spawn, exec } from 'child_process';
+import { EventEmitter } from 'events';
 
 
 
@@ -48,90 +43,13 @@ let watchedDirs = {};
 
 let optionParser = null;
 
-export const buildCSOptionParser = function() {
-  return new optparse.OptionParser(SWITCHES, BANNER);
-};
-
-export const run = function() {
-  optionParser = buildCSOptionParser();
-  try {
-    parseOptions();
-  } catch (error) {
-    let err = error;
-    console.error(`option parsing error: ${err.message}`);
-    process.exit(1);
-  }
-  if ((!opts.doubleDashed) && (opts.arguments[1] === '--')) {
-    printWarn(`coffee was invoked with '--' as the second positional argument, which is
-now deprecated. To pass '--' as an argument to a script to run, put an
-additional '--' before the path to your script.
-
-'--' will be removed from the argument list.`);
-    printWarn(`The positional arguments were: ${JSON.stringify(opts.arguments)}`);
-    opts.arguments = [opts.arguments[0]].concat(opts.arguments.slice(2));
-  }
-  if (opts.nodejs) {
-    return forkNode();
-  }
-  if (opts.help) {
-    return usage();
-  }
-  if (opts.version) {
-    return version();
-  }
-  if (opts.stdio) {
-    return compileStdio();
-  }
-  if (opts.eval) {
-    return compileScript(null, opts.arguments[0]);
-  }
-  if (!opts.arguments.length) {
-    return usage();
-  }
-  let literals = opts.run ? opts.arguments.splice(1) : [];
-  process.argv = process.argv.slice(0, 2).concat(literals);
-  process.argv[0] = 'coffee';
-  if (opts.output) {
-    let outputBasename = path.basename(opts.output);
-    if (indexOf.call(outputBasename, '.') >= 0 && (outputBasename !== '.' && outputBasename !== '..') && !helpers.ends(opts.output, path.sep)) {
-      opts.outputFilename = outputBasename;
-      opts.outputPath = path.resolve(path.dirname(opts.output));
-    } else {
-      opts.outputFilename = null;
-      opts.outputPath = path.resolve(opts.output);
-    }
-  }
-  if (opts.join) {
-    opts.join = path.resolve(opts.join);
-    console.error(`
-The --join option is deprecated and will be removed in a future version.
-
-If for some reason it's necessary to share local variables between files,
-replace...
-
-    $ coffee --compile --join bundle.js -- a.coffee b.coffee c.coffee
-
-with...
-
-    $ cat a.coffee b.coffee c.coffee | coffee --compile --stdio > bundle.js
-`);
-  }
-  const ref = opts.arguments;
-  results = [];
-  for (let i = 0, len = ref.length; i < len; i++) {
-    const source = ref[i];
-    source = path.resolve(source);
-    results.push(compilePath(source, true, source));
-  }
-  return results;
-};
-
 const compilePath = function(source, topLevel, base) {
-  if (indexOf.call(sources, source) >= 0 || watchedDirs[source] || !topLevel && (notSources[source] || hidden(source))) {
+  if (sources.indexOf(source) >= 0 || watchedDirs[source] || !topLevel && (notSources[source] || hidden(source))) {
     return;
   }
+  let stats = null;
   try {
-    let stats = fs.statSync(source);
+    stats = fs.statSync(source);
   } catch (error) {
     let err = error;
     if (err.code === 'ENOENT') {
@@ -140,6 +58,7 @@ const compilePath = function(source, topLevel, base) {
     }
     throw err;
   }
+  let files, code;
   if (stats.isDirectory()) {
     if (path.basename(source) === 'node_modules') {
       notSources[source] = true;
@@ -152,8 +71,9 @@ const compilePath = function(source, topLevel, base) {
     if (opts.watch) {
       watchDir(source, base);
     }
+    files = null;
     try {
-      let files = fs.readdirSync(source);
+      files = fs.readdirSync(source);
     } catch (error) {
       err = error;
       if (err.code === 'ENOENT') {
@@ -162,9 +82,10 @@ const compilePath = function(source, topLevel, base) {
         throw err;
       }
     }
-    results = [];
+    const results = []; /* FORCED_FIX */
+/* DEFPART_MARKER */
     for (let i = 0, len = files.length; i < len; i++) {
-      const file = files[i];
+      let file = files[i];
       results.push(compilePath(path.join(source, file), false, base));
     }
     return results;
@@ -175,8 +96,9 @@ const compilePath = function(source, topLevel, base) {
     if (opts.watch) {
       watch(source, base);
     }
+    code = null;
     try {
-      let code = fs.readFileSync(source);
+      code = fs.readFileSync(source);
     } catch (error) {
       err = error;
       if (err.code === 'ENOENT') {
@@ -193,8 +115,9 @@ const compilePath = function(source, topLevel, base) {
 
 const findDirectoryIndex = function(source) {
   const ref = CoffeeScript.FILE_EXTENSIONS;
+/* DEFPART_MARKER */
   for (let i = 0, len = ref.length; i < len; i++) {
-    const ext = ref[i];
+    let ext = ref[i];
     let index = path.join(source, `index${ext}`);
     try {
       if ((fs.statSync(index)).isFile()) {
@@ -213,15 +136,17 @@ const findDirectoryIndex = function(source) {
 
 const compileScript = function(file, input, base = null) {
   let options = compileOptions(file, base);
+  let task = null;
   try {
-    let task = {file, input, options};
+    task = {file, input, options};
     CoffeeScript.emit('compile', task);
+    let compiled, saveTo;
     if (opts.tokens) {
       return printTokens(CoffeeScript.tokens(task.input, task.options));
     } else if (opts.nodes) {
       return printLine(CoffeeScript.nodes(task.input, task.options).toString().trim());
     } else if (opts.ast) {
-      let compiled = CoffeeScript.compile(task.input, task.options);
+      compiled = CoffeeScript.compile(task.input, task.options);
       return printLine(JSON.stringify(compiled, null, 2));
     } else if (opts.run) {
       return CoffeeScript.run(task.input, task.options);
@@ -239,7 +164,7 @@ const compileScript = function(file, input, base = null) {
       if (opts.print) {
         return printLine(task.output.trim());
       } else if (opts.compile || opts.map) {
-        let saveTo = opts.outputFilename && sources.length === 1 ? path.join(opts.outputPath, opts.outputFilename) : options.jsPath;
+        saveTo = opts.outputFilename && sources.length === 1 ? path.join(opts.outputPath, opts.outputFilename) : options.jsPath;
         return writeJs(base, task.file, task.output, saveTo, task.sourceMap);
       }
     }
@@ -300,7 +225,7 @@ const watch = function(source, base) {
     if (err.code !== 'ENOENT') {
       throw err;
     }
-    if (indexOf.call(sources, source) < 0) {
+    if (!(sources.indexOf(source) >= 0)) {
       return;
     }
     try {
@@ -375,9 +300,10 @@ const watchDir = function(source, base) {
           }
           return stopWatcher();
         }
-        results = [];
+        const results = []; /* FORCED_FIX */
+/* DEFPART_MARKER */
         for (let i = 0, len = files.length; i < len; i++) {
-          const file = files[i];
+          let file = files[i];
           results.push(compilePath(path.join(source, file), false, base));
         }
         return results;
@@ -402,8 +328,9 @@ const watchDir = function(source, base) {
 const removeSourceDir = function(source, base) {
   delete watchedDirs[source];
   let sourcesChanged = false;
+/* DEFPART_MARKER */
   for (let i = 0, len = sources.length; i < len; i++) {
-    const file = sources[i];
+    let file = sources[i];
     if (!(source === path.dirname(file))) {
       continue;
     }
@@ -512,9 +439,10 @@ const timeLog = function(message) {
 
 const printTokens = function(tokens) {
   let strings = (function() {
-    results = [];
+    const results = []; /* FORCED_FIX */
+/* DEFPART_MARKER */
     for (let i = 0, len = tokens.length; i < len; i++) {
-      const token = tokens[i];
+      let token = tokens[i];
       let tag = token[0];
       let value = token[1].toString().replace(/\n/, '\\n');
       results.push(`[${tag} ${value}]`);
@@ -525,7 +453,7 @@ const printTokens = function(tokens) {
 };
 
 const parseOptions = function() {
-  let o = opts = optionParser.parse(process.argv.slice(2));
+  let o; o = opts = optionParser.parse(process.argv.slice(2));
   o.compile || (o.compile = !!o.output);
   o.run = !(o.compile || o.print || o.map);
   return o.print = !!(o.print || (o.eval || o.stdio && o.compile));
@@ -540,11 +468,12 @@ const compileOptions = function(filename, base) {
     inlineMap: opts['inline-map'],
     ast: opts.ast
   };
+  let cwd, jsPath, jsDir;
   if (filename) {
     if (base) {
-      let cwd = process.cwd();
-      let jsPath = outputPath(filename, base);
-      let jsDir = path.dirname(jsPath);
+      cwd = process.cwd();
+      jsPath = outputPath(filename, base);
+      jsDir = path.dirname(jsPath);
       answer = helpers.merge(answer, {
         jsPath,
         sourceRoot: path.relative(jsDir, cwd) + path.sep,
@@ -572,8 +501,9 @@ const forkNode = function() {
     stdio: [0, 1, 2]
   });
   const ref = ['SIGINT', 'SIGTERM'];
+/* DEFPART_MARKER */
   for (let i = 0, len = ref.length; i < len; i++) {
-    const signal = ref[i];
+    let signal = ref[i];
     process.on(signal, (function(signal) {
       return function() {
         return p.kill(signal);
@@ -591,4 +521,84 @@ const usage = function() {
 
 const version = function() {
   return printLine(`CoffeeScript version ${CoffeeScript.VERSION}`);
+};
+
+
+export const buildCSOptionParser = function() {
+  return new optparse.OptionParser(SWITCHES, BANNER);
+};
+export const run = function() {
+  optionParser = buildCSOptionParser();
+  try {
+    parseOptions();
+  } catch (error) {
+    let err = error;
+    console.error(`option parsing error: ${err.message}`);
+    process.exit(1);
+  }
+  if ((!opts.doubleDashed) && (opts.arguments[1] === '--')) {
+    printWarn(`coffee was invoked with '--' as the second positional argument, which is
+now deprecated. To pass '--' as an argument to a script to run, put an
+additional '--' before the path to your script.
+
+'--' will be removed from the argument list.`);
+    printWarn(`The positional arguments were: ${JSON.stringify(opts.arguments)}`);
+    opts.arguments = [opts.arguments[0]].concat(opts.arguments.slice(2));
+  }
+  if (opts.nodejs) {
+    return forkNode();
+  }
+  if (opts.help) {
+    return usage();
+  }
+  if (opts.version) {
+    return version();
+  }
+  if (opts.stdio) {
+    return compileStdio();
+  }
+  if (opts.eval) {
+    return compileScript(null, opts.arguments[0]);
+  }
+  if (!opts.arguments.length) {
+    return usage();
+  }
+  let literals = opts.run ? opts.arguments.splice(1) : [];
+  process.argv = process.argv.slice(0, 2).concat(literals);
+  process.argv[0] = 'coffee';
+  let outputBasename;
+  if (opts.output) {
+    outputBasename = path.basename(opts.output);
+    if (outputBasename.indexOf('.') >= 0 && ['.', '..'].indexOf(outputBasename) < 0 && !helpers.ends(opts.output, path.sep)) {
+      opts.outputFilename = outputBasename;
+      opts.outputPath = path.resolve(path.dirname(opts.output));
+    } else {
+      opts.outputFilename = null;
+      opts.outputPath = path.resolve(opts.output);
+    }
+  }
+  if (opts.join) {
+    opts.join = path.resolve(opts.join);
+    console.error(`
+The --join option is deprecated and will be removed in a future version.
+
+If for some reason it's necessary to share local variables between files,
+replace...
+
+    $ coffee --compile --join bundle.js -- a.coffee b.coffee c.coffee
+
+with...
+
+    $ cat a.coffee b.coffee c.coffee | coffee --compile --stdio > bundle.js
+`);
+  }
+  const results = []; /* FORCED_FIX */
+  const ref = opts.arguments;
+/* DEFPART_MARKER */
+  for (let i = 0, len = ref.length; i < len; i++) {
+    let source = ref[i];
+    source = path.resolve(source);
+    results.push(compilePath(source, true, source));
+  }
+  return results;
 };

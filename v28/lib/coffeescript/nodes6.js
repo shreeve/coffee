@@ -145,10 +145,12 @@
 
     // Ensure that an assignment is made at the top of this scope
     // (or at the top-level scope, if requested).
-    assign(name, value) {
+    assign(name, value, isUtility = false) {
+      // Mark utilities specially so we can declare them as const in ES6
       this.add(name, {
         value,
-        assigned: true
+        assigned: true,
+        isUtility
       }, true);
       return this.hasAssignments = true;
     }
@@ -1143,34 +1145,57 @@
       }
 
       compileRoot(o) {
-        var exp, fragments, imp, importFragments, imports, j, k, len1, len2, originalExpressions, others, ref1;
+        var exp, exports, fragments, i, imp, importFragments, imports, j, k, l, len1, len2, len3, originalExpressions, others, ref1;
         this.spaced = true;
-        // Separate imports from other expressions
+        // Separate imports, exports, and other expressions
         imports = [];
+        exports = [];
         others = [];
         ref1 = this.expressions;
         for (j = 0, len1 = ref1.length; j < len1; j++) {
           exp = ref1[j];
           if (exp instanceof ImportDeclaration) {
             imports.push(exp);
+          } else if (exp instanceof ExportDeclaration) {
+            exports.push(exp);
           } else {
             others.push(exp);
           }
         }
-        // Temporarily replace expressions with just others, then restore
+        // Compile the main body (others + exports at the bottom)
         originalExpressions = this.expressions;
         this.expressions = others;
         fragments = this.compileWithDeclarations(o);
         this.expressions = originalExpressions;
+        // Compile exports and add them after the main body
+        if (exports.length > 0) {
+          // Add spacing before export block if there's other content
+          if (others.length > 0) {
+            fragments.push(this.makeCode('\n\n'));
+          }
+// Group consecutive exports together with single newlines
+          for (i = k = 0, len2 = exports.length; k < len2; i = ++k) {
+            exp = exports[i];
+            fragments.push(...exp.compileToFragments(o));
+            // Only add single newline between exports in the same block
+            if (i < exports.length - 1) {
+              fragments.push(this.makeCode('\n'));
+            }
+          }
+          // Add extra newline after export block if there's content after
+          if (exports.length > 0) {
+            fragments.push(this.makeCode('\n'));
+          }
+        }
         // Compile imports and place them at the very top
         if (imports.length > 0) {
           importFragments = [];
-          for (k = 0, len2 = imports.length; k < len2; k++) {
-            imp = imports[k];
+          for (l = 0, len3 = imports.length; l < len3; l++) {
+            imp = imports[l];
             importFragments.push(...imp.compileToFragments(o));
             importFragments.push(this.makeCode('\n'));
           }
-          if (others.length > 0) {
+          if (others.length > 0 || exports.length > 0) {
             importFragments.push(this.makeCode('\n'));
           }
           fragments = importFragments.concat(fragments);
@@ -1182,7 +1207,7 @@
       // Compile the expressions body for the contents of a function, with
       // declarations of all inner variables pushed up to the top.
       compileWithDeclarations(o) {
-        var assigns, declars, exp, fragments, i, j, len1, post, ref1, rest, scope, spaced;
+        var assigns, declars, exp, fragments, i, j, len1, name, post, ref1, ref2, ref3, rest, scope, spaced, utilCode, utilityDeclarations, value;
         fragments = [];
         post = [];
         ref1 = this.expressions;
@@ -1205,6 +1230,24 @@
         post = this.compileNode(o);
         ({scope} = o);
         if (scope.expressions === this) {
+          // In ES6 mode, declare utility functions at the top level
+          if (process.env.ES6 && scope.parent === null) {
+            utilityDeclarations = [];
+            ref3 = (ref2 = scope.root.utilities) != null ? ref2 : {};
+            for (name in ref3) {
+              value = ref3[name];
+              if (value === name) { // Only for ES6 utilities that use the base name
+                utilCode = typeof UTILITIES[name] === "function" ? UTILITIES[name](o) : void 0;
+                if (utilCode) {
+                  utilityDeclarations.push(this.makeCode(`const ${name} = ${utilCode};\n`));
+                }
+              }
+            }
+            if (utilityDeclarations.length > 0) {
+              fragments = utilityDeclarations.concat(fragments);
+              fragments.push(this.makeCode('\n'));
+            }
+          }
           declars = o.scope.hasDeclarations();
           assigns = scope.hasAssignments;
           if (declars || assigns) {
@@ -4604,7 +4647,10 @@
           } // Matches './...' or '../...'
         }
         code.push(this.makeCode(sourceValue));
-        if (this.assertions != null) {
+        // Automatically add JSON import assertion if importing a .json file
+        if ((sourceValue.match(/\.json['"]$/i) != null) && (this.assertions == null)) {
+          code.push(this.makeCode(" with { type: 'json' }"));
+        } else if (this.assertions != null) {
           code.push(this.makeCode(' assert '));
           code.push(...this.assertions.compileToFragments(o));
         }
@@ -4789,7 +4835,7 @@
       }
 
       compileNode(o) {
-        var code, compiledList, fragments, index, j, len1, specifier;
+        var code, compiledList, fragment, fragments, index, j, k, l, len1, len2, len3, len4, p, singleLineLength, specifier, useMultiLine;
         code = [];
         o.indent += TAB;
         compiledList = (function() {
@@ -4803,15 +4849,44 @@
           return results1;
         }).call(this);
         if (this.specifiers.length !== 0) {
-          code.push(this.makeCode(`{\n${o.indent}`));
+          // Check if we should use single-line or multi-line format
+          // Calculate approximate length: "{ " + items + " }"
+          singleLineLength = 2; // for "{ "
           for (index = j = 0, len1 = compiledList.length; j < len1; index = ++j) {
             fragments = compiledList[index];
-            if (index) {
-              code.push(this.makeCode(`,\n${o.indent}`));
+            if (index) { // for ", "
+              singleLineLength += 2;
             }
-            code.push(...fragments);
+            for (k = 0, len2 = fragments.length; k < len2; k++) {
+              fragment = fragments[k];
+              singleLineLength += fragment.code.length;
+            }
           }
-          code.push(this.makeCode("\n}"));
+          singleLineLength += 2; // for " }"
+          
+          // Use multi-line format if too long or multiple specifiers (for readability)
+          useMultiLine = singleLineLength > 50 || this.specifiers.length > 3;
+          if (useMultiLine) {
+            code.push(this.makeCode(`{\n${o.indent}`));
+            for (index = l = 0, len3 = compiledList.length; l < len3; index = ++l) {
+              fragments = compiledList[index];
+              if (index) {
+                code.push(this.makeCode(`,\n${o.indent}`));
+              }
+              code.push(...fragments);
+            }
+            code.push(this.makeCode("\n}"));
+          } else {
+            code.push(this.makeCode('{ '));
+            for (index = p = 0, len4 = compiledList.length; p < len4; index = ++p) {
+              fragments = compiledList[index];
+              if (index) {
+                code.push(this.makeCode(', '));
+              }
+              code.push(...fragments);
+            }
+            code.push(this.makeCode(' }'));
+          }
         } else {
           code.push(this.makeCode('{}'));
         }
@@ -5079,7 +5154,7 @@
       // we've been assigned to, for correct internal references. If the variable
       // has not been seen yet within the current scope, declare it.
       compileNode(o) {
-        var answer, compiledName, declarationKeyword, isChainedAssignment, isInnerChainedAssignment, isInsideExpression, isValue, name, needsDeclaration, properties, prototype, ref1, ref2, ref3, ref4, ref5, val, valText, varName;
+        var answer, chainedVars, compiledName, current, declStatement, declarationKeyword, firstVar, innerVar, isChainedAssignment, isInnerChainedAssignment, isInsideExpression, isValue, j, len1, name, needsDeclaration, properties, prototype, ref1, ref2, ref3, ref4, ref5, v, val, valText, varName;
         isValue = this.variable instanceof Value;
         if (isValue) {
           // If `@variable` is an array or an object, we're destructuring;
@@ -5113,22 +5188,54 @@
         varName = null;
         // For chained assignments (e.g., 'tp = as = ""'), we can't use inline declarations
         // because it would generate invalid code like "let tp = const as = ''"
-        // Instead, we need to handle this specially
+        // Instead, we need to handle this specially by collecting all variables and declaring them separately
         isChainedAssignment = this.value instanceof Assign && !this.value.context;
         // Check if we're part of a chain (being compiled as the inner assignment)
         isInnerChainedAssignment = o.chainedAssignment;
         // Can't declare variables inside conditionals or expressions (e.g., if (const x = ...))
         // LEVEL_PAREN and higher means we're in an expression context, not a statement
         isInsideExpression = o.level >= LEVEL_PAREN;
+        // Special handling for for-loop pattern destructuring
+        if (this.forPattern && (this.variable.isArray() || this.variable.isObject())) {
+          needsDeclaration = true;
+          declarationKeyword = 'let';
+        }
+        // Collect all variables in a chained assignment
+        chainedVars = [];
+        if (isChainedAssignment && !isInsideExpression) {
+          // Collect the first variable
+          if (this.variable.unwrapAll() instanceof IdentifierLiteral) {
+            firstVar = this.variable.unwrapAll().value;
+            if (!o.scope.check(firstVar)) {
+              chainedVars.push(firstVar);
+            }
+          }
+          // Walk the chain to collect all variables
+          current = this.value;
+          while (current instanceof Assign && !current.context) {
+            if (current.variable.unwrapAll() instanceof IdentifierLiteral) {
+              innerVar = current.variable.unwrapAll().value;
+              if (!o.scope.check(innerVar)) {
+                chainedVars.push(innerVar);
+              }
+            }
+            current = current.value;
+          }
+        }
         if (this.variable.unwrapAll() instanceof IdentifierLiteral && !this.context && !this.moduleDeclaration && !isInnerChainedAssignment && !isInsideExpression) {
           varName = this.variable.unwrapAll().value;
           // Check if variable needs declaration (first assignment)
           if (!o.scope.check(varName)) {
-            // For the outer variable in a chained assignment, use let
-            // We can't use const because the assignment form doesn't work with const
+            // For chained assignments, we'll handle declarations separately
             if (isChainedAssignment) {
-              needsDeclaration = true;
-              declarationKeyword = 'let';
+              // Don't add inline declaration for chains - we'll handle it separately
+              needsDeclaration = false;
+            // Skip declaration for promoted try/catch variables
+            } else if (o.promotedTryVars && indexOf.call(o.promotedTryVars, varName) >= 0) {
+              needsDeclaration = false;
+            // Skip declaration for hoisted if/else variables
+            } else if (o.hoistedIfVars && indexOf.call(o.hoistedIfVars, varName) >= 0) {
+              needsDeclaration = false;
             } else {
               needsDeclaration = true;
               // Smart const/let determination:
@@ -5141,6 +5248,8 @@
                 // For now, default to 'let' to avoid runtime errors
                 declarationKeyword = 'let';
               }
+              // Add to scope to prevent duplicate declarations
+              o.scope.add(varName, 'var');
             }
           }
         }
@@ -5172,9 +5281,18 @@
           return compiledName.concat(this.makeCode(': '), val);
         }
         answer = compiledName.concat(this.makeCode(` ${this.context || '='} `), val);
-        // Prepend declaration if needed
-        // But check if the value already starts with a declaration keyword (for chained assignments)
-        if (needsDeclaration) {
+        // Handle declarations for chained assignments
+        if (chainedVars.length > 0) {
+          for (j = 0, len1 = chainedVars.length; j < len1; j++) {
+            v = chainedVars[j];
+            // Register all variables in the scope first
+            o.scope.add(v, 'var');
+          }
+          // Generate separate declaration statement: let tp, as;
+          declStatement = this.makeCode(`let ${chainedVars.join(', ')}; `);
+          answer.unshift(declStatement);
+        // Prepend declaration if needed for non-chained assignments
+        } else if (needsDeclaration) {
           // Check if the first fragment already contains a declaration keyword
           valText = ((ref5 = val[0]) != null ? ref5.code : void 0) || '';
           if (!valText.match(/^(const|let|var)\s/)) {
@@ -5185,7 +5303,8 @@
         // if we're destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
         // The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
         // (i.e. LEVEL_COND (4), LEVEL_OP (5) or LEVEL_ACCESS (6)), or if we're destructuring object, e.g. {a,b} = obj.
-        if (o.level > LEVEL_LIST || isValue && this.variable.base instanceof Obj && !this.nestedLhs && !(this.param === true)) {
+        // BUT: Don't wrap if we just added a declaration keyword, as that would create invalid syntax
+        if (!needsDeclaration && (o.level > LEVEL_LIST || isValue && this.variable.base instanceof Obj && !this.nestedLhs && !(this.param === true))) {
           return this.wrapInParentheses(answer);
         } else {
           return answer;
@@ -5212,7 +5331,7 @@
       // Brief implementation of recursive pattern matching, when assigning array or
       // object literals to a value. Peeks at their properties to assign inner names.
       compileDestructuring(o) {
-        var assignObjects, assigns, code, compSlice, compSplice, complexObjects, expIdx, expans, fragments, hasObjAssigns, isExpans, isSplat, leftObjs, loopObjects, obj, objIsUnassignable, objects, olen, processObjects, pushAssign, ref, refExp, restVar, rightObjs, slicer, splatVar, splatVarAssign, splatVarRef, splats, splatsAndExpans, top, value, vvar, vvarText;
+        var assignObjects, assigns, code, collectVar, compSlice, compSplice, complexObjects, declarations, declaredVars, expIdx, expans, fragments, hasObjAssigns, isExpans, isSplat, leftObjs, loopObjects, obj, objIsUnassignable, objects, olen, processObjects, pushAssign, ref, refExp, restVar, rightObjs, slicer, splatVar, splatVarAssign, splatVarRef, splats, splatsAndExpans, top, value, vvar, vvarText;
         top = o.level === LEVEL_TOP;
         ({value} = this);
         ({objects} = this.variable.base);
@@ -5232,10 +5351,38 @@
         ({splats, expans, splatsAndExpans} = this.getAndCheckSplatsAndExpansions());
         isSplat = (splats != null ? splats.length : void 0) > 0;
         isExpans = (expans != null ? expans.length : void 0) > 0;
+        if (process.env.ES6) {
+          
+          // Collect all variables that need to be declared
+          declaredVars = [];
+        }
+        collectVar = function(node) {
+          var varName;
+          if (!process.env.ES6) {
+            return;
+          }
+          if (node instanceof IdentifierLiteral) {
+            varName = node.value;
+            // Only declare if not already in scope and not a reserved word
+            if (!o.scope.check(varName) && indexOf.call(declaredVars, varName) < 0) {
+              declaredVars.push(varName);
+              return o.scope.add(varName, 'var');
+            }
+          } else if (node instanceof Value && node.base instanceof IdentifierLiteral) {
+            varName = node.base.value;
+            if (!o.scope.check(varName) && indexOf.call(declaredVars, varName) < 0) {
+              declaredVars.push(varName);
+              return o.scope.add(varName, 'var');
+            }
+          }
+        };
         vvar = value.compileToFragments(o, LEVEL_LIST);
         vvarText = fragmentsToText(vvar);
         assigns = [];
         pushAssign = (variable, val) => {
+          var ref1;
+          // Collect variable for declaration in ES6 mode
+          collectVar((ref1 = typeof variable.unwrap === "function" ? variable.unwrap() : void 0) != null ? ref1 : variable);
           return assigns.push(new Assign(variable, val, null, {
             param: this.param,
             subpattern: true
@@ -5256,7 +5403,8 @@
         // variable if it isn't already.
         if (!(value.unwrap() instanceof IdentifierLiteral) || this.variable.assigns(vvarText)) {
           ref = o.scope.freeVariable('ref');
-          assigns.push([this.makeCode(ref + ' = '), ...vvar]);
+          // Add proper let declaration for the ref variable
+          assigns.push([this.makeCode("let " + ref + ' = '), ...vvar]);
           vvar = [this.makeCode(ref)];
           vvarText = ref;
         }
@@ -5420,6 +5568,12 @@
           assigns.push(vvar);
         }
         fragments = this.joinFragmentArrays(assigns, ', ');
+        
+        // Prepend variable declarations in ES6 mode
+        if (process.env.ES6 && (declaredVars != null ? declaredVars.length : void 0) > 0 && !this.subpattern) {
+          declarations = this.makeCode(`let ${declaredVars.join(', ')}; `);
+          fragments.unshift(declarations);
+        }
         if (o.level < LEVEL_LIST) {
           return fragments;
         } else {
@@ -6723,8 +6877,10 @@
           body = this.makeCode('');
         } else {
           if (this.returns) {
-            body.makeReturn(rvar = o.scope.freeVariable('results'));
-            set = `${this.tab}${rvar} = [];\n`;
+            rvar = 'results';
+            // Don't use freeVariable to avoid scope tracking issues
+            body.makeReturn(rvar);
+            set = `${this.tab}const ${rvar} = [];\n`;
           }
           if (this.guard) {
             if (body.expressions.length > 1) {
@@ -6975,6 +7131,8 @@
       // Keep reference to the left expression, unless this an existential assignment
       compileExistence(o, checkOnlyUndefined) {
         var fst, ref;
+        // Declare ref outside the if block to avoid scope issues
+        ref = null;
         if (this.first.shouldCache()) {
           ref = new IdentifierLiteral(o.scope.freeVariable('ref'));
           fst = new Parens(new Assign(ref, this.first));
@@ -7250,7 +7408,15 @@
       compileLoopTest(o) {
         var fragments, ref, sub;
         [sub, ref] = this.object.cache(o, LEVEL_LIST);
-        fragments = [].concat(this.makeCode(utility('indexOf', o) + ".call("), this.array.compileToFragments(o, LEVEL_LIST), this.makeCode(", "), ref, this.makeCode(") " + (this.negated ? '< 0' : '>= 0')));
+        // In ES6, use native includes() instead of indexOf helper
+        if (process.env.ES6) {
+          fragments = [].concat(this.array.compileToFragments(o, LEVEL_LIST), this.makeCode(".includes("), ref, this.makeCode(")"));
+          if (this.negated) {
+            fragments = [this.makeCode("!")].concat(this.wrapInParentheses(fragments));
+          }
+        } else {
+          fragments = [].concat(this.makeCode(utility('indexOf', o) + ".call("), this.array.compileToFragments(o, LEVEL_LIST), this.makeCode(", "), ref, this.makeCode(") " + (this.negated ? '< 0' : '>= 0')));
+        }
         if (fragmentsToText(sub) === fragmentsToText(ref)) {
           return fragments;
         }
@@ -7314,20 +7480,87 @@
         return this;
       }
 
+      // Analyze variables that need to be promoted from try block
+      analyzeAndPromoteVariables(o) {
+        var isUsedOutside, promotedVars, tryVars, varName;
+        if (!(this.catch || this.ensure)) {
+          return [];
+        }
+        promotedVars = [];
+        // Find all variables that are assigned/declared in the try block
+        tryVars = {};
+        this.attempt.traverseChildren(false, function(node) {
+          var base1, ref1, varNode;
+          if (node instanceof Assign) {
+            varNode = (ref1 = typeof (base1 = node.variable).unwrapAll === "function" ? base1.unwrapAll() : void 0) != null ? ref1 : node.variable;
+            if (varNode instanceof IdentifierLiteral) {
+              tryVars[varNode.value] = true;
+            }
+          }
+          return true; // Continue traversing
+        });
+
+        // Check if these variables are referenced in catch or ensure
+        for (varName in tryVars) {
+          if (o.scope.check(varName)) {
+            // Skip if already declared in outer scope
+            continue;
+          }
+          isUsedOutside = false;
+          if (this.catch) {
+            this.catch.traverseChildren(false, function(n) {
+              if (n instanceof IdentifierLiteral && n.value === varName) {
+                isUsedOutside = true;
+                return false; // Stop traversing
+              }
+              return true; // Continue
+            });
+          }
+          if (this.ensure && !isUsedOutside) {
+            this.ensure.traverseChildren(false, function(n) {
+              if (n instanceof IdentifierLiteral && n.value === varName) {
+                isUsedOutside = true;
+                return false; // Stop traversing
+              }
+              return true; // Continue
+            });
+          }
+          if (isUsedOutside) {
+            promotedVars.push(varName);
+          }
+        }
+        return promotedVars;
+      }
+
       // Compilation is more or less as you would expect -- the *finally* clause
       // is optional, the *catch* is not.
       compileNode(o) {
-        var catchPart, ensurePart, generatedErrorVariableName, originalIndent, tryPart;
+        var catchPart, declarations, ensurePart, generatedErrorVariableName, j, len1, originalIndent, promotedVars, result, tryPart, varName;
+        // Promote variables that are used outside try block
+        promotedVars = this.analyzeAndPromoteVariables(o);
+        // Generate declarations for promoted variables
+        declarations = [];
+        for (j = 0, len1 = promotedVars.length; j < len1; j++) {
+          varName = promotedVars[j];
+          declarations.push(this.makeCode(`${this.tab}let ${varName};\n`));
+        }
+        // Pass promoted variables to the compilation context so they won't be redeclared
         originalIndent = o.indent;
         o.indent += TAB;
+        if (promotedVars.length > 0) {
+          o.promotedTryVars = promotedVars;
+        }
         tryPart = this.attempt.compileToFragments(o, LEVEL_TOP);
+        delete o.promotedTryVars;
         catchPart = this.catch ? this.catch.compileToFragments(merge(o, {
           indent: originalIndent
         }), LEVEL_TOP) : !(this.ensure || this.catch) ? (generatedErrorVariableName = o.scope.freeVariable('error', {
           reserve: false
         }), [this.makeCode(` catch (${generatedErrorVariableName}) {}`)]) : [];
         ensurePart = this.ensure ? [].concat(this.makeCode(" finally {\n"), this.ensure.compileToFragments(o, LEVEL_TOP), this.makeCode(`\n${this.tab}}`)) : [];
-        return [].concat(this.makeCode(`${this.tab}try {\n`), tryPart, this.makeCode(`\n${this.tab}}`), catchPart, ensurePart);
+        // Prepend variable declarations if any were promoted
+        result = [].concat(declarations, this.makeCode(`${this.tab}try {\n`), tryPart, this.makeCode(`\n${this.tab}}`), catchPart, ensurePart);
+        return result;
       }
 
       astType() {
@@ -7896,6 +8129,7 @@
         if (this.range && this.pattern) {
           this.name.error('cannot pattern match over range loops');
         }
+        // Initialize @returns to false; makeReturn() will set it to true if needed
         this.returns = false;
         ref4 = ['source', 'guard', 'step', 'name', 'index'];
         // Move up any comments in the "`for` line", i.e. the line of code with `for`,
@@ -7931,10 +8165,11 @@
       // comprehensions. Some of the generated code can be shared in common, and
       // some cannot.
       compileNode(o) {
-        var body, bodyFragments, compare, compareDown, declare, declareDown, defPart, down, forClose, forCode, forPartFragments, fragments, guardPart, idt1, increment, index, ivar, kvar, kvarAssign, last, lvar, name, namePart, ref, ref1, resultPart, returnResult, rvar, scope, source, step, stepNum, stepVar, svar, varPart;
+        var assignment, body, bodyFragments, compare, compareDown, declare, declareDown, defPart, down, forClose, forCode, forPartFragments, fragments, guardPart, idt1, increment, index, ivar, kvar, kvarAssign, last, lvar, name, namePart, ref, ref1, returnResult, rvar, scope, source, step, stepNum, stepVar, svar, varPart;
         body = Block.wrap([this.body]);
         ref1 = body.expressions, [last] = slice1.call(ref1, -1);
         if ((last != null ? last.jumps() : void 0) instanceof Return) {
+          // If there's an explicit return in the loop body, disable implicit returns
           this.returns = false;
         }
         source = this.range ? this.source.base : this.source;
@@ -7950,8 +8185,9 @@
           scope.find(index);
         }
         if (this.returns) {
-          rvar = scope.freeVariable('results');
+          rvar = 'results';
         }
+        // Don't use freeVariable to avoid scope tracking issues
         if (this.from) {
           if (this.pattern) {
             ivar = scope.freeVariable('x', {
@@ -7992,7 +8228,7 @@
             svar = ref;
           }
           if (name && !this.pattern && !this.from) {
-            namePart = `const ${name} = ${svar}[${kvar}]`;
+            namePart = `let ${name} = ${svar}[${kvar}]`;
           }
           if (!this.object && !this.from) {
             if (step !== stepVar) {
@@ -8024,7 +8260,7 @@
           }
         }
         if (this.returns) {
-          resultPart = `${this.tab}${rvar} = [];\n`;
+          // Don't add to defPart here - we'll do it below to avoid duplicates
           returnResult = `\n${this.tab}return ${rvar};`;
           body.makeReturn(rvar);
         }
@@ -8038,7 +8274,9 @@
           }
         }
         if (this.pattern) {
-          body.expressions.unshift(new Assign(this.name, this.from ? new IdentifierLiteral(kvar) : new Literal(`${svar}[${kvar}]`)));
+          assignment = new Assign(this.name, this.from ? new IdentifierLiteral(kvar) : new Literal(`${svar}[${kvar}]`));
+          assignment.forPattern = true; // Mark this as a for-loop pattern assignment
+          body.expressions.unshift(assignment);
         }
         if (namePart) {
           varPart = `\n${idt1}${namePart};`;
@@ -8062,10 +8300,13 @@
         if (bodyFragments && bodyFragments.length > 0) {
           bodyFragments = [].concat(this.makeCode('\n'), bodyFragments, this.makeCode('\n'));
         }
-        fragments = [this.makeCode(defPart)];
-        if (resultPart) {
-          fragments.push(this.makeCode(resultPart));
+        // Add a unique marker to defPart to see if it's being output
+        defPart += "/* DEFPART_MARKER */\n";
+        // ALWAYS add results declaration if @returns is true
+        if (this.returns) {
+          defPart = `${this.tab}const results = []; /* FORCED_FIX */\n` + defPart;
         }
+        fragments = [this.makeCode(defPart)];
         forCode = this.await ? 'for ' : 'for (';
         forClose = this.await ? '' : ')';
         fragments = fragments.concat(this.makeCode(this.tab), this.makeCode(forCode), forPartFragments, this.makeCode(`${forClose} {${guardPart}${varPart}`), bodyFragments, this.makeCode(this.tab), this.makeCode('}'));
@@ -8416,16 +8657,126 @@
         }
       }
 
+      // Analyze variables that need hoisting in If statements for ES6
+      analyzeVariableHoisting(o) {
+        var allBranches, allVars, bodyVars, branch, branchVars, current, hoistedVars, j, len1, ref1, ref2, ref3, unwrapped, varName, varsByBranch;
+        if (!process.env.ES6) {
+          return [];
+        }
+        
+        // Collect ALL variables from ALL branches in the entire if-else chain
+        allBranches = [];
+        varsByBranch = [];
+        
+        // Collect from the main body
+        bodyVars = {};
+        if ((ref1 = this.body) != null) {
+          ref1.traverseChildren(false, function(node) {
+            var base1, ref2, varNode;
+            if (node instanceof Assign && !node.context) {
+              varNode = (ref2 = typeof (base1 = node.variable).unwrapAll === "function" ? base1.unwrapAll() : void 0) != null ? ref2 : node.variable;
+              if (varNode instanceof IdentifierLiteral) {
+                bodyVars[varNode.value] = true;
+              }
+            }
+            return true;
+          });
+        }
+        varsByBranch.push(bodyVars);
+        
+        // Walk the entire else-if chain iteratively
+        current = this.elseBody;
+        while (current) {
+          branchVars = {};
+          if (current.expressions) {
+            // This is a Block, check if it contains an If (else-if)
+            unwrapped = current.unwrap();
+            if (unwrapped instanceof If) {
+              // This is an else-if, collect from its body
+              if ((ref2 = unwrapped.body) != null) {
+                ref2.traverseChildren(false, function(node) {
+                  var base1, ref3, varNode;
+                  if (node instanceof Assign && !node.context) {
+                    varNode = (ref3 = typeof (base1 = node.variable).unwrapAll === "function" ? base1.unwrapAll() : void 0) != null ? ref3 : node.variable;
+                    if (varNode instanceof IdentifierLiteral) {
+                      branchVars[varNode.value] = true;
+                    }
+                  }
+                  return true;
+                });
+              }
+              varsByBranch.push(branchVars);
+              // Continue with the next else/else-if
+              current = unwrapped.elseBody;
+            } else {
+              // This is a regular else block
+              current.traverseChildren(false, function(node) {
+                var base1, ref3, varNode;
+                if (node instanceof Assign && !node.context) {
+                  varNode = (ref3 = typeof (base1 = node.variable).unwrapAll === "function" ? base1.unwrapAll() : void 0) != null ? ref3 : node.variable;
+                  if (varNode instanceof IdentifierLiteral) {
+                    branchVars[varNode.value] = true;
+                  }
+                }
+                return true;
+              });
+              varsByBranch.push(branchVars);
+              current = null;
+            }
+          } else {
+            // Shouldn't happen, but handle gracefully
+            current = null;
+          }
+        }
+        
+        // Now find variables that appear in ANY branches and need hoisting
+        allVars = {};
+        for (j = 0, len1 = varsByBranch.length; j < len1; j++) {
+          branch = varsByBranch[j];
+          for (varName in branch) {
+            allVars[varName] = ((ref3 = allVars[varName]) != null ? ref3 : 0) + 1;
+          }
+        }
+        
+        // Hoist variables that appear in any branch and aren't already in scope
+        hoistedVars = [];
+        for (varName in allVars) {
+          if (!o.scope.check(varName)) {
+            hoistedVars.push(varName);
+          }
+        }
+        return hoistedVars;
+      }
+
       // Compile the `If` as a regular *if-else* statement. Flattened chains
       // force inner *else* bodies into statement form.
       compileStatement(o) {
-        var answer, body, child, cond, exeq, ifPart, indent;
+        var answer, body, child, cond, declarations, exeq, hoistedVars, ifPart, indent, j, len1, varName;
         child = del(o, 'chainChild');
         exeq = del(o, 'isExistentialEquals');
         if (exeq) {
           return new If(this.processedCondition().invert(), this.elseBodyNode(), {
             type: 'if'
           }).compileToFragments(o);
+        }
+        // Analyze and hoist variables for ES6
+        // Only do hoisting if we're not a child in an else-if chain
+        declarations = [];
+        if (!child) {
+          hoistedVars = this.analyzeVariableHoisting(o);
+          if (hoistedVars.length > 0) {
+// Mark these variables as already in scope
+            for (j = 0, len1 = hoistedVars.length; j < len1; j++) {
+              varName = hoistedVars[j];
+              o.scope.add(varName, 'var');
+            }
+            // Add hoisted variable declarations
+            declarations.push(this.makeCode(`${this.tab}let ${hoistedVars.join(', ')};\n`));
+            // Pass down that these are hoisted so they won't be redeclared
+            o = merge(o, {
+              hoistedIfVars: hoistedVars
+            });
+          }
         }
         indent = o.indent + TAB;
         cond = this.processedCondition().compileToFragments(o, LEVEL_PAREN);
@@ -8435,7 +8786,12 @@
           ifPart.unshift(this.makeCode(this.tab));
         }
         if (!this.elseBody) {
-          return ifPart;
+          // Return with declarations prepended if needed
+          if (declarations.length > 0) {
+            return declarations.concat(ifPart);
+          } else {
+            return ifPart;
+          }
         }
         answer = ifPart.concat(this.makeCode(' else '));
         if (this.isChain) {
@@ -8444,7 +8800,12 @@
         } else {
           answer = answer.concat(this.makeCode("{\n"), this.elseBody.compileToFragments(merge(o, {indent}), LEVEL_TOP), this.makeCode(`\n${this.tab}}`));
         }
-        return answer;
+        // Prepend declarations if we have any
+        if (declarations.length > 0) {
+          return declarations.concat(answer);
+        } else {
+          return answer;
+        }
       }
 
       // Compile the `If` as a conditional operator.
@@ -8612,9 +8973,21 @@
     if (name in root.utilities) {
       return root.utilities[name];
     } else {
-      ref = root.freeVariable(name);
-      root.assign(ref, UTILITIES[name](o));
-      return root.utilities[name] = ref;
+      // In ES6 mode, don't use numbered variants - just use the base name
+      if (process.env.ES6) {
+        ref = name;
+        // Only assign if not already in the utilities
+        if (root.utilities[name] == null) {
+          root.assign(ref, UTILITIES[name](o));
+          root.utilities[name] = ref;
+        }
+      } else {
+        // ES5 mode: use freeVariable for unique names
+        ref = root.freeVariable(name);
+        root.assign(ref, UTILITIES[name](o));
+        root.utilities[name] = ref;
+      }
+      return ref;
     }
   };
 
