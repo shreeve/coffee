@@ -307,7 +307,6 @@ exports.Lexer = class Lexer
     @mergeInterpolationTokens tokens, {quote, indent, endOffset: end}, (value) =>
       @validateUnicodeCodePointEscapes value, delimiter: quote
 
-    # NOTE: This returns a variable called 'end'... really poorly named.
     end
 
   # Matches and consumes comments. The comments are taken out of the token

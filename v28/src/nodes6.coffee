@@ -1432,9 +1432,10 @@ exports.PassthroughLiteral = class PassthroughLiteral extends Literal
     super o
 
   astProperties: ->
-    return
+    return {
       value: @originalValue
       here: !!@here
+    }
 
 exports.IdentifierLiteral = class IdentifierLiteral extends Literal
   isAssignable: YES
@@ -1443,7 +1444,7 @@ exports.IdentifierLiteral = class IdentifierLiteral extends Literal
     iterator @
 
   astType: ->
-      'Identifier'
+    'Identifier'
 
   astProperties: ->
     return
@@ -1454,7 +1455,7 @@ exports.PropertyName = class PropertyName extends Literal
   isAssignable: YES
 
   astType: ->
-      'Identifier'
+    'Identifier'
 
   astProperties: ->
     return
@@ -2350,7 +2351,6 @@ exports.Range = class Range extends Base
 
     # The final loop body.
     [@makeCode "#{varPart}; #{condPart}; #{stepPart}"]
-
 
   # When used as a value, expand the range into the equivalent array.
   compileArray: (o) ->
@@ -3661,21 +3661,22 @@ exports.Assign = class Assign extends Base
       # Skip declaration for hoisted conditional assignment variables
       else if o.hoistedCondVars and varName in o.hoistedCondVars
         needsDeclaration = false
-        else
-          needsDeclaration = true
+	# NOTE: What the heck is this below here?
+        # else
+        #  needsDeclaration = true
 
-          # Smart const/let determination:
-          # 1. Functions and classes are always const (immutable by nature)
-          # 2. For other values, use 'let' for safety (const detection needs improvement)
-          if @value instanceof Code or @value instanceof Class
-            declarationKeyword = 'const'
-          else
-            # TODO: Improve reassignment detection for const/let determination
-            # For now, default to 'let' to avoid runtime errors
-            declarationKeyword = 'let'
+        #  # Smart const/let determination:
+        #  # 1. Functions and classes are always const (immutable by nature)
+        #  # 2. For other values, use 'let' for safety (const detection needs improvement)
+        #  if @value instanceof Code or @value instanceof Class
+        #    declarationKeyword = 'const'
+        #  else
+        #    # TODO: Improve reassignment detection for const/let determination
+        #    # For now, default to 'let' to avoid runtime errors
+        #    declarationKeyword = 'let'
 
-          # Add to scope to prevent duplicate declarations
-          o.scope.add varName, 'var'
+        #  # Add to scope to prevent duplicate declarations
+        #  o.scope.add varName, 'var'
 
     @addScopeVariables o
     if @value instanceof Code
@@ -5300,10 +5301,9 @@ exports.Try = class Try extends Base
       @makeCode("\n#{@tab}}")) else []
 
     # Prepend variable declarations if any were promoted
-    result = [].concat declarations, @makeCode("#{@tab}try {\n"),
+    [].concat declarations, @makeCode("#{@tab}try {\n"),
       tryPart,
       @makeCode("\n#{@tab}}"), catchPart, ensurePart
-    result
 
   astType: -> 'TryStatement'
 
@@ -5674,7 +5674,6 @@ exports.For = class For extends While
     @name.unwrap().propagateLhs?(yes) if @pattern
     @index.error 'indexes do not apply to range loops' if @range and @index
     @name.error 'cannot pattern match over range loops' if @range and @pattern
-    # Initialize @returns to false; makeReturn() will set it to true if needed
     @returns = no
     # Move up any comments in the "`for` line", i.e. the line of code with `for`,
     # from any child nodes of that line up to the `for` node itself so that these
@@ -5698,8 +5697,7 @@ exports.For = class For extends While
   compileNode: (o) ->
     body        = Block.wrap [@body]
     [..., last] = body.expressions
-    # If there's an explicit return in the loop body, disable implicit returns
-    @returns = no if last?.jumps() instanceof Return
+    @returns    = no if last?.jumps() instanceof Return
     source      = if @range then @source.base else @source
     scope       = o.scope
     name        = @name  and (@name.compile o, LEVEL_LIST) if not @pattern
@@ -6538,7 +6536,8 @@ exports.mergeAstLocationData = mergeAstLocationData = (nodeA, nodeB, {justLeadin
         greater nodeA.end, nodeB.end
 
 # Convert internal location data format to ESTree-compatible AST location data format
-exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) -> {
+exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) ->
+  return
     loc:
       start:
         line:   first_line + 1
@@ -6552,7 +6551,6 @@ exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, firs
     ]
     start: range[0]
     end:   range[1]
-  }
 
 # Generate a zero-width location data that corresponds to the end of another node's location.
 zeroWidthLocationDataFromEndLocation = ({range: [, endRange], last_line_exclusive, last_column_exclusive}) -> {

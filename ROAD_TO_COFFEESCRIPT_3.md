@@ -44,6 +44,12 @@ coffee/
 
 Solar directives are a declarative, data-driven approach to defining grammar rules and AST transformations. Unlike traditional parser generators like Jison that use imperative code, Solar uses pure data structures to describe transformations.
 
+**Key Solar Directives:**
+- `$ast` - Specifies AST node creation
+- `$ops` - Defines operators
+- `$arr` - Converts items to arrays
+- `$loc` - OVERRIDES default location tracking (rarely needed)
+
 ### Traditional Jison Approach (OLD)
 ```coffee
 # Imperative - you write the transformation code
@@ -80,55 +86,102 @@ o 'IMPORT String WITH Obj', $ast: '@', source: 2, assertions: 4
 #### Special Operations
 ```coffee
 # Operators
-$op: 'Add'  # Create an operator node
+$ops: 'Add'  # Create an operator node
 
-# Lists
-$list: 1    # Convert to list
+# Arrays
+$arr: 1    # Convert to array/list
+
+# Location tracking OVERRIDE (rarely needed - backend auto-tracks by default)
+$loc: 1        # Override: Use token 1 only (not all tokens)
+$loc: [2, 4]   # Override: Use tokens 2-4 only (not all tokens)
+# No $loc      # DEFAULT: Backend auto-tracks all tokens (99% of rules)
 
 # Conditional properties
 optional: yes
 generated: yes
 ```
 
-### Data Transformations with Solar
+### How Solar Directives Work with Transformations
 
-Solar performs transformations in multiple stages:
+**Important:** Solar directives (`$ast`, `$ops`, `$arr`, `$loc`) are ONLY used in `grammar.coffee` for structure definition.
+They are NOT used for compilation logic - that happens in `nodes*.coffee` with regular class methods.
 
-#### Stage 1: Pattern Matching
-Solar matches input tokens against grammar patterns, building a parse tree.
+**Default Location Behavior:**
+- **Automatic Tracking**: Solar's backend automatically captures location data for EVERY rule, spanning all its tokens
+- **No Directive Needed**: This happens by default in `backend.coffee`, NOT through `$loc`
+- **`$loc` = Override Only**: Use `$loc` ONLY when the default is wrong (e.g., exclude parentheses, focus on specific tokens)
+- **How It Works**: `backend.coffee` sets `@loc = @_toLocation [1, symbolCount]` for every rule automatically
 
-#### Stage 2: Data Transformation
-Before creating AST nodes, Solar can transform the data:
+Solar provides a clean separation of concerns:
+
+#### Stage 1: Grammar Definition (grammar.coffee)
+Solar directives in `grammar.coffee` remain **purely declarative** - they define structure, not behavior:
 ```coffee
-# Example: Transform import paths
+# grammar.coffee - ONLY structure, no transformation logic
 ImportDeclaration: [
-  o 'IMPORT String',
-    $ast: '@'
-    source: 2
-    $transform: (data) ->
-      # Add .js extension if missing
-      data.source.value += '.js' unless data.source.value.match /\.\w+$/
-      data
+  o 'IMPORT String',                          $ast: '@', source: 2
+  o 'IMPORT String WITH Obj',                 $ast: '@', source: 2, assertions: 4
 ]
 ```
 
-#### Stage 3: AST Generation
-Solar uses the transformed data to create AST nodes with all necessary metadata.
-
-#### Stage 4: Two-Pass Compilation
-With Solar, we can easily implement two-pass compilation:
+#### Stage 2: AST Generation (backend.coffee)
+The backend processes Solar directives and creates AST nodes with the specified properties:
 ```coffee
-# Pass 1: Analyze - collect all variable declarations
-$analyze: (node, context) ->
-  if node.$ast is 'Assign'
-    context.variables.push node.variable
-
-# Pass 2: Generate - output with proper declarations
-$generate: (node, context) ->
-  if context.needsDeclaration(node.variable)
-    output = "let #{node.variable}; "
-  output += node.compile()
+# backend.coffee creates nodes like:
+new ImportDeclaration(source: tokens[2], assertions: tokens[4])
 ```
+
+#### Stage 3: Transformation Logic (nodes*.coffee)
+All actual transformations happen in the node classes during compilation:
+```coffee
+# nodes6.coffee - WHERE transformations actually happen
+class ImportDeclaration extends Base
+  constructor: (@clause, @source, @assertions) ->
+    super()
+    # Note: @locationData is automatically set by Solar when $loc is used
+
+  compileNode: (o) ->
+    # ES6-specific transformations
+    if process.env.ES6
+      # Add .js extension for local imports
+      if @source.value.match /^[\.\/]/
+        @source.value = @source.value.replace /(['"])$/, '.js$1'
+
+      # Add 'with' for JSON imports
+      if @source.value.match /\.json['"]$/
+        code.push @makeCode " with { type: 'json' }"
+
+  # The location data enables accurate error reporting:
+  error: (message) ->
+    throw SyntaxError "#{message} at #{@locationData.first_line}:#{@locationData.first_column}"
+```
+
+**The `$loc` Directive's Role:**
+- **Error Precision**: Maps errors to exact source positions
+- **Source Maps Foundation**: `$loc` captures the data that makes source maps possible
+- **IDE Integration**: Jump-to-error functionality works correctly
+- **Without `$loc`**: "Error in ImportDeclaration" (vague)
+- **With `$loc`**: "Error at line 42, column 8: Invalid import path" (precise)
+
+**How `$loc` Enables Source Maps:**
+1. **Parsing**: `$loc` captures position data from tokens (line/column in .coffee file)
+2. **AST Creation**: Position data stored as `@locationData` on each node
+3. **Compilation**: When generating JS, each fragment preserves its location data
+4. **Source Map Generation**: The location data is used to create mappings:
+   ```coffee
+   # In nodes.coffee compileNode methods:
+   fragment = @makeCode(jsCode)  # makeCode uses @locationData
+   # This fragment knows: "I came from line 42, col 8 in the .coffee file"
+   # Source map generator later uses this to create the .js.map file
+   ```
+
+Without `$loc`, you'd have no way to connect compiled JavaScript back to the original CoffeeScript source. The directive is the critical first step in the source map pipeline.
+
+#### Why This Separation Matters
+1. **Grammar stays clean**: Pure data structure definitions
+2. **Backend stays generic**: Just processes directives
+3. **Nodes handle complexity**: All ES5→ES6 logic in one place
+4. **Version control**: Different nodes files for different targets (nodes5.coffee vs nodes6.coffee)
 
 ## Architecture Overview
 
@@ -137,11 +190,11 @@ $generate: (node, context) ->
 1. **v27 → v28**: Strip and modernize
    - Remove JSX, literate coffee, unnecessary features
    - Replace Jison with Solar directives
-   - Create dual compilation system
+   - Prepare codebase for dual compilation
 
-2. **v28 Development**: Dual compilation modes
-   - `nodes5.coffee`: Traditional CommonJS/ES5 output
-   - `nodes6.coffee`: Modern ES6 output
+2. **v28 Development**: Create dual compilation system
+   - `nodes5.coffee`: Traditional CommonJS/ES5 output (copy of original nodes.coffee)
+   - `nodes6.coffee`: Modern ES6 output (enhanced with ES6 transformations)
    - Switch with `ES6=1` environment variable
 
 3. **v28 → v30**: Pure ES6 CoffeeScript
@@ -316,23 +369,28 @@ export default CoffeeScript
 #### Problem
 ES6 has block scoping, CoffeeScript assumes function scoping.
 
-#### Solution
+#### Solution - Two-Pass Approach in nodes6.coffee
 ```coffee
-# Solar analyzer pass
-$analyze:
-  Assign: (node, scope) ->
-    scope.addVariable node.variable,
-      firstAssignment: not scope.has(node.variable)
-      reassigned: scope.has(node.variable)
+# NOTE: This is NOT Solar directive syntax - this is actual implementation in nodes6.coffee
 
-# Solar generator pass
-$generate:
-  Scope: (node, tracker) ->
-    for var in tracker.variables
-      if var.reassigned
-        output += "let #{var.name}; "
+# Pass 1: Analyze - Collect all assignments
+class Block
+  collectAllAssignments: ->
+    assignments = []
+    @traverseChildren false, (child) ->
+      if child instanceof Assign
+        assignments.push child.variable.value
+    return assignments
+
+# Pass 2: Generate - Declare variables and compile
+class Block
+  compileWithDeclarations: (o) ->
+    assignments = @collectAllAssignments()
+    for var in assignments
+      if @scope.check(var) # Variable was reassigned
+        fragments.unshift @makeCode "let #{var}; "
       else
-        output += "const #{var.name}; "
+        fragments.unshift @makeCode "const #{var}; "
 ```
 
 ### 2. Let vs Const Analysis
@@ -341,10 +399,9 @@ $generate:
 ```coffee
 determineDeclaration: (variable, tracker) ->
   return 'const' if variable.isFunction or variable.isClass
-  return 'const' if variable.name.match /^[A-Z_]+$/  # SCREAMING_SNAKE
   return 'let' if tracker.isReassigned(variable)
   return 'let' if variable.inLoop
-  return 'const'
+  return 'const'  # Default to const for unmodified variables
 ```
 
 ### 3. Module System Transformation
@@ -358,7 +415,7 @@ ModuleTransform:
   'module.exports =' -> 'export default'
   'exports.name =' -> 'export const name ='
 
-  # JSON imports
+  # JSON imports (use 'with' not 'assert' - ES6 Import Attributes)
   'require("data.json")' -> 'import data from "./data.json" with { type: "json" }'
 ```
 
@@ -683,7 +740,7 @@ diff -r lib test-lib  # Should be identical
 
 2. **Import/Export errors**
    - Ensure all require/exports are transformed
-   - Check JSON import assertions
+   - Check JSON import attributes (`with { type: 'json' }`)
 
 3. **IIFE still present**
    - Verify IIFE optimizer is running
@@ -806,6 +863,19 @@ ImportDeclaration: [
   o 'IMPORT ImportClause FROM String',        $ast: '@', clause: 2, source: 4
   o 'IMPORT ImportClause FROM String WITH Obj', $ast: '@', clause: 2, source: 4, assertions: 6
 ]
+
+# IMPORTANT: Location tracking happens TWO ways:
+#
+# 1. AUTOMATIC (99% of cases):
+#    Solar backend automatically tracks location for ALL rules
+#    No directive needed - it just happens
+#    Example: 'IMPORT String' automatically gets location spanning both tokens
+#
+# 2. OVERRIDE with $loc (1% of cases):
+#    Use ONLY when automatic tracking isn't what you want
+#    $loc: 1      - Just token 1 (not all tokens)
+#    $loc: [2, 4] - Just tokens 2-4 (not all tokens)
+#    Example: '( Expression )' might use $loc: 2 to exclude parentheses
 
 Class: [
   o 'CLASS',                                  $ast: '@'
@@ -1018,18 +1088,33 @@ if isChainedAssignment and not isInsideExpression
     answer.unshift declStatement
 ```
 
-#### Fix 4: JSON Import Assertions
+#### Fix 4: Import Attributes (formerly Import Assertions)
 
-**Problem:** JSON imports need `with { type: 'json' }`
+**Important ES6 Change:** The syntax changed from `assert` to `with` across the board. The old `assert` syntax is **deprecated**.
+
+**Modern ES6 Syntax:**
+```javascript
+// ✅ CORRECT - Modern ES6 with Import Attributes
+import data from "./data.json" with { type: "json" };
+import styles from "./styles.css" with { type: "css" };
+import wasm from "./module.wasm" with { type: "webassembly" };
+
+// ❌ DEPRECATED - Old syntax, don't use
+import data from "./data.json" assert { type: "json" };
+```
+
+**Why the Change:** The specification changed from "Import Assertions" to "Import Attributes" to better reflect that these are metadata attributes about the import, not assertions that could fail at runtime.
 
 **Solution in ImportDeclaration.compileNode:**
 ```coffee
 if process.env.ES6 and @source.value.match(/\.json['"]$/) and not @assertions?
   code.push @makeCode " with { type: 'json' }"
 else if @assertions?
-  code.push @makeCode ' with '  # Changed from 'assert'
+  code.push @makeCode ' with '  # Always 'with', never 'assert' in ES6
   code.push @assertions.compileToFragments(o)...
 ```
+
+**Note:** The variable name `@assertions` is a legacy name from the old specification. The output should **always** use `with` for ES6 compliance. Consider renaming internal variables from `assertions` to `attributes` to match current specification terminology, though getting the output syntax right is more critical.
 
 #### Fix 5: Helper Functions
 

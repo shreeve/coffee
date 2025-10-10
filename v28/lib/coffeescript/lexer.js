@@ -382,7 +382,6 @@
           delimiter: quote
         });
       });
-      // NOTE: This returns a variable called 'end'... really poorly named.
       return end;
     }
 

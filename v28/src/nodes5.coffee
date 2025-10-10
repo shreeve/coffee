@@ -1252,9 +1252,10 @@ exports.PassthroughLiteral = class PassthroughLiteral extends Literal
     super o
 
   astProperties: ->
-    return
+    return {
       value: @originalValue
       here: !!@here
+    }
 
 exports.IdentifierLiteral = class IdentifierLiteral extends Literal
   isAssignable: YES
@@ -5844,7 +5845,8 @@ exports.mergeAstLocationData = mergeAstLocationData = (nodeA, nodeB, {justLeadin
         greater nodeA.end, nodeB.end
 
 # Convert internal location data format to ESTree-compatible AST location data format
-exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) -> {
+exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) ->
+  return
     loc:
       start:
         line:   first_line + 1
@@ -5858,7 +5860,6 @@ exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, firs
     ]
     start: range[0]
     end:   range[1]
-  }
 
 # Generate a zero-width location data that corresponds to the end of another node's location.
 zeroWidthLocationDataFromEndLocation = ({range: [, endRange], last_line_exclusive, last_column_exclusive}) -> {

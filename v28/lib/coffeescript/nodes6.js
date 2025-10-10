@@ -25,7 +25,7 @@
     // it belongs to, and a list of variables referenced in the source code
     // and therefore should be avoided when generating variables.
     constructor(parent1, expressions1, method1, referencedVars) {
-      var ref1, ref2;
+      var base1, ref1, ref2;
       this.parent = parent1;
       this.expressions = expressions1;
       this.method = method1;
@@ -43,6 +43,13 @@
       }
       // The @root is the top-level Scope object for a given file.
       this.root = (ref1 = (ref2 = this.parent) != null ? ref2.root : void 0) != null ? ref1 : this;
+      // Track child scopes for ES6 generated variable collection
+      if (this.parent) {
+        if ((base1 = this.parent).children == null) {
+          base1.children = [];
+        }
+        this.parent.children.push(this);
+      }
     }
 
     // Adds a new variable or overrides an existing one.
@@ -139,6 +146,15 @@
       }
       if ((ref1 = options.reserve) != null ? ref1 : true) {
         this.add(temp, 'var', true);
+      }
+      // In ES6 mode, track that this is a compiler-generated variable that needs declaration
+      if (process.env.ES6) {
+        if (this.generatedVars == null) {
+          this.generatedVars = [];
+        }
+        if (indexOf.call(this.generatedVars, temp) < 0) {
+          this.generatedVars.push(temp);
+        }
       }
       return temp;
     }
@@ -1087,17 +1103,158 @@
         return super.compile(o, lvl);
       }
 
+      // Collect ALL variable assignments in this block and its children
+      collectAllAssignments(o) {
+        var assignments, collectAssignments, expr, j, len1, ref1;
+        if (!process.env.ES6) {
+          return [];
+        }
+        assignments = [];
+        // Walk the entire AST collecting assignments
+        collectAssignments = (node, inCondition = false) => {
+          var assignment, base1, base2, base3, collectDestructuringVars, j, len1, ref1, ref2, varName, varNode;
+          if (!node) {
+            return;
+          }
+          // Special handling for Return statements with assignments
+          if (node instanceof Return && node.expression) {
+            collectAssignments(node.expression, inCondition);
+          // Track if we're in a conditional context
+          } else if (node instanceof If || node instanceof While || node instanceof Switch) {
+            // Check condition for assignments
+            if (node.condition) {
+              collectAssignments(node.condition, true);
+            }
+            if (typeof node.processedCondition === "function" ? node.processedCondition() : void 0) {
+              collectAssignments(node.processedCondition(), true);
+            }
+            if (node.body) {
+              // Then check body
+              collectAssignments(node.body, false);
+            }
+            if (node.elseBody) {
+              collectAssignments(node.elseBody, false);
+            }
+          // Check for assignments
+          } else if (node instanceof Assign && !node.context) {
+            varNode = (ref1 = typeof (base1 = node.variable).unwrapAll === "function" ? base1.unwrapAll() : void 0) != null ? ref1 : node.variable;
+            if (varNode instanceof IdentifierLiteral) {
+              varName = varNode.value;
+              if (!o.scope.check(varName) && indexOf.call((function() {
+                var j, len1, results1;
+                results1 = [];
+                for (j = 0, len1 = assignments.length; j < len1; j++) {
+                  assignment = assignments[j];
+                  results1.push(assignment.name);
+                }
+                return results1;
+              })(), varName) < 0) {
+                assignments.push({
+                  name: varName,
+                  inCondition
+                });
+              }
+            } else if ((typeof (base2 = node.variable).isArray === "function" ? base2.isArray() : void 0) || (typeof (base3 = node.variable).isObject === "function" ? base3.isObject() : void 0)) {
+              // Collect all variables from destructuring
+              collectDestructuringVars = function(destNode) {
+                var j, k, len1, len2, obj, prop, ref2, ref3, vars;
+                vars = [];
+                if (destNode instanceof Value && destNode.base instanceof IdentifierLiteral) {
+                  vars.push(destNode.base.value);
+                } else if (destNode instanceof Arr) {
+                  ref2 = destNode.base.objects;
+                  for (j = 0, len1 = ref2.length; j < len1; j++) {
+                    obj = ref2[j];
+                    if (!(obj instanceof Elision)) {
+                      vars = vars.concat(collectDestructuringVars(obj));
+                    }
+                  }
+                } else if (destNode instanceof Obj) {
+                  ref3 = destNode.base.properties;
+                  for (k = 0, len2 = ref3.length; k < len2; k++) {
+                    prop = ref3[k];
+                    if (prop instanceof Assign) {
+                      if (prop.context === 'object') {
+                        vars = vars.concat(collectDestructuringVars(prop.variable));
+                      }
+                    }
+                  }
+                }
+                return vars;
+              };
+              ref2 = collectDestructuringVars(node.variable);
+              // Add all destructured variables
+              for (j = 0, len1 = ref2.length; j < len1; j++) {
+                varName = ref2[j];
+                if (!o.scope.check(varName) && indexOf.call((function() {
+                  var k, len2, results1;
+                  results1 = [];
+                  for (k = 0, len2 = assignments.length; k < len2; k++) {
+                    assignment = assignments[k];
+                    results1.push(assignment.name);
+                  }
+                  return results1;
+                })(), varName) < 0) {
+                  assignments.push({
+                    name: varName,
+                    inCondition
+                  });
+                }
+              }
+            }
+          }
+          // Recursively check children
+          if (node.traverseChildren) {
+            return node.traverseChildren(false, function(child) {
+              collectAssignments(child, inCondition);
+              return true;
+            });
+          }
+        };
+        ref1 = this.expressions;
+        // Collect from all expressions
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          expr = ref1[j];
+          collectAssignments(expr);
+        }
+        return assignments;
+      }
+
       // Compile all expressions within the **Block** body. If we need to return
       // the result, and it's an expression, simply return it. If it's a statement,
       // ask the statement to do so.
       compileNode(o) {
-        var answer, compiledNodes, fragments, index, j, lastFragment, len1, node, ref1, top;
+        var allAssignments, answer, assignment, compiledNodes, declaredVars, fragments, index, j, k, l, lastFragment, len1, len2, len3, node, ref1, ref2, top, varName;
         this.tab = o.indent;
         top = o.level === LEVEL_TOP;
         compiledNodes = [];
-        ref1 = this.expressions;
-        for (index = j = 0, len1 = ref1.length; j < len1; index = ++j) {
-          node = ref1[index];
+        // In ES6 mode, collect and declare all assignments upfront
+        if (process.env.ES6 && top && !o.isRootBlock) {
+          allAssignments = this.collectAllAssignments(o);
+          if (allAssignments.length > 0) {
+            // Get unique variable names
+            declaredVars = [];
+            for (j = 0, len1 = allAssignments.length; j < len1; j++) {
+              assignment = allAssignments[j];
+              if (ref1 = assignment.name, indexOf.call(declaredVars, ref1) < 0) {
+                declaredVars.push(assignment.name);
+              }
+            }
+// Add them to scope to prevent redeclaration
+            for (k = 0, len2 = declaredVars.length; k < len2; k++) {
+              varName = declaredVars[k];
+              o.scope.add(varName, 'var');
+            }
+            // Generate declaration
+            if (declaredVars.length > 0) {
+              compiledNodes.push(this.makeCode(`${this.tab}let ${declaredVars.join(', ')};\n`));
+            }
+          }
+        }
+        o.isRootBlock = false; // Only do this for the outermost block
+        ref2 = this.expressions;
+        for (index = l = 0, len3 = ref2.length; l < len3; index = ++l) {
+          node = ref2[index];
           if (node.hoisted) {
             // This is a hoisted expression.
             // We want to compile this and ignore the result.
@@ -1207,12 +1364,35 @@
       // Compile the expressions body for the contents of a function, with
       // declarations of all inner variables pushed up to the top.
       compileWithDeclarations(o) {
-        var assigns, declars, exp, fragments, i, j, len1, name, post, ref1, ref2, ref3, rest, scope, spaced, utilCode, utilityDeclarations, value;
+        var allAssignments, allGenVars, assignment, assigns, collectGeneratedVars, declaredVars, declars, exp, fragments, genVarDeclarations, i, j, k, l, len1, len2, len3, len4, name, p, post, ref1, ref2, ref3, ref4, ref5, rest, scope, spaced, uniqueGenVars, utilCode, utilityDeclarations, v, value, varName;
         fragments = [];
         post = [];
-        ref1 = this.expressions;
-        for (i = j = 0, len1 = ref1.length; j < len1; i = ++j) {
-          exp = ref1[i];
+        // In ES6 mode, collect ALL assignments first (including those in conditions)
+        if (process.env.ES6) {
+          allAssignments = this.collectAllAssignments(o);
+          if (allAssignments.length > 0) {
+            // Get unique variable names
+            declaredVars = [];
+            for (j = 0, len1 = allAssignments.length; j < len1; j++) {
+              assignment = allAssignments[j];
+              if (ref1 = assignment.name, indexOf.call(declaredVars, ref1) < 0) {
+                declaredVars.push(assignment.name);
+              }
+            }
+// Add them to scope to prevent redeclaration
+            for (k = 0, len2 = declaredVars.length; k < len2; k++) {
+              varName = declaredVars[k];
+              o.scope.add(varName, 'var');
+            }
+            // Generate declaration at the top of the function
+            if (declaredVars.length > 0) {
+              fragments.push(this.makeCode(`${this.tab}let ${declaredVars.join(', ')};\n`));
+            }
+          }
+        }
+        ref2 = this.expressions;
+        for (i = l = 0, len3 = ref2.length; l < len3; i = ++l) {
+          exp = ref2[i];
           exp = exp.unwrap();
           if (!(exp instanceof Literal)) {
             break;
@@ -1233,9 +1413,9 @@
           // In ES6 mode, declare utility functions at the top level
           if (process.env.ES6 && scope.parent === null) {
             utilityDeclarations = [];
-            ref3 = (ref2 = scope.root.utilities) != null ? ref2 : {};
-            for (name in ref3) {
-              value = ref3[name];
+            ref4 = (ref3 = scope.root.utilities) != null ? ref3 : {};
+            for (name in ref4) {
+              value = ref4[name];
               if (value === name) { // Only for ES6 utilities that use the base name
                 utilCode = typeof UTILITIES[name] === "function" ? UTILITIES[name](o) : void 0;
                 if (utilCode) {
@@ -1246,6 +1426,37 @@
             if (utilityDeclarations.length > 0) {
               fragments = utilityDeclarations.concat(fragments);
               fragments.push(this.makeCode('\n'));
+            }
+          }
+          // In ES6 mode, declare compiler-generated variables
+          if (process.env.ES6 && ((ref5 = scope.generatedVars) != null ? ref5.length : void 0) > 0) {
+            genVarDeclarations = [];
+            // Collect all generated variables from this scope and child scopes
+            collectGeneratedVars = function(s) {
+              var child, len4, p, ref6, ref7, ref8, vars;
+              vars = [];
+              if (((ref6 = s.generatedVars) != null ? ref6.length : void 0) > 0) {
+                vars = vars.concat(s.generatedVars);
+              }
+              ref8 = (ref7 = s.children) != null ? ref7 : [];
+              for (p = 0, len4 = ref8.length; p < len4; p++) {
+                child = ref8[p];
+                vars = vars.concat(collectGeneratedVars(child));
+              }
+              return vars;
+            };
+            allGenVars = collectGeneratedVars(scope);
+            // Remove duplicates
+            uniqueGenVars = [];
+            for (p = 0, len4 = allGenVars.length; p < len4; p++) {
+              v = allGenVars[p];
+              if (indexOf.call(uniqueGenVars, v) < 0) {
+                uniqueGenVars.push(v);
+              }
+            }
+            if (uniqueGenVars.length > 0) {
+              genVarDeclarations.push(this.makeCode(`${this.tab}let ${uniqueGenVars.join(', ')};\n`));
+              fragments = genVarDeclarations.concat(fragments);
             }
           }
           declars = o.scope.hasDeclarations();
@@ -5154,7 +5365,7 @@
       // we've been assigned to, for correct internal references. If the variable
       // has not been seen yet within the current scope, declare it.
       compileNode(o) {
-        var answer, chainedVars, compiledName, current, declStatement, declarationKeyword, firstVar, innerVar, isChainedAssignment, isInnerChainedAssignment, isInsideExpression, isValue, j, len1, name, needsDeclaration, properties, prototype, ref1, ref2, ref3, ref4, ref5, v, val, valText, varName;
+        var answer, assignableDestructuringVars, chainedVars, collectAssignableVars, compiledName, current, declStatement, declarationKeyword, destructuringVars, firstVar, hasDeclarations, innerVar, isChainedAssignment, isInnerChainedAssignment, isInsideExpression, isValue, j, k, l, len1, len2, len3, name, needsDeclaration, obj, prop, properties, prototype, ref1, ref2, ref3, ref4, ref5, ref6, ref7, v, val, valText, varName;
         isValue = this.variable instanceof Value;
         if (isValue) {
           // If `@variable` is an array or an object, we're destructuring;
@@ -5171,6 +5382,8 @@
             }
           }
           if (this.variable.isSplice()) {
+            // else IT'S ASSIGNABLE! This is the path for simple destructuring that ES6 supports
+            // Fall through to normal compilation
             return this.compileSplice(o);
           }
           if (this.isConditional()) {
@@ -5200,6 +5413,9 @@
           needsDeclaration = true;
           declarationKeyword = 'let';
         }
+        // Special handling for non-assignable destructuring patterns
+        // (These go through compileDestructuring and are handled there)
+        destructuringVars = [];
         // Collect all variables in a chained assignment
         chainedVars = [];
         if (isChainedAssignment && !isInsideExpression) {
@@ -5233,26 +5449,30 @@
             // Skip declaration for promoted try/catch variables
             } else if (o.promotedTryVars && indexOf.call(o.promotedTryVars, varName) >= 0) {
               needsDeclaration = false;
-            // Skip declaration for hoisted if/else variables
-            } else if (o.hoistedIfVars && indexOf.call(o.hoistedIfVars, varName) >= 0) {
-              needsDeclaration = false;
-            } else {
-              needsDeclaration = true;
-              // Smart const/let determination:
-              // 1. Functions and classes are always const (immutable by nature)
-              // 2. For other values, use 'let' for safety (const detection needs improvement)
-              if (this.value instanceof Code || this.value instanceof Class) {
-                declarationKeyword = 'const';
-              } else {
-                // TODO: Improve reassignment detection for const/let determination
-                // For now, default to 'let' to avoid runtime errors
-                declarationKeyword = 'let';
-              }
-              // Add to scope to prevent duplicate declarations
-              o.scope.add(varName, 'var');
             }
+          // Skip declaration for hoisted if/else variables
+          } else if (o.hoistedIfVars && indexOf.call(o.hoistedIfVars, varName) >= 0) {
+            needsDeclaration = false;
+          // Skip declaration for hoisted conditional assignment variables
+          } else if (o.hoistedCondVars && indexOf.call(o.hoistedCondVars, varName) >= 0) {
+            needsDeclaration = false;
           }
         }
+        // else
+        //  needsDeclaration = true
+
+        //  # Smart const/let determination:
+        //  # 1. Functions and classes are always const (immutable by nature)
+        //  # 2. For other values, use 'let' for safety (const detection needs improvement)
+        //  if @value instanceof Code or @value instanceof Class
+        //    declarationKeyword = 'const'
+        //  else
+        //    # TODO: Improve reassignment detection for const/let determination
+        //    # For now, default to 'let' to avoid runtime errors
+        //    declarationKeyword = 'let'
+
+        //  # Add to scope to prevent duplicate declarations
+        //  o.scope.add varName, 'var'
         this.addScopeVariables(o);
         if (this.value instanceof Code) {
           if (this.value.isStatic) {
@@ -5261,6 +5481,66 @@
             ref3 = this.variable.properties, [...properties] = ref3, [prototype, name] = splice.call(properties, -2);
             if (((ref4 = prototype.name) != null ? ref4.value : void 0) === 'prototype') {
               this.value.name = name;
+            }
+          }
+        }
+        // Check if this is an assignable destructuring pattern that needs declarations
+        // This happens for top-level ES6 destructuring assignments like [a, b] = [1, 2]
+        assignableDestructuringVars = [];
+        if (process.env.ES6 && !this.context && !isInsideExpression && isValue && (this.variable.isArray() || this.variable.isObject()) && this.variable.isAssignable()) {
+          // This is an assignable destructuring pattern - collect the variables
+          collectAssignableVars = (node) => {
+            var j, k, len1, len2, obj, prop, ref5, ref6, ref7, results1, results2;
+            if (node instanceof Value && node.base instanceof IdentifierLiteral && !((ref5 = node.properties) != null ? ref5.length : void 0)) {
+              varName = node.base.value;
+              if (!o.scope.check(varName) && indexOf.call(assignableDestructuringVars, varName) < 0) {
+                assignableDestructuringVars.push(varName);
+                return o.scope.add(varName, 'var');
+              }
+            } else if (node instanceof Arr) {
+              ref6 = node.objects;
+              results1 = [];
+              for (j = 0, len1 = ref6.length; j < len1; j++) {
+                obj = ref6[j];
+                if (!(obj instanceof Elision)) {
+                  results1.push(collectAssignableVars(obj));
+                }
+              }
+              return results1;
+            } else if (node instanceof Obj) {
+              ref7 = node.properties;
+              results2 = [];
+              for (k = 0, len2 = ref7.length; k < len2; k++) {
+                prop = ref7[k];
+                if (prop instanceof Assign) {
+                  if (prop.context === 'object') {
+                    results2.push(collectAssignableVars(prop.variable));
+                  } else {
+                    results2.push(void 0);
+                  }
+                }
+              }
+              return results2;
+            }
+          };
+          // Collect variables from the destructuring pattern
+          if (this.variable.base instanceof Arr) {
+            ref5 = this.variable.base.objects;
+            for (j = 0, len1 = ref5.length; j < len1; j++) {
+              obj = ref5[j];
+              if (!(obj instanceof Elision)) {
+                collectAssignableVars(obj);
+              }
+            }
+          } else if (this.variable.base instanceof Obj) {
+            ref6 = this.variable.base.properties;
+            for (k = 0, len2 = ref6.length; k < len2; k++) {
+              prop = ref6[k];
+              if (prop instanceof Assign) {
+                if (prop.context === 'object') {
+                  collectAssignableVars(prop.variable);
+                }
+              }
             }
           }
         }
@@ -5281,10 +5561,20 @@
           return compiledName.concat(this.makeCode(': '), val);
         }
         answer = compiledName.concat(this.makeCode(` ${this.context || '='} `), val);
+        // Handle declarations for assignable destructuring patterns (e.g., [a, b] = [1, 2])
+        if (assignableDestructuringVars.length > 0) {
+          // Generate separate declaration statement
+          declStatement = this.makeCode(`let ${assignableDestructuringVars.join(', ')}; `);
+          answer.unshift(declStatement);
+        // Handle declarations for destructuring assignments (from non-assignable patterns)
+        } else if (destructuringVars.length > 0) {
+          // Generate separate declaration statement
+          declStatement = this.makeCode(`let ${destructuringVars.join(', ')}; `);
+          answer.unshift(declStatement);
         // Handle declarations for chained assignments
-        if (chainedVars.length > 0) {
-          for (j = 0, len1 = chainedVars.length; j < len1; j++) {
-            v = chainedVars[j];
+        } else if (chainedVars.length > 0) {
+          for (l = 0, len3 = chainedVars.length; l < len3; l++) {
+            v = chainedVars[l];
             // Register all variables in the scope first
             o.scope.add(v, 'var');
           }
@@ -5294,7 +5584,7 @@
         // Prepend declaration if needed for non-chained assignments
         } else if (needsDeclaration) {
           // Check if the first fragment already contains a declaration keyword
-          valText = ((ref5 = val[0]) != null ? ref5.code : void 0) || '';
+          valText = ((ref7 = val[0]) != null ? ref7.code : void 0) || '';
           if (!valText.match(/^(const|let|var)\s/)) {
             answer.unshift(this.makeCode(`${declarationKeyword} `));
           }
@@ -5303,8 +5593,9 @@
         // if we're destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
         // The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
         // (i.e. LEVEL_COND (4), LEVEL_OP (5) or LEVEL_ACCESS (6)), or if we're destructuring object, e.g. {a,b} = obj.
-        // BUT: Don't wrap if we just added a declaration keyword, as that would create invalid syntax
-        if (!needsDeclaration && (o.level > LEVEL_LIST || isValue && this.variable.base instanceof Obj && !this.nestedLhs && !(this.param === true))) {
+        // BUT: Don't wrap if we just added a declaration keyword or destructuring declarations, as that would create invalid syntax
+        hasDeclarations = needsDeclaration || destructuringVars.length > 0 || chainedVars.length > 0 || assignableDestructuringVars.length > 0;
+        if (!hasDeclarations && (o.level > LEVEL_LIST || isValue && this.variable.base instanceof Obj && !this.nestedLhs && !(this.param === true))) {
           return this.wrapInParentheses(answer);
         } else {
           return answer;
@@ -5352,7 +5643,6 @@
         isSplat = (splats != null ? splats.length : void 0) > 0;
         isExpans = (expans != null ? expans.length : void 0) > 0;
         if (process.env.ES6) {
-          
           // Collect all variables that need to be declared
           declaredVars = [];
         }
@@ -5568,7 +5858,6 @@
           assigns.push(vvar);
         }
         fragments = this.joinFragmentArrays(assigns, ', ');
-        
         // Prepend variable declarations in ES6 mode
         if (process.env.ES6 && (declaredVars != null ? declaredVars.length : void 0) > 0 && !this.subpattern) {
           declarations = this.makeCode(`let ${declaredVars.join(', ')}; `);
@@ -6865,11 +7154,61 @@
         return false;
       }
 
+      // Analyze variables assigned in the while condition
+      analyzeConditionalAssignments(o) {
+        var analyzeCondition, conditionVars;
+        if (!process.env.ES6) {
+          return [];
+        }
+        conditionVars = [];
+        // Analyze the condition for assignments
+        analyzeCondition = function(node) {
+          if (!node) {
+            return;
+          }
+          return node.traverseChildren(false, function(child) {
+            var base1, ref1, varName, varNode;
+            if (child instanceof Assign && !child.context) {
+              varNode = (ref1 = typeof (base1 = child.variable).unwrapAll === "function" ? base1.unwrapAll() : void 0) != null ? ref1 : child.variable;
+              if (varNode instanceof IdentifierLiteral) {
+                varName = varNode.value;
+                if (!o.scope.check(varName) && indexOf.call(conditionVars, varName) < 0) {
+                  conditionVars.push(varName);
+                }
+              }
+            }
+            return true; // Continue traversing
+          });
+        };
+        
+        // Analyze the while condition
+        analyzeCondition(this.processedCondition());
+        if (this.guard) {
+          // Also analyze guard if present
+          analyzeCondition(this.guard);
+        }
+        return conditionVars;
+      }
+
       // The main difference from a JavaScript *while* is that the CoffeeScript
       // *while* can be used as a part of a larger expression -- while loops may
       // return an array containing the computed result of each iteration.
       compileNode(o) {
-        var answer, body, rvar, set;
+        var answer, body, condVars, declarations, j, len1, rvar, set, varName;
+        // Analyze and declare variables assigned in the condition (ES6)
+        declarations = [];
+        if (process.env.ES6) {
+          condVars = this.analyzeConditionalAssignments(o);
+          if (condVars.length > 0) {
+// Mark these variables as already in scope
+            for (j = 0, len1 = condVars.length; j < len1; j++) {
+              varName = condVars[j];
+              o.scope.add(varName, 'var');
+            }
+            // Add conditional variable declarations
+            declarations.push(this.makeCode(`${this.tab}let ${condVars.join(', ')};\n`));
+          }
+        }
         o.indent += TAB;
         set = '';
         ({body} = this);
@@ -6893,7 +7232,7 @@
           }
           body = [].concat(this.makeCode("\n"), body.compileToFragments(o, LEVEL_TOP), this.makeCode(`\n${this.tab}`));
         }
-        answer = [].concat(this.makeCode(set + this.tab + "while ("), this.processedCondition().compileToFragments(o, LEVEL_PAREN), this.makeCode(") {"), body, this.makeCode("}"));
+        answer = [].concat(declarations, this.makeCode(set + this.tab + "while ("), this.processedCondition().compileToFragments(o, LEVEL_PAREN), this.makeCode(") {"), body, this.makeCode("}"));
         if (this.returns) {
           answer.push(this.makeCode(`\n${this.tab}return ${rvar};`));
         }
@@ -7535,7 +7874,7 @@
       // Compilation is more or less as you would expect -- the *finally* clause
       // is optional, the *catch* is not.
       compileNode(o) {
-        var catchPart, declarations, ensurePart, generatedErrorVariableName, j, len1, originalIndent, promotedVars, result, tryPart, varName;
+        var catchPart, declarations, ensurePart, generatedErrorVariableName, j, len1, originalIndent, promotedVars, tryPart, varName;
         // Promote variables that are used outside try block
         promotedVars = this.analyzeAndPromoteVariables(o);
         // Generate declarations for promoted variables
@@ -7559,8 +7898,7 @@
         }), [this.makeCode(` catch (${generatedErrorVariableName}) {}`)]) : [];
         ensurePart = this.ensure ? [].concat(this.makeCode(" finally {\n"), this.ensure.compileToFragments(o, LEVEL_TOP), this.makeCode(`\n${this.tab}}`)) : [];
         // Prepend variable declarations if any were promoted
-        result = [].concat(declarations, this.makeCode(`${this.tab}try {\n`), tryPart, this.makeCode(`\n${this.tab}}`), catchPart, ensurePart);
-        return result;
+        return [].concat(declarations, this.makeCode(`${this.tab}try {\n`), tryPart, this.makeCode(`\n${this.tab}}`), catchPart, ensurePart);
       }
 
       astType() {
@@ -8129,7 +8467,6 @@
         if (this.range && this.pattern) {
           this.name.error('cannot pattern match over range loops');
         }
-        // Initialize @returns to false; makeReturn() will set it to true if needed
         this.returns = false;
         ref4 = ['source', 'guard', 'step', 'name', 'index'];
         // Move up any comments in the "`for` line", i.e. the line of code with `for`,
@@ -8169,7 +8506,6 @@
         body = Block.wrap([this.body]);
         ref1 = body.expressions, [last] = slice1.call(ref1, -1);
         if ((last != null ? last.jumps() : void 0) instanceof Return) {
-          // If there's an explicit return in the loop body, disable implicit returns
           this.returns = false;
         }
         source = this.range ? this.source.base : this.source;
@@ -8657,17 +8993,62 @@
         }
       }
 
+      // Analyze variables assigned in conditions
+      analyzeConditionalAssignments(o) {
+        var analyzeCondition, conditionVars, current, unwrapped;
+        if (!process.env.ES6) {
+          return [];
+        }
+        conditionVars = [];
+        // Analyze the condition for assignments
+        analyzeCondition = function(node) {
+          if (!node) {
+            return;
+          }
+          return node.traverseChildren(false, function(child) {
+            var base1, ref1, varName, varNode;
+            if (child instanceof Assign && !child.context) {
+              varNode = (ref1 = typeof (base1 = child.variable).unwrapAll === "function" ? base1.unwrapAll() : void 0) != null ? ref1 : child.variable;
+              if (varNode instanceof IdentifierLiteral) {
+                varName = varNode.value;
+                if (!o.scope.check(varName) && indexOf.call(conditionVars, varName) < 0) {
+                  conditionVars.push(varName);
+                }
+              }
+            }
+            return true; // Continue traversing
+          });
+        };
+        
+        // Analyze main condition
+        analyzeCondition(this.processedCondition());
+        // Walk else-if chain for their conditions
+        current = this.elseBody;
+        while (current) {
+          if (current.expressions) {
+            unwrapped = current.unwrap();
+            if (unwrapped instanceof If) {
+              analyzeCondition(unwrapped.processedCondition());
+              current = unwrapped.elseBody;
+            } else {
+              current = null;
+            }
+          } else {
+            current = null;
+          }
+        }
+        return conditionVars;
+      }
+
       // Analyze variables that need hoisting in If statements for ES6
       analyzeVariableHoisting(o) {
         var allBranches, allVars, bodyVars, branch, branchVars, current, hoistedVars, j, len1, ref1, ref2, ref3, unwrapped, varName, varsByBranch;
         if (!process.env.ES6) {
           return [];
         }
-        
         // Collect ALL variables from ALL branches in the entire if-else chain
         allBranches = [];
         varsByBranch = [];
-        
         // Collect from the main body
         bodyVars = {};
         if ((ref1 = this.body) != null) {
@@ -8683,7 +9064,6 @@
           });
         }
         varsByBranch.push(bodyVars);
-        
         // Walk the entire else-if chain iteratively
         current = this.elseBody;
         while (current) {
@@ -8728,7 +9108,6 @@
             current = null;
           }
         }
-        
         // Now find variables that appear in ANY branches and need hoisting
         allVars = {};
         for (j = 0, len1 = varsByBranch.length; j < len1; j++) {
@@ -8737,7 +9116,6 @@
             allVars[varName] = ((ref3 = allVars[varName]) != null ? ref3 : 0) + 1;
           }
         }
-        
         // Hoist variables that appear in any branch and aren't already in scope
         hoistedVars = [];
         for (varName in allVars) {
@@ -8751,7 +9129,7 @@
       // Compile the `If` as a regular *if-else* statement. Flattened chains
       // force inner *else* bodies into statement form.
       compileStatement(o) {
-        var answer, body, child, cond, declarations, exeq, hoistedVars, ifPart, indent, j, len1, varName;
+        var answer, body, child, cond, condVars, declarations, exeq, hoistedVars, ifPart, indent, j, k, len1, len2, varName;
         child = del(o, 'chainChild');
         exeq = del(o, 'isExistentialEquals');
         if (exeq) {
@@ -8763,11 +9141,27 @@
         // Only do hoisting if we're not a child in an else-if chain
         declarations = [];
         if (!child) {
+          // First, analyze conditional assignments (variables assigned in conditions)
+          condVars = this.analyzeConditionalAssignments(o);
+          if (condVars.length > 0) {
+// Mark these variables as already in scope
+            for (j = 0, len1 = condVars.length; j < len1; j++) {
+              varName = condVars[j];
+              o.scope.add(varName, 'var');
+            }
+            // Add conditional variable declarations
+            declarations.push(this.makeCode(`${this.tab}let ${condVars.join(', ')};\n`));
+            // Pass down that these are hoisted so they won't be redeclared
+            o = merge(o, {
+              hoistedCondVars: condVars
+            });
+          }
+          // Then analyze body/branch variables
           hoistedVars = this.analyzeVariableHoisting(o);
           if (hoistedVars.length > 0) {
 // Mark these variables as already in scope
-            for (j = 0, len1 = hoistedVars.length; j < len1; j++) {
-              varName = hoistedVars[j];
+            for (k = 0, len2 = hoistedVars.length; k < len2; k++) {
+              varName = hoistedVars[k];
               o.scope.add(varName, 'var');
             }
             // Add hoisted variable declarations
