@@ -5458,6 +5458,7 @@
             needsDeclaration = false;
           }
         }
+        // NOTE: What the heck is this below here?
         // else
         //  needsDeclaration = true
 

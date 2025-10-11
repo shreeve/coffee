@@ -254,8 +254,8 @@
   };
 
   // Make all the AST nodes visible to the parser.
-  // Load ES6 nodes (nodes6) if ES6 environment variable is set, otherwise ES5 (nodes5)
-  parser.yy = require(process.env.ES6 ? './nodes6' : './nodes5');
+  // Load ES6 nodes if ES6 environment variable is set, otherwise ES5 (nodes5)
+  parser.yy = require(process.env.ES6 ? './nodes' : './nodes5');
 
   // Override the parser's default error handling function.
   parser.yy.parseError = function(message, {token}) {

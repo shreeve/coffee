@@ -37,8 +37,8 @@
       // Unwrap that too.
       input = input.replace(/^\s*try\s*{([\s\S]*)}\s*catch.*$/m, '$1');
       // Require AST nodes to do some AST manipulation.
-      // Load ES6 nodes (nodes6) if ES6 environment variable is set, otherwise ES5 (nodes5)
-      ({Block, Assign, Value, Literal, Call, Code, Root} = require(process.env.ES6 ? './nodes6' : './nodes5'));
+      // Load ES6 nodes if ES6 environment variable is set, otherwise ES5 (nodes5)
+      ({Block, Assign, Value, Literal, Call, Code, Root} = require(process.env.ES6 ? './nodes' : './nodes5'));
       try {
         // Tokenize the clean input.
         tokens = CoffeeScript.tokens(input);
