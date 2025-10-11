@@ -19,13 +19,13 @@ export VERSION = packageJson.version
 export FILE_EXTENSIONS = ['.coffee']
 
 # Expose helpers for testing.
-export helpers
+export {helpers}
 
 {getSourceMap, registerCompiled} = SourceMap
 # This is exported to enable an external module to implement caching of
 # sourcemaps. This is used only when `patchStackTrace` has been called to adjust
 # stack traces for files with cached source maps.
-export registerCompiled
+export {registerCompiled}
 
 # Function for base64 encoding in Node.js
 base64encode = (src) ->
