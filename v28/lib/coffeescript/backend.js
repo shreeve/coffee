@@ -56,7 +56,7 @@
     // only AST type used to capture raw tokens by position (e.g., finallyTag,
     // operatorToken, returnKeyword). The $loc directive provides surgical overrides.
     reduce(values, positions, stackTop, symbolCount, directive) {
-      var o, outName, ref, ref1, ref2, ref3, result, util;
+      var o, result;
       this.tok = function(pos) {
         return values[stackTop - symbolCount + pos];
       };
@@ -87,14 +87,6 @@
       // Only set if missing - don't overwrite!
       if (result instanceof this.ast.Base && !result.locationData && this.loc) {
         result.locationData = this.loc;
-      }
-      if ((ref = global.process) != null ? (ref1 = ref.env) != null ? ref1.SOLAR_DEBUG : void 0 : void 0) {
-        util = require('util');
-        outName = (ref2 = result != null ? (ref3 = result.constructor) != null ? ref3.name : void 0 : void 0) != null ? ref2 : typeof result;
-        console.log("[Solar] result:", outName, util.inspect(result, {
-          depth: 3,
-          colors: true
-        }));
       }
       return result;
     }
