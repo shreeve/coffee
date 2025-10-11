@@ -307,7 +307,6 @@ export class Lexer
     @mergeInterpolationTokens tokens, {quote, indent, endOffset: end}, (value) =>
       @validateUnicodeCodePointEscapes value, delimiter: quote
 
-    # NOTE: This returns a variable called 'end'... really poorly named.
     end
 
   # Matches and consumes comments. The comments are taken out of the token
@@ -1045,7 +1044,7 @@ export class Lexer
 # Helper functions
 # ----------------
 
-isUnassignable = (name, displayName = name) -> switch
+export isUnassignable = (name, displayName = name) -> switch
   when name in [JS_KEYWORDS..., COFFEE_KEYWORDS...]
     "keyword '#{displayName}' can't be assigned"
   when name in STRICT_PROSCRIBED
@@ -1054,8 +1053,6 @@ isUnassignable = (name, displayName = name) -> switch
     "reserved word '#{displayName}' can't be assigned"
   else
     false
-
-export {isUnassignable}
 
 # `from` isn't a CoffeeScript keyword, but it behaves like one in `import` and
 # `export` statements (handled above) and in the declaration line of a `for`

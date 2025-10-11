@@ -57,7 +57,7 @@ export del = (obj, key) ->
   val
 
 # Typical Array::some
-export some = if Array::some? then Array::some else (fn) ->
+export some = Array::some ? (fn) ->
   return true for e in this when fn e
   false
 

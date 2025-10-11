@@ -2,24 +2,30 @@
 # on Node.js/V8. This module contains the main entry functions for tokenizing,
 # parsing, and compiling source CoffeeScript into JavaScript.
 
-import {Lexer} from './lexer'
-import {parser} from './parser'
-import * as helpers from './helpers'
-import SourceMap from './sourcemap'
-import Backend from './backend'
+import {Lexer}          from './lexer'
+import {parser}         from './parser'
+import * as helpers     from './helpers'
+import SourceMap        from './sourcemap'
+import Backend          from './backend'
 import * as nodesModule from './nodes'
 
 # Import `package.json`, which is two levels above this file, as this file is
 # evaluated from `lib/coffeescript`.
-import packageJson from '../../package.json'
+import packageJson      from '../../package.json'
 
 # The current CoffeeScript version number.
-VERSION = packageJson.version
+export VERSION = packageJson.version
 
-FILE_EXTENSIONS = ['.coffee']
+export FILE_EXTENSIONS = ['.coffee']
 
-getSourceMap = SourceMap.getSourceMap
-registerCompiled = SourceMap.registerCompiled
+# Expose helpers for testing.
+export helpers
+
+{getSourceMap, registerCompiled} = SourceMap
+# This is exported to enable an external module to implement caching of
+# sourcemaps. This is used only when `patchStackTrace` has been called to adjust
+# stack traces for files with cached source maps.
+export registerCompiled
 
 # Function for base64 encoding in Node.js
 base64encode = (src) ->
@@ -48,7 +54,7 @@ withPrettyErrors = (fn) ->
 # in which case this returns a `{js, v3SourceMap, sourceMap}`
 # object, where sourceMap is a sourcemap.coffee#SourceMap object, handy for
 # doing programmatic lookups.
-compile = withPrettyErrors (code, options = {}) ->
+export compile = withPrettyErrors (code, options = {}) ->
   # Clone `options`, to avoid mutating the `options` object passed in.
   options = Object.assign {}, options
 
@@ -147,13 +153,13 @@ compile = withPrettyErrors (code, options = {}) ->
     js
 
 # Tokenize a string of CoffeeScript code, and return the array of tokens.
-tokens = withPrettyErrors (code, options) ->
+export tokens = withPrettyErrors (code, options) ->
   lexer.tokenize code, options
 
 # Parse a string of CoffeeScript code or an array of lexed tokens, and
 # return the AST. You can then compile it by calling `.compile()` on the root,
 # or traverse it by using `.traverseChildren()` with a callback.
-nodes = withPrettyErrors (source, options) ->
+export nodes = withPrettyErrors (source, options) ->
   source = lexer.tokenize source, options if typeof source is 'string'
   parser.yy.backend = new Backend(options, parser.yy) # Inject Solar backend
   parser.parse source
@@ -210,7 +216,7 @@ parser.yy.parseError = (message, {token}) ->
   # from the lexer for accuracy.
   helpers.throwSyntaxError "unexpected #{errorText}", errorLoc
 
-patchStackTrace = ->
+export patchStackTrace = ->
   # Based on http://v8.googlecode.com/svn/branches/bleeding_edge/src/messages.js
   # Modified to handle sourceMap
   formatSourcePosition = (frame, getSourceMapping) ->
@@ -294,19 +300,13 @@ checkShebangLine = (file, input) ->
     console.error "The shebang line was: '#{firstLine}' in file '#{file}'"
     console.error "The arguments were: #{JSON.stringify args}"
 
-# Create the default export object with all exported functions
-CoffeeScript = {
+export default {
   VERSION
   FILE_EXTENSIONS
+  helpers
+  registerCompiled
   compile
   tokens
   nodes
   patchStackTrace
-  registerCompiled
 }
-
-# Default export
-export default CoffeeScript
-
-# Named exports for convenience
-export {VERSION, FILE_EXTENSIONS, compile, tokens, nodes, patchStackTrace, registerCompiled}
