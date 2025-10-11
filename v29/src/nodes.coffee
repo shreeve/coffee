@@ -3,9 +3,15 @@
 # but some are created by other nodes as a method of code generation. To convert
 # the syntax tree into a string of JavaScript code, call `compile()` on the root.
 
-Error.stackTraceLimit = Infinity
+# Import the helpers we plan to use.
+import {compact, flatten, extend, merge, del, starts, ends, some,
+addDataToNode, attachCommentsToNode, locationDataToString,
+throwSyntaxError, replaceUnicodeCodePointEscapes,
+isFunction, isPlainObject, isNumber, parseNumber} from './helpers'
 
 import {isUnassignable, JS_FORBIDDEN} from './lexer'
+
+Error.stackTraceLimit = Infinity
 
 # Inline Scope class for ES6 generation
 # The Scope class regulates lexical scoping within CoffeeScript. As you
@@ -108,12 +114,6 @@ class Scope
   # of this scope.
   assignedVariables: ->
     "#{v.name} = #{v.type.value}" for v in @variables when v.type.assigned
-
-# Import the helpers we plan to use.
-import {compact, flatten, extend, merge, del, starts, ends, some,
-addDataToNode, attachCommentsToNode, locationDataToString,
-throwSyntaxError, replaceUnicodeCodePointEscapes,
-isFunction, isPlainObject, isNumber, parseNumber} from './helpers'
 
 # Constant functions for nodes that don't need customization.
 YES     = -> yes
@@ -1263,9 +1263,10 @@ export class PassthroughLiteral extends Literal
     super o
 
   astProperties: ->
-    return
+    return {
       value: @originalValue
       here: !!@here
+    }
 
 export class IdentifierLiteral extends Literal
   isAssignable: YES
@@ -1274,7 +1275,7 @@ export class IdentifierLiteral extends Literal
     iterator @
 
   astType: ->
-      'Identifier'
+    'Identifier'
 
   astProperties: ->
     return
@@ -1285,7 +1286,7 @@ export class PropertyName extends Literal
   isAssignable: YES
 
   astType: ->
-      'Identifier'
+    'Identifier'
 
   astProperties: ->
     return
@@ -3412,47 +3413,6 @@ export class Assign extends Base
       return @compileConditional  o if @isConditional()
       return @compileSpecialMath  o if @context in ['//=', '%%=']
 
-    # ES6: Smart const/let analysis
-    needsDeclaration = false
-    declarationKeyword = 'let' # Default to let for safety
-
-    # Check if this is a simple identifier assignment
-    varName = null
-    # For chained assignments (e.g., 'tp = as = ""'), we can't use inline declarations
-    # because it would generate invalid code like "let tp = const as = ''"
-    # Instead, we need to handle this specially
-    isChainedAssignment = @value instanceof Assign and not @value.context
-
-    # Check if we're part of a chain (being compiled as the inner assignment)
-    isInnerChainedAssignment = o.chainedAssignment
-
-    # Can't declare variables inside conditionals or expressions (e.g., if (const x = ...))
-    # LEVEL_PAREN and higher means we're in an expression context, not a statement
-    isInsideExpression = o.level >= LEVEL_PAREN
-
-    if @variable.unwrapAll() instanceof IdentifierLiteral and not @context and not @moduleDeclaration and not isInnerChainedAssignment and not isInsideExpression
-      varName = @variable.unwrapAll().value
-
-      # Check if variable needs declaration (first assignment)
-      if not o.scope.check(varName)
-        # For the outer variable in a chained assignment, use let
-        # We can't use const because the assignment form doesn't work with const
-        if isChainedAssignment
-          needsDeclaration = true
-          declarationKeyword = 'let'
-        else
-          needsDeclaration = true
-
-          # Smart const/let determination:
-          # 1. Functions and classes are always const (immutable by nature)
-          # 2. For other values, use 'let' for safety (const detection needs improvement)
-          if @value instanceof Code or @value instanceof Class
-            declarationKeyword = 'const'
-          else
-            # TODO: Improve reassignment detection for const/let determination
-            # For now, default to 'let' to avoid runtime errors
-            declarationKeyword = 'let'
-
     @addScopeVariables o
     if @value instanceof Code
       if @value.isStatic
@@ -3461,12 +3421,7 @@ export class Assign extends Base
         [properties..., prototype, name] = @variable.properties
         @value.name = name if prototype.name?.value is 'prototype'
 
-    # If this is a chained assignment, compile the inner assignment without declarations
-    if isChainedAssignment
-      o.chainedAssignment = true
     val = @value.compileToFragments o, LEVEL_LIST
-    if isChainedAssignment
-      delete o.chainedAssignment
     compiledName = @variable.compileToFragments o, LEVEL_LIST
 
     if @context is 'object'
@@ -3476,14 +3431,6 @@ export class Assign extends Base
       return compiledName.concat @makeCode(': '), val
 
     answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
-
-    # Prepend declaration if needed
-    # But check if the value already starts with a declaration keyword (for chained assignments)
-    if needsDeclaration
-      # Check if the first fragment already contains a declaration keyword
-      valText = val[0]?.code or ''
-      if not valText.match(/^(const|let|var)\s/)
-        answer.unshift @makeCode "#{declarationKeyword} "
     # Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
     # if we're destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
     # The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
@@ -3770,42 +3717,6 @@ export class Assign extends Base
       ret.operator = @originalContext ? '='
 
     ret
-
-  # ES6: Check if a variable will be reassigned in the current scope
-  # This method is self-contained and doesn't rely on Scope class modifications!
-  willBeReassignedInScope: (o, varName) ->
-    # Track how many times this variable is assigned
-    assignmentCount = 0
-
-    # Helper to check if a node is an assignment to our variable
-    checkNode = (node) =>
-      # Check for regular assignments
-      if node instanceof Assign and
-         node.variable.unwrapAll() instanceof IdentifierLiteral and
-         node.variable.unwrapAll().value is varName
-        # Count initial assignment (no context) and compound assignments (+=, -=, etc)
-        assignmentCount++
-
-      # Check for ++ and -- operators (which are reassignments)
-      else if node instanceof Op and node.operator in ['++', '--', 'delete']
-        # Check if this operates on our variable
-        if node.first?.unwrapAll() instanceof IdentifierLiteral and
-           node.first.unwrapAll().value is varName
-          assignmentCount++
-          # Since this is a reassignment operation, we already know it needs 'let'
-          return true if assignmentCount > 1
-
-      # Continue traversing
-      true
-
-    # Look through all expressions in the current scope
-    if o.scope.expressions
-      o.scope.expressions.traverseChildren false, (child) ->
-        checkNode child
-        true
-
-    # If we find more than one assignment, it's reassigned
-    assignmentCount > 1
 
 #### FuncGlyph
 
@@ -5169,12 +5080,9 @@ export class StringWithInterpolations extends Base
       else
         fragments.push @makeCode '$'
         code = @wrapInBraces element.compileToFragments(o, LEVEL_PAREN)
-        # Flag the `{` and `}` fragments as having been generated by this
-        # `StringWithInterpolations` node, so that `compileComments` knows
-        # to treat them as bounds. But the braces are unnecessary if all of
-        # the enclosed comments are `/* */` comments. Don't trust
-        # `fragment.type`, which can report minified variable names when
-        # this compiler is minified.
+        # Flag the `{` and `}` fragments as generated by StringWithInterpolations
+        # so compileComments knows to treat them as bounds. Don't trust
+        # fragment.type, which can report minified variable names when minified.
         code[0].isStringWithInterpolations = yes
         code[code.length - 1].isStringWithInterpolations = yes
         fragments.push code...
@@ -5335,8 +5243,14 @@ export class For extends While
         defPart += "#{@tab}#{step};\n" if step isnt stepVar
         down = stepNum < 0
         lvar = scope.freeVariable 'len' unless @step and stepNum? and down
-        declare = "let #{kvarAssign}#{ivar} = 0, #{lvar} = #{svar}.length"
-        declareDown = "let #{kvarAssign}#{ivar} = #{svar}.length - 1"
+        if @step and not stepNum?
+          # Variables need to be declared outside the ternary
+          defPart += "#{@tab}let #{ivar}#{if lvar then ", #{lvar}" else ""};\n"
+          declare = "#{stepVar} > 0 ? (#{kvarAssign}#{ivar} = 0, #{lvar} = #{svar}.length) : (#{kvarAssign}#{ivar} = #{svar}.length - 1)"
+        else
+          # Normal case - can use let inline
+          declare = "let #{kvarAssign}#{ivar} = 0, #{lvar} = #{svar}.length"
+          declareDown = "let #{kvarAssign}#{ivar} = #{svar}.length - 1"
         compare = "#{ivar} < #{lvar}"
         compareDown = "#{ivar} >= 0"
         if @step
@@ -5346,7 +5260,7 @@ export class For extends While
               declare = declareDown
           else
             compare = "#{stepVar} > 0 ? #{compare} : #{compareDown}"
-            declare = "(#{stepVar} > 0 ? (let #{kvarAssign}#{ivar} = 0, #{lvar} = #{svar}.length) : let #{kvarAssign}#{ivar} = #{svar}.length - 1)"
+            # Don't need to set declare here - already handled above
           increment = "#{ivar} += #{stepVar}"
         else
           increment = "#{if kvar isnt ivar then "++#{ivar}" else "#{ivar}++"}"
@@ -5980,7 +5894,8 @@ export mergeAstLocationData = (nodeA, nodeB, {justLeading, justEnding} = {}) ->
         greater nodeA.end, nodeB.end
 
 # Convert internal location data format to ESTree-compatible AST location data format
-export convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) -> {
+export convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) ->
+  return
     loc:
       start:
         line:   first_line + 1
@@ -5994,7 +5909,6 @@ export convertLocationDataToAst = ({first_line, first_column, last_line_exclusiv
     ]
     start: range[0]
     end:   range[1]
-  }
 
 # Generate a zero-width location data that corresponds to the end of another node's location.
 zeroWidthLocationDataFromEndLocation = ({range: [, endRange], last_line_exclusive, last_column_exclusive}) -> {

@@ -3,9 +3,15 @@
 # but some are created by other nodes as a method of code generation. To convert
 # the syntax tree into a string of JavaScript code, call `compile()` on the root.
 
-Error.stackTraceLimit = Infinity
+# Import the helpers we plan to use.
+{compact, flatten, extend, merge, del, starts, ends, some,
+addDataToNode, attachCommentsToNode, locationDataToString,
+throwSyntaxError, replaceUnicodeCodePointEscapes,
+isFunction, isPlainObject, isNumber, parseNumber} = require './helpers'
 
 {isUnassignable, JS_FORBIDDEN} = require './lexer'
+
+Error.stackTraceLimit = Infinity
 
 # Inline Scope class for ES6 generation
 # The Scope class regulates lexical scoping within CoffeeScript. As you
@@ -120,12 +126,6 @@ class Scope
   # of this scope.
   assignedVariables: ->
     "#{v.name} = #{v.type.value}" for v in @variables when v.type.assigned
-
-# Import the helpers we plan to use.
-{compact, flatten, extend, merge, del, starts, ends, some,
-addDataToNode, attachCommentsToNode, locationDataToString,
-throwSyntaxError, replaceUnicodeCodePointEscapes,
-isFunction, isPlainObject, isNumber, parseNumber} = require './helpers'
 
 # Functions required by parser.
 exports.extend = extend
