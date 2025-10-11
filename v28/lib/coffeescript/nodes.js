@@ -5161,6 +5161,9 @@
       }
 
       addIdentifierToScope(o) {
+        if (this.moduleDeclarationType === 'export') { // Don't add new variables for exports
+          return;
+        }
         return o.scope.find(this.identifier, this.moduleDeclarationType);
       }
 

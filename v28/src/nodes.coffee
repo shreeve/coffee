@@ -3429,6 +3429,7 @@ exports.ModuleSpecifier = class ModuleSpecifier extends Base
     code
 
   addIdentifierToScope: (o) ->
+    return if @moduleDeclarationType is 'export' # Don't add new variables for exports
     o.scope.find @identifier, @moduleDeclarationType
 
   astNode: (o) ->
