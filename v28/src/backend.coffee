@@ -55,11 +55,6 @@ class Backend
     if result instanceof @ast.Base and not result.locationData and @loc
       result.locationData = @loc
 
-    if global.process?.env?.SOLAR_DEBUG
-      util = require 'util'
-      outName = result?.constructor?.name ? typeof result
-      console.log "[Solar] result:", outName, util.inspect(result, {depth: 3, colors: true})
-
     result
 
   # Process a directive with smart resolution, ordered by most common to least
