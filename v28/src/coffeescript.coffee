@@ -204,8 +204,8 @@ parser.lexer =
   upcomingInput: -> ''
 
 # Make all the AST nodes visible to the parser.
-# Load ES6 nodes (nodes6) if ES6 environment variable is set, otherwise ES5 (nodes5)
-parser.yy = require if process.env.ES6 then './nodes6' else './nodes5'
+# Load ES6 nodes if ES6 environment variable is set, otherwise ES5 (nodes5)
+parser.yy = require if process.env.ES6 then './nodes' else './nodes5'
 
 # Override the parser's default error handling function.
 parser.yy.parseError = (message, {token}) ->
