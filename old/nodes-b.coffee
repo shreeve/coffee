@@ -4,16 +4,16 @@
 # the syntax tree into a string of JavaScript code, call `compile()` on the root.
 
 # Import the helpers we plan to use.
-{compact, flatten, extend, merge, del, starts, ends, some,
+import {compact, flatten, extend, merge, del, starts, ends, some,
 addDataToNode, attachCommentsToNode, locationDataToString,
 throwSyntaxError, replaceUnicodeCodePointEscapes,
-isFunction, isPlainObject, isNumber, parseNumber} = require './helpers'
+isFunction, isPlainObject, isNumber, parseNumber} from './helpers'
 
-{isUnassignable, JS_FORBIDDEN} = require './lexer'
+import {isUnassignable, JS_FORBIDDEN} from './lexer'
 
 Error.stackTraceLimit = Infinity
 
-# Inline Scope class for ES5 generation
+# Inline Scope class for ES6 generation
 # The Scope class regulates lexical scoping within CoffeeScript. As you
 # generate code, you create a tree of scopes in the same shape as the nested
 # function bodies. Each scope knows about the variables declared within it,
@@ -115,10 +115,6 @@ class Scope
   assignedVariables: ->
     "#{v.name} = #{v.type.value}" for v in @variables when v.type.assigned
 
-# Functions required by parser.
-exports.extend = extend
-exports.addDataToNode = addDataToNode
-
 # Constant functions for nodes that don't need customization.
 YES     = -> yes
 NO      = -> no
@@ -131,7 +127,7 @@ NEGATE  = -> @negated = not @negated; this
 # A CodeFragments is a block of generated code, and the location in the source file where the code
 # came from. CodeFragments can be assembled together into working code just by catting together
 # all the CodeFragments' `code` snippets, in order.
-exports.CodeFragment = class CodeFragment
+export class CodeFragment
   constructor: (parent, code) ->
     @code = "#{code}"
     @type = parent?.constructor?.name or 'unknown'
@@ -157,7 +153,7 @@ fragmentsToText = (fragments) ->
 # the environment from higher in the tree (such as if a returned value is
 # being requested by the surrounding function), information about the current
 # scope, and indentation level.
-exports.Base = class Base
+export class Base
 
   compile: (o, lvl) ->
     fragmentsToText @compileToFragments o, lvl
@@ -574,7 +570,7 @@ exports.Base = class Base
 
 # A **HoistTargetNode** represents the output location in the node tree for a hoisted node.
 # See Base#hoist.
-exports.HoistTarget = class HoistTarget extends Base
+export class HoistTarget extends Base
   # Expands hoisted fragments in the given array
   @expand = (fragments) ->
     for fragment, i in fragments by -1 when fragment.fragments
@@ -614,7 +610,7 @@ exports.HoistTarget = class HoistTarget extends Base
 #### Root
 
 # The root node of the node tree
-exports.Root = class Root extends Base
+export class Root extends Base
   constructor: (@body) ->
     super()
 
@@ -668,7 +664,7 @@ exports.Root = class Root extends Base
 # The block is the list of expressions that forms the body of an
 # indented block of code -- the implementation of a function, a clause in an
 # `if`, `switch`, or `try`, and so on...
-exports.Block = class Block extends Base
+export class Block extends Base
   constructor: (nodes) ->
     super()
 
@@ -773,7 +769,31 @@ exports.Block = class Block extends Base
 
   compileRoot: (o) ->
     @spaced = yes
+    # Separate imports from other expressions
+    imports = []
+    others = []
+    for exp in @expressions
+      if exp instanceof ImportDeclaration
+        imports.push exp
+      else
+        others.push exp
+
+    # Temporarily replace expressions with just others, then restore
+    originalExpressions = @expressions
+    @expressions = others
     fragments = @compileWithDeclarations o
+    @expressions = originalExpressions
+
+    # Compile imports and place them at the very top
+    if imports.length > 0
+      importFragments = []
+      for imp in imports
+        importFragments.push imp.compileToFragments(o)...
+        importFragments.push @makeCode '\n'
+      if others.length > 0
+        importFragments.push @makeCode '\n'
+      fragments = importFragments.concat fragments
+
     HoistTarget.expand fragments
     @compileComments fragments
 
@@ -798,19 +818,10 @@ exports.Block = class Block extends Base
       assigns = scope.hasAssignments
       if declars or assigns
         fragments.push @makeCode '\n' if i
-        fragments.push @makeCode "#{@tab}var "
-        if declars
-          declaredVariables = scope.declaredVariables()
-          for declaredVariable, declaredVariablesIndex in declaredVariables
-            fragments.push @makeCode declaredVariable
-            if Object::hasOwnProperty.call o.scope.comments, declaredVariable
-              fragments.push o.scope.comments[declaredVariable]...
-            if declaredVariablesIndex isnt declaredVariables.length - 1
-              fragments.push @makeCode ', '
-        if assigns
-          fragments.push @makeCode ",\n#{@tab + TAB}" if declars
-          fragments.push @makeCode scope.assignedVariables().join(",\n#{@tab + TAB}")
-        fragments.push @makeCode ";\n#{if @spaced then '\n' else ''}"
+        # ES6: Skip all hoisting - variables will be declared at first assignment
+        # This completely removes the ES5-style variable hoisting pattern
+
+        fragments.push @makeCode '\n' if @spaced
       else if fragments.length and post.length
         fragments.push @makeCode "\n"
     fragments.concat post
@@ -1010,7 +1021,7 @@ exports.Block = class Block extends Base
 
 # A directive e.g. 'use strict'.
 # Currently only used during AST generation.
-exports.Directive = class Directive extends Base
+export class Directive extends Base
   constructor: (@value) ->
     super()
 
@@ -1025,7 +1036,7 @@ exports.Directive = class Directive extends Base
 # `Literal` is a base class for static values that can be passed through
 # directly into JavaScript without translation, such as: strings, numbers,
 # `true`, `false`, `null`...
-exports.Literal = class Literal extends Base
+export class Literal extends Base
   constructor: (@value) ->
     super()
 
@@ -1045,7 +1056,7 @@ exports.Literal = class Literal extends Base
     # This is only intended for debugging.
     " #{if @isStatement() then super() else @constructor.name}: #{@value}"
 
-exports.NumberLiteral = class NumberLiteral extends Literal
+export class NumberLiteral extends Literal
   constructor: (@value, {@parsedValue} = {}) ->
     super()
     unless @parsedValue?
@@ -1079,7 +1090,7 @@ exports.NumberLiteral = class NumberLiteral extends Literal
             @parsedValue
         raw: @value
 
-exports.InfinityLiteral = class InfinityLiteral extends NumberLiteral
+export class InfinityLiteral extends NumberLiteral
   constructor: (@value, {@originalValue = 'Infinity'} = {}) ->
     super()
 
@@ -1098,7 +1109,7 @@ exports.InfinityLiteral = class InfinityLiteral extends NumberLiteral
       name: 'Infinity'
       declaration: no
 
-exports.NaNLiteral = class NaNLiteral extends NumberLiteral
+export class NaNLiteral extends NumberLiteral
   constructor: ->
     super 'NaN'
 
@@ -1113,7 +1124,7 @@ exports.NaNLiteral = class NaNLiteral extends NumberLiteral
       name: 'NaN'
       declaration: no
 
-exports.StringLiteral = class StringLiteral extends Literal
+export class StringLiteral extends Literal
   constructor: (@originalValue, {@quote, @initialChunk, @finalChunk, @indent, @double, @heregex} = {}) ->
     super ''
     @quote = null if @quote is '///'
@@ -1206,7 +1217,7 @@ exports.StringLiteral = class StringLiteral extends Literal
       extra:
         raw: "#{@delimiter}#{@originalValue}#{@delimiter}"
 
-exports.RegexLiteral = class RegexLiteral extends Literal
+export class RegexLiteral extends Literal
   constructor: (value, {@delimiter = '/', @heregexCommentTokens = []} = {}) ->
     super ''
     heregex = @delimiter is '///'
@@ -1239,7 +1250,7 @@ exports.RegexLiteral = class RegexLiteral extends Literal
             new LineComment(heregexCommentToken).ast o
     }
 
-exports.PassthroughLiteral = class PassthroughLiteral extends Literal
+export class PassthroughLiteral extends Literal
   constructor: (@originalValue, {@here, @generated} = {}) ->
     super ''
     @value = @originalValue.replace /\\+(`|$)/g, (string) ->
@@ -1257,7 +1268,7 @@ exports.PassthroughLiteral = class PassthroughLiteral extends Literal
       here: !!@here
     }
 
-exports.IdentifierLiteral = class IdentifierLiteral extends Literal
+export class IdentifierLiteral extends Literal
   isAssignable: YES
 
   eachName: (iterator) ->
@@ -1271,7 +1282,7 @@ exports.IdentifierLiteral = class IdentifierLiteral extends Literal
       name: @value
       declaration: !!@isDeclaration
 
-exports.PropertyName = class PropertyName extends Literal
+export class PropertyName extends Literal
   isAssignable: YES
 
   astType: ->
@@ -1282,14 +1293,14 @@ exports.PropertyName = class PropertyName extends Literal
       name: @value
       declaration: no
 
-exports.ComputedPropertyName = class ComputedPropertyName extends PropertyName
+export class ComputedPropertyName extends PropertyName
   compileNode: (o) ->
     [@makeCode('['), @value.compileToFragments(o, LEVEL_LIST)..., @makeCode(']')]
 
   astNode: (o) ->
     @value.ast o
 
-exports.StatementLiteral = class StatementLiteral extends Literal
+export class StatementLiteral extends Literal
   isStatement: YES
 
   makeReturn: THIS
@@ -1307,7 +1318,7 @@ exports.StatementLiteral = class StatementLiteral extends Literal
       when 'break'    then 'BreakStatement'
       when 'debugger' then 'DebuggerStatement'
 
-exports.ThisLiteral = class ThisLiteral extends Literal
+export class ThisLiteral extends Literal
   constructor: (value) ->
     super 'this'
     @shorthand = value is '@'
@@ -1322,7 +1333,7 @@ exports.ThisLiteral = class ThisLiteral extends Literal
     return
       shorthand: @shorthand
 
-exports.UndefinedLiteral = class UndefinedLiteral extends Literal
+export class UndefinedLiteral extends Literal
   constructor: ->
     super 'undefined'
 
@@ -1336,11 +1347,11 @@ exports.UndefinedLiteral = class UndefinedLiteral extends Literal
       name: @value
       declaration: no
 
-exports.NullLiteral = class NullLiteral extends Literal
+export class NullLiteral extends Literal
   constructor: ->
     super 'null'
 
-exports.BooleanLiteral = class BooleanLiteral extends Literal
+export class BooleanLiteral extends Literal
   constructor: (value, {@originalValue} = {}) ->
     super value
     @originalValue ?= @value
@@ -1349,7 +1360,7 @@ exports.BooleanLiteral = class BooleanLiteral extends Literal
     value: if @value is 'true' then yes else no
     name: @originalValue
 
-exports.DefaultLiteral = class DefaultLiteral extends Literal
+export class DefaultLiteral extends Literal
   astType: -> 'Identifier'
 
   astProperties: ->
@@ -1360,7 +1371,7 @@ exports.DefaultLiteral = class DefaultLiteral extends Literal
 #### Return
 
 # A `return` is a *pureStatement*—wrapping it in a closure wouldn't make sense.
-exports.Return = class Return extends Base
+export class Return extends Base
   constructor: (@expression, {@belongsToFuncDirectiveReturn} = {}) ->
     super()
 
@@ -1406,7 +1417,7 @@ exports.Return = class Return extends Base
     argument: @expression?.ast(o, LEVEL_PAREN) ? null
 
 # Parent class for `YieldReturn`/`AwaitReturn`.
-exports.FuncDirectiveReturn = class FuncDirectiveReturn extends Return
+export class FuncDirectiveReturn extends Return
   constructor: (expression, {@returnKeyword}) ->
     super expression
 
@@ -1436,17 +1447,17 @@ exports.FuncDirectiveReturn = class FuncDirectiveReturn extends Return
 
 # `yield return` works exactly like `return`, except that it turns the function
 # into a generator.
-exports.YieldReturn = class YieldReturn extends FuncDirectiveReturn
+export class YieldReturn extends FuncDirectiveReturn
   keyword: 'yield'
 
-exports.AwaitReturn = class AwaitReturn extends FuncDirectiveReturn
+export class AwaitReturn extends FuncDirectiveReturn
   keyword: 'await'
 
 #### Value
 
 # A value, variable or literal or parenthesized, indexed or dotted into,
 # or vanilla.
-exports.Value = class Value extends Base
+export class Value extends Base
   constructor: (base, props, tag, isDefaultValue = no) ->
     super()
     return base if not props and base instanceof Value
@@ -1661,7 +1672,7 @@ exports.Value = class Value extends Base
       shorthand: !!property.shorthand
     }
 
-exports.MetaProperty = class MetaProperty extends Base
+export class MetaProperty extends Base
   constructor: (@meta, @property) ->
     super()
 
@@ -1695,7 +1706,7 @@ exports.MetaProperty = class MetaProperty extends Base
 #### HereComment
 
 # Comment delimited by `###` (becoming `/* */`).
-exports.HereComment = class HereComment extends Base
+export class HereComment extends Base
   constructor: ({ @content, @newLine, @unshift, @locationData }) ->
     super()
 
@@ -1732,7 +1743,7 @@ exports.HereComment = class HereComment extends Base
 #### LineComment
 
 # Comment running from `#` to the end of a line (becoming `//`).
-exports.LineComment = class LineComment extends Base
+export class LineComment extends Base
   constructor: ({ @content, @newLine, @unshift, @locationData, @precededByBlankLine }) ->
     super()
 
@@ -1754,7 +1765,7 @@ exports.LineComment = class LineComment extends Base
 #### Call
 
 # Node for a function invocation.
-exports.Call = class Call extends Base
+export class Call extends Base
   constructor: (@variable, @args = [], @soak, @token) ->
     super()
 
@@ -1908,7 +1919,7 @@ exports.Call = class Call extends Base
 # When `expressions` are set the call will be compiled in such a way that the
 # expressions are evaluated without altering the return value of the `SuperCall`
 # expression.
-exports.SuperCall = class SuperCall extends Call
+export class SuperCall extends Call
   children: Call::children.concat ['expressions']
 
   isStatement: (o) ->
@@ -1928,7 +1939,7 @@ exports.SuperCall = class SuperCall extends Call
     replacement.unshift superCall
     replacement.compileToFragments o, if o.level is LEVEL_TOP then o.level else LEVEL_LIST
 
-exports.Super = class Super extends Base
+export class Super extends Base
   constructor: (@accessor, @superLiteral) ->
     super()
 
@@ -1982,7 +1993,7 @@ exports.Super = class Super extends Base
 
 # Regexes with interpolations are in fact just a variation of a `Call` (a
 # `RegExp()` call to be precise) with a `StringWithInterpolations` inside.
-exports.RegexWithInterpolations = class RegexWithInterpolations extends Base
+export class RegexWithInterpolations extends Base
   constructor: (@call, {@heregexCommentTokens = []} = {}) ->
     super()
 
@@ -2005,7 +2016,7 @@ exports.RegexWithInterpolations = class RegexWithInterpolations extends Base
 
 #### TaggedTemplateCall
 
-exports.TaggedTemplateCall = class TaggedTemplateCall extends Call
+export class TaggedTemplateCall extends Call
   constructor: (variable, arg, soak) ->
     arg = StringWithInterpolations.fromStringLiteral arg if arg instanceof StringLiteral
     super variable, [ arg ], soak
@@ -2025,7 +2036,7 @@ exports.TaggedTemplateCall = class TaggedTemplateCall extends Call
 # Node to extend an object's prototype with an ancestor object.
 # After `goog.inherits` from the
 # [Closure Library](https://github.com/google/closure-library/blob/master/closure/goog/base.js).
-exports.Extends = class Extends extends Base
+export class Extends extends Base
   constructor: (@child, @parent) ->
     super()
 
@@ -2039,7 +2050,7 @@ exports.Extends = class Extends extends Base
 
 # A `.` access into a property of a value, or the `::` shorthand for
 # an access into the object's prototype.
-exports.Access = class Access extends Base
+export class Access extends Base
   constructor: (@name, {@soak, @shorthand} = {}) ->
     super()
 
@@ -2064,7 +2075,7 @@ exports.Access = class Access extends Base
 #### Index
 
 # A `[ ... ]` indexed access into an array or object.
-exports.Index = class Index extends Base
+export class Index extends Base
   constructor: (@index) ->
     super()
 
@@ -2089,7 +2100,7 @@ exports.Index = class Index extends Base
 # A range literal. Ranges can be used to extract portions (slices) of arrays,
 # to specify a range for comprehensions, or as a value, to be expanded into the
 # corresponding array of integers at runtime.
-exports.Range = class Range extends Base
+export class Range extends Base
 
   children: ['from', 'to']
 
@@ -2124,7 +2135,7 @@ exports.Range = class Range extends Base
     namedIndex = idxName and idxName isnt idx
     varPart  =
       if known and not namedIndex
-        "var #{idx} = #{@fromC}"
+        "let #{idx} = #{@fromC}"
       else
         "#{idx} = #{@fromC}"
     varPart += ", #{@toC}" if @toC isnt @toVar
@@ -2207,7 +2218,7 @@ exports.Range = class Range extends Base
 # An array slice literal. Unlike JavaScript's `Array#slice`, the second parameter
 # specifies the index of the end of the slice, just as the first parameter
 # is the index of the beginning.
-exports.Slice = class Slice extends Base
+export class Slice extends Base
 
   children: ['range']
 
@@ -2244,7 +2255,7 @@ exports.Slice = class Slice extends Base
 #### Obj
 
 # An object literal, nothing fancy.
-exports.Obj = class Obj extends Base
+export class Obj extends Base
   constructor: (props, @generated = no) ->
     super()
 
@@ -2426,7 +2437,7 @@ exports.Obj = class Obj extends Base
       properties:
         property.ast(o) for property in @expandProperties()
 
-exports.ObjectProperty = class ObjectProperty extends Base
+export class ObjectProperty extends Base
   constructor: ({key, fromAssign}) ->
     super()
     if fromAssign
@@ -2463,7 +2474,7 @@ exports.ObjectProperty = class ObjectProperty extends Base
 #### Arr
 
 # An array literal.
-exports.Arr = class Arr extends Base
+export class Arr extends Base
   constructor: (objs, @lhs = no) ->
     super()
     @objects = objs or []
@@ -2579,7 +2590,7 @@ exports.Arr = class Arr extends Base
 # The CoffeeScript class definition.
 # Initialize a **Class** with its name, an optional superclass, and a body.
 
-exports.Class = class Class extends Base
+export class Class extends Base
   children: ['variable', 'parent', 'body']
 
   constructor: (@variable, @parent, @body) ->
@@ -2598,7 +2609,8 @@ exports.Class = class Class extends Base
 
     node = @
 
-    if executableBody or @hasNameClash
+    # Don't wrap in ExecutableClassBody for ES6 module exports
+    if (executableBody or @hasNameClash) and not @moduleDeclaration
       node = new ExecutableClassBody node, executableBody
     else if not @name? and o.level is LEVEL_TOP
       # Anonymous classes are only valid in expressions
@@ -2608,7 +2620,8 @@ exports.Class = class Class extends Base
       @variable ?= new IdentifierLiteral o.scope.freeVariable '_class'
       [@variable, @variableRef] = @variable.cache o unless @variableRef?
 
-    if @variable
+    # Don't wrap in Assign if this is a direct export
+    if @variable and not @moduleDeclaration
       node = new Assign @variable, node, null, { @moduleDeclaration }
 
     @compileNode = @compileClassDeclaration
@@ -2846,7 +2859,7 @@ exports.Class = class Class extends Base
       superClass: @parent?.ast(o, LEVEL_PAREN) ? null
       body: @body.ast o, LEVEL_TOP
 
-exports.ExecutableClassBody = class ExecutableClassBody extends Base
+export class ExecutableClassBody extends Base
   children: [ 'class', 'body' ]
 
   defaultClassVariableName: '_Class'
@@ -2962,7 +2975,7 @@ exports.ExecutableClassBody = class ExecutableClassBody extends Base
       assign
     compact result
 
-exports.ClassProperty = class ClassProperty extends Base
+export class ClassProperty extends Base
   constructor: ({@name, @isStatic, @staticClassName, @value, @operatorToken}) ->
     super()
 
@@ -2979,7 +2992,7 @@ exports.ClassProperty = class ClassProperty extends Base
       operator: @operatorToken?.value ? '='
       staticClassName: @staticClassName?.ast(o) ? null
 
-exports.ClassPrototypeProperty = class ClassPrototypeProperty extends Base
+export class ClassPrototypeProperty extends Base
   constructor: ({@name, @value}) ->
     super()
 
@@ -2995,7 +3008,7 @@ exports.ClassPrototypeProperty = class ClassPrototypeProperty extends Base
 
 #### Import and Export
 
-exports.ModuleDeclaration = class ModuleDeclaration extends Base
+export class ModuleDeclaration extends Base
   constructor: (@clause, @source, @assertions) ->
     super()
     @checkSource()
@@ -3026,7 +3039,7 @@ exports.ModuleDeclaration = class ModuleDeclaration extends Base
     else
       []
 
-exports.ImportDeclaration = class ImportDeclaration extends ModuleDeclaration
+export class ImportDeclaration extends ModuleDeclaration
   compileNode: (o) ->
     @checkScope o, 'import'
     o.importedSymbols = []
@@ -3037,9 +3050,20 @@ exports.ImportDeclaration = class ImportDeclaration extends ModuleDeclaration
 
     if @source?.value?
       code.push @makeCode ' from ' unless @clause is null
-      code.push @makeCode @source.value
-      if @assertions?
-        code.push @makeCode ' assert '
+      # Add .js extension to relative imports for ES6 module compatibility
+      sourceValue = @source.value
+      if sourceValue.match(/^['"]\.\.?\//)?  # Matches './...' or '../...'
+        # Remove quotes, add .js if no extension, re-add quotes
+        unquoted = sourceValue.slice(1, -1)
+        unless unquoted.match(/\.\w+$/)?  # If no extension
+          quoteMark = sourceValue[0]
+          sourceValue = "#{quoteMark}#{unquoted}.js#{quoteMark}"
+      code.push @makeCode sourceValue
+      # Auto-add import assertion for JSON files in ES6 mode
+      if process.env.ES6 and @source.value.match(/\.json['"]$/) and not @assertions?
+        code.push @makeCode " with { type: 'json' }"
+      else if @assertions?
+        code.push @makeCode ' with '
         code.push @assertions.compileToFragments(o)...
 
     code.push @makeCode ';'
@@ -3057,7 +3081,7 @@ exports.ImportDeclaration = class ImportDeclaration extends ModuleDeclaration
     ret.importKind = 'value' if @clause
     ret
 
-exports.ImportClause = class ImportClause extends Base
+export class ImportClause extends Base
   constructor: (@defaultBinding, @namedImports) ->
     super()
 
@@ -3083,7 +3107,7 @@ exports.ImportClause = class ImportClause extends Base
       @namedImports?.ast o
     ]
 
-exports.ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
+export class ExportDeclaration extends ModuleDeclaration
   compileNode: (o) ->
     @checkScope o, 'export'
     @checkForAnonymousClassExport()
@@ -3092,10 +3116,20 @@ exports.ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
     code.push @makeCode "#{@tab}export "
     code.push @makeCode 'default ' if @ instanceof ExportDefaultDeclaration
 
-    if @ not instanceof ExportDefaultDeclaration and
-       (@clause instanceof Assign or @clause instanceof Class)
-      code.push @makeCode 'var '
-      @clause.moduleDeclaration = 'export'
+    if @ not instanceof ExportDefaultDeclaration
+      # For named exports, determine the appropriate keyword
+      if @clause instanceof Class
+        # Classes don't need 'const', 'let', or 'var'
+        @clause.moduleDeclaration = 'export'
+      else if @clause instanceof Assign
+        # For assignments, use 'const' for ES6 exports
+        code.push @makeCode 'const '
+        @clause.moduleDeclaration = 'export'
+      # For other constructs like functions, no additional keyword needed
+    else
+      # For export default, never add 'const', 'let', or 'var'
+      # The syntax is just "export default <expression>"
+      @clause.moduleDeclaration = 'export default' if @clause instanceof Class
 
     if @clause.body? and @clause.body instanceof Block
       code = code.concat @clause.compileToFragments o, LEVEL_TOP
@@ -3103,9 +3137,20 @@ exports.ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
       code = code.concat @clause.compileNode o
 
     if @source?.value?
-      code.push @makeCode " from #{@source.value}"
-      if @assertions?
-        code.push @makeCode ' assert '
+      # Add .js extension to relative imports for ES6 module compatibility
+      sourceValue = @source.value
+      if sourceValue.match(/^['"]\.\.?\//)?  # Matches './...' or '../...'
+        # Remove quotes, add .js if no extension, re-add quotes
+        unquoted = sourceValue.slice(1, -1)
+        unless unquoted.match(/\.\w+$/)?  # If no extension
+          quoteMark = sourceValue[0]
+          sourceValue = "#{quoteMark}#{unquoted}.js#{quoteMark}"
+      code.push @makeCode " from #{sourceValue}"
+      # Auto-add import assertion for JSON files in ES6 mode
+      if process.env.ES6 and @source.value.match(/\.json['"]$/) and not @assertions?
+        code.push @makeCode " with { type: 'json' }"
+      else if @assertions?
+        code.push @makeCode ' with '
         code.push @assertions.compileToFragments(o)...
 
     code.push @makeCode ';'
@@ -3120,7 +3165,7 @@ exports.ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
     @checkForAnonymousClassExport()
     super o
 
-exports.ExportNamedDeclaration = class ExportNamedDeclaration extends ExportDeclaration
+export class ExportNamedDeclaration extends ExportDeclaration
   astProperties: (o) ->
     ret =
       source: @source?.ast(o) ? null
@@ -3135,20 +3180,20 @@ exports.ExportNamedDeclaration = class ExportNamedDeclaration extends ExportDecl
       ret.declaration = clauseAst
     ret
 
-exports.ExportDefaultDeclaration = class ExportDefaultDeclaration extends ExportDeclaration
+export class ExportDefaultDeclaration extends ExportDeclaration
   astProperties: (o) ->
     return
       declaration: @clause.ast o
       assertions: @astAssertions(o)
 
-exports.ExportAllDeclaration = class ExportAllDeclaration extends ExportDeclaration
+export class ExportAllDeclaration extends ExportDeclaration
   astProperties: (o) ->
     return
       source: @source.ast o
       assertions: @astAssertions(o)
       exportKind: 'value'
 
-exports.ModuleSpecifierList = class ModuleSpecifierList extends Base
+export class ModuleSpecifierList extends Base
   constructor: (@specifiers) ->
     super()
 
@@ -3172,11 +3217,11 @@ exports.ModuleSpecifierList = class ModuleSpecifierList extends Base
   astNode: (o) ->
     specifier.ast(o) for specifier in @specifiers
 
-exports.ImportSpecifierList = class ImportSpecifierList extends ModuleSpecifierList
+export class ImportSpecifierList extends ModuleSpecifierList
 
-exports.ExportSpecifierList = class ExportSpecifierList extends ModuleSpecifierList
+export class ExportSpecifierList extends ModuleSpecifierList
 
-exports.ModuleSpecifier = class ModuleSpecifier extends Base
+export class ModuleSpecifier extends Base
   constructor: (@original, @alias, @moduleDeclarationType) ->
     super()
 
@@ -3204,7 +3249,7 @@ exports.ModuleSpecifier = class ModuleSpecifier extends Base
     @addIdentifierToScope o
     super o
 
-exports.ImportSpecifier = class ImportSpecifier extends ModuleSpecifier
+export class ImportSpecifier extends ModuleSpecifier
   constructor: (imported, local) ->
     super imported, local, 'import'
 
@@ -3224,17 +3269,17 @@ exports.ImportSpecifier = class ImportSpecifier extends ModuleSpecifier
       local: @alias?.ast(o) ? originalAst
       importKind: null
 
-exports.ImportDefaultSpecifier = class ImportDefaultSpecifier extends ImportSpecifier
+export class ImportDefaultSpecifier extends ImportSpecifier
   astProperties: (o) ->
     return
       local: @original.ast o
 
-exports.ImportNamespaceSpecifier = class ImportNamespaceSpecifier extends ImportSpecifier
+export class ImportNamespaceSpecifier extends ImportSpecifier
   astProperties: (o) ->
     return
       local: @alias.ast o
 
-exports.ExportSpecifier = class ExportSpecifier extends ModuleSpecifier
+export class ExportSpecifier extends ModuleSpecifier
   constructor: (local, exported) ->
     super local, exported, 'export'
 
@@ -3244,13 +3289,13 @@ exports.ExportSpecifier = class ExportSpecifier extends ModuleSpecifier
       local: originalAst
       exported: @alias?.ast(o) ? originalAst
 
-exports.DynamicImport = class DynamicImport extends Base
+export class DynamicImport extends Base
   compileNode: ->
     [@makeCode 'import']
 
   astType: -> 'Import'
 
-exports.DynamicImportCall = class DynamicImportCall extends Call
+export class DynamicImportCall extends Call
   compileNode: (o) ->
     @checkArguments()
     super o
@@ -3267,7 +3312,7 @@ exports.DynamicImportCall = class DynamicImportCall extends Call
 
 # The **Assign** is used to assign a local variable to value, or to set the
 # property of an object -- including within object literals.
-exports.Assign = class Assign extends Base
+export class Assign extends Base
   constructor: (@variable, @value, @context, options = {}) ->
     super()
     {@param, @subpattern, @operatorToken, @moduleDeclaration, @originalContext = @context} = options
@@ -3674,7 +3719,7 @@ exports.Assign = class Assign extends Base
 
 #### FuncGlyph
 
-exports.FuncGlyph = class FuncGlyph extends Base
+export class FuncGlyph extends Base
   constructor: (@glyph) ->
     super()
 
@@ -3683,7 +3728,7 @@ exports.FuncGlyph = class FuncGlyph extends Base
 # A function definition. This is the only node that creates a new Scope.
 # When for the purposes of walking the contents of a function body, the Code
 # has no *children* -- they're within the inner scope.
-exports.Code = class Code extends Base
+export class Code extends Base
   constructor: (params, body, @funcGlyph, @paramStart) ->
     super()
 
@@ -4122,7 +4167,7 @@ exports.Code = class Code extends Base
 # A parameter in a function definition. Beyond a typical JavaScript parameter,
 # these parameters can also attach themselves to the context of the function,
 # as well as be a splat, gathering up a group of parameters into an array.
-exports.Param = class Param extends Base
+export class Param extends Base
   constructor: (@name, @value, @splat) ->
     super()
 
@@ -4240,7 +4285,7 @@ exports.Param = class Param extends Base
 
 # A splat, either as a parameter to a function, an argument to a call,
 # or as part of a destructuring assignment.
-exports.Splat = class Splat extends Base
+export class Splat extends Base
   constructor: (name, {@lhs, @postfix = true} = {}) ->
     super()
     @name = if name.compile then name else new Literal name
@@ -4282,7 +4327,7 @@ exports.Splat = class Splat extends Base
 
 # Used to skip values inside an array destructuring (pattern matching) or
 # parameter list.
-exports.Expansion = class Expansion extends Base
+export class Expansion extends Base
 
   shouldCache: NO
 
@@ -4312,7 +4357,7 @@ exports.Expansion = class Expansion extends Base
 #### Elision
 
 # Array elision element (for example, [,a, , , b, , c, ,]).
-exports.Elision = class Elision extends Base
+export class Elision extends Base
 
   isAssignable: YES
 
@@ -4339,7 +4384,7 @@ exports.Elision = class Elision extends Base
 # A while loop, the only sort of low-level loop exposed by CoffeeScript. From
 # it, all other loops can be manufactured. Useful in cases where you need more
 # flexibility or more speed than a comprehension can provide.
-exports.While = class While extends Base
+export class While extends Base
   constructor: (@condition, {invert: @inverted, @guard, @isLoop} = {}) ->
     super()
 
@@ -4408,7 +4453,7 @@ exports.While = class While extends Base
 
 # Simple Arithmetic and logical operations. Performs some conversion from
 # CoffeeScript operations into their JavaScript equivalents.
-exports.Op = class Op extends Base
+export class Op extends Base
   constructor: (op, first, second, flip, {@invertOperator, @originalOperator = op} = {}) ->
     super()
 
@@ -4691,7 +4736,7 @@ exports.Op = class Op extends Base
           operator: operatorAst
 
 #### In
-exports.In = class In extends Base
+export class In extends Base
   constructor: (@object, @array) ->
     super()
 
@@ -4731,7 +4776,7 @@ exports.In = class In extends Base
 #### Try
 
 # A classic *try/catch/finally* block.
-exports.Try = class Try extends Base
+export class Try extends Base
   constructor: (@attempt, @catch, @ensure, @finallyTag) ->
     super()
 
@@ -4789,7 +4834,7 @@ exports.Try = class Try extends Base
         else
           null
 
-exports.Catch = class Catch extends Base
+export class Catch extends Base
   constructor: (@recovery, @errorVariable) ->
     super()
     @errorVariable?.unwrap().propagateLhs? yes
@@ -4839,7 +4884,7 @@ exports.Catch = class Catch extends Base
 #### Throw
 
 # Simple node to throw an exception.
-exports.Throw = class Throw extends Base
+export class Throw extends Base
   constructor: (@expression) ->
     super()
 
@@ -4869,7 +4914,7 @@ exports.Throw = class Throw extends Base
 # Checks a variable for existence -- not `null` and not `undefined`. This is
 # similar to `.nil?` in Ruby, and avoids having to consult a JavaScript truth
 # table. Optionally only check if a variable is not `undefined`.
-exports.Existence = class Existence extends Base
+export class Existence extends Base
   constructor: (@expression, onlyNotUndefined = no) ->
     super()
     @comparisonTarget = if onlyNotUndefined then 'undefined' else 'null'
@@ -4921,7 +4966,7 @@ exports.Existence = class Existence extends Base
 # parentheses, but no longer -- you can put in as many as you please.
 #
 # Parentheses are a good way to force any statement to become an expression.
-exports.Parens = class Parens extends Base
+export class Parens extends Base
   constructor: (@body) ->
     super()
 
@@ -4954,7 +4999,7 @@ exports.Parens = class Parens extends Base
 
 #### StringWithInterpolations
 
-exports.StringWithInterpolations = class StringWithInterpolations extends Base
+export class StringWithInterpolations extends Base
   constructor: (@body, {@quote, @startQuote} = {}) ->
     super()
 
@@ -5034,12 +5079,9 @@ exports.StringWithInterpolations = class StringWithInterpolations extends Base
       else
         fragments.push @makeCode '$'
         code = @wrapInBraces element.compileToFragments(o, LEVEL_PAREN)
-        # Flag the `{` and `}` fragments as having been generated by this
-        # `StringWithInterpolations` node, so that `compileComments` knows
-        # to treat them as bounds. But the braces are unnecessary if all of
-        # the enclosed comments are `/* */` comments. Don't trust
-        # `fragment.type`, which can report minified variable names when
-        # this compiler is minified.
+        # Flag the `{` and `}` fragments as generated by StringWithInterpolations
+        # so compileComments knows to treat them as bounds. Don't trust
+        # fragment.type, which can report minified variable names when minified.
         code[0].isStringWithInterpolations = yes
         code[code.length - 1].isStringWithInterpolations = yes
         fragments.push code...
@@ -5078,7 +5120,7 @@ exports.StringWithInterpolations = class StringWithInterpolations extends Base
 
     {expressions, quasis, @quote}
 
-exports.TemplateElement = class TemplateElement extends Base
+export class TemplateElement extends Base
   constructor: (@value, {@tail} = {}) ->
     super()
 
@@ -5088,7 +5130,7 @@ exports.TemplateElement = class TemplateElement extends Base
         raw: @value
       tail: !!@tail
 
-exports.Interpolation = class Interpolation extends Base
+export class Interpolation extends Base
   constructor: (@expression) ->
     super()
 
@@ -5096,7 +5138,7 @@ exports.Interpolation = class Interpolation extends Base
 
 # Represents the contents of an empty interpolation (e.g. `#{}`).
 # Only used during AST generation.
-exports.EmptyInterpolation = class EmptyInterpolation extends Base
+export class EmptyInterpolation extends Base
   constructor: ->
     super()
 
@@ -5109,7 +5151,7 @@ exports.EmptyInterpolation = class EmptyInterpolation extends Base
 # Unlike Python array comprehensions, they can be multi-line, and you can pass
 # the current index of the loop as a second parameter. Unlike Ruby blocks,
 # you can map and filter in a single pass.
-exports.For = class For extends While
+export class For extends While
   constructor: (body, source) ->
     super()
     @addBody body
@@ -5192,16 +5234,22 @@ exports.For = class For extends While
     else
       svar    = @source.compile o, LEVEL_LIST
       if (name or @own) and not @from and @source.unwrap() not instanceof IdentifierLiteral
-        defPart    += "#{@tab}#{ref = scope.freeVariable 'ref'} = #{svar};\n"
+        defPart    += "#{@tab}const #{ref = scope.freeVariable 'ref'} = #{svar};\n"
         svar       = ref
       if name and not @pattern and not @from
-        namePart   = "#{name} = #{svar}[#{kvar}]"
+        namePart   = "const #{name} = #{svar}[#{kvar}]"
       if not @object and not @from
         defPart += "#{@tab}#{step};\n" if step isnt stepVar
         down = stepNum < 0
         lvar = scope.freeVariable 'len' unless @step and stepNum? and down
-        declare = "#{kvarAssign}#{ivar} = 0, #{lvar} = #{svar}.length"
-        declareDown = "#{kvarAssign}#{ivar} = #{svar}.length - 1"
+        if @step and not stepNum?
+          # Variables need to be declared outside the ternary
+          defPart += "#{@tab}let #{ivar}#{if lvar then ", #{lvar}" else ""};\n"
+          declare = "#{stepVar} > 0 ? (#{kvarAssign}#{ivar} = 0, #{lvar} = #{svar}.length) : (#{kvarAssign}#{ivar} = #{svar}.length - 1)"
+        else
+          # Normal case - can use let inline
+          declare = "let #{kvarAssign}#{ivar} = 0, #{lvar} = #{svar}.length"
+          declareDown = "let #{kvarAssign}#{ivar} = #{svar}.length - 1"
         compare = "#{ivar} < #{lvar}"
         compareDown = "#{ivar} >= 0"
         if @step
@@ -5211,13 +5259,13 @@ exports.For = class For extends While
               declare = declareDown
           else
             compare = "#{stepVar} > 0 ? #{compare} : #{compareDown}"
-            declare = "(#{stepVar} > 0 ? (#{declare}) : #{declareDown})"
+            # Don't need to set declare here - already handled above
           increment = "#{ivar} += #{stepVar}"
         else
           increment = "#{if kvar isnt ivar then "++#{ivar}" else "#{ivar}++"}"
         forPartFragments = [@makeCode("#{declare}; #{compare}; #{kvarAssign}#{increment}")]
     if @returns
-      resultPart   = "#{@tab}#{rvar} = [];\n"
+      resultPart   = "#{@tab}const #{rvar} = [];\n"
       returnResult = "\n#{@tab}return #{rvar};"
       body.makeReturn rvar
     if @guard
@@ -5230,14 +5278,14 @@ exports.For = class For extends While
 
     varPart = "\n#{idt1}#{namePart};" if namePart
     if @object
-      forPartFragments = [@makeCode("#{kvar} in #{svar}")]
+      forPartFragments = [@makeCode("let #{kvar} in #{svar}")]
       guardPart = "\n#{idt1}if (!#{utility 'hasProp', o}.call(#{svar}, #{kvar})) continue;" if @own
     else if @from
       if @await
-        forPartFragments = new Op 'await', new Parens new Literal "#{kvar} of #{svar}"
+        forPartFragments = new Op 'await', new Parens new Literal "let #{kvar} of #{svar}"
         forPartFragments = forPartFragments.compileToFragments o, LEVEL_TOP
       else
-        forPartFragments = [@makeCode("#{kvar} of #{svar}")]
+        forPartFragments = [@makeCode("let #{kvar} of #{svar}")]
     bodyFragments = body.compileToFragments merge(o, indent: idt1), LEVEL_TOP
     if bodyFragments and bodyFragments.length > 0
       bodyFragments = [].concat @makeCode('\n'), bodyFragments, @makeCode('\n')
@@ -5282,7 +5330,7 @@ exports.For = class For extends While
 #### Switch
 
 # A JavaScript *switch* statement. Converts into a returnable expression on-demand.
-exports.Switch = class Switch extends Base
+export class Switch extends Base
   constructor: (@subject, @cases, @otherwise) ->
     super()
 
@@ -5354,7 +5402,7 @@ exports.Switch = class Switch extends Base
       discriminant: @subject?.ast(o, LEVEL_PAREN) ? null
       cases: @casesAst o
 
-class SwitchCase extends Base
+export class SwitchCase extends Base
   constructor: (@test, @block, {@trailing} = {}) ->
     super()
 
@@ -5366,7 +5414,7 @@ class SwitchCase extends Base
       consequent: @block?.ast(o, LEVEL_TOP).body ? []
       trailing: !!@trailing
 
-exports.SwitchWhen = class SwitchWhen extends Base
+export class SwitchWhen extends Base
   constructor: (@conditions, @block) ->
     super()
 
@@ -5379,7 +5427,7 @@ exports.SwitchWhen = class SwitchWhen extends Base
 #
 # Single-expression **Ifs** are compiled into conditional operators if possible,
 # because ternaries are already proper expressions, and don't need conversion.
-exports.If = class If extends Base
+export class If extends Base
   constructor: (@condition, @body, options = {}) ->
     super()
     @elseBody  = null
@@ -5496,7 +5544,7 @@ exports.If = class If extends Base
 
 # A sequence expression e.g. `(a; b)`.
 # Currently only used during AST generation.
-exports.Sequence = class Sequence extends Base
+export class Sequence extends Base
   children: ['expressions']
 
   constructor: (@expressions) ->
@@ -5746,7 +5794,7 @@ isLocationDataEndGreater = (a, b) ->
 # mergeLocationData(first, second, justLeading: yes).range # [1, 5]
 # mergeLocationData(first, second, justEnding:  yes).range # [4, 10]
 # ```
-exports.mergeLocationData = mergeLocationData = (locationDataA, locationDataB, {justLeading, justEnding} = {}) ->
+export mergeLocationData = (locationDataA, locationDataB, {justLeading, justEnding} = {}) ->
   return Object.assign(
     if justEnding
       first_line:   locationDataA.first_line
@@ -5803,7 +5851,7 @@ exports.mergeLocationData = mergeLocationData = (locationDataA, locationDataB, {
 # mergeAstLocationData(first, second, justLeading: yes).range # [1, 5]
 # mergeAstLocationData(first, second, justEnding:  yes).range # [4, 10]
 # ```
-exports.mergeAstLocationData = mergeAstLocationData = (nodeA, nodeB, {justLeading, justEnding} = {}) ->
+export mergeAstLocationData = (nodeA, nodeB, {justLeading, justEnding} = {}) ->
   return
     loc:
       start:
@@ -5845,7 +5893,7 @@ exports.mergeAstLocationData = mergeAstLocationData = (nodeA, nodeB, {justLeadin
         greater nodeA.end, nodeB.end
 
 # Convert internal location data format to ESTree-compatible AST location data format
-exports.convertLocationDataToAst = convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) ->
+export convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) ->
   return
     loc:
       start:
