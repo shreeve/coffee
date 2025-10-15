@@ -1178,7 +1178,7 @@
             if (i) {
               fragments.push(this.makeCode('\n'));
             }
-            fragments.push(this.makeCode(`${this.tab}var `));
+            fragments.push(this.makeCode(`${this.tab}let `));
             if (declars) {
               declaredVariables = scope.declaredVariables();
               for (declaredVariablesIndex = k = 0, len2 = declaredVariables.length; k < len2; declaredVariablesIndex = ++k) {
@@ -3187,7 +3187,7 @@
         idx = del(o, 'index');
         idxName = del(o, 'name');
         namedIndex = idxName && idxName !== idx;
-        varPart = known && !namedIndex ? `var ${idx} = ${this.fromC}` : `${idx} = ${this.fromC}`;
+        varPart = known && !namedIndex ? `let ${idx} = ${this.fromC}` : `${idx} = ${this.fromC}`;
         if (this.toC !== this.toVar) {
           varPart += `, ${this.toC}`;
         }
@@ -3239,14 +3239,14 @@
         result = o.scope.freeVariable('results', {
           reserve: false
         });
-        pre = `\n${idt}var ${result} = [];`;
+        pre = `\n${idt}let ${result} = [];`;
         if (known) {
           o.index = i;
           body = fragmentsToText(this.compileNode(o));
         } else {
           vars = `${i} = ${this.fromC}` + (this.toC !== this.toVar ? `, ${this.toC}` : '');
           cond = `${this.fromVar} <= ${this.toVar}`;
-          body = `var ${vars}; ${cond} ? ${i} <${this.equals} ${this.toVar} : ${i} >${this.equals} ${this.toVar}; ${cond} ? ${i}++ : ${i}--`;
+          body = `let ${vars}; ${cond} ? ${i} <${this.equals} ${this.toVar} : ${i} >${this.equals} ${this.toVar}; ${cond} ? ${i}++ : ${i}--`;
         }
         post = `{ ${result}.push(${i}); }\n${idt}return ${result};\n${o.indent}`;
         hasArgs = function(node) {

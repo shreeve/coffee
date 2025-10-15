@@ -9,7 +9,7 @@ import vm from 'vm';
 export var compile = CoffeeScript.compile;
 
 export var run = function(code, options = {}) {
-  var compiled;
+  let compiled;
   compiled = CoffeeScript.compile(code, {
     bare: true,
     ...options
@@ -18,7 +18,7 @@ export var run = function(code, options = {}) {
 };
 
 export var evalCode = function(code, options = {}) {
-  var compiled, sandbox;
+  let compiled, sandbox;
   if (!(code = code.trim())) {
     return;
   }
@@ -35,13 +35,13 @@ export var evalCode = function(code, options = {}) {
 };
 
 export var compileFile = function(filename, options = {}) {
-  var source;
+  let source;
   source = fs.readFileSync(filename, 'utf8');
   return CoffeeScript.compile(source, {filename, ...options});
 };
 
 export var runFile = function(filename, options = {}) {
-  var compiled;
+  let compiled;
   compiled = compileFile(filename, options);
   return vm.runInThisContext(compiled.js ?? compiled);
 };

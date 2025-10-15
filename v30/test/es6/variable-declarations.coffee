@@ -3,10 +3,13 @@ Variable Declaration Tests for ES6 Output
 ==========================================
 
 This test suite defines the expected ES6 output for all variable declaration scenarios.
-We test var → let/const transformations following the simple philosophy:
-- All variables use `let`
-- Functions and classes use `const`
+We test var → let transformations following the SIMPLE philosophy:
+- ALL variables use `let` (no `const` anywhere!)
+- Functions and classes use `let` (they're just values!)
 - Maintain CoffeeScript's hoisting behavior
+
+This is CoffeeScript 3.0 - we use `let` everywhere ON PURPOSE!
+No const complexity. Just simple, consistent `let`.
 
 Run with: cd v30 && ES6=1 coffee test/runner.coffee test/es6/variable-declarations.coffee
 ###
@@ -75,46 +78,56 @@ code '''
 
 console.log "\n== Function Declarations =="
 
-# Regular function declarations use const
+# Regular function declarations use let (they're just values!)
 code 'square = (x) -> x * x', '''
-  const square = function(x) {
+  let square;
+
+  square = function(x) {
     return x * x;
   };
 '''
 
-# Arrow/bound functions use const
+# Arrow/bound functions use let
 code 'handler = => @handleEvent()', '''
-  const handler = () => {
+  let handler;
+
+  handler = () => {
     return this.handleEvent();
   };
 '''
 
-# Function with default parameters uses const
+# Function with default parameters uses let
 code 'greet = (name = "World") -> "Hello #{name}"', '''
-  const greet = function(name = "World") {
+  let greet;
+
+  greet = function(name = "World") {
     return `Hello ${name}`;
   };
 '''
 
-# Generator functions use const
+# Generator functions use let
 code '''
   gen = ->
     yield 1
     yield 2
 ''', '''
-  const gen = function*() {
+  let gen;
+
+  gen = function*() {
     yield 1;
-    return yield 2;
+    return (yield 2);
   };
 '''
 
-# Async functions use const
+# Async functions use let
 code '''
   fetchData = ->
     await fetch('/api')
 ''', '''
-  const fetchData = async function() {
-    return await fetch('/api');
+  let fetchData;
+
+  fetchData = async function() {
+    return (await fetch('/api'));
   };
 '''
 
@@ -124,39 +137,48 @@ code '''
 
 console.log "\n== Class Declarations =="
 
-# Class declarations use const
+# Class declarations use let (they're just values!)
 code '''
   class User
     constructor: (@name) ->
 ''', '''
-  const User = class User {
+  let User;
+
+  User = class User {
     constructor(name) {
       this.name = name;
     }
+
   };
 '''
 
-# Class with inheritance uses const
+# Class with inheritance uses let
 code '''
   class Admin extends User
     constructor: -> super()
 ''', '''
-  const Admin = class Admin extends User {
+  let Admin;
+
+  Admin = class Admin extends User {
     constructor() {
-      return super(...arguments);
+      super();
     }
+
   };
 '''
 
-# Anonymous class expressions use const
+# Anonymous class expressions use let
 code '''
   MyClass = class
     method: -> "result"
 ''', '''
-  const MyClass = class {
+  let MyClass;
+
+  MyClass = class {
     method() {
       return "result";
     }
+
   };
 '''
 
@@ -175,11 +197,13 @@ code '''
   console.log x
 ''', '''
   let x;
+
   if (condition) {
     x = 5;
   } else {
     x = 10;
   }
+
   console.log(x);
 '''
 
@@ -193,6 +217,7 @@ code '''
   console.log result
 ''', '''
   let result;
+
   if (a) {
     if (b) {
       result = "nested";
@@ -200,6 +225,7 @@ code '''
       result = "not nested";
     }
   }
+
   console.log(result);
 '''
 
@@ -209,20 +235,24 @@ code '''
   x = 5
 ''', '''
   let x;
+
   console.log(x);
+
   x = 5;
 '''
 
-# Function hoisting (functions are hoisted differently in CoffeeScript)
+# Function hoisting (functions are hoisted with let, just like other variables!)
 code '''
   console.log square(5)
   square = (x) -> x * x
 ''', '''
   let square;
+
+  console.log(square(5));
+
   square = function(x) {
     return x * x;
   };
-  console.log(square(5));
 '''
 
 # ==============================================================================
@@ -231,13 +261,16 @@ code '''
 
 console.log "\n== Loop Variables =="
 
-# For-in loop variables use let
+# For-in loop variables use let (CoffeeScript uses indexed loops)
 code '''
   for i in [1, 2, 3]
     console.log i
 ''', '''
-  let i;
-  for (i of [1, 2, 3]) {
+  let i, j, len, ref;
+
+  ref = [1, 2, 3];
+  for (j = 0, len = ref.length; j < len; j++) {
+    i = ref[j];
     console.log(i);
   }
 '''
@@ -273,10 +306,13 @@ code '''
     last = item
   console.log last
 ''', '''
-  let item, last;
-  for (item of items) {
+  let i, item, last, len;
+
+  for (i = 0, len = items.length; i < len; i++) {
+    item = items[i];
     last = item;
   }
+
   console.log(last);
 '''
 
@@ -318,7 +354,9 @@ let age, name;
 
 # Destructuring in function parameters
 code 'process = ({name, age}) -> "#{name} is #{age}"', '''
-  const process = function({name, age}) {
+  let process;
+
+  process = function({name, age}) {
     return `${name} is ${age}`;
   };
 '''
@@ -337,11 +375,15 @@ code '''
     console.log x
   console.log x
 ''', '''
-  let x = 5;
+  let x;
+
+  x = 5;
+
   (function() {
-    let x = 10;
+    x = 10;
     return console.log(x);
   })();
+
   console.log(x);
 '''
 
@@ -352,9 +394,12 @@ code '''
     x = "inner"
     x
 ''', '''
-  let x = "outer";
-  const fn = function() {
-    let x = "inner";
+  let fn, x;
+
+  x = "outer";
+
+  fn = function() {
+    x = "inner";
     return x;
   };
 '''
@@ -371,14 +416,19 @@ code '''
   x += 10
   x *= 2
 ''', '''
-  let x = 5;
+  let x;
+
+  x = 5;
+
   x += 10;
+
   x *= 2;
 '''
 
 # Chained assignments use let for hoisted declarations
 code 'a = b = c = 5', '''
   let a, b, c;
+
   a = b = c = 5;
 '''
 
@@ -505,10 +555,13 @@ console.log "\n== Comprehensions =="
 
 # Comprehension variables are scoped to expression
 code 'doubled = (x * 2 for x in numbers)', '''
-  let doubled = (function() {
-    let results = [];
-    let x;
-    for (x of numbers) {
+  let doubled, x;
+
+  doubled = (function() {
+    let i, len, results;
+    results = [];
+    for (i = 0, len = numbers.length; i < len; i++) {
+      x = numbers[i];
       results.push(x * 2);
     }
     return results;
@@ -517,10 +570,13 @@ code 'doubled = (x * 2 for x in numbers)', '''
 
 # Comprehension with filter
 code 'evens = (x for x in numbers when x % 2 is 0)', '''
-  let evens = (function() {
-    let results = [];
-    let x;
-    for (x of numbers) {
+  let evens, x;
+
+  evens = (function() {
+    let i, len, results;
+    results = [];
+    for (i = 0, len = numbers.length; i < len; i++) {
+      x = numbers[i];
       if (x % 2 === 0) {
         results.push(x);
       }
@@ -542,10 +598,14 @@ code '''
     temp * 2
   console.log result
 ''', '''
-  let result = (function() {
-    let temp = 5;
+  let result;
+
+  result = (function() {
+    let temp;
+    temp = 5;
     return temp * 2;
   })();
+
   console.log(result);
 '''
 
@@ -615,7 +675,9 @@ code '''
     @staticMethod: -> "static"
     instanceMethod: -> "instance"
 ''', '''
-  const Util = class Util {
+  let Util;
+
+  Util = class Util {
     static staticMethod() {
       return "static";
     }
@@ -645,6 +707,7 @@ code 'x = 5; y = 10', '''
 # Assignment in expression position
 code 'console.log(x = 5)', '''
   let x;
+
   console.log(x = 5);
 '''
 
@@ -655,8 +718,11 @@ code '''
       "nested"
     inner()
 ''', '''
-  const outer = function() {
-    const inner = function() {
+  let outer;
+
+  outer = function() {
+    let inner;
+    inner = function() {
       return "nested";
     };
     return inner();
@@ -683,7 +749,9 @@ code '''
   makeAdder = (x) ->
     (y) -> x + y
 ''', '''
-  const makeAdder = function(x) {
+  let makeAdder;
+
+  makeAdder = function(x) {
     return function(y) {
       return x + y;
     };
