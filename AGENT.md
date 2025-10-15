@@ -610,4 +610,36 @@ Solar's architecture (even with incremental processing) enables:
 
 ---
 
+## The Three-File Bootstrap Strategy
+
+To migrate CoffeeScript from ES5 to ES6 output, we use a three-file bootstrapping approach:
+
+### File Structure and Purpose
+
+1. **v28/src/nodes5.coffee** (Default ES5 Generator)
+   - **Environment**: Runs in ES5 (Node.js)
+   - **Generates**: ES5 JavaScript code
+   - **Build**: `npm run build` from v28 directory
+   - **Purpose**: Maintains backward compatibility; the current default for CoffeeScript 2.8.0
+
+2. **v28/src/nodes.coffee** (Bridge ES6 Generator)
+   - **Environment**: Runs in ES5 (must use CommonJS require/exports)
+   - **Generates**: ES6 JavaScript code (import/export, const/let, arrow functions)
+   - **Build**: `npm run build6` from v28 directory (compiles v30/src → v30/lib)
+   - **Purpose**: The critical bridge that enables ES6 compilation while still running in ES5 environments
+   - **Constraint**: Cannot use ES6 syntax itself since it must run in environments that only support ES5
+
+3. **v30/src/nodes.coffee** (Future ES6 Generator)
+   - **Environment**: Runs in ES6+ (uses import/export natively)
+   - **Generates**: ES6 JavaScript code
+   - **Build**: Will self-host once v30 is complete
+   - **Purpose**: The fully modernized version that can use all ES6 features in its own source code
+   - **Note**: Not used for self-hosting until the ES6 transition is complete
+
+### Why This Strategy?
+
+This approach allows CoffeeScript to bootstrap itself into the ES6 era without breaking existing ES5 environments. The v28/src/nodes.coffee file is the key innovation - it generates modern ES6 code while still being executable in legacy ES5 environments, enabling the compilation of the fully ES6-native v30 version.
+
+---
+
 *This document is the authoritative guide for implementing ES6 support in CoffeeScript 3.0.0 using Solar's incremental directive processing combined with AST analysis - an effective approach for ES6 generation since CoffeeScript AST nodes don't commit to declaration types.*
