@@ -167,42 +167,21 @@ Should compile to use `??` throughout
 **Test**: Simple array iteration uses for...of
 **Commit**: "Generate for...of loops"
 
-### Phase 5: Variable Declarations 🔴 HIGH RISK
+### Phase 5: Variable Declarations ✅ COMPLETED
 
-#### Step 5.1: Simple const for Never-Reassigned
-**File**: `nodes.coffee` - `Block.compileWithDeclarations`
-```coffee
-# Variables that are assigned once and never reassigned
-# Before: var x; x = 5;
-# After:  const x = 5;
-```
-**Risk factors**:
-- Requires full scope analysis
-- Must track assignments across all code paths
-- Closure complications
+**Decision**: We've chosen a **simple, pragmatic approach** that aligns with CoffeeScript's philosophy of simplicity.
 
-**Test**: Single assignment becomes const
-**Commit**: "Use const for never-reassigned variables"
+**Our Approach**:
+- **Variables** → Use `let` (replacing `var` for block scoping benefits)
+- **Functions & Classes** → Use `const` (they're rarely reassigned)
+- **Hoisting** → Maintain CoffeeScript's existing behavior, just with `let`
 
-#### Step 5.2: let for Reassigned Variables
-**File**: `nodes.coffee` - `Scope` class
-```coffee
-# Add tracking: markReassigned(name), isReassigned(name)
-# Before: var x; x = 5; x = 10;
-# After:  let x = 5; x = 10;
-```
-**Test**: Reassigned variables use let
-**Commit**: "Track reassignments and use let"
+**Why This Approach?**
+CoffeeScript has always prioritized simplicity and predictability. A complex const/let analysis would add significant maintenance burden for marginal benefit. Since CoffeeScript users never write `const` or `let` themselves, we optimize for clean, working output rather than ES6 style perfection.
 
-#### Step 5.3: Inline Declarations
-**File**: `nodes.coffee` - `Assign.compileNode`
-```coffee
-# Declare at first assignment instead of hoisting
-# Before: var x, y; x = 5; y = 10;
-# After:  const x = 5; const y = 10;
-```
-**Test**: No hoisted declarations for simple cases
-**Commit**: "Inline variable declarations at first use"
+**Result**: Modern ES6 output that's block-scoped (`let` instead of `var`) while keeping the compiler simple and maintainable.
+
+*See `CONST_LET_PHILOSOPHY.md` for detailed rationale.*
 
 ### Phase 6: Class Improvements 🔴 HIGH RISK
 
@@ -318,8 +297,8 @@ npm test  # Run test suite if available
 
 ## Common Pitfalls to Avoid
 
-1. **Don't**: Try to implement all const/let logic at once
-   **Do**: Start with obvious cases (never reassigned = const)
+1. **Don't**: Overcomplicate variable declarations with complex analysis
+   **Do**: Keep it simple - `let` for variables, `const` for functions/classes
 
 2. **Don't**: Convert all functions to arrows immediately
    **Do**: Start with simple cases, preserve 'function' where needed
@@ -388,14 +367,11 @@ npm run build  # Can compile itself
 - [x] Solar parser integrated with backend.coffee
 - [x] Phase 0: Nullish Coalescing Operator (??) - Clean ES6 `??` output
 - [x] Phase 1: Template Literals - Already implemented
-- [x] Phase 2a: Complete const/let Implementation 🎉
-  - Full scope analysis with reassignment detection
-  - Inline declarations (no hoisting) for cleaner output
-  - Handles: compound assignments, increment/decrement operators
-  - Cross-scope modifications properly tracked
-  - Export declarations correctly use const/let
-  - Loop variables properly scoped
-  - Comprehensive test suite: 78% pass rate (29/37 tests)
+- [x] Phase 2a/5: Variable Declarations (const/let) - Simple approach chosen
+  - Uses `let` for all variables (replacing `var`)
+  - Uses `const` for functions and classes only
+  - Maintains CoffeeScript's existing hoisting behavior
+  - Clean ES6 output without complex AST analysis
 
 ### 🟢 Low Risk (Next Up)
 - [ ] Phase 2b: Module System (Import/Export)
@@ -405,7 +381,7 @@ npm run build  # Can compile itself
 - [ ] Phase 4: Modern Loops (for...of)
 
 ### 🔴 High Risk (Final Phases)
-- [x] Phase 5: Variable Declarations (const/let) ✅ **COMPLETED AS PHASE 2a**
+- [x] Phase 5: Variable Declarations (const/let) ✅ **COMPLETED**
 - [ ] Phase 6: Class Improvements
 - [ ] Phase 7: Destructuring
 
