@@ -794,7 +794,7 @@ exports.Block = class Block extends Base
       assigns = scope.hasAssignments
       if declars or assigns
         fragments.push @makeCode '\n' if i
-        fragments.push @makeCode "#{@tab}let "
+        fragments.push @makeCode "#{@tab}var "
         if declars
           declaredVariables = scope.declaredVariables()
           for declaredVariable, declaredVariablesIndex in declaredVariables
@@ -2120,7 +2120,7 @@ exports.Range = class Range extends Base
     namedIndex = idxName and idxName isnt idx
     varPart  =
       if known and not namedIndex
-        "let #{idx} = #{@fromC}"
+        "var #{idx} = #{@fromC}"
       else
         "#{idx} = #{@fromC}"
     varPart += ", #{@toC}" if @toC isnt @toVar
@@ -2178,14 +2178,14 @@ exports.Range = class Range extends Base
     idt    = @tab + TAB
     i      = o.scope.freeVariable 'i', single: true, reserve: no
     result = o.scope.freeVariable 'results', reserve: no
-    pre    = "\n#{idt}let #{result} = [];"
+    pre    = "\n#{idt}var #{result} = [];"
     if known
       o.index = i
       body    = fragmentsToText @compileNode o
     else
       vars    = "#{i} = #{@fromC}" + if @toC isnt @toVar then ", #{@toC}" else ''
       cond    = "#{@fromVar} <= #{@toVar}"
-      body    = "let #{vars}; #{cond} ? #{i} <#{@equals} #{@toVar} : #{i} >#{@equals} #{@toVar}; #{cond} ? #{i}++ : #{i}--"
+      body    = "var #{vars}; #{cond} ? #{i} <#{@equals} #{@toVar} : #{i} >#{@equals} #{@toVar}; #{cond} ? #{i}++ : #{i}--"
     post   = "{ #{result}.push(#{i}); }\n#{idt}return #{result};\n#{o.indent}"
     hasArgs = (node) -> node?.contains isLiteralArguments
     args   = ', arguments' if hasArgs(@from) or hasArgs(@to)
@@ -2810,9 +2810,8 @@ exports.Class = class Class extends Base
 
   declareName: (o) ->
     return unless (name = @variable?.unwrap()) instanceof IdentifierLiteral
-    # Classes should not be hoisted - they'll use const
-    alreadyDeclared = o.scope.check name.value
-    name.isDeclaration = no  # Don't hoist
+    alreadyDeclared = o.scope.find name.value
+    name.isDeclaration = not alreadyDeclared
 
   isStatementAst: -> yes
 
@@ -3325,14 +3324,8 @@ exports.Assign = class Assign extends Base
           else
             'param'
       else
-        # For functions and classes, don't add to scope (no hoisting)
-        if @value instanceof Code or @value instanceof Class
-          alreadyDeclared = o.scope.check name.value
-          name.isDeclaration = no  # Don't hoist
-        else
-          # Regular variables get added to scope for hoisting
-          alreadyDeclared = o.scope.find name.value
-          name.isDeclaration ?= not alreadyDeclared
+        alreadyDeclared = o.scope.find name.value
+        name.isDeclaration ?= not alreadyDeclared
         # If this assignment identifier has one or more herecomments
         # attached, output them as part of the declarations line (unless
         # other herecomments are already staged there) for compatibility
@@ -3388,13 +3381,6 @@ exports.Assign = class Assign extends Base
       return compiledName.concat @makeCode(': '), val
 
     answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
-
-    # Add const prefix for function and class declarations
-    if not @context and (@value instanceof Code or @value instanceof Class)
-      varBase = @variable.unwrapAll()
-      if varBase instanceof IdentifierLiteral and not o.scope.check(varBase.value)
-        answer.unshift @makeCode "const "
-
     # Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
     # if we're destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
     # The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
