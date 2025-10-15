@@ -796,7 +796,7 @@ export class Block extends Base
       assigns = scope.hasAssignments
       if declars or assigns
         fragments.push @makeCode '\n' if i
-        fragments.push @makeCode "#{@tab}var "
+        fragments.push @makeCode "#{@tab}let "
         if declars
           declaredVariables = scope.declaredVariables()
           for declaredVariable, declaredVariablesIndex in declaredVariables
@@ -2122,7 +2122,7 @@ export class Range extends Base
     namedIndex = idxName and idxName isnt idx
     varPart  =
       if known and not namedIndex
-        "var #{idx} = #{@fromC}"
+        "let #{idx} = #{@fromC}"
       else
         "#{idx} = #{@fromC}"
     varPart += ", #{@toC}" if @toC isnt @toVar
@@ -2180,14 +2180,14 @@ export class Range extends Base
     idt    = @tab + TAB
     i      = o.scope.freeVariable 'i', single: true, reserve: no
     result = o.scope.freeVariable 'results', reserve: no
-    pre    = "\n#{idt}var #{result} = [];"
+    pre    = "\n#{idt}let #{result} = [];"
     if known
       o.index = i
       body    = fragmentsToText @compileNode o
     else
       vars    = "#{i} = #{@fromC}" + if @toC isnt @toVar then ", #{@toC}" else ''
       cond    = "#{@fromVar} <= #{@toVar}"
-      body    = "var #{vars}; #{cond} ? #{i} <#{@equals} #{@toVar} : #{i} >#{@equals} #{@toVar}; #{cond} ? #{i}++ : #{i}--"
+      body    = "let #{vars}; #{cond} ? #{i} <#{@equals} #{@toVar} : #{i} >#{@equals} #{@toVar}; #{cond} ? #{i}++ : #{i}--"
     post   = "{ #{result}.push(#{i}); }\n#{idt}return #{result};\n#{o.indent}"
     hasArgs = (node) -> node?.contains isLiteralArguments
     args   = ', arguments' if hasArgs(@from) or hasArgs(@to)
