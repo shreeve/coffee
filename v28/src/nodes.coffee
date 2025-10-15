@@ -4,14 +4,12 @@
 # the syntax tree into a string of JavaScript code, call `compile()` on the root.
 
 # Import the helpers we plan to use.
-import {
-  compact, flatten, extend, merge, del, starts, ends, some,
-  addDataToNode, attachCommentsToNode, locationDataToString,
-  throwSyntaxError, replaceUnicodeCodePointEscapes,
-  isFunction, isPlainObject, isNumber, parseNumber
-} from './helpers'
+{compact, flatten, extend, merge, del, starts, ends, some,
+addDataToNode, attachCommentsToNode, locationDataToString,
+throwSyntaxError, replaceUnicodeCodePointEscapes,
+isFunction, isPlainObject, isNumber, parseNumber} = require './helpers'
 
-import {isUnassignable, JS_FORBIDDEN} from './lexer'
+{isUnassignable, JS_FORBIDDEN} = require './lexer'
 
 Error.stackTraceLimit = Infinity
 
@@ -129,7 +127,7 @@ NEGATE  = -> @negated = not @negated; this
 # A CodeFragments is a block of generated code, and the location in the source file where the code
 # came from. CodeFragments can be assembled together into working code just by catting together
 # all the CodeFragments' `code` snippets, in order.
-export class CodeFragment
+exports.CodeFragment = class CodeFragment
   constructor: (parent, code) ->
     @code = "#{code}"
     @type = parent?.constructor?.name or 'unknown'
@@ -155,7 +153,7 @@ fragmentsToText = (fragments) ->
 # the environment from higher in the tree (such as if a returned value is
 # being requested by the surrounding function), information about the current
 # scope, and indentation level.
-export class Base
+exports.Base = class Base
 
   compile: (o, lvl) ->
     fragmentsToText @compileToFragments o, lvl
@@ -572,7 +570,7 @@ export class Base
 
 # A **HoistTargetNode** represents the output location in the node tree for a hoisted node.
 # See Base#hoist.
-export class HoistTarget extends Base
+exports.HoistTarget = class HoistTarget extends Base
   # Expands hoisted fragments in the given array
   @expand = (fragments) ->
     for fragment, i in fragments by -1 when fragment.fragments
@@ -612,7 +610,7 @@ export class HoistTarget extends Base
 #### Root
 
 # The root node of the node tree
-export class Root extends Base
+exports.Root = class Root extends Base
   constructor: (@body) ->
     super()
 
@@ -666,7 +664,7 @@ export class Root extends Base
 # The block is the list of expressions that forms the body of an
 # indented block of code -- the implementation of a function, a clause in an
 # `if`, `switch`, or `try`, and so on...
-export class Block extends Base
+exports.Block = class Block extends Base
   constructor: (nodes) ->
     super()
 
@@ -1008,7 +1006,7 @@ export class Block extends Base
 
 # A directive e.g. 'use strict'.
 # Currently only used during AST generation.
-export class Directive extends Base
+exports.Directive = class Directive extends Base
   constructor: (@value) ->
     super()
 
@@ -1023,7 +1021,7 @@ export class Directive extends Base
 # `Literal` is a base class for static values that can be passed through
 # directly into JavaScript without translation, such as: strings, numbers,
 # `true`, `false`, `null`...
-export class Literal extends Base
+exports.Literal = class Literal extends Base
   constructor: (@value) ->
     super()
 
@@ -1043,7 +1041,7 @@ export class Literal extends Base
     # This is only intended for debugging.
     " #{if @isStatement() then super() else @constructor.name}: #{@value}"
 
-export class NumberLiteral extends Literal
+exports.NumberLiteral = class NumberLiteral extends Literal
   constructor: (@value, {@parsedValue} = {}) ->
     super()
     unless @parsedValue?
@@ -1077,7 +1075,7 @@ export class NumberLiteral extends Literal
             @parsedValue
         raw: @value
 
-export class InfinityLiteral extends NumberLiteral
+exports.InfinityLiteral = class InfinityLiteral extends NumberLiteral
   constructor: (@value, {@originalValue = 'Infinity'} = {}) ->
     super()
 
@@ -1096,7 +1094,7 @@ export class InfinityLiteral extends NumberLiteral
       name: 'Infinity'
       declaration: no
 
-export class NaNLiteral extends NumberLiteral
+exports.NaNLiteral = class NaNLiteral extends NumberLiteral
   constructor: ->
     super 'NaN'
 
@@ -1111,7 +1109,7 @@ export class NaNLiteral extends NumberLiteral
       name: 'NaN'
       declaration: no
 
-export class StringLiteral extends Literal
+exports.StringLiteral = class StringLiteral extends Literal
   constructor: (@originalValue, {@quote, @initialChunk, @finalChunk, @indent, @double, @heregex} = {}) ->
     super ''
     @quote = null if @quote is '///'
@@ -1204,7 +1202,7 @@ export class StringLiteral extends Literal
       extra:
         raw: "#{@delimiter}#{@originalValue}#{@delimiter}"
 
-export class RegexLiteral extends Literal
+exports.RegexLiteral = class RegexLiteral extends Literal
   constructor: (value, {@delimiter = '/', @heregexCommentTokens = []} = {}) ->
     super ''
     heregex = @delimiter is '///'
@@ -1237,7 +1235,7 @@ export class RegexLiteral extends Literal
             new LineComment(heregexCommentToken).ast o
     }
 
-export class PassthroughLiteral extends Literal
+exports.PassthroughLiteral = class PassthroughLiteral extends Literal
   constructor: (@originalValue, {@here, @generated} = {}) ->
     super ''
     @value = @originalValue.replace /\\+(`|$)/g, (string) ->
@@ -1255,7 +1253,7 @@ export class PassthroughLiteral extends Literal
       here: !!@here
     }
 
-export class IdentifierLiteral extends Literal
+exports.IdentifierLiteral = class IdentifierLiteral extends Literal
   isAssignable: YES
 
   eachName: (iterator) ->
@@ -1269,7 +1267,7 @@ export class IdentifierLiteral extends Literal
       name: @value
       declaration: !!@isDeclaration
 
-export class PropertyName extends Literal
+exports.PropertyName = class PropertyName extends Literal
   isAssignable: YES
 
   astType: ->
@@ -1280,14 +1278,14 @@ export class PropertyName extends Literal
       name: @value
       declaration: no
 
-export class ComputedPropertyName extends PropertyName
+exports.ComputedPropertyName = class ComputedPropertyName extends PropertyName
   compileNode: (o) ->
     [@makeCode('['), @value.compileToFragments(o, LEVEL_LIST)..., @makeCode(']')]
 
   astNode: (o) ->
     @value.ast o
 
-export class StatementLiteral extends Literal
+exports.StatementLiteral = class StatementLiteral extends Literal
   isStatement: YES
 
   makeReturn: THIS
@@ -1305,7 +1303,7 @@ export class StatementLiteral extends Literal
       when 'break'    then 'BreakStatement'
       when 'debugger' then 'DebuggerStatement'
 
-export class ThisLiteral extends Literal
+exports.ThisLiteral = class ThisLiteral extends Literal
   constructor: (value) ->
     super 'this'
     @shorthand = value is '@'
@@ -1320,7 +1318,7 @@ export class ThisLiteral extends Literal
     return
       shorthand: @shorthand
 
-export class UndefinedLiteral extends Literal
+exports.UndefinedLiteral = class UndefinedLiteral extends Literal
   constructor: ->
     super 'undefined'
 
@@ -1334,11 +1332,11 @@ export class UndefinedLiteral extends Literal
       name: @value
       declaration: no
 
-export class NullLiteral extends Literal
+exports.NullLiteral = class NullLiteral extends Literal
   constructor: ->
     super 'null'
 
-export class BooleanLiteral extends Literal
+exports.BooleanLiteral = class BooleanLiteral extends Literal
   constructor: (value, {@originalValue} = {}) ->
     super value
     @originalValue ?= @value
@@ -1347,7 +1345,7 @@ export class BooleanLiteral extends Literal
     value: if @value is 'true' then yes else no
     name: @originalValue
 
-export class DefaultLiteral extends Literal
+exports.DefaultLiteral = class DefaultLiteral extends Literal
   astType: -> 'Identifier'
 
   astProperties: ->
@@ -1358,7 +1356,7 @@ export class DefaultLiteral extends Literal
 #### Return
 
 # A `return` is a *pureStatement*—wrapping it in a closure wouldn't make sense.
-export class Return extends Base
+exports.Return = class Return extends Base
   constructor: (@expression, {@belongsToFuncDirectiveReturn} = {}) ->
     super()
 
@@ -1404,7 +1402,7 @@ export class Return extends Base
     argument: @expression?.ast(o, LEVEL_PAREN) ? null
 
 # Parent class for `YieldReturn`/`AwaitReturn`.
-export class FuncDirectiveReturn extends Return
+exports.FuncDirectiveReturn = class FuncDirectiveReturn extends Return
   constructor: (expression, {@returnKeyword}) ->
     super expression
 
@@ -1434,17 +1432,17 @@ export class FuncDirectiveReturn extends Return
 
 # `yield return` works exactly like `return`, except that it turns the function
 # into a generator.
-export class YieldReturn extends FuncDirectiveReturn
+exports.YieldReturn = class YieldReturn extends FuncDirectiveReturn
   keyword: 'yield'
 
-export class AwaitReturn extends FuncDirectiveReturn
+exports.AwaitReturn = class AwaitReturn extends FuncDirectiveReturn
   keyword: 'await'
 
 #### Value
 
 # A value, variable or literal or parenthesized, indexed or dotted into,
 # or vanilla.
-export class Value extends Base
+exports.Value = class Value extends Base
   constructor: (base, props, tag, isDefaultValue = no) ->
     super()
     return base if not props and base instanceof Value
@@ -1659,7 +1657,7 @@ export class Value extends Base
       shorthand: !!property.shorthand
     }
 
-export class MetaProperty extends Base
+exports.MetaProperty = class MetaProperty extends Base
   constructor: (@meta, @property) ->
     super()
 
@@ -1693,7 +1691,7 @@ export class MetaProperty extends Base
 #### HereComment
 
 # Comment delimited by `###` (becoming `/* */`).
-export class HereComment extends Base
+exports.HereComment = class HereComment extends Base
   constructor: ({ @content, @newLine, @unshift, @locationData }) ->
     super()
 
@@ -1730,7 +1728,7 @@ export class HereComment extends Base
 #### LineComment
 
 # Comment running from `#` to the end of a line (becoming `//`).
-export class LineComment extends Base
+exports.LineComment = class LineComment extends Base
   constructor: ({ @content, @newLine, @unshift, @locationData, @precededByBlankLine }) ->
     super()
 
@@ -1752,7 +1750,7 @@ export class LineComment extends Base
 #### Call
 
 # Node for a function invocation.
-export class Call extends Base
+exports.Call = class Call extends Base
   constructor: (@variable, @args = [], @soak, @token) ->
     super()
 
@@ -1906,7 +1904,7 @@ export class Call extends Base
 # When `expressions` are set the call will be compiled in such a way that the
 # expressions are evaluated without altering the return value of the `SuperCall`
 # expression.
-export class SuperCall extends Call
+exports.SuperCall = class SuperCall extends Call
   children: Call::children.concat ['expressions']
 
   isStatement: (o) ->
@@ -1926,7 +1924,7 @@ export class SuperCall extends Call
     replacement.unshift superCall
     replacement.compileToFragments o, if o.level is LEVEL_TOP then o.level else LEVEL_LIST
 
-export class Super extends Base
+exports.Super = class Super extends Base
   constructor: (@accessor, @superLiteral) ->
     super()
 
@@ -1980,7 +1978,7 @@ export class Super extends Base
 
 # Regexes with interpolations are in fact just a variation of a `Call` (a
 # `RegExp()` call to be precise) with a `StringWithInterpolations` inside.
-export class RegexWithInterpolations extends Base
+exports.RegexWithInterpolations = class RegexWithInterpolations extends Base
   constructor: (@call, {@heregexCommentTokens = []} = {}) ->
     super()
 
@@ -2003,7 +2001,7 @@ export class RegexWithInterpolations extends Base
 
 #### TaggedTemplateCall
 
-export class TaggedTemplateCall extends Call
+exports.TaggedTemplateCall = class TaggedTemplateCall extends Call
   constructor: (variable, arg, soak) ->
     arg = StringWithInterpolations.fromStringLiteral arg if arg instanceof StringLiteral
     super variable, [ arg ], soak
@@ -2023,7 +2021,7 @@ export class TaggedTemplateCall extends Call
 # Node to extend an object's prototype with an ancestor object.
 # After `goog.inherits` from the
 # [Closure Library](https://github.com/google/closure-library/blob/master/closure/goog/base.js).
-export class Extends extends Base
+exports.Extends = class Extends extends Base
   constructor: (@child, @parent) ->
     super()
 
@@ -2037,7 +2035,7 @@ export class Extends extends Base
 
 # A `.` access into a property of a value, or the `::` shorthand for
 # an access into the object's prototype.
-export class Access extends Base
+exports.Access = class Access extends Base
   constructor: (@name, {@soak, @shorthand} = {}) ->
     super()
 
@@ -2062,7 +2060,7 @@ export class Access extends Base
 #### Index
 
 # A `[ ... ]` indexed access into an array or object.
-export class Index extends Base
+exports.Index = class Index extends Base
   constructor: (@index) ->
     super()
 
@@ -2087,7 +2085,7 @@ export class Index extends Base
 # A range literal. Ranges can be used to extract portions (slices) of arrays,
 # to specify a range for comprehensions, or as a value, to be expanded into the
 # corresponding array of integers at runtime.
-export class Range extends Base
+exports.Range = class Range extends Base
 
   children: ['from', 'to']
 
@@ -2205,7 +2203,7 @@ export class Range extends Base
 # An array slice literal. Unlike JavaScript's `Array#slice`, the second parameter
 # specifies the index of the end of the slice, just as the first parameter
 # is the index of the beginning.
-export class Slice extends Base
+exports.Slice = class Slice extends Base
 
   children: ['range']
 
@@ -2242,7 +2240,7 @@ export class Slice extends Base
 #### Obj
 
 # An object literal, nothing fancy.
-export class Obj extends Base
+exports.Obj = class Obj extends Base
   constructor: (props, @generated = no) ->
     super()
 
@@ -2424,7 +2422,7 @@ export class Obj extends Base
       properties:
         property.ast(o) for property in @expandProperties()
 
-export class ObjectProperty extends Base
+exports.ObjectProperty = class ObjectProperty extends Base
   constructor: ({key, fromAssign}) ->
     super()
     if fromAssign
@@ -2461,7 +2459,7 @@ export class ObjectProperty extends Base
 #### Arr
 
 # An array literal.
-export class Arr extends Base
+exports.Arr = class Arr extends Base
   constructor: (objs, @lhs = no) ->
     super()
     @objects = objs or []
@@ -2577,7 +2575,7 @@ export class Arr extends Base
 # The CoffeeScript class definition.
 # Initialize a **Class** with its name, an optional superclass, and a body.
 
-export class Class extends Base
+exports.Class = class Class extends Base
   children: ['variable', 'parent', 'body']
 
   constructor: (@variable, @parent, @body) ->
@@ -2844,7 +2842,7 @@ export class Class extends Base
       superClass: @parent?.ast(o, LEVEL_PAREN) ? null
       body: @body.ast o, LEVEL_TOP
 
-export class ExecutableClassBody extends Base
+exports.ExecutableClassBody = class ExecutableClassBody extends Base
   children: [ 'class', 'body' ]
 
   defaultClassVariableName: '_Class'
@@ -2960,7 +2958,7 @@ export class ExecutableClassBody extends Base
       assign
     compact result
 
-export class ClassProperty extends Base
+exports.ClassProperty = class ClassProperty extends Base
   constructor: ({@name, @isStatic, @staticClassName, @value, @operatorToken}) ->
     super()
 
@@ -2977,7 +2975,7 @@ export class ClassProperty extends Base
       operator: @operatorToken?.value ? '='
       staticClassName: @staticClassName?.ast(o) ? null
 
-export class ClassPrototypeProperty extends Base
+exports.ClassPrototypeProperty = class ClassPrototypeProperty extends Base
   constructor: ({@name, @value}) ->
     super()
 
@@ -2993,7 +2991,7 @@ export class ClassPrototypeProperty extends Base
 
 #### Import and Export
 
-export class ModuleDeclaration extends Base
+exports.ModuleDeclaration = class ModuleDeclaration extends Base
   constructor: (@clause, @source, @assertions) ->
     super()
     @checkSource()
@@ -3024,7 +3022,7 @@ export class ModuleDeclaration extends Base
     else
       []
 
-export class ImportDeclaration extends ModuleDeclaration
+exports.ImportDeclaration = class ImportDeclaration extends ModuleDeclaration
   compileNode: (o) ->
     @checkScope o, 'import'
     o.importedSymbols = []
@@ -3055,7 +3053,7 @@ export class ImportDeclaration extends ModuleDeclaration
     ret.importKind = 'value' if @clause
     ret
 
-export class ImportClause extends Base
+exports.ImportClause = class ImportClause extends Base
   constructor: (@defaultBinding, @namedImports) ->
     super()
 
@@ -3081,7 +3079,7 @@ export class ImportClause extends Base
       @namedImports?.ast o
     ]
 
-export class ExportDeclaration extends ModuleDeclaration
+exports.ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
   compileNode: (o) ->
     @checkScope o, 'export'
     @checkForAnonymousClassExport()
@@ -3118,7 +3116,7 @@ export class ExportDeclaration extends ModuleDeclaration
     @checkForAnonymousClassExport()
     super o
 
-export class ExportNamedDeclaration extends ExportDeclaration
+exports.ExportNamedDeclaration = class ExportNamedDeclaration extends ExportDeclaration
   astProperties: (o) ->
     ret =
       source: @source?.ast(o) ? null
@@ -3133,20 +3131,20 @@ export class ExportNamedDeclaration extends ExportDeclaration
       ret.declaration = clauseAst
     ret
 
-export class ExportDefaultDeclaration extends ExportDeclaration
+exports.ExportDefaultDeclaration = class ExportDefaultDeclaration extends ExportDeclaration
   astProperties: (o) ->
     return
       declaration: @clause.ast o
       assertions: @astAssertions(o)
 
-export class ExportAllDeclaration extends ExportDeclaration
+exports.ExportAllDeclaration = class ExportAllDeclaration extends ExportDeclaration
   astProperties: (o) ->
     return
       source: @source.ast o
       assertions: @astAssertions(o)
       exportKind: 'value'
 
-export class ModuleSpecifierList extends Base
+exports.ModuleSpecifierList = class ModuleSpecifierList extends Base
   constructor: (@specifiers) ->
     super()
 
@@ -3170,11 +3168,11 @@ export class ModuleSpecifierList extends Base
   astNode: (o) ->
     specifier.ast(o) for specifier in @specifiers
 
-export class ImportSpecifierList extends ModuleSpecifierList
+exports.ImportSpecifierList = class ImportSpecifierList extends ModuleSpecifierList
 
-export class ExportSpecifierList extends ModuleSpecifierList
+exports.ExportSpecifierList = class ExportSpecifierList extends ModuleSpecifierList
 
-export class ModuleSpecifier extends Base
+exports.ModuleSpecifier = class ModuleSpecifier extends Base
   constructor: (@original, @alias, @moduleDeclarationType) ->
     super()
 
@@ -3202,7 +3200,7 @@ export class ModuleSpecifier extends Base
     @addIdentifierToScope o
     super o
 
-export class ImportSpecifier extends ModuleSpecifier
+exports.ImportSpecifier = class ImportSpecifier extends ModuleSpecifier
   constructor: (imported, local) ->
     super imported, local, 'import'
 
@@ -3222,17 +3220,17 @@ export class ImportSpecifier extends ModuleSpecifier
       local: @alias?.ast(o) ? originalAst
       importKind: null
 
-export class ImportDefaultSpecifier extends ImportSpecifier
+exports.ImportDefaultSpecifier = class ImportDefaultSpecifier extends ImportSpecifier
   astProperties: (o) ->
     return
       local: @original.ast o
 
-export class ImportNamespaceSpecifier extends ImportSpecifier
+exports.ImportNamespaceSpecifier = class ImportNamespaceSpecifier extends ImportSpecifier
   astProperties: (o) ->
     return
       local: @alias.ast o
 
-export class ExportSpecifier extends ModuleSpecifier
+exports.ExportSpecifier = class ExportSpecifier extends ModuleSpecifier
   constructor: (local, exported) ->
     super local, exported, 'export'
 
@@ -3242,13 +3240,13 @@ export class ExportSpecifier extends ModuleSpecifier
       local: originalAst
       exported: @alias?.ast(o) ? originalAst
 
-export class DynamicImport extends Base
+exports.DynamicImport = class DynamicImport extends Base
   compileNode: ->
     [@makeCode 'import']
 
   astType: -> 'Import'
 
-export class DynamicImportCall extends Call
+exports.DynamicImportCall = class DynamicImportCall extends Call
   compileNode: (o) ->
     @checkArguments()
     super o
@@ -3265,7 +3263,7 @@ export class DynamicImportCall extends Call
 
 # The **Assign** is used to assign a local variable to value, or to set the
 # property of an object -- including within object literals.
-export class Assign extends Base
+exports.Assign = class Assign extends Base
   constructor: (@variable, @value, @context, options = {}) ->
     super()
     {@param, @subpattern, @operatorToken, @moduleDeclaration, @originalContext = @context} = options
@@ -3672,7 +3670,7 @@ export class Assign extends Base
 
 #### FuncGlyph
 
-export class FuncGlyph extends Base
+exports.FuncGlyph = class FuncGlyph extends Base
   constructor: (@glyph) ->
     super()
 
@@ -3681,7 +3679,7 @@ export class FuncGlyph extends Base
 # A function definition. This is the only node that creates a new Scope.
 # When for the purposes of walking the contents of a function body, the Code
 # has no *children* -- they're within the inner scope.
-export class Code extends Base
+exports.Code = class Code extends Base
   constructor: (params, body, @funcGlyph, @paramStart) ->
     super()
 
@@ -4120,7 +4118,7 @@ export class Code extends Base
 # A parameter in a function definition. Beyond a typical JavaScript parameter,
 # these parameters can also attach themselves to the context of the function,
 # as well as be a splat, gathering up a group of parameters into an array.
-export class Param extends Base
+exports.Param = class Param extends Base
   constructor: (@name, @value, @splat) ->
     super()
 
@@ -4238,7 +4236,7 @@ export class Param extends Base
 
 # A splat, either as a parameter to a function, an argument to a call,
 # or as part of a destructuring assignment.
-export class Splat extends Base
+exports.Splat = class Splat extends Base
   constructor: (name, {@lhs, @postfix = true} = {}) ->
     super()
     @name = if name.compile then name else new Literal name
@@ -4280,7 +4278,7 @@ export class Splat extends Base
 
 # Used to skip values inside an array destructuring (pattern matching) or
 # parameter list.
-export class Expansion extends Base
+exports.Expansion = class Expansion extends Base
 
   shouldCache: NO
 
@@ -4310,7 +4308,7 @@ export class Expansion extends Base
 #### Elision
 
 # Array elision element (for example, [,a, , , b, , c, ,]).
-export class Elision extends Base
+exports.Elision = class Elision extends Base
 
   isAssignable: YES
 
@@ -4337,7 +4335,7 @@ export class Elision extends Base
 # A while loop, the only sort of low-level loop exposed by CoffeeScript. From
 # it, all other loops can be manufactured. Useful in cases where you need more
 # flexibility or more speed than a comprehension can provide.
-export class While extends Base
+exports.While = class While extends Base
   constructor: (@condition, {invert: @inverted, @guard, @isLoop} = {}) ->
     super()
 
@@ -4406,7 +4404,7 @@ export class While extends Base
 
 # Simple Arithmetic and logical operations. Performs some conversion from
 # CoffeeScript operations into their JavaScript equivalents.
-export class Op extends Base
+exports.Op = class Op extends Base
   constructor: (op, first, second, flip, {@invertOperator, @originalOperator = op} = {}) ->
     super()
 
@@ -4558,15 +4556,14 @@ export class Op extends Base
       (shared.compileToFragments o), @makeCode(" #{@operator} "), (@second.compileToFragments o, LEVEL_OP)
     @wrapInParentheses fragments
 
-  # Keep reference to the left expression, unless this an existential assignment
+  # ES6: Use nullish coalescing operator (??) for existential operator
   compileExistence: (o, checkOnlyUndefined) ->
-    if @first.shouldCache()
-      ref = new IdentifierLiteral o.scope.freeVariable 'ref'
-      fst = new Parens new Assign ref, @first
-    else
-      fst = @first
-      ref = fst
-    new If(new Existence(fst, checkOnlyUndefined), ref, type: 'if').addElse(@second).compileToFragments o
+    # Simply compile to left ?? right
+    left = @first.compileToFragments o, LEVEL_OP
+    right = @second.compileToFragments o, LEVEL_OP
+    answer = [].concat left, @makeCode(" ?? "), right
+    # Wrap in parentheses if needed for operator precedence
+    if o.level <= LEVEL_OP then answer else @wrapInParentheses answer
 
   # Compile a unary **Op**.
   compileUnary: (o) ->
@@ -4689,7 +4686,7 @@ export class Op extends Base
           operator: operatorAst
 
 #### In
-export class In extends Base
+exports.In = class In extends Base
   constructor: (@object, @array) ->
     super()
 
@@ -4729,7 +4726,7 @@ export class In extends Base
 #### Try
 
 # A classic *try/catch/finally* block.
-export class Try extends Base
+exports.Try = class Try extends Base
   constructor: (@attempt, @catch, @ensure, @finallyTag) ->
     super()
 
@@ -4787,7 +4784,7 @@ export class Try extends Base
         else
           null
 
-export class Catch extends Base
+exports.Catch = class Catch extends Base
   constructor: (@recovery, @errorVariable) ->
     super()
     @errorVariable?.unwrap().propagateLhs? yes
@@ -4837,7 +4834,7 @@ export class Catch extends Base
 #### Throw
 
 # Simple node to throw an exception.
-export class Throw extends Base
+exports.Throw = class Throw extends Base
   constructor: (@expression) ->
     super()
 
@@ -4867,7 +4864,7 @@ export class Throw extends Base
 # Checks a variable for existence -- not `null` and not `undefined`. This is
 # similar to `.nil?` in Ruby, and avoids having to consult a JavaScript truth
 # table. Optionally only check if a variable is not `undefined`.
-export class Existence extends Base
+exports.Existence = class Existence extends Base
   constructor: (@expression, onlyNotUndefined = no) ->
     super()
     @comparisonTarget = if onlyNotUndefined then 'undefined' else 'null'
@@ -4919,7 +4916,7 @@ export class Existence extends Base
 # parentheses, but no longer -- you can put in as many as you please.
 #
 # Parentheses are a good way to force any statement to become an expression.
-export class Parens extends Base
+exports.Parens = class Parens extends Base
   constructor: (@body) ->
     super()
 
@@ -4952,7 +4949,7 @@ export class Parens extends Base
 
 #### StringWithInterpolations
 
-export class StringWithInterpolations extends Base
+exports.StringWithInterpolations = class StringWithInterpolations extends Base
   constructor: (@body, {@quote, @startQuote} = {}) ->
     super()
 
@@ -5076,7 +5073,7 @@ export class StringWithInterpolations extends Base
 
     {expressions, quasis, @quote}
 
-export class TemplateElement extends Base
+exports.TemplateElement = class TemplateElement extends Base
   constructor: (@value, {@tail} = {}) ->
     super()
 
@@ -5086,7 +5083,7 @@ export class TemplateElement extends Base
         raw: @value
       tail: !!@tail
 
-export class Interpolation extends Base
+exports.Interpolation = class Interpolation extends Base
   constructor: (@expression) ->
     super()
 
@@ -5094,7 +5091,7 @@ export class Interpolation extends Base
 
 # Represents the contents of an empty interpolation (e.g. `#{}`).
 # Only used during AST generation.
-export class EmptyInterpolation extends Base
+exports.EmptyInterpolation = class EmptyInterpolation extends Base
   constructor: ->
     super()
 
@@ -5107,7 +5104,7 @@ export class EmptyInterpolation extends Base
 # Unlike Python array comprehensions, they can be multi-line, and you can pass
 # the current index of the loop as a second parameter. Unlike Ruby blocks,
 # you can map and filter in a single pass.
-export class For extends While
+exports.For = class For extends While
   constructor: (body, source) ->
     super()
     @addBody body
@@ -5280,7 +5277,7 @@ export class For extends While
 #### Switch
 
 # A JavaScript *switch* statement. Converts into a returnable expression on-demand.
-export class Switch extends Base
+exports.Switch = class Switch extends Base
   constructor: (@subject, @cases, @otherwise) ->
     super()
 
@@ -5364,7 +5361,7 @@ class SwitchCase extends Base
       consequent: @block?.ast(o, LEVEL_TOP).body ? []
       trailing: !!@trailing
 
-export class SwitchWhen extends Base
+exports.SwitchWhen = class SwitchWhen extends Base
   constructor: (@conditions, @block) ->
     super()
 
@@ -5377,7 +5374,7 @@ export class SwitchWhen extends Base
 #
 # Single-expression **Ifs** are compiled into conditional operators if possible,
 # because ternaries are already proper expressions, and don't need conversion.
-export class If extends Base
+exports.If = class If extends Base
   constructor: (@condition, @body, options = {}) ->
     super()
     @elseBody  = null
@@ -5494,7 +5491,7 @@ export class If extends Base
 
 # A sequence expression e.g. `(a; b)`.
 # Currently only used during AST generation.
-export class Sequence extends Base
+exports.Sequence = class Sequence extends Base
   children: ['expressions']
 
   constructor: (@expressions) ->
@@ -5744,7 +5741,7 @@ isLocationDataEndGreater = (a, b) ->
 # mergeLocationData(first, second, justLeading: yes).range # [1, 5]
 # mergeLocationData(first, second, justEnding:  yes).range # [4, 10]
 # ```
-export mergeLocationData = (locationDataA, locationDataB, {justLeading, justEnding} = {}) ->
+mergeLocationData = exports.mergeLocationData = (locationDataA, locationDataB, {justLeading, justEnding} = {}) ->
   return Object.assign(
     if justEnding
       first_line:   locationDataA.first_line
@@ -5801,7 +5798,7 @@ export mergeLocationData = (locationDataA, locationDataB, {justLeading, justEndi
 # mergeAstLocationData(first, second, justLeading: yes).range # [1, 5]
 # mergeAstLocationData(first, second, justEnding:  yes).range # [4, 10]
 # ```
-export mergeAstLocationData = (nodeA, nodeB, {justLeading, justEnding} = {}) ->
+mergeAstLocationData = exports.mergeAstLocationData = (nodeA, nodeB, {justLeading, justEnding} = {}) ->
   return
     loc:
       start:
@@ -5843,7 +5840,7 @@ export mergeAstLocationData = (nodeA, nodeB, {justLeading, justEnding} = {}) ->
         greater nodeA.end, nodeB.end
 
 # Convert internal location data format to ESTree-compatible AST location data format
-export convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) ->
+convertLocationDataToAst = exports.convertLocationDataToAst = ({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) ->
   return
     loc:
       start:

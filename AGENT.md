@@ -263,7 +263,7 @@ Create comprehensive tests using the existing test runner's `code()` function:
 code 'x = y ? "default"', 'const x = y ?? "default";'
 code 'func() ? "fallback"', 'func() ?? "fallback";'
 
-# v30/test/es6/template_literals.coffee  
+# v30/test/es6/template_literals.coffee
 code '"Hello #{name}!"', '`Hello ${name}!`;'
 code '"#{x} + #{y} = #{x+y}"', '`${x} + ${y} = ${x + y}`;'
 
@@ -388,7 +388,7 @@ npm run build  # Can compile itself
 - [x] Solar parser integrated with backend.coffee
 
 ### 🟢 Low Risk (Next Up)
-- [ ] Phase 0: Nullish Coalescing Operator (??)
+- [x] Phase 0: Nullish Coalescing Operator (??) ✅ **COMPLETE!**
 - [ ] Phase 1: Template Literals
 - [ ] Phase 2: Module System (Import/Export)
 

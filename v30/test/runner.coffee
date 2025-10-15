@@ -6,6 +6,7 @@
 
 fs = require 'fs'
 path = require 'path'
+# Use v28's CoffeeScript - when ES6=1 is set, it uses nodes.js for ES6 output
 CoffeeScript = require '../../v28/lib/coffeescript'
 
 # ANSI colors

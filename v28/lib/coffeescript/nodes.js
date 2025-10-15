@@ -17,7 +17,7 @@
 
   Error.stackTraceLimit = 2e308;
 
-  // Inline Scope class for ES5 generation
+  // Inline Scope class for ES6 generation
   // The Scope class regulates lexical scoping within CoffeeScript. As you
   // generate code, you create a tree of scopes in the same shape as the nested
   // function bodies. Each scope knows about the variables declared within it,
@@ -195,11 +195,6 @@
     }
 
   };
-
-  // Functions required by parser.
-  exports.extend = extend;
-
-  exports.addDataToNode = addDataToNode;
 
   // Constant functions for nodes that don't need customization.
   YES = function() {
@@ -6831,19 +6826,19 @@
         return this.wrapInParentheses(fragments);
       }
 
-      // Keep reference to the left expression, unless this an existential assignment
+      // ES6: Use nullish coalescing operator (??) for existential operator
       compileExistence(o, checkOnlyUndefined) {
-        var fst, ref;
-        if (this.first.shouldCache()) {
-          ref = new IdentifierLiteral(o.scope.freeVariable('ref'));
-          fst = new Parens(new Assign(ref, this.first));
+        var answer, left, right;
+        // Simply compile to left ?? right
+        left = this.first.compileToFragments(o, LEVEL_OP);
+        right = this.second.compileToFragments(o, LEVEL_OP);
+        answer = [].concat(left, this.makeCode(" ?? "), right);
+        // Wrap in parentheses if needed for operator precedence
+        if (o.level <= LEVEL_OP) {
+          return answer;
         } else {
-          fst = this.first;
-          ref = fst;
+          return this.wrapInParentheses(answer);
         }
-        return new If(new Existence(fst, checkOnlyUndefined), ref, {
-          type: 'if'
-        }).addElse(this.second).compileToFragments(o);
       }
 
       // Compile a unary **Op**.
@@ -8737,7 +8732,7 @@
   // mergeLocationData(first, second, justLeading: yes).range # [1, 5]
   // mergeLocationData(first, second, justEnding:  yes).range # [4, 10]
   // ```
-  exports.mergeLocationData = mergeLocationData = function(locationDataA, locationDataB, {justLeading, justEnding} = {}) {
+  mergeLocationData = exports.mergeLocationData = function(locationDataA, locationDataB, {justLeading, justEnding} = {}) {
     return Object.assign(justEnding ? {
       first_line: locationDataA.first_line,
       first_column: locationDataA.first_column
@@ -8781,7 +8776,7 @@
   // mergeAstLocationData(first, second, justLeading: yes).range # [1, 5]
   // mergeAstLocationData(first, second, justEnding:  yes).range # [4, 10]
   // ```
-  exports.mergeAstLocationData = mergeAstLocationData = function(nodeA, nodeB, {justLeading, justEnding} = {}) {
+  mergeAstLocationData = exports.mergeAstLocationData = function(nodeA, nodeB, {justLeading, justEnding} = {}) {
     return {
       loc: {
         start: justEnding ? nodeA.loc.start : isAstLocGreater(nodeA.loc.start, nodeB.loc.start) ? nodeB.loc.start : nodeA.loc.start,
@@ -8794,7 +8789,7 @@
   };
 
   // Convert internal location data format to ESTree-compatible AST location data format
-  exports.convertLocationDataToAst = convertLocationDataToAst = function({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) {
+  convertLocationDataToAst = exports.convertLocationDataToAst = function({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) {
     return {
       loc: {
         start: {
