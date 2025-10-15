@@ -32,39 +32,60 @@ compileExistence: (o, checkOnlyUndefined) ->
 **Impact**: Replaces ~30 lines of complex caching logic with 5 lines using native ES6 operator.
 
 ### Phase 2: Variable Declarations
-Replace `var` with block-scoped `let` and `const` declarations.
+Replace `var` with `let` exclusively throughout all generated code.
 
-**Approach**: Simple, maintainable rules aligned with CoffeeScript's philosophy:
-- **Variables** → `let` (all regular variables)
-- **Functions & Classes** → `const` (rarely reassigned)
+**Approach**: Pure `let` philosophy aligned with CoffeeScript's core principle that everything is reassignable:
+- **All declarations** → `let` (variables, functions, classes - everything)
+- **No `const`** → Maintains CoffeeScript's semantic that all values can be reassigned
 - **Hoisting** → Maintain existing CoffeeScript behavior
 
-**Implementation**: Simplify existing complex const/let analysis to just:
-1. Replace `var` with `let` in hoisting logic
-2. Add `const` for function and class assignments
-3. Remove reassignment tracking complexity
+**Implementation**:
+1. Replace all `var` declarations with `let`
+2. No special cases for functions or classes - they use `let` like everything else
+3. No reassignment tracking or analysis needed
 
-**Rationale**: CoffeeScript users never write `let`/`const` directly. The compiler should prioritize simplicity and maintainability over ES6 style perfection. See `CONST_LET_PHILOSOPHY.md` for detailed reasoning.
+**Rationale**: CoffeeScript treats all values as reassignable. Using `let` everywhere maintains perfect semantic compatibility while modernizing the output. See `CONST_LET_PHILOSOPHY.md` for detailed reasoning.
 
 ### Phase 3: Module System (Import/Export)
-Transform CommonJS modules to ES6 modules.
+Support native ES6 import/export syntax in CoffeeScript.
 
-**Steps**:
-1. Convert `require()` → `import`
-2. Convert `exports` → `export`
-3. Add `.js` extension to relative imports
-4. Hoist all imports to top of file
+**Approach**: Direct compilation of ES6 module syntax with minimal enhancements:
+- Parse native import/export statements written in CoffeeScript
+- **Require all static imports at the top of the file** (ES6 constraint, not auto-hoisted)
+- Auto-add `.js` extension to relative imports (applies to both static and dynamic imports)
+- Add `with { type: 'json' }` for `.json` imports
+- Use `let` for all exports (consistent with Phase 2 philosophy)
+
+**Import Positioning**: Static `import` statements must be placed at the top of files, matching ES6 semantics. This is intentional - no auto-hoisting or reordering. This educates users about ES6 module constraints and maintains code clarity.
+
+**Dynamic Imports**: The `import()` function (not statement) is fully supported and can be used anywhere in code for conditional, lazy, or on-demand loading:
+```coffeescript
+# CoffeeScript - dynamic imports can be anywhere
+if needsFeature
+  {processData} = await import('./heavy-processor')
+  processData(myData)
+
+# Compiles to (note .js added automatically):
+if (needsFeature) {
+  ({processData} = await import('./heavy-processor.js'));
+  processData(myData);
+}
+```
 
 **Example**:
-```javascript
-// Before (CommonJS)
-const {helper} = require('./utils');
-exports.myFunction = function() {};
+```coffeescript
+# CoffeeScript input
+import {helper} from './utils'
+import data from './config.json'
+export myFunction = -> console.log 'hello'
 
-// After (ES6)
+# ES6 output
 import {helper} from './utils.js';
-export const myFunction = function() {};
+import data from './config.json' with { type: 'json' };
+export let myFunction = function() { return console.log('hello'); };
 ```
+
+**Note**: No CommonJS transformation - users write modern ES6 import/export syntax directly.
 
 ### Phase 4: Arrow Functions
 Generate arrow functions where appropriate.
@@ -77,10 +98,10 @@ Generate arrow functions where appropriate.
 **Example**:
 ```javascript
 // Simple function → Arrow
-const double = (x) => x * 2;
+let double = (x) => x * 2;
 
 // Method needing 'this' → Regular function
-const handler = function() { return this.data; };
+let handler = function() { return this.data; };
 ```
 
 ### Phase 5: Modern Loops
@@ -100,7 +121,7 @@ for (let i = 0, len = items.length; i < len; i++) {
 }
 
 // After
-for (const item of items) {
+for (let item of items) {
   process(item);
 }
 ```
@@ -167,7 +188,7 @@ Keep these files synchronized - changes in v28 should be mirrored in v30.
 ## Success Criteria
 
 The migration is complete when v30 output exhibits:
-- ✅ No `var` declarations (only `const`/`let`)
+- ✅ No `var` declarations (only `let`)
 - ✅ ES6 module syntax (`import`/`export`)
 - ✅ Arrow functions where appropriate
 - ✅ Modern loop constructs (`for...of`)
@@ -187,12 +208,12 @@ node lib/index.js     # Runs successfully
 
 ### ✅ Completed
 - Phase 1: Nullish Coalescing Operator
+- Phase 2: Variable Declarations (`let` only)
 
-### 🚧 Next Up
-- Phase 2: Variable Declarations (`let`/`const`) - **Approach decided, implementation pending**
+### 🚧 In Progress
+- Phase 3: Module System (Native ES6 import/export)
 
 ### 📋 Upcoming
-- Phase 3: Module System (Import/Export)
 - Phase 4: Arrow Functions
 - Phase 5: Modern Loops
 - Phase 6: Destructuring
