@@ -610,6 +610,49 @@ Solar's architecture (even with incremental processing) enables:
 
 ---
 
+## Required ES6 Improvements (To Be Implemented)
+
+### Variable const/let Improvements Needed
+
+1. **Variable Reassignment Tracking** (Scope Class)
+   - Must add tracking to determine const vs let
+   - Need methods: `markReassigned()`, `isReassigned()`, `getDeclarationKeyword()`
+   - Should accurately identify which variables are reassigned throughout their lifecycle
+
+2. **const/let Declarations** (Block.compileWithDeclarations)
+   - Must replace `var` with appropriate `const`/`let`
+   - Should group variables by reassignment status
+   - Need to generate clean, modern variable declarations
+
+3. **Inline Declarations** (Assign.compileNode)
+   - Should emit `const`/`let` at first assignment instead of hoisting
+   - Must track which variables are declared inline
+   - Will produce more readable, less cluttered code
+
+### Import/Export Improvements Needed
+
+1. **Import Hoisting** (Block.compileRoot)
+   - Must separate and reorder: imports → body → exports
+   - Should ensure all imports appear at the top of the file
+   - Need to maintain ES6 module semantics
+
+2. **Smart Import Resolution** (ImportDeclaration)
+   - Should auto-append `.js` to local paths without extensions
+   - Must auto-add `assert { type: "json" }` for JSON imports
+   - Need to handle modern module resolution patterns
+
+3. **Import Formatting** (ModuleSpecifierList)
+   - Should use succinct single-line for short import lists
+   - Must use clean multi-line for longer lists
+   - Will improve code readability
+
+4. **Export Enhancements** (ExportDeclaration)
+   - Must use proper `const`/`let` for exports based on reassignment
+   - Should handle `export default class` correctly
+   - Need to generate idiomatic ES6 export patterns
+
+---
+
 ## The Three-File Bootstrap Strategy
 
 To migrate CoffeeScript from ES5 to ES6 output, we use a three-file bootstrapping approach:
