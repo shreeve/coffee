@@ -6,7 +6,7 @@ o = function(pattern, action, options) {
   pattern = pattern.trim().replace(/\s{2,}/g, ' ');
   return [
     pattern,
-    action != null ? action : {
+    action ?? {
       $use: 1
     },
     options

@@ -9,20 +9,20 @@ import vm from 'vm';
 export var compile = CoffeeScript.compile;
 
 export var run = function(code, options = {}) {
-  var compiled, ref;
+  var compiled;
   compiled = CoffeeScript.compile(code, {
     bare: true,
     ...options
   });
-  return vm.runInThisContext((ref = compiled.js) != null ? ref : compiled);
+  return vm.runInThisContext(compiled.js ?? compiled);
 };
 
 export var evalCode = function(code, options = {}) {
-  var compiled, ref, sandbox;
+  var compiled, sandbox;
   if (!(code = code.trim())) {
     return;
   }
-  sandbox = (ref = options.sandbox) != null ? ref : global;
+  sandbox = options.sandbox ?? global;
   compiled = CoffeeScript.compile(code, {
     bare: true,
     ...options
@@ -41,9 +41,9 @@ export var compileFile = function(filename, options = {}) {
 };
 
 export var runFile = function(filename, options = {}) {
-  var compiled, ref;
+  var compiled;
   compiled = compileFile(filename, options);
-  return vm.runInThisContext((ref = compiled.js) != null ? ref : compiled);
+  return vm.runInThisContext(compiled.js ?? compiled);
 };
 
 export * from './coffeescript';

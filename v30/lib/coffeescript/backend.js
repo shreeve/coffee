@@ -10,7 +10,7 @@ Backend = class Backend {
   }
 
   _toLocation(pos) {
-    var from, ref, ref1, ref2, ref3, ref4, ref5, till;
+    var from, ref, ref1, till;
     if (Array.isArray(pos)) {
       from = this.pos(pos[0]);
       till = this.pos(pos[1]);
@@ -21,9 +21,9 @@ Backend = class Backend {
       return {
         first_line: from.first_line,
         first_column: from.first_column,
-        last_line_exclusive: (ref = till.last_line_exclusive) != null ? ref : till.last_line,
-        last_column_exclusive: (ref1 = till.last_column_exclusive) != null ? ref1 : till.last_column + 1,
-        range: [(ref2 = (ref3 = from.range) != null ? ref3[0] : void 0) != null ? ref2 : 0, (ref4 = (ref5 = till.range) != null ? ref5[1] : void 0) != null ? ref4 : 0]
+        last_line_exclusive: till.last_line_exclusive ?? till.last_line,
+        last_column_exclusive: till.last_column_exclusive ?? (till.last_column + 1),
+        range: [((ref = from.range) != null ? ref[0] : void 0) ?? 0, ((ref1 = till.range) != null ? ref1[1] : void 0) ?? 0]
       };
     }
   }
@@ -138,10 +138,10 @@ Backend = class Backend {
   }
 
   processUse(o) {
-    var name1, ref, target;
+    var name1, target;
     target = this.$(o.$use);
     if (o.method != null) {
-      return target != null ? typeof target[name1 = o.method] === "function" ? target[name1](...((ref = o.args) != null ? ref : [])) : void 0 : void 0;
+      return target != null ? typeof target[name1 = o.method] === "function" ? target[name1](...o.args ?? []) : void 0 : void 0;
     }
     if (o.prop != null) {
       return target != null ? target[o.prop] : void 0;
@@ -236,10 +236,10 @@ Backend = class Backend {
   processAst(o) {
     var args, body, context, expression, expressions, forNode, ifNode, k, loc, name, node, operator, options, pos, value, variable, whileNode;
     node = (function() {
-      var i, j, len, len1, ref, ref1, ref2, ref3, ref4;
+      var i, j, len, len1, ref, ref1, ref2;
       switch (o.$ast) {
         case 'Value':
-          return this._toValue(this.$(o.base), (ref = this.$(o.properties)) != null ? ref : [], o.this && 'this', (ref1 = this.$(o.isDefaultValue)) != null ? ref1 : false);
+          return this._toValue(this.$(o.base), this.$(o.properties) ?? [], o.this && 'this', this.$(o.isDefaultValue) ?? false);
         case 'IdentifierLiteral':
           return new this.ast.IdentifierLiteral(this.$(o.value));
         case 'NumberLiteral':
@@ -278,9 +278,9 @@ Backend = class Backend {
             context = operator;
           }
           options = {};
-          ref2 = ['operatorToken', 'moduleDeclaration', 'originalContext'];
-          for (i = 0, len = ref2.length; i < len; i++) {
-            k = ref2[i];
+          ref = ['operatorToken', 'moduleDeclaration', 'originalContext'];
+          for (i = 0, len = ref.length; i < len; i++) {
+            k = ref[i];
             if (o[k] != null) {
               options[k] = this.$(o[k]);
             }
@@ -289,7 +289,7 @@ Backend = class Backend {
         case 'Call':
           return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
         case 'Op':
-          args = ((ref3 = o.args) != null ? ref3.map((arg) => {
+          args = ((ref1 = o.args) != null ? ref1.map((arg) => {
             return this.$(arg);
           }) : void 0) || [];
           if ((o.invertOperator != null) || (o.originalOperator != null)) {
@@ -349,9 +349,9 @@ Backend = class Backend {
             index: this.$(o.index),
             source: this.$(o.source)
           });
-          ref4 = ['await', 'awaitTag', 'own', 'ownTag', 'step', 'from', 'object', 'guard'];
-          for (j = 0, len1 = ref4.length; j < len1; j++) {
-            k = ref4[j];
+          ref2 = ['await', 'awaitTag', 'own', 'ownTag', 'step', 'from', 'object', 'guard'];
+          for (j = 0, len1 = ref2.length; j < len1; j++) {
+            k = ref2[j];
             if (o[k] != null) {
               forNode[k] = this.$(o[k]);
             }

@@ -312,7 +312,7 @@ export var Rewriter = (function() {
           return tokens.splice(idx, 0, generate('{', val, token, prevToken));
         };
         endImplicitObject = function(j) {
-          j = j != null ? j : i;
+          j = j ?? i;
           stack.pop();
           tokens.splice(j, 0, generate('}', '}', token, prevToken));
           return i += 1;
@@ -675,12 +675,12 @@ export var Rewriter = (function() {
         return null;
       };
       return this.scanTokens(function(token, i, tokens) {
-        var isIndent, nextToken, nextTokenIndex, precedingComment, prevLocationData, prevToken, ref, ref1, ref2, useNextToken;
+        var isIndent, nextToken, nextTokenIndex, precedingComment, prevLocationData, prevToken, ref, ref1, useNextToken;
         if (!(((ref = token[0]) === 'INDENT' || ref === 'OUTDENT') || (token.generated && token[0] === 'CALL_END' && !((ref1 = token.data) != null ? ref1.closingTagNameToken : void 0)) || (token.generated && token[0] === '}'))) {
           return 1;
         }
         isIndent = token[0] === 'INDENT';
-        prevToken = (ref2 = token.prevToken) != null ? ref2 : tokens[i - 1];
+        prevToken = token.prevToken ?? tokens[i - 1];
         prevLocationData = prevToken[2];
         useNextToken = token.explicit || token.generated;
         if (useNextToken) {
@@ -843,13 +843,13 @@ export var Rewriter = (function() {
 
     exposeTokenDataToGrammar() {
       return this.scanTokens(function(token, i) {
-        var key, ref, ref1, val;
+        var key, ref, val;
         if (token.generated || (token.data && Object.keys(token.data).length !== 0)) {
           token[1] = new String(token[1]);
-          ref1 = (ref = token.data) != null ? ref : {};
-          for (key in ref1) {
-            if (!hasProp.call(ref1, key)) continue;
-            val = ref1[key];
+          ref = token.data ?? {};
+          for (key in ref) {
+            if (!hasProp.call(ref, key)) continue;
+            val = ref[key];
             token[1][key] = val;
           }
           if (token.generated) {

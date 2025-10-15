@@ -30,7 +30,7 @@ export var Lexer = class Lexer {
   }
 
   tokenize(code, opts = {}) {
-    var consumed, end, i, ref;
+    var consumed, end, i;
     this.indent = 0;
     this.baseIndent = 0;
     this.continuationLineAdditionalIndent = 0;
@@ -63,7 +63,7 @@ export var Lexer = class Lexer {
     }
     this.closeIndentation();
     if (end = this.ends.pop()) {
-      this.error(`missing ${end.tag}`, ((ref = end.origin) != null ? ref : end)[2]);
+      this.error(`missing ${end.tag}`, (end.origin ?? end)[2]);
     }
     if (opts.rewrite === false) {
       return this.tokens;
@@ -95,7 +95,7 @@ export var Lexer = class Lexer {
   }
 
   identifierToken() {
-    var alias, colon, colonOffset, colonToken, id, idLength, input, match, poppedToken, prev, prevprev, ref, ref1, ref10, ref11, ref12, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, regExSuper, sup, tag, tagToken, tokenData;
+    var alias, colon, colonOffset, colonToken, id, idLength, input, match, poppedToken, prev, prevprev, ref, ref1, ref10, ref11, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, regExSuper, sup, tag, tagToken, tokenData;
     if (!(match = IDENTIFIER.exec(this.chunk))) {
       return 0;
     }
@@ -176,7 +176,7 @@ export var Lexer = class Lexer {
           tag = 'RELATION';
           if (this.value() === '!') {
             poppedToken = this.tokens.pop();
-            tokenData.invert = (ref7 = (ref8 = poppedToken.data) != null ? ref8.original : void 0) != null ? ref7 : poppedToken[1];
+            tokenData.invert = ((ref7 = poppedToken.data) != null ? ref7.original : void 0) ?? poppedToken[1];
           }
         }
       }
@@ -184,7 +184,7 @@ export var Lexer = class Lexer {
       tag = 'FORFROM';
       this.seenFor = false;
     } else if (tag === 'PROPERTY' && prev) {
-      if (prev.spaced && (ref9 = prev[0], indexOf.call(CALLABLE, ref9) >= 0) && /^[gs]et$/.test(prev[1]) && this.tokens.length > 1 && ((ref10 = this.tokens[this.tokens.length - 2][0]) !== '.' && ref10 !== '?.' && ref10 !== '@')) {
+      if (prev.spaced && (ref8 = prev[0], indexOf.call(CALLABLE, ref8) >= 0) && /^[gs]et$/.test(prev[1]) && this.tokens.length > 1 && ((ref9 = this.tokens[this.tokens.length - 2][0]) !== '.' && ref9 !== '?.' && ref9 !== '@')) {
         this.error(`'${prev[1]}' cannot be used as a keyword, or as a function call without parentheses`, prev[2]);
       } else if (prev[0] === '.' && this.tokens.length > 1 && (prevprev = this.tokens[this.tokens.length - 2])[0] === 'UNARY' && prevprev[1] === 'new') {
         prevprev[0] = 'NEW_TARGET';
@@ -193,7 +193,7 @@ export var Lexer = class Lexer {
         prevprev[0] = 'IMPORT_META';
       } else if (this.tokens.length > 2) {
         prevprev = this.tokens[this.tokens.length - 2];
-        if (((ref11 = prev[0]) === '@' || ref11 === 'THIS') && prevprev && prevprev.spaced && /^[gs]et$/.test(prevprev[1]) && ((ref12 = this.tokens[this.tokens.length - 3][0]) !== '.' && ref12 !== '?.' && ref12 !== '@')) {
+        if (((ref10 = prev[0]) === '@' || ref10 === 'THIS') && prevprev && prevprev.spaced && /^[gs]et$/.test(prevprev[1]) && ((ref11 = this.tokens[this.tokens.length - 3][0]) !== '.' && ref11 !== '?.' && ref11 !== '@')) {
           this.error(`'${prevprev[1]}' cannot be used as a keyword, or as a function call without parentheses`, prevprev[2]);
         }
       }
@@ -793,7 +793,7 @@ export var Lexer = class Lexer {
   }
 
   literalToken() {
-    var match, message, origin, prev, ref, ref1, ref2, ref3, ref4, ref5, skipToken, tag, token, value;
+    var match, message, origin, prev, ref, ref1, ref2, ref3, ref4, skipToken, tag, token, value;
     if (match = OPERATOR.exec(this.chunk)) {
       [value] = match;
       if (CODE.test(value)) {
@@ -819,7 +819,7 @@ export var Lexer = class Lexer {
         skipToken = true;
       }
       if (prev && prev[0] !== 'PROPERTY') {
-        origin = (ref2 = prev.origin) != null ? ref2 : prev;
+        origin = prev.origin ?? prev;
         message = isUnassignable(prev[1], origin[1]);
         if (message) {
           this.error(message, origin[2]);
@@ -842,7 +842,7 @@ export var Lexer = class Lexer {
       this.exportSpecifierList = false;
     }
     if (value === ';') {
-      if (ref3 = prev != null ? prev[0] : void 0, indexOf.call(['=', ...UNFINISHED], ref3) >= 0) {
+      if (ref2 = prev != null ? prev[0] : void 0, indexOf.call(['=', ...UNFINISHED], ref2) >= 0) {
         this.error('unexpected ;');
       }
       this.seenFor = this.seenImport = this.seenExport = false;
@@ -864,12 +864,12 @@ export var Lexer = class Lexer {
     } else if (value === '?' && (prev != null ? prev.spaced : void 0)) {
       tag = 'BIN?';
     } else if (prev) {
-      if (value === '(' && !prev.spaced && (ref4 = prev[0], indexOf.call(CALLABLE, ref4) >= 0)) {
+      if (value === '(' && !prev.spaced && (ref3 = prev[0], indexOf.call(CALLABLE, ref3) >= 0)) {
         if (prev[0] === '?') {
           prev[0] = 'FUNC_EXIST';
         }
         tag = 'CALL_START';
-      } else if (value === '[' && (((ref5 = prev[0], indexOf.call(INDEXABLE, ref5) >= 0) && !prev.spaced) || (prev[0] === '::'))) {
+      } else if (value === '[' && (((ref4 = prev[0], indexOf.call(INDEXABLE, ref4) >= 0) && !prev.spaced) || (prev[0] === '::'))) {
         tag = 'INDEX_START';
         switch (prev[0]) {
           case '?':
@@ -929,7 +929,7 @@ export var Lexer = class Lexer {
 
   tagDoIife(tokenIndex) {
     var tok;
-    tok = this.tokens[tokenIndex != null ? tokenIndex : this.tokens.length - 1];
+    tok = this.tokens[tokenIndex ?? this.tokens.length - 1];
     if ((tok != null ? tok[0] : void 0) !== 'DO') {
       return this;
     }
@@ -1027,11 +1027,11 @@ export var Lexer = class Lexer {
   }
 
   mergeInterpolationTokens(tokens, options, fn) {
-    var $, converted, double, endOffset, firstIndex, heregex, i, indent, j, k, lastToken, len, len1, locationToken, lparen, placeholderToken, quote, ref, ref1, rparen, tag, token, tokensToPush, val, value;
+    var $, converted, double, endOffset, firstIndex, heregex, i, indent, j, k, lastToken, len, len1, locationToken, lparen, placeholderToken, quote, rparen, tag, token, tokensToPush, val, value;
     ({quote, indent, double, heregex, endOffset} = options);
     if (tokens.length > 1) {
       lparen = this.token('STRING_START', '(', {
-        length: (ref = quote != null ? quote.length : void 0) != null ? ref : 0,
+        length: (quote != null ? quote.length : void 0) ?? 0,
         data: {quote},
         generated: !(quote != null ? quote.length : void 0)
       });
@@ -1120,8 +1120,8 @@ export var Lexer = class Lexer {
         lparen[2] = lparen.origin[2];
       }
       return rparen = this.token('STRING_END', ')', {
-        offset: endOffset - (quote != null ? quote : '').length,
-        length: (ref1 = quote != null ? quote.length : void 0) != null ? ref1 : 0,
+        offset: endOffset - (quote ?? '').length,
+        length: (quote != null ? quote.length : void 0) ?? 0,
         generated: !(quote != null ? quote.length : void 0)
       });
     }
@@ -1265,7 +1265,7 @@ export var Lexer = class Lexer {
   }
 
   validateEscapes(str, options = {}) {
-    var before, hex, invalidEscape, invalidEscapeRegex, match, message, octal, ref, unicode, unicodeCodePoint;
+    var before, hex, invalidEscape, invalidEscapeRegex, match, message, octal, unicode, unicodeCodePoint;
     invalidEscapeRegex = options.isRegex ? REGEX_INVALID_ESCAPE : STRING_INVALID_ESCAPE;
     match = invalidEscapeRegex.exec(str);
     if (!match) {
@@ -1275,7 +1275,7 @@ export var Lexer = class Lexer {
     message = octal ? "octal escape sequences are not allowed" : "invalid escape sequence";
     invalidEscape = `\\${octal || hex || unicodeCodePoint || unicode}`;
     return this.error(`${message} ${invalidEscape}`, {
-      offset: ((ref = options.offsetInChunk) != null ? ref : 0) + match.index + before.length,
+      offset: (options.offsetInChunk ?? 0) + match.index + before.length,
       length: invalidEscape.length
     });
   }
@@ -1295,11 +1295,11 @@ export var Lexer = class Lexer {
   }
 
   error(message, options = {}) {
-    var first_column, first_line, location, ref, ref1;
-    location = 'first_line' in options ? options : ([first_line, first_column] = this.getLineAndColumnFromChunk((ref = options.offset) != null ? ref : 0), {
+    var first_column, first_line, location;
+    location = 'first_line' in options ? options : ([first_line, first_column] = this.getLineAndColumnFromChunk(options.offset ?? 0), {
       first_line,
       first_column,
-      last_column: first_column + ((ref1 = options.length) != null ? ref1 : 1) - 1
+      last_column: first_column + (options.length ?? 1) - 1
     });
     return throwSyntaxError(message, location);
   }

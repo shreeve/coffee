@@ -4558,15 +4558,14 @@ export class Op extends Base
       (shared.compileToFragments o), @makeCode(" #{@operator} "), (@second.compileToFragments o, LEVEL_OP)
     @wrapInParentheses fragments
 
-  # Keep reference to the left expression, unless this an existential assignment
+  # ES6: Use nullish coalescing operator (??) for existential operator
   compileExistence: (o, checkOnlyUndefined) ->
-    if @first.shouldCache()
-      ref = new IdentifierLiteral o.scope.freeVariable 'ref'
-      fst = new Parens new Assign ref, @first
-    else
-      fst = @first
-      ref = fst
-    new If(new Existence(fst, checkOnlyUndefined), ref, type: 'if').addElse(@second).compileToFragments o
+    # Simply compile to left ?? right
+    left = @first.compileToFragments o, LEVEL_OP
+    right = @second.compileToFragments o, LEVEL_OP
+    answer = [].concat left, @makeCode(" ?? "), right
+    # Wrap in parentheses if needed for operator precedence
+    if o.level <= LEVEL_OP then answer else @wrapInParentheses answer
 
   # Compile a unary **Op**.
   compileUnary: (o) ->
