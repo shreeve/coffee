@@ -1,27 +1,27 @@
-# CoffeeScript ES5 to ES6 Migration Guide
+# CoffeeScript ES6 Migration Roadmap
 
 ## Goal
 Transform CoffeeScript to generate pure ES6 JavaScript output while maintaining backward compatibility through a careful bootstrap process.
 
-## The Three-File Bootstrap Strategy
+## The Bootstrap Strategy
 
-### File Structure
-1. **v28/src/nodes5.coffee** - Generates ES5 (current default, maintains compatibility)
+### Three-File Architecture
+1. **v28/src/nodes5.coffee** - Generates ES5 (maintains backward compatibility)
 2. **v28/src/nodes.coffee** - Generates ES6 but runs in ES5 environment (the bridge)
 3. **v30/src/nodes.coffee** - Generates ES6 and uses ES6 syntax (the future)
 
-### Build Commands
-- `npm run build` (v28 dir) - Uses nodes5.coffee for ES5 output
-- `npm run build6` (v28 dir) - Uses nodes.coffee to compile v30/src → v30/lib with ES6 output
+### Build Process
+- `npm run build` (in v28) - Uses nodes5.coffee for ES5 output
+- `npm run build6` (in v28) - Uses nodes.coffee to compile v30/src → v30/lib with ES6 output
+- `ES6=1` environment variable - Activates ES6 output mode
 
-## Incremental Implementation Plan (Ordered by Risk Level)
+## Implementation Phases
 
-### Phase 0: Nullish Coalescing 🟢 LOW RISK (Start Here!)
+### Phase 1: Nullish Coalescing Operator
+Replace CoffeeScript's existential operator (`?`) with ES6's nullish coalescing (`??`).
 
-#### Step 0.1: Replace Existential Operator with Nullish Coalescing
-**File**: `nodes.coffee` - `Op.compileExistence` (around line 4764)
+**Implementation**: Modify `Op.compileExistence` in nodes.coffee
 ```coffee
-# The entire fix - replace complex caching logic with native ??
 compileExistence: (o, checkOnlyUndefined) ->
   left = @first.compileToFragments o, LEVEL_OP
   right = @second.compileToFragments o, LEVEL_OP
@@ -29,362 +29,182 @@ compileExistence: (o, checkOnlyUndefined) ->
   if o.level <= LEVEL_OP then answer else @wrapInParentheses answer
 ```
 
-**What this replaces**: ~30 lines of complex code that:
-- Created temporary variables (`ref`)
-- Cached expressions to avoid double evaluation
-- Generated verbose `!= null` checks
-- Wrapped everything in conditional expressions
+**Impact**: Replaces ~30 lines of complex caching logic with 5 lines using native ES6 operator.
 
-**Examples**:
-```coffee
-# CoffeeScript input:
-x = y ? "default"
-func() ? "fallback"
-Array::some ? -> false
-export value = data ? 42
+### Phase 2: Variable Declarations
+Replace `var` with block-scoped `let` and `const` declarations.
 
-# ES5 output (OLD - complex):
-var ref;
-x = (ref = y) != null ? ref : "default";
+**Approach**: Simple, maintainable rules aligned with CoffeeScript's philosophy:
+- **Variables** → `let` (all regular variables)
+- **Functions & Classes** → `const` (rarely reassigned)
+- **Hoisting** → Maintain existing CoffeeScript behavior
 
-# ES6 output (NEW - simple):
-const x = y ?? "default";
-func() ?? "fallback";
-Array.prototype.some ?? (() => false);
-export const value = data ?? 42;
+**Implementation**: Simplify existing complex const/let analysis to just:
+1. Replace `var` with `let` in hoisting logic
+2. Add `const` for function and class assignments
+3. Remove reassignment tracking complexity
+
+**Rationale**: CoffeeScript users never write `let`/`const` directly. The compiler should prioritize simplicity and maintainability over ES6 style perfection. See `CONST_LET_PHILOSOPHY.md` for detailed reasoning.
+
+### Phase 3: Module System (Import/Export)
+Transform CommonJS modules to ES6 modules.
+
+**Steps**:
+1. Convert `require()` → `import`
+2. Convert `exports` → `export`
+3. Add `.js` extension to relative imports
+4. Hoist all imports to top of file
+
+**Example**:
+```javascript
+// Before (CommonJS)
+const {helper} = require('./utils');
+exports.myFunction = function() {};
+
+// After (ES6)
+import {helper} from './utils.js';
+export const myFunction = function() {};
 ```
 
-**Why this is perfect to start with**:
-- Zero dependencies on other features
-- Immediately visible improvement in output
-- Native JavaScript operator (no polyfill needed)
-- Handles all edge cases automatically
-- Actually REMOVES complexity instead of adding it
+### Phase 4: Arrow Functions
+Generate arrow functions where appropriate.
 
-**Test**:
-```coffee
-# test_nullish.coffee
-a = b ? "default"
-result = getUserName() ? "Anonymous"
-export helper = Array::find ? -> null
-```
-Should compile to use `??` throughout
+**Strategy**:
+- Use arrows for simple functions without `this` context
+- Preserve `function` keyword for constructors, generators, and methods using `this`
+- Respect CoffeeScript's `=>` (bound) vs `->` (unbound) distinction
 
-**Commit**: "Replace existential operator with nullish coalescing (??)"
+**Example**:
+```javascript
+// Simple function → Arrow
+const double = (x) => x * 2;
 
-### Phase 1: Template Literals 🟢 LOW RISK
-
-#### Step 1.1: Basic String Interpolation
-**File**: `nodes.coffee` - `StringWithInterpolations.compileNode`
-```coffee
-# Before: "Hello " + name + "!"
-# After:  `Hello ${name}!`
-```
-**Why this is low risk**:
-- Direct syntax transformation
-- No scope analysis required
-- No semantic changes
-- Falls back gracefully if needed
-
-**Test**: String interpolation uses template literals
-**Commit**: "Use template literals for interpolation"
-
-### Phase 2: Module System 🟢 LOW RISK
-
-#### Step 2.1: Basic Import/Export Syntax
-**File**: `nodes.coffee` - `ImportDeclaration`, `ExportDeclaration`
-```coffee
-# Change: require() → import
-# Before: const {x, y} = require('./helpers');
-# After:  import {x, y} from './helpers';
-
-# Change: exports → export
-# Before: exports.MyClass = MyClass;
-# After:  export {MyClass};
-```
-**Test**: Compile a single file with imports/exports, verify syntax is correct
-**Commit**: "Add basic ES6 import/export syntax generation"
-
-#### Step 2.2: Import Path Resolution
-**File**: `nodes.coffee` - `ImportDeclaration.compileNode`
-```coffee
-# Auto-append .js to relative imports without extension
-# './helpers' → './helpers.js'
-# 'lodash' → 'lodash' (unchanged - npm package)
-```
-**Test**: Verify local imports get .js, packages don't
-**Commit**: "Add .js extension to local imports"
-
-#### Step 2.3: Import Hoisting
-**File**: `nodes.coffee` - `Block.compileRoot`
-```coffee
-# Reorder: All imports to top, maintaining their relative order
-# Before: Mixed imports throughout
-# After:  All imports at top
-```
-**Test**: File with mixed imports/code compiles with imports first
-**Commit**: "Hoist imports to top of file"
-
-### Phase 3: Arrow Functions 🟡 MEDIUM RISK
-
-#### Step 3.1: Simple Arrow Functions
-**File**: `nodes.coffee` - `Code.compileNode`
-```coffee
-# Non-bound functions without 'this' usage
-# Before: function(x) { return x * 2; }
-# After:  (x) => x * 2
-```
-**Risk factors**:
-- Must detect 'this' usage correctly
-- Need to handle bound functions (=>) vs regular (->)
-- Constructor detection
-
-**Test**: Simple functions compile to arrows
-**Commit**: "Generate arrow functions for simple cases"
-
-#### Step 3.2: Preserve Traditional Functions
-**File**: `nodes.coffee` - `Code.compileNode`
-```coffee
-# Keep 'function' for: constructors, generators, methods needing 'this'
-# Detect via: @bound, @isGenerator, contains 'this' reference
-```
-**Test**: Class methods still use function syntax
-**Commit**: "Preserve function keyword where needed"
-
-### Phase 4: Modern Loops 🟡 MEDIUM RISK
-
-#### Step 4.1: for...of Loops
-**File**: `nodes.coffee` - `For.compileNode`
-```coffee
-# Before: for (i = 0; i < arr.length; i++) { x = arr[i]; }
-# After:  for (const x of arr) {}
-```
-**Risk factors**:
-- Need to detect when index is used
-- Handle comprehensions correctly
-- Preserve semantics for objects vs arrays
-
-**Test**: Simple array iteration uses for...of
-**Commit**: "Generate for...of loops"
-
-### Phase 5: Variable Declarations ✅ COMPLETED
-
-**Decision**: We've chosen a **simple, pragmatic approach** that aligns with CoffeeScript's philosophy of simplicity.
-
-**Our Approach**:
-- **Variables** → Use `let` (replacing `var` for block scoping benefits)
-- **Functions & Classes** → Use `const` (they're rarely reassigned)
-- **Hoisting** → Maintain CoffeeScript's existing behavior, just with `let`
-
-**Why This Approach?**
-CoffeeScript has always prioritized simplicity and predictability. A complex const/let analysis would add significant maintenance burden for marginal benefit. Since CoffeeScript users never write `const` or `let` themselves, we optimize for clean, working output rather than ES6 style perfection.
-
-**Result**: Modern ES6 output that's block-scoped (`let` instead of `var`) while keeping the compiler simple and maintainable.
-
-*See `CONST_LET_PHILOSOPHY.md` for detailed rationale.*
-
-### Phase 6: Class Improvements 🔴 HIGH RISK
-
-#### Step 6.1: Class Fields
-**File**: `nodes.coffee` - `Class.compileNode`
-```coffee
-# Use native class fields
-# Before: constructor() { this.x = 5; }
-# After:  class { x = 5; }
-```
-**Risk factors**:
-- Initialization order matters
-- Super class interactions
-- Static vs instance fields
-
-**Test**: Instance properties become class fields
-**Commit**: "Use native class fields syntax"
-
-#### Step 6.2: Static Methods
-**File**: `nodes.coffee` - `Class.compileNode`
-```coffee
-# Before: MyClass.staticMethod = function() {}
-# After:  class MyClass { static staticMethod() {} }
-```
-**Test**: Static methods use static keyword
-**Commit**: "Generate static class methods"
-
-### Phase 7: Destructuring 🔴 HIGH RISK
-
-#### Step 7.1: Parameter Destructuring
-**File**: `nodes.coffee` - `Param.compileNode`
-```coffee
-# Before: function(arg) { var x = arg.x, y = arg.y; }
-# After:  function({x, y}) {}
-```
-**Risk factors**:
-- Default values complexity
-- Rest parameters interaction
-- Nested destructuring patterns
-
-**Test**: Function parameters can destructure
-**Commit**: "Add parameter destructuring"
-
-## Additional Recommendations
-
-### 1. **Add Optional Chaining (Phase 0.5)**
-Since we're implementing nullish coalescing (`??`), we should also add optional chaining (`?.`) as they're complementary operators:
-```coffee
-# CoffeeScript: user?.address?.street
-# ES6 output: user?.address?.street
-```
-This pairs naturally with Phase 0 and is equally low-risk.
-
-### 2. **Build Test Suite in v30/test/es6/**
-Create comprehensive tests using the existing test runner's `code()` function:
-```coffee
-# v30/test/es6/nullish_coalescing.coffee
-code 'x = y ? "default"', 'const x = y ?? "default";'
-code 'func() ? "fallback"', 'func() ?? "fallback";'
-
-# v30/test/es6/template_literals.coffee
-code '"Hello #{name}!"', '`Hello ${name}!`;'
-code '"#{x} + #{y} = #{x+y}"', '`${x} + ${y} = ${x + y}`;'
-
-# Run with: coffee test/runner.coffee test/es6/
-```
-The test runner already supports comparing compiled output, perfect for ES6 verification.
-
-### 3. **Include Spread Operator (Phase 1.5)**
-The spread operator (`...`) should be added early as it's low-risk:
-```coffee
-# Array spread: [...arr1, ...arr2]
-# Object spread: {...obj1, ...obj2}
-# Rest parameters: (first, ...rest) ->
+// Method needing 'this' → Regular function
+const handler = function() { return this.data; };
 ```
 
-### 4. **Document Breaking Changes**
-Create a migration guide documenting any semantic differences:
-- Temporal dead zone with let/const
-- Class field initialization order
-- Arrow function this-binding differences
+### Phase 5: Modern Loops
+Use `for...of` for array iteration.
 
-### 5. **Performance Considerations**
-Track and document performance impacts:
-- Destructuring can be slower than direct access
-- for...of is sometimes slower than indexed loops
-- Template literals vs string concatenation performance
+**Implementation**:
+- Convert indexed loops to `for...of` when index isn't needed
+- Maintain traditional loops when index is used
+- Handle object iteration separately
 
-### 6. **Source Map Updates**
-Ensure source maps remain accurate with ES6 transformations:
-- Track how each transformation affects line/column mappings
-- Test debugging experience in browsers and Node.js
-- Verify stack traces remain useful
+**Example**:
+```javascript
+// Before
+for (let i = 0, len = items.length; i < len; i++) {
+  let item = items[i];
+  process(item);
+}
+
+// After
+for (const item of items) {
+  process(item);
+}
+```
+
+### Phase 6: Destructuring
+Enable destructuring in parameters and assignments.
+
+**Targets**:
+- Function parameters: `({x, y}) => ...`
+- Array destructuring: `[first, ...rest] = array`
+- Object destructuring: `{name, age} = person`
+
+### Phase 7: Class Enhancements
+Modernize class syntax.
+
+**Features**:
+- Native class fields
+- Static methods with `static` keyword
+- Private fields (where applicable)
+
+### Phase 8: Additional ES6 Features
+Complete the transformation with:
+- Optional chaining (`?.`)
+- Spread operator (`...`)
+- Default parameters
+- Rest parameters
+- Computed property names
 
 ## Testing Strategy
 
-### For Each Step:
-1. Create minimal test case in `test_es6.coffee`
-2. Compile with `npm run build6`
-3. Verify output in `v30/lib/coffeescript/test_es6.js`
-4. Run the output in Node to ensure it works
-5. Commit only after test passes
+### Test Structure
+Tests live in `v30/test/es6/` and use the existing test runner's `code()` function to verify output:
 
-### Incremental Verification:
-```bash
-# After each commit:
-cd v28
-npm run build6
-cd ../v30
-node -c lib/coffeescript/*.js  # Syntax check all files
-npm test  # Run test suite if available
+```coffee
+# v30/test/es6/nullish_coalescing.coffee
+code 'x = y ? "default"', 'let x = y ?? "default";'
+
+# Run tests with:
+# cd v30 && ES6=1 coffee test/runner.coffee test/es6/
 ```
 
-## Common Pitfalls to Avoid
+### Verification Process
+1. Write test cases for each transformation
+2. Compile with `npm run build6` in v28
+3. Verify output in v30/lib
+4. Run compiled code to ensure correctness
+5. Commit only after tests pass
 
-1. **Don't**: Overcomplicate variable declarations with complex analysis
-   **Do**: Keep it simple - `let` for variables, `const` for functions/classes
+## Implementation Guidelines
 
-2. **Don't**: Convert all functions to arrows immediately
-   **Do**: Start with simple cases, preserve 'function' where needed
+### Key Principles
+1. **Incremental Progress** - One transformation per commit
+2. **Maintain Compatibility** - v28/src/nodes.coffee must run in ES5
+3. **Test Everything** - Each phase needs comprehensive tests
+4. **Keep It Simple** - Avoid over-engineering transformations
 
-3. **Don't**: Mix multiple transformations in one commit
-   **Do**: One transformation type per commit
+### File Modifications
+All ES6 transformations happen in two files:
+- **v28/src/nodes.coffee** - The bridge compiler (CommonJS module format)
+- **v30/src/nodes.coffee** - The pure ES6 compiler (ES6 module format)
 
-4. **Don't**: Assume ES6 features work everywhere
-   **Do**: Remember v28/src/nodes.coffee must run in ES5
-
-5. **Don't**: Forget about edge cases
-   **Do**: Test with CoffeeScript's own codebase as the ultimate test
+Keep these files synchronized - changes in v28 should be mirrored in v30.
 
 ## Success Criteria
 
-### v30 Output Should Have:
-- [ ] All imports at top of file
-- [ ] No `var` declarations (only const/let)
-- [ ] Arrow functions where appropriate
-- [ ] Native class syntax with fields
-- [ ] Template literals for string interpolation
-- [ ] Destructuring in parameters and assignments
-- [ ] for...of loops instead of indexed iteration
-- [ ] Clean, idiomatic ES6 that could be hand-written
+The migration is complete when v30 output exhibits:
+- ✅ No `var` declarations (only `const`/`let`)
+- ✅ ES6 module syntax (`import`/`export`)
+- ✅ Arrow functions where appropriate
+- ✅ Modern loop constructs (`for...of`)
+- ✅ Destructuring assignments
+- ✅ Native class syntax
+- ✅ Clean, idiomatic ES6 that could be hand-written
 
-### The Final Test:
+### Ultimate Test
 ```bash
 cd v30
-npm test  # All tests pass
-npm run build  # Can compile itself
+npm test              # All tests pass
+npm run build         # Can compile itself
+node lib/index.js     # Runs successfully
 ```
-
-## Final Thoughts Before Starting
-
-### Why Phase 0 (Nullish Coalescing) is Perfect
-1. **One-function change** in `Op.compileExistence`
-2. **Immediate visual impact** - 30 lines → 5 lines
-3. **No dependencies** on other ES6 features
-4. **Actually simplifies** the compiler (removes complexity)
-5. **Native JavaScript** - no polyfills or compatibility issues
-
-### Implementation Checklist for Phase 0
-- [ ] Create `v30/test/es6/nullish_coalescing.coffee` with test cases
-- [ ] Modify `v28/src/nodes.coffee` - `Op.compileExistence` method
-- [ ] Run `npm run build6` in v28 to compile v30
-- [ ] Run `coffee test/runner.coffee test/es6/` in v30 to verify
-- [ ] Test with complex expressions (method calls, array access, etc.)
-- [ ] Commit with message: "Replace existential operator with nullish coalescing (??)"
-
-### Potential Edge Cases to Consider
-- Chained existential operators: `a ? b ? c`
-- Method calls: `obj.method?() ? default`
-- Array/object access: `arr[i] ? obj.prop ? fallback`
-- Inside other operators: `(a ? b) + (c ? d)`
-
-### Success Metrics
-- All existential operators (`?`) compile to `??`
-- No temporary variables (`ref`) in simple cases
-- Cleaner, more readable JavaScript output
-- All existing tests still pass
 
 ## Current Status
 
 ### ✅ Completed
-- [x] Basic setup of v28 and v30 directories
-- [x] Solar parser integrated with backend.coffee
-- [x] Phase 0: Nullish Coalescing Operator (??) - Clean ES6 `??` output
-- [x] Phase 1: Template Literals - Already implemented
-- [x] Phase 2a/5: Variable Declarations (const/let) - Simple approach chosen
-  - Uses `let` for all variables (replacing `var`)
-  - Uses `const` for functions and classes only
-  - Maintains CoffeeScript's existing hoisting behavior
-  - Clean ES6 output without complex AST analysis
+- Phase 1: Nullish Coalescing Operator
 
-### 🟢 Low Risk (Next Up)
-- [ ] Phase 2b: Module System (Import/Export)
+### 🚧 Next Up
+- Phase 2: Variable Declarations (`let`/`const`) - **Approach decided, implementation pending**
 
-### 🟡 Medium Risk (After Low Risk Complete)
-- [ ] Phase 3: Arrow Functions
-- [ ] Phase 4: Modern Loops (for...of)
+### 📋 Upcoming
+- Phase 3: Module System (Import/Export)
+- Phase 4: Arrow Functions
+- Phase 5: Modern Loops
+- Phase 6: Destructuring
+- Phase 7: Class Enhancements
+- Phase 8: Additional ES6 Features
 
-### 🔴 High Risk (Final Phases)
-- [x] Phase 5: Variable Declarations (const/let) ✅ **COMPLETED**
-- [ ] Phase 6: Class Improvements
-- [ ] Phase 7: Destructuring
+## Resources
+
+- **Philosophy**: See `CONST_LET_PHILOSOPHY.md` for variable declaration design decisions
+- **Test Suite**: `v30/test/es6/` contains all ES6 transformation tests
+- **Bootstrap Details**: `v28/` contains the bridge compiler implementation
 
 ---
 
-*This migration preserves CoffeeScript's semantics while generating modern, clean ES6 JavaScript. Phases are ordered by implementation risk to maximize early wins and minimize complexity.*
+*This roadmap guides CoffeeScript's transformation to generate modern ES6 JavaScript while preserving the language's core philosophy of simplicity and elegance.*
