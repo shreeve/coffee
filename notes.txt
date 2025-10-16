@@ -1,6 +1,12 @@
 
 • remove extra newlines between import statements
 
+• So these are the "dangerous" line starters in JavaScript:
+
+  [ - treated as property/array access
+  ( - treated as function call
+  ` - treated as tagged template literal
+
 ==
 
 I have a copy of CoffeeScript 2.7.0 at @v27/ and an upgraded version at @v28/ which swaps out Jison for Solar (a JSON-directive based parser for AST node creation and code emission). I also have an ES6 version of CoffeeScript at @v29/ where we are using a hand tuned parser in v29/lib/coffeescript/parser.js (which we don't need to modify) and upgraded CoffeeScript source files in v29/src/*.coffee. In order to rebuild the v29/lib/coffeescript/*.js files we can do this as follows:
