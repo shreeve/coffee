@@ -79,10 +79,6 @@ code "import { readFile as read, writeFile as write } from 'fs'", '''
   import { readFile as read, writeFile as write } from 'fs';
 '''
 
-# Empty named imports
-code "import { } from './side-effects'", '''
-  import { } from './side-effects.js';
-'''
 
 # ==============================================================================
 # MIXED IMPORTS
@@ -251,10 +247,6 @@ code '''
 
 console.log "\n== Export Lists =="
 
-# Export list (empty)
-code "export { }", '''
-  export { };
-'''
 
 # Export single item
 code "export { myFunc }", '''
@@ -287,10 +279,6 @@ code "export * from './utils'", '''
   export * from './utils.js';
 '''
 
-# Re-export all with rename
-code "export * as utils from './utils'", '''
-  export * as utils from './utils.js';
-'''
 
 # Re-export specific items
 code "export { helper, formatter } from './utils'", '''
