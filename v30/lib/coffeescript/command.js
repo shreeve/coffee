@@ -7,20 +7,15 @@ import fs from 'fs';
 
 import path from 'path';
 
-import * as helpers from './helpers';
+import * as helpers from './helpers.js';
 
-import * as optparse from './optparse';
+import * as optparse from './optparse.js';
 
-import CoffeeScript from './index';
+import CoffeeScript from './index.js';
 
-import {
-  spawn,
-  exec
-} from 'child_process';
+import { spawn, exec } from 'child_process';
 
-import {
-  EventEmitter
-} from 'events';
+import { EventEmitter } from 'events';
 
 useWinPathSep = path.sep === '\\';
 
@@ -56,11 +51,11 @@ watchedDirs = {};
 
 optionParser = null;
 
-export var buildCSOptionParser = function() {
+export let buildCSOptionParser = function() {
   return new optparse.OptionParser(SWITCHES, BANNER);
 };
 
-export var run = function() {
+export let run = function() {
   let err, i, len, literals, outputBasename, ref, results, source;
   optionParser = buildCSOptionParser();
   try {

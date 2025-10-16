@@ -2,37 +2,29 @@
 
 let base64encode, checkShebangLine, getSourceMap, lexer, registerCompiled, withPrettyErrors;
 
-import {
-  Lexer
-} from './lexer';
+import { Lexer } from './lexer.js';
 
-import {
-  parser
-} from './parser';
+import { parser } from './parser.js';
 
-import * as helpers from './helpers';
+import * as helpers from './helpers.js';
 
-import SourceMap from './sourcemap';
+import SourceMap from './sourcemap.js';
 
-import Backend from './backend';
+import Backend from './backend.js';
 
-import * as nodesModule from './nodes';
+import * as nodesModule from './nodes.js';
 
-import packageJson from '../../package.json';
+import packageJson from '../../package.json' with { type: "json" };
 
-export var VERSION = packageJson.version;
+export let VERSION = packageJson.version;
 
-export var FILE_EXTENSIONS = ['.coffee'];
+export let FILE_EXTENSIONS = ['.coffee'];
 
-export {
-  helpers
-};
+export { helpers };
 
 ({getSourceMap, registerCompiled} = SourceMap);
 
-export {
-  registerCompiled
-};
+export { registerCompiled };
 
 base64encode = function(src) {
   if (typeof Buffer === 'function') {
@@ -57,7 +49,7 @@ withPrettyErrors = function(fn) {
   };
 };
 
-export var compile = withPrettyErrors(function(code, options = {}) {
+export let compile = withPrettyErrors(function(code, options = {}) {
   let ast, currentColumn, currentLine, encoded, filename, fragment, fragments, generateSourceMap, header, j, js, k, len, len1, map, newLines, nodes, range, ref, sourceCodeLastLine, sourceCodeNumberOfLines, sourceMapDataURI, sourceURL, token, tokens, v3SourceMap;
   options = Object.assign({}, options);
   generateSourceMap = options.sourceMap || options.inlineMap || (options.filename == null);
@@ -160,11 +152,11 @@ export var compile = withPrettyErrors(function(code, options = {}) {
   }
 });
 
-export var tokens = withPrettyErrors(function(code, options) {
+export let tokens = withPrettyErrors(function(code, options) {
   return lexer.tokenize(code, options);
 });
 
-export var nodes = withPrettyErrors(function(source, options) {
+export let nodes = withPrettyErrors(function(source, options) {
   if (typeof source === 'string') {
     source = lexer.tokenize(source, options);
   }
@@ -226,7 +218,7 @@ parser.yy.parseError = function(message, {token}) {
   return helpers.throwSyntaxError(`unexpected ${errorText}`, errorLoc);
 };
 
-export var patchStackTrace = function() {
+export let patchStackTrace = function() {
   let formatSourcePosition, getSourceMapping;
   formatSourcePosition = function(frame, getSourceMapping) {
     let as, column, fileLocation, filename, functionName, isConstructor, isMethodCall, line, methodName, source, tp, typeName;

@@ -4,27 +4,15 @@ let BOM, BOOL, CALLABLE, CODE, COFFEE_ALIASES, COFFEE_ALIAS_MAP, COFFEE_KEYWORDS
   indexOf = [].indexOf,
   slice = [].slice;
 
-import {
-  Rewriter,
-  INVERSES,
-  UNFINISHED
-} from './rewriter';
+import { Rewriter, INVERSES, UNFINISHED } from './rewriter.js';
 
 import {
-  count,
-  starts,
-  compact,
-  repeat,
-  merge,
-  attachCommentsToNode,
-  locationDataToString,
-  throwSyntaxError,
-  replaceUnicodeCodePointEscapes,
-  flatten,
-  parseNumber
-} from './helpers';
+  count, starts, compact, repeat, merge, attachCommentsToNode,
+  locationDataToString, throwSyntaxError, replaceUnicodeCodePointEscapes,
+  flatten, parseNumber
+} from './helpers.js';
 
-export var Lexer = class Lexer {
+export let Lexer = class Lexer {
   constructor() {
     this.error = this.error.bind(this);
   }
@@ -1306,7 +1294,7 @@ export var Lexer = class Lexer {
 
 };
 
-export var isUnassignable = function(name, displayName = name) {
+export let isUnassignable = function(name, displayName = name) {
   switch (false) {
     case indexOf.call([...JS_KEYWORDS, ...COFFEE_KEYWORDS], name) < 0:
       return `keyword '${displayName}' can't be assigned`;
@@ -1367,7 +1355,7 @@ RESERVED = ['case', 'function', 'var', 'void', 'with', 'const', 'let', 'enum', '
 
 STRICT_PROSCRIBED = ['arguments', 'eval'];
 
-export var JS_FORBIDDEN = JS_KEYWORDS.concat(RESERVED).concat(STRICT_PROSCRIBED);
+export let JS_FORBIDDEN = JS_KEYWORDS.concat(RESERVED).concat(STRICT_PROSCRIBED);
 
 BOM = 65279;
 

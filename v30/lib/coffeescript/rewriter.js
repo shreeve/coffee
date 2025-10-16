@@ -4,10 +4,7 @@ let BALANCED_PAIRS, CALL_CLOSERS, CONTROL_IN_IMPLICIT, DISCARDED, EXPRESSION_CLO
   indexOf = [].indexOf,
   hasProp = {}.hasOwnProperty;
 
-import {
-  throwSyntaxError,
-  extractAllCommentTokens
-} from './helpers';
+import { throwSyntaxError, extractAllCommentTokens } from './helpers.js';
 
 moveComments = function(fromToken, toToken) {
   let comment, k, len, ref, unshiftedComments;
@@ -45,7 +42,7 @@ generate = function(tag, value, origin, commentsToken) {
   return token;
 };
 
-export var Rewriter = (function() {
+export let Rewriter = (function() {
   class Rewriter {
     rewrite(tokens1) {
       let ref, ref1, t;
@@ -900,9 +897,7 @@ for (k = 0, len = BALANCED_PAIRS.length; k < len; k++) {
   EXPRESSION_END.push(INVERSES[left] = right);
 }
 
-export {
-  INVERSES
-};
+export { INVERSES };
 
 EXPRESSION_CLOSE = ['CATCH', 'THEN', 'ELSE', 'FINALLY'].concat(EXPRESSION_END);
 
@@ -926,4 +921,4 @@ CONTROL_IN_IMPLICIT = ['IF', 'TRY', 'FINALLY', 'CATCH', 'CLASS', 'SWITCH'];
 
 DISCARDED = ['(', ')', '[', ']', '{', '}', ':', '.', '..', '...', ',', '=', '++', '--', '?', 'AS', 'AWAIT', 'CALL_START', 'CALL_END', 'DEFAULT', 'DO', 'DO_IIFE', 'ELSE', 'EXTENDS', 'EXPORT', 'FORIN', 'FOROF', 'FORFROM', 'IMPORT', 'INDENT', 'INDEX_SOAK', 'INTERPOLATION_START', 'INTERPOLATION_END', 'LEADING_WHEN', 'OUTDENT', 'PARAM_END', 'REGEX_START', 'REGEX_END', 'RETURN', 'STRING_END', 'THROW', 'UNARY', 'YIELD'].concat(IMPLICIT_UNSPACED_CALL.concat(IMPLICIT_END.concat(CALL_CLOSERS.concat(CONTROL_IN_IMPLICIT))));
 
-export var UNFINISHED = ['\\', '.', '?.', '?::', 'UNARY', 'DO', 'DO_IIFE', 'MATH', 'UNARY_MATH', '+', '-', '**', 'SHIFT', 'RELATION', 'COMPARE', '&', '^', '|', '&&', '||', 'BIN?', 'EXTENDS'];
+export let UNFINISHED = ['\\', '.', '?.', '?::', 'UNARY', 'DO', 'DO_IIFE', 'MATH', 'UNARY_MATH', '+', '-', '**', 'SHIFT', 'RELATION', 'COMPARE', '&', '^', '|', '&&', '||', 'BIN?', 'EXTENDS'];

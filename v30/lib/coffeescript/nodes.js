@@ -6,29 +6,13 @@ let HEREGEX_OMIT, LEADING_BLANK_LINE, LEVEL_ACCESS, LEVEL_COND, LEVEL_LIST, LEVE
   slice1 = [].slice;
 
 import {
-  compact,
-  flatten,
-  extend,
-  merge,
-  del,
-  starts,
-  ends,
-  some,
-  addDataToNode,
-  attachCommentsToNode,
-  locationDataToString,
-  throwSyntaxError,
-  replaceUnicodeCodePointEscapes,
-  isFunction,
-  isPlainObject,
-  isNumber,
+  compact, flatten, extend, merge, del, starts, ends, some, addDataToNode,
+  attachCommentsToNode, locationDataToString, throwSyntaxError,
+  replaceUnicodeCodePointEscapes, isFunction, isPlainObject, isNumber,
   parseNumber
-} from './helpers';
+} from './helpers.js';
 
-import {
-  isUnassignable,
-  JS_FORBIDDEN
-} from './lexer';
+import { isUnassignable, JS_FORBIDDEN } from './lexer.js';
 
 Error.stackTraceLimit = 2e308;
 
@@ -195,7 +179,7 @@ NEGATE = function() {
   return this;
 };
 
-export var CodeFragment = class CodeFragment {
+export let CodeFragment = class CodeFragment {
   constructor(parent, code) {
     let ref1;
     this.code = `${code}`;
@@ -223,7 +207,7 @@ fragmentsToText = function(fragments) {
   })()).join('');
 };
 
-export var Base = (function() {
+export let Base = (function() {
   class Base {
     compile(o, lvl) {
       return fragmentsToText(this.compileToFragments(o, lvl));
@@ -663,7 +647,7 @@ export var Base = (function() {
 
 }).call(this);
 
-export var HoistTarget = class HoistTarget extends Base {
+export let HoistTarget = class HoistTarget extends Base {
   static expand(fragments) {
     let fragment, i, j, ref1;
     for (i = j = fragments.length - 1; j >= 0; i = j += -1) {
@@ -708,7 +692,7 @@ export var HoistTarget = class HoistTarget extends Base {
 
 };
 
-export var Root = (function() {
+export let Root = (function() {
   class Root extends Base {
     constructor(body1) {
       super();
@@ -797,7 +781,7 @@ export var Root = (function() {
 
 }).call(this);
 
-export var Block = (function() {
+export let Block = (function() {
   class Block extends Base {
     constructor(nodes) {
       super();
@@ -1208,7 +1192,7 @@ export var Block = (function() {
 
 }).call(this);
 
-export var Directive = class Directive extends Base {
+export let Directive = class Directive extends Base {
   constructor(value1) {
     super();
     this.value = value1;
@@ -1224,7 +1208,7 @@ export var Directive = class Directive extends Base {
 
 };
 
-export var Literal = (function() {
+export let Literal = (function() {
   class Literal extends Base {
     constructor(value1) {
       super();
@@ -1257,7 +1241,7 @@ export var Literal = (function() {
 
 }).call(this);
 
-export var NumberLiteral = class NumberLiteral extends Literal {
+export let NumberLiteral = class NumberLiteral extends Literal {
   constructor(value1, {parsedValue} = {}) {
     super();
     this.value = value1;
@@ -1296,7 +1280,7 @@ export var NumberLiteral = class NumberLiteral extends Literal {
 
 };
 
-export var InfinityLiteral = class InfinityLiteral extends NumberLiteral {
+export let InfinityLiteral = class InfinityLiteral extends NumberLiteral {
   constructor(value1, {originalValue: originalValue = 'Infinity'} = {}) {
     super();
     this.value = value1;
@@ -1327,7 +1311,7 @@ export var InfinityLiteral = class InfinityLiteral extends NumberLiteral {
 
 };
 
-export var NaNLiteral = class NaNLiteral extends NumberLiteral {
+export let NaNLiteral = class NaNLiteral extends NumberLiteral {
   constructor() {
     super('NaN');
   }
@@ -1355,7 +1339,7 @@ export var NaNLiteral = class NaNLiteral extends NumberLiteral {
 
 };
 
-export var StringLiteral = class StringLiteral extends Literal {
+export let StringLiteral = class StringLiteral extends Literal {
   constructor(originalValue, {
       quote,
       initialChunk,
@@ -1459,7 +1443,7 @@ export var StringLiteral = class StringLiteral extends Literal {
 
 };
 
-export var RegexLiteral = (function() {
+export let RegexLiteral = (function() {
   class RegexLiteral extends Literal {
     constructor(value, {delimiter: delimiter1 = '/', heregexCommentTokens: heregexCommentTokens = []} = {}) {
       let endDelimiterIndex, heregex, val;
@@ -1522,7 +1506,7 @@ export var RegexLiteral = (function() {
 
 }).call(this);
 
-export var PassthroughLiteral = class PassthroughLiteral extends Literal {
+export let PassthroughLiteral = class PassthroughLiteral extends Literal {
   constructor(originalValue, {here, generated} = {}) {
     super('');
     this.originalValue = originalValue;
@@ -1549,7 +1533,7 @@ export var PassthroughLiteral = class PassthroughLiteral extends Literal {
 
 };
 
-export var IdentifierLiteral = (function() {
+export let IdentifierLiteral = (function() {
   class IdentifierLiteral extends Literal {
     eachName(iterator) {
       return iterator(this);
@@ -1574,7 +1558,7 @@ export var IdentifierLiteral = (function() {
 
 }).call(this);
 
-export var PropertyName = (function() {
+export let PropertyName = (function() {
   class PropertyName extends Literal {
     astType() {
       return 'Identifier';
@@ -1595,7 +1579,7 @@ export var PropertyName = (function() {
 
 }).call(this);
 
-export var ComputedPropertyName = class ComputedPropertyName extends PropertyName {
+export let ComputedPropertyName = class ComputedPropertyName extends PropertyName {
   compileNode(o) {
     return [this.makeCode('['), ...this.value.compileToFragments(o, LEVEL_LIST), this.makeCode(']')];
   }
@@ -1606,7 +1590,7 @@ export var ComputedPropertyName = class ComputedPropertyName extends PropertyNam
 
 };
 
-export var StatementLiteral = (function() {
+export let StatementLiteral = (function() {
   class StatementLiteral extends Literal {
     jumps(o) {
       if (this.value === 'break' && !((o != null ? o.loop : void 0) || (o != null ? o.block : void 0))) {
@@ -1642,7 +1626,7 @@ export var StatementLiteral = (function() {
 
 }).call(this);
 
-export var ThisLiteral = class ThisLiteral extends Literal {
+export let ThisLiteral = class ThisLiteral extends Literal {
   constructor(value) {
     super('this');
     this.shorthand = value === '@';
@@ -1666,7 +1650,7 @@ export var ThisLiteral = class ThisLiteral extends Literal {
 
 };
 
-export var UndefinedLiteral = class UndefinedLiteral extends Literal {
+export let UndefinedLiteral = class UndefinedLiteral extends Literal {
   constructor() {
     super('undefined');
   }
@@ -1688,14 +1672,14 @@ export var UndefinedLiteral = class UndefinedLiteral extends Literal {
 
 };
 
-export var NullLiteral = class NullLiteral extends Literal {
+export let NullLiteral = class NullLiteral extends Literal {
   constructor() {
     super('null');
   }
 
 };
 
-export var BooleanLiteral = class BooleanLiteral extends Literal {
+export let BooleanLiteral = class BooleanLiteral extends Literal {
   constructor(value, {originalValue} = {}) {
     super(value);
     this.originalValue = originalValue;
@@ -1713,7 +1697,7 @@ export var BooleanLiteral = class BooleanLiteral extends Literal {
 
 };
 
-export var DefaultLiteral = class DefaultLiteral extends Literal {
+export let DefaultLiteral = class DefaultLiteral extends Literal {
   astType() {
     return 'Identifier';
   }
@@ -1727,7 +1711,7 @@ export var DefaultLiteral = class DefaultLiteral extends Literal {
 
 };
 
-export var Return = (function() {
+export let Return = (function() {
   class Return extends Base {
     constructor(expression1, {belongsToFuncDirectiveReturn} = {}) {
       super();
@@ -1800,7 +1784,7 @@ export var Return = (function() {
 
 }).call(this);
 
-export var FuncDirectiveReturn = (function() {
+export let FuncDirectiveReturn = (function() {
   class FuncDirectiveReturn extends Return {
     constructor(expression, {returnKeyword}) {
       super(expression);
@@ -1835,7 +1819,7 @@ export var FuncDirectiveReturn = (function() {
 
 }).call(this);
 
-export var YieldReturn = (function() {
+export let YieldReturn = (function() {
   class YieldReturn extends FuncDirectiveReturn {};
 
   YieldReturn.prototype.keyword = 'yield';
@@ -1844,7 +1828,7 @@ export var YieldReturn = (function() {
 
 }).call(this);
 
-export var AwaitReturn = (function() {
+export let AwaitReturn = (function() {
   class AwaitReturn extends FuncDirectiveReturn {};
 
   AwaitReturn.prototype.keyword = 'await';
@@ -1853,7 +1837,7 @@ export var AwaitReturn = (function() {
 
 }).call(this);
 
-export var Value = (function() {
+export let Value = (function() {
   class Value extends Base {
     constructor(base, props, tag, isDefaultValue = false) {
       let ref1, ref2;
@@ -2139,7 +2123,7 @@ export var Value = (function() {
 
 }).call(this);
 
-export var MetaProperty = (function() {
+export let MetaProperty = (function() {
   class MetaProperty extends Base {
     constructor(meta, property1) {
       super();
@@ -2188,7 +2172,7 @@ export var MetaProperty = (function() {
 
 }).call(this);
 
-export var HereComment = class HereComment extends Base {
+export let HereComment = class HereComment extends Base {
   constructor({
       content,
       newLine,
@@ -2244,7 +2228,7 @@ export var HereComment = class HereComment extends Base {
 
 };
 
-export var LineComment = class LineComment extends Base {
+export let LineComment = class LineComment extends Base {
   constructor({
       content,
       newLine,
@@ -2282,7 +2266,7 @@ export var LineComment = class LineComment extends Base {
 
 };
 
-export var Call = (function() {
+export let Call = (function() {
   class Call extends Base {
     constructor(variable1, args1 = [], soak1, token1) {
       let ref1;
@@ -2496,7 +2480,7 @@ export var Call = (function() {
 
 }).call(this);
 
-export var SuperCall = (function() {
+export let SuperCall = (function() {
   class SuperCall extends Call {
     isStatement(o) {
       let ref1;
@@ -2526,7 +2510,7 @@ export var SuperCall = (function() {
 
 }).call(this);
 
-export var Super = (function() {
+export let Super = (function() {
   class Super extends Base {
     constructor(accessor, superLiteral) {
       super();
@@ -2581,7 +2565,7 @@ export var Super = (function() {
 
 }).call(this);
 
-export var RegexWithInterpolations = (function() {
+export let RegexWithInterpolations = (function() {
   class RegexWithInterpolations extends Base {
     constructor(call1, {heregexCommentTokens: heregexCommentTokens = []} = {}) {
       super();
@@ -2627,7 +2611,7 @@ export var RegexWithInterpolations = (function() {
 
 }).call(this);
 
-export var TaggedTemplateCall = class TaggedTemplateCall extends Call {
+export let TaggedTemplateCall = class TaggedTemplateCall extends Call {
   constructor(variable, arg, soak) {
     if (arg instanceof StringLiteral) {
       arg = StringWithInterpolations.fromStringLiteral(arg);
@@ -2652,7 +2636,7 @@ export var TaggedTemplateCall = class TaggedTemplateCall extends Call {
 
 };
 
-export var Extends = (function() {
+export let Extends = (function() {
   class Extends extends Base {
     constructor(child1, parent1) {
       super();
@@ -2672,7 +2656,7 @@ export var Extends = (function() {
 
 }).call(this);
 
-export var Access = (function() {
+export let Access = (function() {
   class Access extends Base {
     constructor(name1, {
         soak: soak1,
@@ -2709,7 +2693,7 @@ export var Access = (function() {
 
 }).call(this);
 
-export var Index = (function() {
+export let Index = (function() {
   class Index extends Base {
     constructor(index1) {
       super();
@@ -2736,7 +2720,7 @@ export var Index = (function() {
 
 }).call(this);
 
-export var Range = (function() {
+export let Range = (function() {
   class Range extends Base {
     constructor(from1, to1, tag) {
       super();
@@ -2857,7 +2841,7 @@ export var Range = (function() {
 
 }).call(this);
 
-export var Slice = (function() {
+export let Slice = (function() {
   class Slice extends Base {
     constructor(range1) {
       super();
@@ -2896,7 +2880,7 @@ export var Slice = (function() {
 
 }).call(this);
 
-export var Obj = (function() {
+export let Obj = (function() {
   class Obj extends Base {
     constructor(props, generated = false) {
       super();
@@ -3195,7 +3179,7 @@ export var Obj = (function() {
 
 }).call(this);
 
-export var ObjectProperty = class ObjectProperty extends Base {
+export let ObjectProperty = class ObjectProperty extends Base {
   constructor({key, fromAssign}) {
     let context, value;
     super();
@@ -3236,7 +3220,7 @@ export var ObjectProperty = class ObjectProperty extends Base {
 
 };
 
-export var Arr = (function() {
+export let Arr = (function() {
   class Arr extends Base {
     constructor(objs, lhs1 = false) {
       super();
@@ -3436,7 +3420,7 @@ export var Arr = (function() {
 
 }).call(this);
 
-export var Class = (function() {
+export let Class = (function() {
   class Class extends Base {
     constructor(variable1, parent1, body1) {
       super();
@@ -3472,7 +3456,9 @@ export var Class = (function() {
         }
       }
       if (this.variable) {
-        node = new Assign(this.variable, node, null, {moduleDeclaration: this.moduleDeclaration});
+        if (!this.exportDefault) {
+          node = new Assign(this.variable, node, null, {moduleDeclaration: this.moduleDeclaration});
+        }
       }
       this.compileNode = this.compileClassDeclaration;
       try {
@@ -3800,7 +3786,7 @@ export var Class = (function() {
 
 }).call(this);
 
-export var ExecutableClassBody = (function() {
+export let ExecutableClassBody = (function() {
   class ExecutableClassBody extends Base {
     constructor(_class, body1 = new Block()) {
       super();
@@ -3938,7 +3924,7 @@ export var ExecutableClassBody = (function() {
 
 }).call(this);
 
-export var ClassProperty = (function() {
+export let ClassProperty = (function() {
   class ClassProperty extends Base {
     constructor({
         name: name1,
@@ -3977,7 +3963,7 @@ export var ClassProperty = (function() {
 
 }).call(this);
 
-export var ClassPrototypeProperty = (function() {
+export let ClassPrototypeProperty = (function() {
   class ClassPrototypeProperty extends Base {
     constructor({
         name: name1,
@@ -4006,7 +3992,7 @@ export var ClassPrototypeProperty = (function() {
 
 }).call(this);
 
-export var ModuleDeclaration = (function() {
+export let ModuleDeclaration = (function() {
   class ModuleDeclaration extends Base {
     constructor(clause, source1, assertions) {
       super();
@@ -4062,9 +4048,9 @@ export var ModuleDeclaration = (function() {
 
 }).call(this);
 
-export var ImportDeclaration = class ImportDeclaration extends ModuleDeclaration {
+export let ImportDeclaration = class ImportDeclaration extends ModuleDeclaration {
   compileNode(o) {
-    let code, ref1;
+    let cleanPath, code, ref1, sourcePath;
     this.checkScope(o, 'import');
     o.importedSymbols = [];
     code = [];
@@ -4076,8 +4062,18 @@ export var ImportDeclaration = class ImportDeclaration extends ModuleDeclaration
       if (this.clause !== null) {
         code.push(this.makeCode(' from '));
       }
-      code.push(this.makeCode(this.source.value));
-      if (this.assertions != null) {
+      sourcePath = this.source.value;
+      cleanPath = sourcePath.replace(/^['"`]|['"`]$/g, '');
+      if (cleanPath.match(/^\.\.?\//) && !cleanPath.match(/\.\w+$/)) {
+        sourcePath = sourcePath.replace(/(['"`])$/, ".js$1");
+      }
+      if (cleanPath.match(/\.json$/i)) {
+        this.jsonImport = true;
+      }
+      code.push(this.makeCode(sourcePath));
+      if (this.jsonImport) {
+        code.push(this.makeCode(' with { type: "json" }'));
+      } else if (this.assertions != null) {
         code.push(this.makeCode(' assert '));
         code.push(...this.assertions.compileToFragments(o));
       }
@@ -4106,7 +4102,7 @@ export var ImportDeclaration = class ImportDeclaration extends ModuleDeclaration
 
 };
 
-export var ImportClause = (function() {
+export let ImportClause = (function() {
   class ImportClause extends Base {
     constructor(defaultBinding, namedImports) {
       super();
@@ -4142,9 +4138,9 @@ export var ImportClause = (function() {
 
 }).call(this);
 
-export var ExportDeclaration = class ExportDeclaration extends ModuleDeclaration {
+export let ExportDeclaration = class ExportDeclaration extends ModuleDeclaration {
   compileNode(o) {
-    let code, ref1;
+    let cleanPath, code, ref1, sourcePath;
     this.checkScope(o, 'export');
     this.checkForAnonymousClassExport();
     code = [];
@@ -4153,8 +4149,11 @@ export var ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
       code.push(this.makeCode('default '));
     }
     if (!(this instanceof ExportDefaultDeclaration) && (this.clause instanceof Assign || this.clause instanceof Class)) {
-      code.push(this.makeCode('var '));
+      code.push(this.makeCode('let '));
       this.clause.moduleDeclaration = 'export';
+    }
+    if (this instanceof ExportDefaultDeclaration && this.clause instanceof Class) {
+      this.clause.exportDefault = true;
     }
     if ((this.clause.body != null) && this.clause.body instanceof Block) {
       code = code.concat(this.clause.compileToFragments(o, LEVEL_TOP));
@@ -4162,7 +4161,12 @@ export var ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
       code = code.concat(this.clause.compileNode(o));
     }
     if (((ref1 = this.source) != null ? ref1.value : void 0) != null) {
-      code.push(this.makeCode(` from ${this.source.value}`));
+      sourcePath = this.source.value;
+      cleanPath = sourcePath.replace(/^['"`]|['"`]$/g, '');
+      if (cleanPath.match(/^\.\.?\//) && !cleanPath.match(/\.\w+$/)) {
+        sourcePath = sourcePath.replace(/(['"`])$/, ".js$1");
+      }
+      code.push(this.makeCode(` from ${sourcePath}`));
       if (this.assertions != null) {
         code.push(this.makeCode(' assert '));
         code.push(...this.assertions.compileToFragments(o));
@@ -4185,7 +4189,7 @@ export var ExportDeclaration = class ExportDeclaration extends ModuleDeclaration
 
 };
 
-export var ExportNamedDeclaration = class ExportNamedDeclaration extends ExportDeclaration {
+export let ExportNamedDeclaration = class ExportNamedDeclaration extends ExportDeclaration {
   astProperties(o) {
     let clauseAst, ref1, ret;
     ret = {
@@ -4206,7 +4210,7 @@ export var ExportNamedDeclaration = class ExportNamedDeclaration extends ExportD
 
 };
 
-export var ExportDefaultDeclaration = class ExportDefaultDeclaration extends ExportDeclaration {
+export let ExportDefaultDeclaration = class ExportDefaultDeclaration extends ExportDeclaration {
   astProperties(o) {
     return {
       declaration: this.clause.ast(o),
@@ -4216,7 +4220,7 @@ export var ExportDefaultDeclaration = class ExportDefaultDeclaration extends Exp
 
 };
 
-export var ExportAllDeclaration = class ExportAllDeclaration extends ExportDeclaration {
+export let ExportAllDeclaration = class ExportAllDeclaration extends ExportDeclaration {
   astProperties(o) {
     return {
       source: this.source.ast(o),
@@ -4227,7 +4231,7 @@ export var ExportAllDeclaration = class ExportAllDeclaration extends ExportDecla
 
 };
 
-export var ModuleSpecifierList = (function() {
+export let ModuleSpecifierList = (function() {
   class ModuleSpecifierList extends Base {
     constructor(specifiers) {
       super();
@@ -4235,9 +4239,8 @@ export var ModuleSpecifierList = (function() {
     }
 
     compileNode(o) {
-      let code, compiledList, fragments, index, j, len1, specifier;
+      let code, compiledList, fragment, fragments, index, itemLength, j, k, l, len1, len2, len3, len4, len5, len6, lineFragment, lineFragments, lineIndex, lineLength, p, q, r, singleLine, specifier, totalLength;
       code = [];
-      o.indent += TAB;
       compiledList = (function() {
         let j, len1, ref1, results1;
         ref1 = this.specifiers;
@@ -4249,15 +4252,66 @@ export var ModuleSpecifierList = (function() {
         return results1;
       }).call(this);
       if (this.specifiers.length !== 0) {
-        code.push(this.makeCode(`{\n${o.indent}`));
+        singleLine = [];
+        singleLine.push(this.makeCode('{ '));
         for (index = j = 0, len1 = compiledList.length; j < len1; index = ++j) {
           fragments = compiledList[index];
           if (index) {
-            code.push(this.makeCode(`,\n${o.indent}`));
+            singleLine.push(this.makeCode(', '));
           }
-          code.push(...fragments);
+          singleLine.push(...fragments);
         }
-        code.push(this.makeCode("\n}"));
+        singleLine.push(this.makeCode(' }'));
+        totalLength = 0;
+        for (k = 0, len2 = singleLine.length; k < len2; k++) {
+          fragment = singleLine[k];
+          if (fragment.code) {
+            totalLength += fragment.code.length;
+          }
+        }
+        if (totalLength > 80) {
+          o.indent += TAB;
+          code.push(this.makeCode(`{\n${o.indent}`));
+          lineFragments = [];
+          lineLength = o.indent.length;
+          for (index = l = 0, len3 = compiledList.length; l < len3; index = ++l) {
+            fragments = compiledList[index];
+            itemLength = 0;
+            for (p = 0, len4 = fragments.length; p < len4; p++) {
+              fragment = fragments[p];
+              if (fragment.code) {
+                itemLength += fragment.code.length;
+              }
+            }
+            if (index) {
+              itemLength += 2;
+            }
+            if (lineLength + itemLength > 80 && lineFragments.length > 0) {
+              for (lineIndex = q = 0, len5 = lineFragments.length; q < len5; lineIndex = ++q) {
+                lineFragment = lineFragments[lineIndex];
+                if (lineIndex) {
+                  code.push(this.makeCode(', '));
+                }
+                code.push(...lineFragment);
+              }
+              code.push(this.makeCode(`,\n${o.indent}`));
+              lineFragments = [];
+              lineLength = o.indent.length;
+            }
+            lineFragments.push(fragments);
+            lineLength += itemLength;
+          }
+          for (lineIndex = r = 0, len6 = lineFragments.length; r < len6; lineIndex = ++r) {
+            lineFragment = lineFragments[lineIndex];
+            if (lineIndex) {
+              code.push(this.makeCode(', '));
+            }
+            code.push(...lineFragment);
+          }
+          code.push(this.makeCode("\n}"));
+        } else {
+          code = singleLine;
+        }
       } else {
         code.push(this.makeCode('{}'));
       }
@@ -4283,11 +4337,11 @@ export var ModuleSpecifierList = (function() {
 
 }).call(this);
 
-export var ImportSpecifierList = class ImportSpecifierList extends ModuleSpecifierList {};
+export let ImportSpecifierList = class ImportSpecifierList extends ModuleSpecifierList {};
 
-export var ExportSpecifierList = class ExportSpecifierList extends ModuleSpecifierList {};
+export let ExportSpecifierList = class ExportSpecifierList extends ModuleSpecifierList {};
 
-export var ModuleSpecifier = (function() {
+export let ModuleSpecifier = (function() {
   class ModuleSpecifier extends Base {
     constructor(original, alias, moduleDeclarationType1) {
       let ref1, ref2;
@@ -4335,7 +4389,7 @@ export var ModuleSpecifier = (function() {
 
 }).call(this);
 
-export var ImportSpecifier = class ImportSpecifier extends ModuleSpecifier {
+export let ImportSpecifier = class ImportSpecifier extends ModuleSpecifier {
   constructor(imported, local) {
     super(imported, local, 'import');
   }
@@ -4362,7 +4416,7 @@ export var ImportSpecifier = class ImportSpecifier extends ModuleSpecifier {
 
 };
 
-export var ImportDefaultSpecifier = class ImportDefaultSpecifier extends ImportSpecifier {
+export let ImportDefaultSpecifier = class ImportDefaultSpecifier extends ImportSpecifier {
   astProperties(o) {
     return {
       local: this.original.ast(o)
@@ -4371,7 +4425,7 @@ export var ImportDefaultSpecifier = class ImportDefaultSpecifier extends ImportS
 
 };
 
-export var ImportNamespaceSpecifier = class ImportNamespaceSpecifier extends ImportSpecifier {
+export let ImportNamespaceSpecifier = class ImportNamespaceSpecifier extends ImportSpecifier {
   astProperties(o) {
     return {
       local: this.alias.ast(o)
@@ -4380,7 +4434,7 @@ export var ImportNamespaceSpecifier = class ImportNamespaceSpecifier extends Imp
 
 };
 
-export var ExportSpecifier = class ExportSpecifier extends ModuleSpecifier {
+export let ExportSpecifier = class ExportSpecifier extends ModuleSpecifier {
   constructor(local, exported) {
     super(local, exported, 'export');
   }
@@ -4396,7 +4450,7 @@ export var ExportSpecifier = class ExportSpecifier extends ModuleSpecifier {
 
 };
 
-export var DynamicImport = class DynamicImport extends Base {
+export let DynamicImport = class DynamicImport extends Base {
   compileNode() {
     return [this.makeCode('import')];
   }
@@ -4407,7 +4461,7 @@ export var DynamicImport = class DynamicImport extends Base {
 
 };
 
-export var DynamicImportCall = class DynamicImportCall extends Call {
+export let DynamicImportCall = class DynamicImportCall extends Call {
   compileNode(o) {
     this.checkArguments();
     return super.compileNode(o);
@@ -4427,7 +4481,7 @@ export var DynamicImportCall = class DynamicImportCall extends Call {
 
 };
 
-export var Assign = (function() {
+export let Assign = (function() {
   class Assign extends Base {
     constructor(variable1, value1, context1, options = {}) {
       super();
@@ -4953,7 +5007,7 @@ export var Assign = (function() {
 
 }).call(this);
 
-export var FuncGlyph = class FuncGlyph extends Base {
+export let FuncGlyph = class FuncGlyph extends Base {
   constructor(glyph) {
     super();
     this.glyph = glyph;
@@ -4961,7 +5015,7 @@ export var FuncGlyph = class FuncGlyph extends Base {
 
 };
 
-export var Code = (function() {
+export let Code = (function() {
   class Code extends Base {
     constructor(params, body, funcGlyph, paramStart) {
       let ref1;
@@ -5522,7 +5576,7 @@ export var Code = (function() {
 
 }).call(this);
 
-export var Param = (function() {
+export let Param = (function() {
   class Param extends Base {
     constructor(name1, value1, splat1) {
       let message, token;
@@ -5663,7 +5717,7 @@ export var Param = (function() {
 
 }).call(this);
 
-export var Splat = (function() {
+export let Splat = (function() {
   class Splat extends Base {
     constructor(name, {
         lhs: lhs1,
@@ -5734,7 +5788,7 @@ export var Splat = (function() {
 
 }).call(this);
 
-export var Expansion = (function() {
+export let Expansion = (function() {
   class Expansion extends Base {
     compileNode(o) {
       return this.throwLhsError();
@@ -5775,7 +5829,7 @@ export var Expansion = (function() {
 
 }).call(this);
 
-export var Elision = (function() {
+export let Elision = (function() {
   class Elision extends Base {
     compileToFragments(o, level) {
       let fragment;
@@ -5808,7 +5862,7 @@ export var Elision = (function() {
 
 }).call(this);
 
-export var While = (function() {
+export let While = (function() {
   class While extends Base {
     constructor(condition1, {
         invert: inverted,
@@ -5918,7 +5972,7 @@ export var While = (function() {
 
 }).call(this);
 
-export var Op = (function() {
+export let Op = (function() {
   let CONVERSIONS, INVERSIONS;
 
   class Op extends Base {
@@ -6323,7 +6377,7 @@ export var Op = (function() {
 
 }).call(this);
 
-export var In = (function() {
+export let In = (function() {
   class In extends Base {
     constructor(object1, array) {
       super();
@@ -6399,7 +6453,7 @@ export var In = (function() {
 
 }).call(this);
 
-export var Try = (function() {
+export let Try = (function() {
   class Try extends Base {
     constructor(attempt, _catch, ensure, finallyTag) {
       super();
@@ -6471,7 +6525,7 @@ export var Try = (function() {
 
 }).call(this);
 
-export var Catch = (function() {
+export let Catch = (function() {
   class Catch extends Base {
     constructor(recovery, errorVariable) {
       let base1, ref1;
@@ -6558,7 +6612,7 @@ export var Catch = (function() {
 
 }).call(this);
 
-export var Throw = (function() {
+export let Throw = (function() {
   class Throw extends Base {
     constructor(expression1) {
       super();
@@ -6598,7 +6652,7 @@ export var Throw = (function() {
 
 }).call(this);
 
-export var Existence = (function() {
+export let Existence = (function() {
   class Existence extends Base {
     constructor(expression1, onlyNotUndefined = false) {
       let salvagedComments;
@@ -6659,7 +6713,7 @@ export var Existence = (function() {
 
 }).call(this);
 
-export var Parens = (function() {
+export let Parens = (function() {
   class Parens extends Base {
     constructor(body1) {
       super();
@@ -6705,7 +6759,7 @@ export var Parens = (function() {
 
 }).call(this);
 
-export var StringWithInterpolations = (function() {
+export let StringWithInterpolations = (function() {
   class StringWithInterpolations extends Base {
     constructor(body1, {quote, startQuote} = {}) {
       super();
@@ -6857,7 +6911,7 @@ export var StringWithInterpolations = (function() {
 
 }).call(this);
 
-export var TemplateElement = class TemplateElement extends Base {
+export let TemplateElement = class TemplateElement extends Base {
   constructor(value1, {
       tail: tail1
     } = {}) {
@@ -6877,7 +6931,7 @@ export var TemplateElement = class TemplateElement extends Base {
 
 };
 
-export var Interpolation = (function() {
+export let Interpolation = (function() {
   class Interpolation extends Base {
     constructor(expression1) {
       super();
@@ -6892,14 +6946,14 @@ export var Interpolation = (function() {
 
 }).call(this);
 
-export var EmptyInterpolation = class EmptyInterpolation extends Base {
+export let EmptyInterpolation = class EmptyInterpolation extends Base {
   constructor() {
     super();
   }
 
 };
 
-export var For = (function() {
+export let For = (function() {
   class For extends While {
     constructor(body, source) {
       super();
@@ -7189,7 +7243,7 @@ export var For = (function() {
 
 }).call(this);
 
-export var Switch = (function() {
+export let Switch = (function() {
   class Switch extends Base {
     constructor(subject, cases1, otherwise) {
       super();
@@ -7358,7 +7412,7 @@ SwitchCase = (function() {
 
 }).call(this);
 
-export var SwitchWhen = (function() {
+export let SwitchWhen = (function() {
   class SwitchWhen extends Base {
     constructor(conditions1, block1) {
       super();
@@ -7374,7 +7428,7 @@ export var SwitchWhen = (function() {
 
 }).call(this);
 
-export var If = (function() {
+export let If = (function() {
   class If extends Base {
     constructor(condition1, body1, options = {}) {
       super();
@@ -7540,7 +7594,7 @@ export var If = (function() {
 
 }).call(this);
 
-export var Sequence = (function() {
+export let Sequence = (function() {
   class Sequence extends Base {
     constructor(expressions1) {
       super();
@@ -7865,7 +7919,7 @@ isLocationDataEndGreater = function(a, b) {
   return a.last_column > b.last_column;
 };
 
-export var mergeLocationData = function(locationDataA, locationDataB, {justLeading, justEnding} = {}) {
+export let mergeLocationData = function(locationDataA, locationDataB, {justLeading, justEnding} = {}) {
   return Object.assign(justEnding ? {
     first_line: locationDataA.first_line,
     first_column: locationDataA.first_column
@@ -7895,7 +7949,7 @@ export var mergeLocationData = function(locationDataA, locationDataB, {justLeadi
   });
 };
 
-export var mergeAstLocationData = function(nodeA, nodeB, {justLeading, justEnding} = {}) {
+export let mergeAstLocationData = function(nodeA, nodeB, {justLeading, justEnding} = {}) {
   return {
     loc: {
       start: justEnding ? nodeA.loc.start : isAstLocGreater(nodeA.loc.start, nodeB.loc.start) ? nodeB.loc.start : nodeA.loc.start,
@@ -7907,7 +7961,7 @@ export var mergeAstLocationData = function(nodeA, nodeB, {justLeading, justEndin
   };
 };
 
-export var convertLocationDataToAst = function({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) {
+export let convertLocationDataToAst = function({first_line, first_column, last_line_exclusive, last_column_exclusive, range}) {
   return {
     loc: {
       start: {

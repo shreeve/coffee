@@ -2,11 +2,9 @@
 let LONG_FLAG, MULTI_FLAG, OPTIONAL, SHORT_FLAG, buildRule, buildRules, normalizeArguments,
   splice = [].splice;
 
-import {
-  repeat
-} from './helpers';
+import { repeat } from './helpers.js';
 
-export var OptionParser = class OptionParser {
+export let OptionParser = class OptionParser {
   constructor(ruleDeclarations, banner) {
     this.banner = banner;
     this.rules = buildRules(ruleDeclarations);

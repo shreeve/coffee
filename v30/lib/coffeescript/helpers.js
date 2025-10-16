@@ -3,17 +3,17 @@
 let UNICODE_CODE_POINT_ESCAPE, buildLocationData, buildLocationHash, syntaxErrorToString, unicodeCodePointToUnicodeEscapes,
   indexOf = [].indexOf;
 
-export var starts = function(string, literal, start) {
+export let starts = function(string, literal, start) {
   return literal === string.substr(start, literal.length);
 };
 
-export var ends = function(string, literal, back) {
+export let ends = function(string, literal, back) {
   let len;
   len = literal.length;
   return literal === string.substr(string.length - len - (back || 0), len);
 };
 
-export var repeat = function(str, n) {
+export let repeat = function(str, n) {
   let res;
   res = '';
   while (n > 0) {
@@ -26,7 +26,7 @@ export var repeat = function(str, n) {
   return res;
 };
 
-export var compact = function(array) {
+export let compact = function(array) {
   let i, item, len1, results;
   results = [];
   for (i = 0, len1 = array.length; i < len1; i++) {
@@ -38,7 +38,7 @@ export var compact = function(array) {
   return results;
 };
 
-export var count = function(string, substr) {
+export let count = function(string, substr) {
   let num, pos;
   num = pos = 0;
   if (!substr.length) {
@@ -50,11 +50,11 @@ export var count = function(string, substr) {
   return num;
 };
 
-export var merge = function(options, overrides) {
+export let merge = function(options, overrides) {
   return extend(extend({}, options), overrides);
 };
 
-export var extend = function(object, properties) {
+export let extend = function(object, properties) {
   let key, val;
   for (key in properties) {
     val = properties[key];
@@ -63,18 +63,18 @@ export var extend = function(object, properties) {
   return object;
 };
 
-export var flatten = function(array) {
+export let flatten = function(array) {
   return array.flat(2e308);
 };
 
-export var del = function(obj, key) {
+export let del = function(obj, key) {
   let val;
   val = obj[key];
   delete obj[key];
   return val;
 };
 
-export var some = Array.prototype.some ?? function(fn) {
+export let some = Array.prototype.some ?? function(fn) {
   let e, i, len1, ref;
   ref = this;
   for (i = 0, len1 = ref.length; i < len1; i++) {
@@ -102,7 +102,7 @@ buildLocationData = function(first, last) {
   }
 };
 
-export var extractAllCommentTokens = function(tokens) {
+export let extractAllCommentTokens = function(tokens) {
   let allCommentsObj, comment, commentKey, i, j, k, key, len1, len2, len3, ref, results, sortedKeys, token;
   allCommentsObj = {};
   for (i = 0, len1 = tokens.length; i < len1; i++) {
@@ -131,7 +131,7 @@ buildLocationHash = function(loc) {
   return `${loc.range[0]}-${loc.range[1]}`;
 };
 
-export var buildTokenDataDictionary = function(tokens) {
+export let buildTokenDataDictionary = function(tokens) {
   let base1, i, len1, token, tokenData, tokenHash;
   tokenData = {};
   for (i = 0, len1 = tokens.length; i < len1; i++) {
@@ -150,7 +150,7 @@ export var buildTokenDataDictionary = function(tokens) {
   return tokenData;
 };
 
-export var addDataToNode = function(parserState, firstLocationData, firstValue, lastLocationData, lastValue, forceUpdateLocation = true) {
+export let addDataToNode = function(parserState, firstLocationData, firstValue, lastLocationData, lastValue, forceUpdateLocation = true) {
   return function(obj) {
     let locationData, objHash, ref;
     locationData = buildLocationData((firstValue != null ? firstValue.locationData : void 0) ?? firstLocationData, (lastValue != null ? lastValue.locationData : void 0) ?? lastLocationData);
@@ -172,7 +172,7 @@ export var addDataToNode = function(parserState, firstLocationData, firstValue, 
   };
 };
 
-export var attachCommentsToNode = function(comments, node) {
+export let attachCommentsToNode = function(comments, node) {
   if ((comments == null) || comments.length === 0) {
     return;
   }
@@ -182,7 +182,7 @@ export var attachCommentsToNode = function(comments, node) {
   return node.comments.push(...comments);
 };
 
-export var locationDataToString = function(obj) {
+export let locationDataToString = function(obj) {
   let locationData;
   if (("2" in obj) && ("first_line" in obj[2])) {
     locationData = obj[2];
@@ -196,7 +196,7 @@ export var locationDataToString = function(obj) {
   }
 };
 
-export var anonymousFileName = (function() {
+export let anonymousFileName = (function() {
   let n;
   n = 0;
   return function() {
@@ -204,7 +204,7 @@ export var anonymousFileName = (function() {
   };
 })();
 
-export var baseFileName = function(file, stripExt = false, useWinPathSep = false) {
+export let baseFileName = function(file, stripExt = false, useWinPathSep = false) {
   let parts, pathSep;
   pathSep = useWinPathSep ? /\\|\// : /\//;
   parts = file.split(pathSep);
@@ -220,11 +220,11 @@ export var baseFileName = function(file, stripExt = false, useWinPathSep = false
   return parts.join('.');
 };
 
-export var isCoffee = function(file) {
+export let isCoffee = function(file) {
   return /\.coffee$/.test(file);
 };
 
-export var throwSyntaxError = function(message, location) {
+export let throwSyntaxError = function(message, location) {
   let error;
   error = new SyntaxError(message);
   error.location = location;
@@ -233,7 +233,7 @@ export var throwSyntaxError = function(message, location) {
   throw error;
 };
 
-export var updateSyntaxError = function(error, code, filename) {
+export let updateSyntaxError = function(error, code, filename) {
   if (error.toString === syntaxErrorToString) {
     error.code || (error.code = code);
     error.filename || (error.filename = filename);
@@ -278,7 +278,7 @@ ${codeLine}
 ${marker}`;
 };
 
-export var nameWhitespaceCharacter = function(string) {
+export let nameWhitespaceCharacter = function(string) {
   switch (string) {
     case ' ':
       return 'space';
@@ -293,7 +293,7 @@ export var nameWhitespaceCharacter = function(string) {
   }
 };
 
-export var parseNumber = function(string) {
+export let parseNumber = function(string) {
   let base;
   if (string == null) {
     return 0/0;
@@ -317,23 +317,23 @@ export var parseNumber = function(string) {
   }
 };
 
-export var isFunction = function(obj) {
+export let isFunction = function(obj) {
   return Object.prototype.toString.call(obj) === '[object Function]';
 };
 
-export var isNumber = function(obj) {
+export let isNumber = function(obj) {
   return Object.prototype.toString.call(obj) === '[object Number]';
 };
 
-export var isString = function(obj) {
+export let isString = function(obj) {
   return Object.prototype.toString.call(obj) === '[object String]';
 };
 
-export var isBoolean = function(obj) {
+export let isBoolean = function(obj) {
   return obj === true || obj === false || Object.prototype.toString.call(obj) === '[object Boolean]';
 };
 
-export var isPlainObject = function(obj) {
+export let isPlainObject = function(obj) {
   return typeof obj === 'object' && !!obj && !Array.isArray(obj) && !isNumber(obj) && !isString(obj) && !isBoolean(obj);
 };
 
@@ -352,7 +352,7 @@ unicodeCodePointToUnicodeEscapes = function(codePoint) {
   return `${toUnicodeEscape(high)}${toUnicodeEscape(low)}`;
 };
 
-export var replaceUnicodeCodePointEscapes = function(str, {flags, error, delimiter = ''} = {}) {
+export let replaceUnicodeCodePointEscapes = function(str, {flags, error, delimiter = ''} = {}) {
   let shouldReplace;
   shouldReplace = (flags != null) && indexOf.call(flags, 'u') < 0;
   return str.replace(UNICODE_CODE_POINT_ESCAPE, function(match, escapedBackslash, codePointHex, offset) {

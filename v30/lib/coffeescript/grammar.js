@@ -2934,7 +2934,4 @@ left        POST_IF`.trim().split('\n').reverse().map(function(line) {
   return line.trim().split(/\s+/);
 });
 
-export {
-  grammar,
-  operators
-};
+export { grammar, operators };
