@@ -216,14 +216,19 @@ node lib/index.js     # Runs successfully
   - ✅ Smart import formatting (single-line ≤80 chars, packed multi-line >80)
   - ✅ Fixed `export default class` to generate valid ES6
   - ✅ Preserve explicit extensions (`.coffee`, `.ts`, `.css`, etc.)
-  - 📊 **43/52 tests passing (83%)** - core functionality complete
+  - 📊 **43/49 tests passing (88%)** - core functionality complete
+
+### 🚧 In Progress
+- Phase 4: Arrow Functions (0/31 tests passing)
 
 ### 📋 Upcoming
-- Phase 4: Arrow Functions
 - Phase 5: Modern Loops
 - Phase 6: Destructuring
 - Phase 7: Class Enhancements
 - Phase 8: Additional ES6 Features
+
+### ℹ️ Notes
+- Template literals are already supported in CoffeeScript (via backticks or interpolation)
 
 ## Resources
 
