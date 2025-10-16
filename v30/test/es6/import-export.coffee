@@ -247,7 +247,6 @@ code '''
 
 console.log "\n== Export Lists =="
 
-
 # Export single item
 code "export { myFunc }", '''
   export { myFunc };
@@ -279,6 +278,11 @@ code "export * from './utils'", '''
   export * from './utils.js';
 '''
 
+# FIXME: Enable when we support ES2020 syntax
+# # Re-export all with rename
+# code "export * as utils from './utils'", '''
+#   export * as utils from './utils.js';
+# '''
 
 # Re-export specific items
 code "export { helper, formatter } from './utils'", '''
