@@ -91,17 +91,27 @@ export let myFunction = function() { return console.log('hello'); };
 Generate arrow functions where appropriate.
 
 **Strategy**:
-- Use arrows for simple functions without `this` context
-- Preserve `function` keyword for constructors, generators, and methods using `this`
-- Respect CoffeeScript's `=>` (bound) vs `->` (unbound) distinction
+- **`=>` (fat arrow)** → Always generates JS arrow function (preserves `this` binding)
+- **`->` (thin arrow)** → Use arrow when safe, function when needed:
+  - Arrow when: No `this`, `arguments`, `super`, `new.target`
+  - Function when: Constructors, generators, methods using `this`
+
+**Success Metrics**:
+- ✅ All `=>` become arrow functions
+- ✅ Safe `->` cases use arrows (smaller output)
+- ✅ No broken `this` contexts
+- ✅ Special cases handled (generators, async, constructors)
 
 **Example**:
 ```javascript
-// Simple function → Arrow
+// CoffeeScript => always becomes arrow
+let handler = () => this.handleEvent();
+
+// CoffeeScript -> becomes arrow when safe
 let double = (x) => x * 2;
 
-// Method needing 'this' → Regular function
-let handler = function() { return this.data; };
+// CoffeeScript -> stays function when needed
+let method = function() { return this.data; };
 ```
 
 ### Phase 5: Modern Loops
@@ -219,7 +229,7 @@ node lib/index.js     # Runs successfully
   - 📊 **43/49 tests passing (88%)** - core functionality complete
 
 ### 🚧 In Progress
-- Phase 4: Arrow Functions (0/31 tests passing)
+- Phase 4: Arrow Functions (0/33 tests passing)
 
 ### 📋 Upcoming
 - Phase 5: Modern Loops

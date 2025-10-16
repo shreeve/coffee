@@ -174,6 +174,16 @@ code '''
   };
 '''
 
+# Generator with yield delegation (must use function*)
+code '''
+  delegator = ->
+    yield* otherGenerator()
+''', '''
+  let delegator = function*() {
+    return yield* otherGenerator();
+  };
+'''
+
 # Async function
 code '''
   fetchData = ->
@@ -292,6 +302,16 @@ code '''
 ''', '''
   let variadic = function() {
     return arguments.length;
+  };
+'''
+
+# Function using new.target (must be regular function)
+code '''
+  Constructor = ->
+    console.log new.target
+''', '''
+  let Constructor = function() {
+    return console.log(new.target);
   };
 '''
 
