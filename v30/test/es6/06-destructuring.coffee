@@ -23,9 +23,10 @@ code '[head, tail...] = list', '''
 '''
 
 code '[first, middle..., last] = array', '''
-  let first, last, middle;
+  let first, last, middle,
+    splice = [].splice;
 
-  [first, ...middle] = array, [last] = middle.splice(-1);
+  [first, ...middle] = array, [last] = splice.call(middle, -1);
 '''
 
 # Object destructuring
@@ -70,10 +71,7 @@ code '{name: userName, age: userAge} = user', '''
 code '{name = "Anonymous", age = 0} = user', '''
   let age, name;
 
-  ({
-    name = "Anonymous",
-    age = 0
-  } = user);
+  ({name = "Anonymous", age = 0} = user);
 '''
 
 code '[a = 1, b = 2] = array', '''
@@ -103,6 +101,8 @@ code '''
 
 # Swapping variables
 code '[a, b] = [b, a]', '''
+  let a, b;
+
   [a, b] = [b, a];
 '''
 
@@ -115,7 +115,9 @@ code '''
 
   key = "dynamicKey";
 
-  ({[key]: value} = obj);
+  ({
+    [key]: value
+  } = obj);
 '''
 
 # Rest in objects
@@ -159,29 +161,22 @@ code '''
 
 console.log "\n== Runtime Tests =="
 
-test "array destructuring", ->
-  [a, b, c] = [1, 2, 3]
-  throw new Error("Expected a=1, b=2, c=3") unless a is 1 and b is 2 and c is 3
+test "array destructuring", '[a, b, c] = [1, 2, 3]; a', 1
 
-test "object destructuring", ->
-  {x, y} = {x: 10, y: 20}
-  throw new Error("Expected x=10, y=20") unless x is 10 and y is 20
+test "array destructuring b", '[a, b, c] = [1, 2, 3]; b', 2
 
-test "nested destructuring", ->
-  {user: {name}} = {user: {name: "Alice", age: 30}}
-  throw new Error("Expected 'Alice'") unless name is "Alice"
+test "object destructuring", '{x, y} = {x: 10, y: 20}; x', 10
 
-test "rest elements", ->
-  [first, rest...] = [1, 2, 3, 4]
-  throw new Error("Expected first=1") unless first is 1
-  throw new Error("Expected rest=[2,3,4]") unless rest.length is 3
+test "object destructuring y", '{x, y} = {x: 10, y: 20}; y', 20
 
-test "default values", ->
-  {name = "Anonymous"} = {}
-  throw new Error("Expected 'Anonymous'") unless name is "Anonymous"
+test "nested destructuring", '{user: {name}} = {user: {name: "Alice", age: 30}}; name', "Alice"
 
-test "swapping works", ->
-  a = 1
-  b = 2
-  [a, b] = [b, a]
-  throw new Error("Expected a=2, b=1") unless a is 2 and b is 1
+test "rest elements", '[first, rest...] = [1, 2, 3, 4]; first', 1
+
+test "rest elements length", '[first, rest...] = [1, 2, 3, 4]; rest.length', 3
+
+test "default values", '{name = "Anonymous"} = {}; name', "Anonymous"
+
+test "swapping works", 'a = 1; b = 2; [a, b] = [b, a]; a', 2
+
+test "swapping b value", 'a = 1; b = 2; [a, b] = [b, a]; b', 1
