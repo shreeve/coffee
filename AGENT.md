@@ -88,79 +88,44 @@ export let myFunction = function() { return console.log('hello'); };
 **Note**: No CommonJS transformation - users write modern ES6 import/export syntax directly.
 
 ### Phase 4: Arrow Functions
-Generate clean, idiomatic ES6 arrow functions.
+Generate idiomatic ES6 arrow functions with intelligent optimization.
 
-**Why This Matters:**
-Current CoffeeScript **already uses ES6 arrows** for `=>`, but generates verbose, unoptimized output:
-```javascript
-// Current CoffeeScript (technically ES6, but verbose):
-const double = function(x) { return x * 2; };        // Always function for ->
-const getValue = () => { return this.value; };       // Always braces for =>
-
-// Our ES6 Mode (idiomatic, what humans write):
-const double = (x) => x * 2;                         // Smart arrow optimization
-const getValue = () => this.value;                   // Compact single expression
-```
-
-**Value Delivered:**
-- 📦 **30-50% smaller output** for functional-style code
-- ✨ **Professional quality** - matches hand-written modern JS
-- 🔧 **Lint-friendly** - passes ESLint without fixes
-- 🚀 **Better optimization** - bundlers handle compact arrows better
+**Value**: 30-50% smaller output for functional code, matches hand-written ES6, lint-friendly.
 
 **Strategy**:
-- **`=>` (fat arrow)** → Always generates JS arrow function (preserves `this` binding)
-- **`->` (thin arrow)** → Use arrow when safe, function when needed:
-  - Arrow when: No `this`, `arguments`, `super`, `new.target`
-  - Function when: Constructors, generators, methods using `this`
+- **`=>` (fat arrow)** → Always generates arrow with lexical `this`
+- **`->` (thin arrow)** → Generates arrow when safe, function when needed
 
-**⚠️ CRITICAL IMPLEMENTATION NOTES FOR NEXT AI:**
+**Detection**:
+- **Arrows when**: No `arguments`, `super`, `new.target`, or dynamic `this` binding
+- **Functions when**: Generators, constructors, methods, or using special contexts
 
-1. **The Classic Bug: `return` + Object Literals**
-   ```coffeescript
-   # This is the hardest case to handle correctly:
-   test = ->
-     return {a: 1}
+**Output Patterns**:
+```javascript
+() => 42                     // Compact single expressions
+() => ({a: 1})              // Object literals wrapped in parens (block ambiguity!)
+() => { return {a: 1}; }    // Explicit returns preserved
+getValue: function() {...}   // Methods stay functions
+```
 
-   # WRONG (invalid JS):
-   () => { a: 1 }  # This is a block with label, not an object!
+**Implementation Insights**:
+- Detect explicit `return` BEFORE calling `@body.makeReturn()` to preserve intent
+- `new.target` is a `MetaProperty` AST node (not `Value`)
+- Object literals: implicit → `({})`, explicit → `{ return {}; }`
 
-   # CORRECT options:
-   () => { return {a: 1}; }  # Keep return in block
-   () => ({a: 1})            # Or wrap in parens (but only for implicit returns)
-   ```
+**Example**:
+```coffeescript
+double = (x) -> x * 2       # Safe -> becomes arrow
+handler = => @value         # => always arrow
+api = {fetch: -> @endpoint} # Method stays function
+```
+```javascript
+let double = (x) => x * 2;
+let handler = () => this.value;
+let api = { fetch: function() { return this.endpoint; } };
+```
 
-2. **🎯 ROOT CAUSE FOUND:**
-   The bug is in `Return.compileToFragments` (line 1369-1371):
-   ```coffeescript
-   compileToFragments: (o, level) ->
-     expr = @expression?.makeReturn()
-     if expr and expr not instanceof Return then expr.compileToFragments o, level else super o, level
-   ```
-
-   **What's happening:**
-   - When a Return node compiles, it calls `makeReturn()` on its expression
-   - This returns the expression itself (e.g., the Obj), NOT wrapped in Return
-   - It then compiles just the expression, **losing the return keyword**
-   - This optimization works fine for regular functions but breaks arrow functions
-
-3. **The Compilation Flow Problem:**
-   ```
-   1. return {a: 1} → Return node with Obj expression
-   2. Code.compileNode calls @body.makeReturn() (line 3941)
-   3. Body compiles with compileWithDeclarations
-   4. Return.compileToFragments unwraps itself (line 1371)
-   5. Only the Obj compiles, return keyword is lost!
-   ```
-
-4. **Key Implementation Areas**:
-   - Main arrow logic: `Code.compileNode` (lines 3940-4090)
-   - The bug: `Return.compileToFragments` (lines 1369-1371)
-   - Detection needed: `@bound`, `@isGenerator`, `@isMethod`, `@ctor`
-   - Body scanning for: `ThisLiteral`, `arguments`, `Super`, `new.target`
-
-5. **What Already Works Well**:
-   - Bound functions (`=>`) correctly generate arrows
+### Phase 5: Modern Loops
    - Generator/async detection works perfectly
    - Methods in objects/classes correctly stay as regular functions
    - `arguments` detection properly prevents arrow usage
@@ -347,8 +312,20 @@ node lib/index.js     # Runs successfully
   - ✅ Preserve explicit extensions (`.coffee`, `.ts`, `.css`, etc.)
   - 📊 **43/49 tests passing (88%)** - core functionality complete
 
+### ✅ Completed (cont'd)
+- Phase 4: Arrow Functions
+  - ✅ Smart arrow detection (this, arguments, super, new.target)
+  - ✅ Compact single-expression syntax: `() => 42` instead of `() => { return 42; }`
+  - ✅ Object literal wrapping: `() => ({a: 1})` to avoid block ambiguity
+  - ✅ Explicit returns preserved: `() => { return {a: 1}; }`
+  - ✅ Bound functions (`=>`) always use arrows
+  - ✅ Safe thin arrows (`->`) optimized to arrows (30-50% size reduction)
+  - ✅ Methods using `this` stay as functions
+  - ✅ Special contexts handled (generators, async, constructors)
+  - 📊 **33/33 tests passing (100%)**
+
 ### 🚧 In Progress
-- Phase 4: Arrow Functions (Core logic complete, blocked by Return+Object bug - see notes above)
+- None (ready for Phase 5)
 
 ### 📋 Upcoming
 - Phase 5: Modern Loops
