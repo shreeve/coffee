@@ -134,14 +134,30 @@ Scope = class Scope {
   declaredVariables() {
     let v;
     return ((function() {
-      let results1;
-this.variables.filter((v) => v.type === 'var')
+      let j, len1, ref1, results1;
+      ref1 = this.variables;
+      results1 = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        v = ref1[j];
+        if (v.type === 'var') {
+          results1.push(v.name);
+        }
+      }
+      return results1;
     }).call(this)).sort();
   }
 
   assignedVariables() {
-    let results1, v;
-this.variables.filter((v) => v.type.assigned).map((v) => `${v.name} = ${v.type.value}`)
+    let j, len1, ref1, results1, v;
+    ref1 = this.variables;
+    results1 = [];
+    for (j = 0, len1 = ref1.length; j < len1; j++) {
+      v = ref1[j];
+      if (v.type.assigned) {
+        results1.push(`${v.name} = ${v.type.value}`);
+      }
+    }
+    return results1;
   }
 
 };
@@ -682,20 +698,44 @@ export let Root = (function() {
     }
 
     initializeScope(o) {
-      let name, results1;
+      let j, len1, name, ref1, results1;
       o.scope = new Scope(null, this.body, null, o.referencedVars ?? []);
-o.locals || [].map((name) => o.scope.parameter(name))
+      ref1 = o.locals || [];
+      results1 = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        name = ref1[j];
+        results1.push(o.scope.parameter(name));
+      }
+      return results1;
     }
 
     commentsAst() {
-      let comment, commentToken, results1;
+      let comment, commentToken, j, len1, ref1, results1;
       if (this.allComments == null) {
         this.allComments = (function() {
-          let results1;
-this.allCommentTokens ?? [].filter((commentToken) => !commentToken.heregex).map((commentToken) => commentToken.here ? new HereComment(commentToken) : new LineComment(commentToken))
+          let j, len1, ref1, results1;
+          ref1 = this.allCommentTokens ?? [];
+          results1 = [];
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            commentToken = ref1[j];
+            if (!commentToken.heregex) {
+              if (commentToken.here) {
+                results1.push(new HereComment(commentToken));
+              } else {
+                results1.push(new LineComment(commentToken));
+              }
+            }
+          }
+          return results1;
         }).call(this);
       }
-this.allComments.map((comment) => comment.ast())
+      ref1 = this.allComments;
+      results1 = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        comment = ref1[j];
+        results1.push(comment.ast());
+      }
+      return results1;
     }
 
     astNode(o) {
@@ -942,8 +982,18 @@ export let Block = (function() {
             }
           }
           code = `\n${fragmentIndent}` + ((() => {
-            let results1;
-fragment.precedingComments.map((commentFragment) => commentFragment.isHereComment && commentFragment.multiline ? multident(commentFragment.code, fragmentIndent, false) : commentFragment.code)
+            let l, len2, ref2, results1;
+            ref2 = fragment.precedingComments;
+            results1 = [];
+            for (l = 0, len2 = ref2.length; l < len2; l++) {
+              commentFragment = ref2[l];
+              if (commentFragment.isHereComment && commentFragment.multiline) {
+                results1.push(multident(commentFragment.code, fragmentIndent, false));
+              } else {
+                results1.push(commentFragment.code);
+              }
+            }
+            return results1;
           })()).join(`\n${fragmentIndent}`).replace(/^(\s*)$/gm, '');
           ref2 = fragments.slice(0, (fragmentIndex + 1));
           for (pastFragmentIndex = l = ref2.length - 1; l >= 0; pastFragmentIndex = l += -1) {
@@ -991,7 +1041,20 @@ fragment.precedingComments.map((commentFragment) => commentFragment.isHereCommen
             }
           }
           code = fragmentIndex === 1 && /^\s+$/.test(fragments[0].code) ? '' : trail ? ' ' : `\n${fragmentIndent}`;
-          code += (fragment.followingComments.map((commentFragment) => commentFragment.isHereComment && commentFragment.multiline ? multident(commentFragment.code, fragmentIndent, false) : commentFragment.code)).join(`\n${fragmentIndent}`).replace(/^(\s*)$/gm, '');
+          code += ((() => {
+            let len3, q, ref4, results1;
+            ref4 = fragment.followingComments;
+            results1 = [];
+            for (q = 0, len3 = ref4.length; q < len3; q++) {
+              commentFragment = ref4[q];
+              if (commentFragment.isHereComment && commentFragment.multiline) {
+                results1.push(multident(commentFragment.code, fragmentIndent, false));
+              } else {
+                results1.push(commentFragment.code);
+              }
+            }
+            return results1;
+          })()).join(`\n${fragmentIndent}`).replace(/^(\s*)$/gm, '');
           ref4 = fragments.slice(fragmentIndex);
           for (upcomingFragmentIndex = q = 0, len3 = ref4.length; q < len3; upcomingFragmentIndex = ++q) {
             upcomingFragment = ref4[upcomingFragmentIndex];
@@ -1402,8 +1465,18 @@ export let RegexLiteral = (function() {
           rawValue: void 0
         },
         comments: (function() {
-          let results1;
-this.heregexCommentTokens.map((heregexCommentToken) => heregexCommentToken.here ? new HereComment(heregexCommentToken).ast(o) : new LineComment(heregexCommentToken).ast(o))
+          let j, len1, ref1, results1;
+          ref1 = this.heregexCommentTokens;
+          results1 = [];
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            heregexCommentToken = ref1[j];
+            if (heregexCommentToken.here) {
+              results1.push(new HereComment(heregexCommentToken).ast(o));
+            } else {
+              results1.push(new LineComment(heregexCommentToken).ast(o));
+            }
+          }
+          return results1;
         }).call(this)
       };
     }
@@ -1927,7 +2000,9 @@ export let Value = (function() {
     }
 
     unfoldSoak(o) {
-      return this.unfoldedSoak != null ? this.unfoldedSoak : this.unfoldedSoak = ifn = this.base.unfoldSoak(o);
+      return this.unfoldedSoak != null ? this.unfoldedSoak : this.unfoldedSoak = (() => {
+        let fst, i, ifn, j, len1, prop, ref, ref1, snd;
+        ifn = this.base.unfoldSoak(o);
         if (ifn) {
           ifn.body.properties.push(...this.properties);
           return ifn;
@@ -2287,8 +2362,16 @@ export let Call = (function() {
       compiledArgs = [];
       varAccess = ((ref2 = this.variable) != null ? (ref3 = ref2.properties) != null ? ref3[0] : void 0 : void 0) instanceof Access;
       argCode = (function() {
-        let results1;
-this.args || [].filter((arg) => arg instanceof Code)
+        let j, len1, ref4, results1;
+        ref4 = this.args || [];
+        results1 = [];
+        for (j = 0, len1 = ref4.length; j < len1; j++) {
+          arg = ref4[j];
+          if (arg instanceof Code) {
+            results1.push(arg);
+          }
+        }
+        return results1;
       }).call(this);
       if (argCode.length > 0 && varAccess && !this.variable.base.cached) {
         [cache] = this.variable.base.cache(o, LEVEL_ACCESS, () => false);
@@ -2354,8 +2437,14 @@ this.args || [].filter((arg) => arg instanceof Code)
       return {
         callee: this.variable.ast(o, LEVEL_ACCESS),
         arguments: (function() {
-          let results1;
-this.args.map((arg) => arg.ast(o, LEVEL_LIST))
+          let j, len1, ref1, results1;
+          ref1 = this.args;
+          results1 = [];
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            arg = ref1[j];
+            results1.push(arg.ast(o, LEVEL_LIST));
+          }
+          return results1;
         }).call(this),
         optional: !!this.soak,
         implicit: !!this.implicit
@@ -2477,8 +2566,18 @@ export let RegexWithInterpolations = (function() {
         interpolatedPattern: this.call.args[0].ast(o),
         flags: ((ref1 = this.call.args[1]) != null ? ref1.unwrap().originalValue : void 0) ?? '',
         comments: (function() {
-          let results1;
-this.heregexCommentTokens.map((heregexCommentToken) => heregexCommentToken.here ? new HereComment(heregexCommentToken).ast(o) : new LineComment(heregexCommentToken).ast(o))
+          let j, len1, ref2, results1;
+          ref2 = this.heregexCommentTokens;
+          results1 = [];
+          for (j = 0, len1 = ref2.length; j < len1; j++) {
+            heregexCommentToken = ref2[j];
+            if (heregexCommentToken.here) {
+              results1.push(new HereComment(heregexCommentToken).ast(o));
+            } else {
+              results1.push(new LineComment(heregexCommentToken).ast(o));
+            }
+          }
+          return results1;
         }).call(this)
       };
     }
@@ -2976,19 +3075,47 @@ export let Obj = (function() {
     }
 
     expandProperties() {
-      let property, results1;
-this.properties.map((property) => this.expandProperty(property))
+      let j, len1, property, ref1, results1;
+      ref1 = this.properties;
+      results1 = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        property = ref1[j];
+        results1.push(this.expandProperty(property));
+      }
+      return results1;
     }
 
     propagateLhs(setLhs) {
-      let property, results1, unwrappedValue, value;
+      let j, len1, property, ref1, results1, unwrappedValue, value;
       if (setLhs) {
         this.lhs = true;
       }
       if (!this.lhs) {
         return;
       }
-this.properties.map((property) => property instanceof Assign && property.context === 'object' ? (({value} = property), unwrappedValue = value.unwrapAll(), unwrappedValue instanceof Arr || unwrappedValue instanceof Obj ? unwrappedValue.propagateLhs(true) : unwrappedValue instanceof Assign ? unwrappedValue.nestedLhs = true : void 0) : property instanceof Assign ? property.nestedLhs = true : property instanceof Splat ? property.propagateLhs(true) : void 0)
+      ref1 = this.properties;
+      results1 = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        property = ref1[j];
+        if (property instanceof Assign && property.context === 'object') {
+          ({value} = property);
+          unwrappedValue = value.unwrapAll();
+          if (unwrappedValue instanceof Arr || unwrappedValue instanceof Obj) {
+            results1.push(unwrappedValue.propagateLhs(true));
+          } else if (unwrappedValue instanceof Assign) {
+            results1.push(unwrappedValue.nestedLhs = true);
+          } else {
+            results1.push(void 0);
+          }
+        } else if (property instanceof Assign) {
+          results1.push(property.nestedLhs = true);
+        } else if (property instanceof Splat) {
+          results1.push(property.propagateLhs(true));
+        } else {
+          results1.push(void 0);
+        }
+      }
+      return results1;
     }
 
     astNode(o) {
@@ -3009,8 +3136,14 @@ this.properties.map((property) => property instanceof Assign && property.context
       return {
         implicit: !!this.generated,
         properties: (function() {
-          let results1;
-this.expandProperties().map((property) => property.ast(o))
+          let j, len1, ref1, results1;
+          ref1 = this.expandProperties();
+          results1 = [];
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            property = ref1[j];
+            results1.push(property.ast(o));
+          }
+          return results1;
         }).call(this)
       };
     }
@@ -3126,8 +3259,14 @@ export let Arr = (function() {
         }
       }
       compiledObjs = (function() {
-        let results1;
-this.objects.map((obj) => obj.compileToFragments(o, LEVEL_LIST))
+        let k, len2, ref2, results1;
+        ref2 = this.objects;
+        results1 = [];
+        for (k = 0, len2 = ref2.length; k < len2; k++) {
+          obj = ref2[k];
+          results1.push(obj.compileToFragments(o, LEVEL_LIST));
+        }
+        return results1;
       }).call(this);
       olen = compiledObjs.length;
       includesLineCommentsOnNonFirstElement = false;
@@ -3234,8 +3373,14 @@ this.objects.map((obj) => obj.compileToFragments(o, LEVEL_LIST))
       let object;
       return {
         elements: (function() {
-          let results1;
-this.objects.map((object) => object.ast(o, LEVEL_LIST))
+          let j, len1, ref1, results1;
+          ref1 = this.objects;
+          results1 = [];
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            object = ref1[j];
+            results1.push(object.ast(o, LEVEL_LIST));
+          }
+          return results1;
         }).call(this)
       };
     }
@@ -3420,8 +3565,14 @@ export let Class = (function() {
       }
       if (initializer.length !== expressions.length) {
         this.body.expressions = (() => {
-          let results1;
-initializer.map((expression) => expression.hoist());
+          let l, len3, results1;
+          results1 = [];
+          for (l = 0, len3 = initializer.length; l < len3; l++) {
+            expression = initializer[l];
+            results1.push(expression.hoist());
+          }
+          return results1;
+        })();
         return new Block(expressions);
       }
     }
@@ -4064,8 +4215,14 @@ export let ModuleSpecifierList = (function() {
       let code, compiledList, fragment, fragments, index, itemLength, j, k, l, len1, len2, len3, len4, len5, len6, lineFragment, lineFragments, lineIndex, lineLength, p, q, r, singleLine, specifier, totalLength;
       code = [];
       compiledList = (function() {
-        let results1;
-this.specifiers.map((specifier) => specifier.compileToFragments(o, LEVEL_LIST))
+        let j, len1, ref1, results1;
+        ref1 = this.specifiers;
+        results1 = [];
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          specifier = ref1[j];
+          results1.push(specifier.compileToFragments(o, LEVEL_LIST));
+        }
+        return results1;
       }).call(this);
       if (this.specifiers.length !== 0) {
         singleLine = [];
@@ -4135,8 +4292,14 @@ this.specifiers.map((specifier) => specifier.compileToFragments(o, LEVEL_LIST))
     }
 
     astNode(o) {
-      let results1, specifier;
-this.specifiers.map((specifier) => specifier.ast(o))
+      let j, len1, ref1, results1, specifier;
+      ref1 = this.specifiers;
+      results1 = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        specifier = ref1[j];
+        results1.push(specifier.ast(o));
+      }
+      return results1;
     }
 
   };
@@ -4960,8 +5123,15 @@ export let Code = (function() {
         exprs.unshift(new Assign(new Value(new Arr([
           new Splat(new IdentifierLiteral(splatParamName)),
           ...((() => {
-            let results1;
-paramsAfterSplat.map((param) => param.asReference(o))
+            let k,
+          len2,
+          results1;
+            results1 = [];
+            for (k = 0, len2 = paramsAfterSplat.length; k < len2; k++) {
+              param = paramsAfterSplat[k];
+              results1.push(param.asReference(o));
+            }
+            return results1;
           })())
         ])), new Value(new IdentifierLiteral(splatParamName))));
       }
@@ -5091,8 +5261,13 @@ paramsAfterSplat.map((param) => param.asReference(o))
         o.scope = methodScope;
       }
       answer = this.joinFragmentArrays((function() {
-        let results1;
-modifiers.map((m) => this.makeCode(m))
+        let len4, p, results1;
+        results1 = [];
+        for (p = 0, len4 = modifiers.length; p < len4; p++) {
+          m = modifiers[p];
+          results1.push(this.makeCode(m));
+        }
+        return results1;
       }).call(this), ' ');
       if (modifiers.length && name) {
         answer.push(this.makeCode(' '));
@@ -5164,8 +5339,14 @@ modifiers.map((m) => this.makeCode(m))
     }
 
     eachParamName(iterator) {
-      let param, results1;
-this.params.map((param) => param.eachName(iterator))
+      let j, len1, param, ref1, results1;
+      ref1 = this.params;
+      results1 = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        param = ref1[j];
+        results1.push(param.eachName(iterator));
+      }
+      return results1;
     }
 
     traverseChildren(crossScope, func) {
@@ -5220,9 +5401,24 @@ this.params.map((param) => param.eachName(iterator))
     }
 
     disallowLoneExpansionAndMultipleSplats() {
-      let param, results1, seenSplatParam;
+      let j, len1, param, ref1, results1, seenSplatParam;
       seenSplatParam = false;
-this.params.map((param) => param.splat || param instanceof Expansion ? (seenSplatParam ? param.error('only one splat or expansion parameter is allowed per function definition') : param instanceof Expansion && this.params.length === 1 ? param.error('an expansion parameter cannot be the only parameter in a function definition') : void 0, seenSplatParam = true) : void 0)
+      ref1 = this.params;
+      results1 = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        param = ref1[j];
+        if (param.splat || param instanceof Expansion) {
+          if (seenSplatParam) {
+            param.error('only one splat or expansion parameter is allowed per function definition');
+          } else if (param instanceof Expansion && this.params.length === 1) {
+            param.error('an expansion parameter cannot be the only parameter in a function definition');
+          }
+          results1.push(seenSplatParam = true);
+        } else {
+          results1.push(void 0);
+        }
+      }
+      return results1;
     }
 
     expandCtorSuper(thisAssignments) {
@@ -5370,8 +5566,14 @@ this.params.map((param) => param.splat || param instanceof Expansion ? (seenSpla
       let param, ref1;
       return Object.assign({
         params: (function() {
-          let results1;
-this.params.map((param) => this.paramForAst(param).ast(o))
+          let j, len1, ref1, results1;
+          ref1 = this.params;
+          results1 = [];
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            param = ref1[j];
+            results1.push(this.paramForAst(param).ast(o));
+          }
+          return results1;
         }).call(this),
         body: this.body.ast(Object.assign({}, o, {
           checkForDirectives: true
@@ -6137,7 +6339,15 @@ export let Op = (function() {
       }
       return {
         operators,
-        operands: operands.map((operand) => operand.ast(o, LEVEL_OP))
+        operands: (() => {
+          let j, len1, results1;
+          results1 = [];
+          for (j = 0, len1 = operands.length; j < len1; j++) {
+            operand = operands[j];
+            results1.push(operand.ast(o, LEVEL_OP));
+          }
+          return results1;
+        })()
       };
     }
 
@@ -6856,7 +7066,7 @@ export let For = (function() {
     }
 
     compileNode(o) {
-      let body, bodyCode, bodyExpr, bodyFragments, compare, compareDown, declare, declareDown, defPart, down, forClose, forCode, forPartFragments, fragments, guardCode, guardPart, idt1, increment, index, isFilterOnly, ivar, kvar, kvarAssign, last, lvar, name, namePart, nameVar, ref, ref1, resultPart, returnResult, rvar, scope, source, step, stepNum, stepVar, svar, varPart;
+      let body, bodyFragments, compare, compareDown, declare, declareDown, defPart, down, forClose, forCode, forPartFragments, fragments, guardPart, idt1, increment, index, ivar, kvar, kvarAssign, last, lvar, name, namePart, ref, ref1, resultPart, returnResult, rvar, scope, source, step, stepNum, stepVar, svar, varPart;
       body = Block.wrap([this.body]);
       ref1 = body.expressions, [last] = slice1.call(ref1, -1);
       if ((last != null ? last.jumps() : void 0) instanceof Return) {
@@ -6876,33 +7086,6 @@ export let For = (function() {
       }
       if (this.returns) {
         rvar = scope.freeVariable('results');
-      }
-      if (this.returns && !this.step && !this.own && !this.from && !this.object && !this.range && !this.pattern && !this.index) {
-        if (body.expressions.length === 1) {
-          bodyExpr = body.expressions[0];
-          isFilterOnly = false;
-          if (bodyExpr instanceof Value && bodyExpr.base instanceof IdentifierLiteral) {
-            if (bodyExpr.base.value === name) {
-              isFilterOnly = true;
-            }
-          }
-          svar = this.source.compile(o, LEVEL_LIST);
-          nameVar = name;
-          if (this.guard) {
-            guardCode = this.guard.compile(o, LEVEL_PAREN);
-            if (isFilterOnly) {
-              return [this.makeCode(`${svar}.filter((${nameVar}) => ${guardCode})`)];
-            } else {
-              bodyCode = bodyExpr.compile(o, LEVEL_PAREN);
-              return [this.makeCode(`${svar}.filter((${nameVar}) => ${guardCode}).map((${nameVar}) => ${bodyCode})`)];
-            }
-          } else {
-            if (!isFilterOnly) {
-              bodyCode = bodyExpr.compile(o, LEVEL_PAREN);
-              return [this.makeCode(`${svar}.map((${nameVar}) => ${bodyCode})`)];
-            }
-          }
-        }
       }
       if (this.from) {
         if (this.pattern) {
@@ -7165,7 +7348,7 @@ export let Switch = (function() {
     }
 
     casesAst(o) {
-      let caseIndex, caseLocationData, cases, consequent, j, k, kase, lastTestIndex, len1, len2, ref1, ref2, results1, test, testConsequent, testIndex, tests;
+      let caseIndex, caseLocationData, cases, consequent, j, k, kase, l, lastTestIndex, len1, len2, len3, ref1, ref2, results1, test, testConsequent, testIndex, tests;
       cases = [];
       ref1 = this.cases;
       for (caseIndex = j = 0, len1 = ref1.length; j < len1; caseIndex = ++j) {
@@ -7203,7 +7386,12 @@ export let Switch = (function() {
       if ((ref2 = this.otherwise) != null ? ref2.expressions.length : void 0) {
         cases.push(new SwitchCase(null, this.otherwise).withLocationDataFrom(this.otherwise));
       }
-cases.map((kase) => kase.ast(o))
+      results1 = [];
+      for (l = 0, len3 = cases.length; l < len3; l++) {
+        kase = cases[l];
+        results1.push(kase.ast(o));
+      }
+      return results1;
     }
 
     astProperties(o) {
@@ -7454,8 +7642,14 @@ export let Sequence = (function() {
       let expression;
       return {
         expressions: (function() {
-          let results1;
-this.expressions.map((expression) => expression.ast(o))
+          let j, len1, ref1, results1;
+          ref1 = this.expressions;
+          results1 = [];
+          for (j = 0, len1 = ref1.length; j < len1; j++) {
+            expression = ref1[j];
+            results1.push(expression.ast(o));
+          }
+          return results1;
         }).call(this)
       };
     }

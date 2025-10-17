@@ -52,8 +52,14 @@ export let Rewriter = (function() {
           console.log('Initial token stream:');
         }
         console.log(((function() {
-          let results;
-this.tokens.map((t) => t[0] + '/' + t[1] + (t.comments ? '*' : ''))
+          let k, len, ref1, results;
+          ref1 = this.tokens;
+          results = [];
+          for (k = 0, len = ref1.length; k < len; k++) {
+            t = ref1[k];
+            results.push(t[0] + '/' + t[1] + (t.comments ? '*' : ''));
+          }
+          return results;
         }).call(this)).join(' '));
       }
       this.removeLeadingNewlines();
@@ -71,8 +77,14 @@ this.tokens.map((t) => t[0] + '/' + t[1] + (t.comments ? '*' : ''))
           console.log('Rewritten token stream:');
         }
         console.log(((function() {
-          let results;
-this.tokens.map((t) => t[0] + '/' + t[1] + (t.comments ? '*' : ''))
+          let k, len, ref2, results;
+          ref2 = this.tokens;
+          results = [];
+          for (k = 0, len = ref2.length; k < len; k++) {
+            t = ref2[k];
+            results.push(t[0] + '/' + t[1] + (t.comments ? '*' : ''));
+          }
+          return results;
         }).call(this)).join(' '));
       }
       return this.tokens;

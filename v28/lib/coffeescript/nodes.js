@@ -7985,7 +7985,7 @@
       // comprehensions. Some of the generated code can be shared in common, and
       // some cannot.
       compileNode(o) {
-        var body, bodyCode, bodyExpr, bodyFragments, compare, compareDown, declare, declareDown, defPart, down, forClose, forCode, forPartFragments, fragments, guardCode, guardPart, idt1, increment, index, isFilterOnly, ivar, kvar, kvarAssign, last, lvar, name, namePart, nameVar, ref, ref1, resultPart, returnResult, rvar, scope, source, step, stepNum, stepVar, svar, varPart;
+        var body, bodyFragments, compare, compareDown, declare, declareDown, defPart, down, forClose, forCode, forPartFragments, fragments, guardPart, idt1, increment, index, ivar, kvar, kvarAssign, last, lvar, name, namePart, ref, ref1, resultPart, returnResult, rvar, scope, source, step, stepNum, stepVar, svar, varPart;
         body = Block.wrap([this.body]);
         ref1 = body.expressions, [last] = slice1.call(ref1, -1);
         if ((last != null ? last.jumps() : void 0) instanceof Return) {
@@ -8005,43 +8005,6 @@
         }
         if (this.returns) {
           rvar = scope.freeVariable('results');
-        }
-        // Phase 5a: Transform simple comprehensions to array methods
-        // Generate array methods even if they'll be wrapped in IIFE initially
-        // (Post-processing will unwrap simple IIFEs)
-        if (this.returns && !this.step && !this.own && !this.from && !this.object && !this.range && !this.pattern && !this.index) {
-          // Simple body with one expression
-          if (body.expressions.length === 1) {
-            bodyExpr = body.expressions[0];
-            // Check if it's just returning the loop variable (filter pattern)
-            isFilterOnly = false;
-            if (bodyExpr instanceof Value && bodyExpr.base instanceof IdentifierLiteral) {
-              if (bodyExpr.base.value === name) {
-                isFilterOnly = true;
-              }
-            }
-            svar = this.source.compile(o, LEVEL_LIST);
-            nameVar = name;
-            // Build the callback function
-            if (this.guard) {
-              // Has guard - could be filter, or filter + map
-              guardCode = this.guard.compile(o, LEVEL_PAREN);
-              if (isFilterOnly) {
-                // Pure filter: (x for x in arr when cond)
-                return [this.makeCode(`${svar}.filter((${nameVar}) => ${guardCode})`)];
-              } else {
-                // Filter + map: (transform for x in arr when cond)
-                bodyCode = bodyExpr.compile(o, LEVEL_PAREN);
-                return [this.makeCode(`${svar}.filter((${nameVar}) => ${guardCode}).map((${nameVar}) => ${bodyCode})`)];
-              }
-            } else {
-              // No guard - pure map
-              if (!isFilterOnly) {
-                bodyCode = bodyExpr.compile(o, LEVEL_PAREN);
-                return [this.makeCode(`${svar}.map((${nameVar}) => ${bodyCode})`)];
-              }
-            }
-          }
         }
         if (this.from) {
           if (this.pattern) {

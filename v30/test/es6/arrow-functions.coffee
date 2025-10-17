@@ -423,7 +423,7 @@ code '''
   })();
 '''
 
-# Comprehension with bound function (creates functions, not simple transform)
+# Comprehension with bound function
 code '''
   handlers = for event in events
     => @handle(event)
@@ -431,8 +431,13 @@ code '''
   let event, handlers;
 
   handlers = (() => {
-    let results;
-  events.map((event) => () => this.handle(event))
+    let i, len, results;
+    results = [];
+    for (i = 0, len = events.length; i < len; i++) {
+      event = events[i];
+      results.push(() => this.handle(event));
+    }
+    return results;
   }).call(this);
 '''
 

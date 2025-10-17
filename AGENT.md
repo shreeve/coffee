@@ -226,22 +226,6 @@ Solution: Keep as `for...of` or traditional loop.
 2. **Phase 5b**: Simple loops → `for...of` (with post-variable detection)
 3. **Phase 5c**: Keep traditional for complex cases
 
-**Implementation Approach (Pragmatic Two-Phase)**:
-
-**Phase 5a Solved** the IIFE wrapping challenge with a two-step approach:
-
-1. **Generate array methods** in `For.compileNode` (lines 5345-5377 in nodes.coffee)
-   - Detect simple comprehensions: single expression, no step/own/from/object/range/pattern/index
-   - Return `.map()` or `.filter()` or chained `.filter().map()`
-   - Let CoffeeScript's existing architecture wrap in IIFE
-
-2. **Unwrap IIFEs** via post-processing regex in `coffeescript.coffee` (lines 138-147)
-   - Pattern: `(() => { let results; arrayMethod(...) })()` → `arrayMethod(...)`
-   - Validates balanced parentheses before unwrapping
-   - Safe fallback if pattern doesn't match
-
-**Result**: Clean array method output without architectural rewrites!
-
 **Test Coverage** (`v30/test/es6/modern-loops.coffee`):
 - 34 comprehensive tests covering all loop patterns
 - Baseline: 6/34 passing (traditional loops that should stay traditional)
@@ -369,20 +353,11 @@ node lib/index.js     # Runs successfully
   - ✅ Special contexts handled (generators, async, constructors)
   - 📊 **33/33 tests passing (100%)**
 
-### ✅ Completed (cont'd)
-- Phase 5a: Comprehensions → Array Methods
-  - ✅ Simple map: `(x * 2 for x in arr)` → `arr.map((x) => x * 2)`
-  - ✅ Simple filter: `(x for x when cond)` → `arr.filter((x) => cond)`
-  - ✅ Chained filter+map: `(x * 2 for x when cond)` → `arr.filter().map()`
-  - ✅ IIFE unwrapping via post-processing regex
-  - ✅ Balanced parentheses validation
-  - 📊 **11/34 modern-loops tests passing** (all simple comprehensions)
-  - 💡 **Pragmatic approach**: Generate array methods, unwrap IIFEs with safe regex
-
 ### 🚧 In Progress
-- Phase 5b/5c: Statement loops and traditional cases (23 tests remaining)
+- None (ready for Phase 5)
 
 ### 📋 Upcoming
+- Phase 5: Modern Loops
 - Phase 6: Destructuring
 - Phase 7: Class Enhancements
 - Phase 8: Additional ES6 Features
