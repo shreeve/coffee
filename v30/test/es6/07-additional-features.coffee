@@ -84,7 +84,7 @@ combined = [first, ...rest, last];
 
 # Function call with spread
 code 'Math.max(...numbers)', '''
-Math.max(...numbers);
+  Math.max(...numbers);
 '''
 
 # Array destructuring with rest

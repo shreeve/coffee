@@ -290,11 +290,11 @@ console.log "\n== Edge Cases =="
 
 # Empty destructuring patterns
 code '{} = obj', '''
-({} = obj);
+  ({} = obj);
 '''
 
 code '[] = arr', '''
-arr;
+  arr;
 '''
 
 # Destructuring with prototype chain

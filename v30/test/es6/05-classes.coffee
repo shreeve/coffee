@@ -12,15 +12,15 @@ code '''
     constructor: (@name) ->
       @age = 0
 ''', '''
-let Person;
+  let Person;
 
-Person = class Person {
-  constructor(name) {
-    this.name = name;
-    this.age = 0;
-  }
+  Person = class Person {
+    constructor(name) {
+      this.name = name;
+      this.age = 0;
+    }
 
-};
+  };
 '''
 
 # Methods don't use 'function' keyword
@@ -29,19 +29,19 @@ code '''
     add: (a, b) -> a + b
     multiply: (a, b) -> a * b
 ''', '''
-let Calculator;
+  let Calculator;
 
-Calculator = class Calculator {
-  add(a, b) {
-    return a + b;
-  }
+  Calculator = class Calculator {
+    add(a, b) {
+      return a + b;
+    }
 
-  multiply(a, b) {
-    return a * b;
-  }
+    multiply(a, b) {
+      return a * b;
+    }
 
-};
-'''
+  };
+  '''
 
 # ==============================================================================
 # INHERITANCE WITH ES6 EXTENDS

@@ -149,7 +149,7 @@ method = Array.prototype.find ?? null;
 
 # Export with existential
 code 'export value = data ? 42', '''
-export let value = data ?? 42;
+  export let value = data ?? 42;
 '''
 
 # Inside conditionals
@@ -177,7 +177,7 @@ b = y ?? 2;
 
 # In return statements
 code '-> x ? "default"', '''
-() => x ?? "default"
+  () => x ?? "default"
 '''
 
 # Test that it handles parentheses correctly

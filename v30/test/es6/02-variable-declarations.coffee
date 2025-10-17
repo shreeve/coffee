@@ -8,24 +8,24 @@ console.log "\n== Basic Variable Declarations =="
 
 # Simple variable declarations use let (hoisted)
 code 'x = 5', '''
-let x;
+  let x;
 
-x = 5;
+  x = 5;
 '''
 code 'name = "Alice"', '''
-let name;
+  let name;
 
-name = "Alice";
+  name = "Alice";
 '''
 code 'items = []', '''
-let items;
+  let items;
 
-items = [];
+  items = [];
 '''
 code 'obj = {}', '''
-let obj;
+  let obj;
 
-obj = {};
+  obj = {};
 '''
 
 # Variable reassignment still uses let (only one declaration)
@@ -68,27 +68,21 @@ console.log "\n== Function Declarations =="
 code 'square = (x) -> x * x', '''
   let square;
 
-  square = function(x) {
-    return x * x;
-  };
+  square = (x) => x * x;
 '''
 
 # Arrow/bound functions use let
 code 'handler = => @handleEvent()', '''
   let handler;
 
-  handler = () => {
-    return this.handleEvent();
-  };
+  handler = () => this.handleEvent();
 '''
 
 # Function with default parameters uses let
 code 'greet = (name = "World") -> "Hello #{name}"', '''
   let greet;
 
-  greet = function(name = "World") {
-    return `Hello ${name}`;
-  };
+  greet = (name = "World") => `Hello ${name}`;
 '''
 
 # Generator functions use let
@@ -112,9 +106,7 @@ code '''
 ''', '''
   let fetchData;
 
-  fetchData = async function() {
-    return (await fetch('/api'));
-  };
+  fetchData = async () => (await fetch('/api'));
 '''
 
 # ==============================================================================
@@ -236,9 +228,7 @@ code '''
 
   console.log(square(5));
 
-  square = function(x) {
-    return x * x;
-  };
+  square = (x) => x * x;
 '''
 
 # ==============================================================================
@@ -278,8 +268,10 @@ code '''
     x = getValue()
     break if x > 10
 ''', '''
+  let x;
+
   while (true) {
-    let x = getValue();
+    x = getValue();
     if (x > 10) {
       break;
     }
@@ -342,9 +334,7 @@ let age, name;
 code 'process = ({name, age}) -> "#{name} is #{age}"', '''
   let process;
 
-  process = function({name, age}) {
-    return `${name} is ${age}`;
-  };
+  process = ({name, age}) => `${name} is ${age}`;
 '''
 
 # ==============================================================================
@@ -706,11 +696,9 @@ code '''
 ''', '''
   let outer;
 
-  outer = function() {
+  outer = () => {
     let inner;
-    inner = function() {
-      return "nested";
-    };
+    inner = () => "nested";
     return inner();
   };
 '''
@@ -737,11 +725,7 @@ code '''
 ''', '''
   let makeAdder;
 
-  makeAdder = function(x) {
-    return function(y) {
-      return x + y;
-    };
-  };
+  makeAdder = (x) => (y) => x + y;
 '''
 
 console.log "\n== Test Complete =="
