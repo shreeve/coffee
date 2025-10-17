@@ -316,12 +316,16 @@ But NOT for cosmetic changes that make compilation slower without clear user ben
 ### Phase 6: Destructuring ✅ ALREADY COMPLETE
 CoffeeScript already generates ES6 destructuring syntax!
 
-**Already Working**:
+**Already Working** (34/34 tests passing):
 - Function parameters: `({x, y}) -> ...` → `function({x, y}) { ... }`
 - Array destructuring: `[first, ...rest] = array` → `[first, ...rest] = array`
 - Object destructuring: `{name, age} = person` → `{name, age} = person`
 - Nested destructuring: `{user: {name}} = data` → `{user: {name}} = data`
 - Destructuring with defaults: `{x = 10} = obj` → `{x = 10} = obj`
+- Instance variable destructuring: `{@name, @age}` → `{name: this.name, age: this.age}`
+- Computed properties: `{[key]: value}` → `{[key]: value}`
+
+**Test Coverage**: `v30/test/es6/destructuring.coffee` - 100% pass rate
 
 ### Phase 5: Class Enhancements
 Modernize class syntax.
