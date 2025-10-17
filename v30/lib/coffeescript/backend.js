@@ -44,12 +44,8 @@ Backend = class Backend {
 
   reduce(values, positions, stackTop, symbolCount, directive) {
     let o, result;
-    this.tok = function(pos) {
-      return values[stackTop - symbolCount + pos];
-    };
-    this.pos = function(pos) {
-      return positions[stackTop - symbolCount + pos];
-    };
+    this.tok = (pos) => values[stackTop - symbolCount + pos];
+    this.pos = (pos) => positions[stackTop - symbolCount + pos];
     if (positions && symbolCount > 0) {
       this.loc = this._toLocation([1, symbolCount]);
     }
@@ -172,9 +168,7 @@ Backend = class Backend {
         return result;
       case 'if':
         if (o.addElse != null) {
-          [ifNode, elseBody] = o.addElse.map((item) => {
-            return this.$(item);
-          });
+          [ifNode, elseBody] = o.addElse.map((item) => this.$(item));
           if (elseBody && !elseBody.locationData && this.loc) {
             elseBody.locationData = this.loc;
           }
@@ -184,9 +178,7 @@ Backend = class Backend {
         break;
       case 'value':
         if (o.add != null) {
-          [value, accessor] = o.add.map((item) => {
-            return this.$(item);
-          });
+          [value, accessor] = o.add.map((item) => this.$(item));
           if (value instanceof this.ast.Value) {
             result = value.add(accessor);
             if (result.forceUpdateLocation) {
@@ -200,18 +192,14 @@ Backend = class Backend {
         break;
       case 'loop':
         if (o.addSource != null) {
-          [loopNode, sourceInfo] = o.addSource.map((item) => {
-            return this.$(item);
-          });
+          [loopNode, sourceInfo] = o.addSource.map((item) => this.$(item));
           if ((loopNode != null ? loopNode.addSource : void 0) != null) {
             loopNode.addSource(sourceInfo);
           }
           return loopNode;
         }
         if (o.addBody != null) {
-          [loopNode, body] = o.addBody.map((item) => {
-            return this.$(item);
-          });
+          [loopNode, body] = o.addBody.map((item) => this.$(item));
           loopNode.addBody(this.ast.Block.wrap(body));
           if (o.postfix != null) {
             loopNode.postfix = this.$(o.postfix);
@@ -289,9 +277,7 @@ Backend = class Backend {
         case 'Call':
           return new this.ast.Call(this.$(o.variable), this.$(o.args) || [], this.$(o.soak));
         case 'Op':
-          args = ((ref1 = o.args) != null ? ref1.map((arg) => {
-            return this.$(arg);
-          }) : void 0) || [];
+          args = ((ref1 = o.args) != null ? ref1.map((arg) => this.$(arg)) : void 0) || [];
           if ((o.invertOperator != null) || (o.originalOperator != null)) {
             options = {};
             if (o.invertOperator != null) {

@@ -5680,7 +5680,7 @@
       // parameters after the splat, they are declared via expressions in the
       // function body.
       compileNode(o) {
-        var answer, body, boundMethodCheck, comment, condition, exprs, generatedVariables, haveBodyParam, haveSplatParam, i, ifTrue, j, k, l, len1, len2, len3, m, methodScope, modifiers, name, param, paramToAddToScope, params, paramsAfterSplat, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, scopeVariablesCount, signature, splatParamName, thisAssignments, wasEmpty, yieldNode;
+        var actualExpr, answer, base1, body, boundMethodCheck, canUseArrow, comment, condition, expr, exprs, generatedVariables, hasExplicitReturn, haveBodyParam, haveSplatParam, i, ifTrue, isArrow, isSingleExpression, j, k, l, lastExpr, len1, len2, len3, m, methodScope, modifiers, name, param, paramToAddToScope, params, paramsAfterSplat, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, returnNode, scopeVariablesCount, shouldUseArrow, signature, splatParamName, thisAssignments, usesArguments, usesNewTarget, usesSuper, usesThis, wasEmpty, yieldNode;
         this.checkForAsyncOrGeneratorConstructor();
         if (this.bound) {
           if ((ref1 = o.scope.method) != null ? ref1.bound : void 0) {
@@ -5860,9 +5860,6 @@
           boundMethodCheck = new Value(new Literal(utility('boundMethodCheck', o)));
           this.body.expressions.unshift(new Call(boundMethodCheck, [new Value(new ThisLiteral()), this.classVariable]));
         }
-        if (!(wasEmpty || this.noReturn)) {
-          this.body.makeReturn();
-        }
         // JavaScript doesn't allow bound (`=>`) functions to also be generators.
         // This is usually caught via `Op::compileContinuation`, but double-check:
         if (this.bound && this.isGenerator) {
@@ -5870,6 +5867,58 @@
             return node instanceof Op && node.operator === 'yield';
           });
           (yieldNode || this).error('yield cannot occur inside bound (fat arrow) functions');
+        }
+        // Determine if we can use arrow function syntax
+        canUseArrow = false;
+        shouldUseArrow = false;
+        // Check if the last expression is already a Return node (explicit return)
+        // vs will be wrapped by makeReturn (implicit return)
+        hasExplicitReturn = false;
+        if (!wasEmpty && !this.noReturn && this.body.expressions.length > 0) {
+          lastExpr = this.body.expressions[this.body.expressions.length - 1];
+          hasExplicitReturn = lastExpr instanceof Return;
+        }
+        if (!(wasEmpty || this.noReturn)) {
+          // Call makeReturn after we've checked for explicit returns
+          this.body.makeReturn();
+        }
+        // Bound functions (=>) always become arrows (unless they're methods or generators)
+        if (this.bound && !this.isGenerator && !this.isMethod) {
+          canUseArrow = true;
+          shouldUseArrow = true;
+        // Regular functions (->) can become arrows if they don't use special contexts
+        } else if (!this.isGenerator && !this.ctor && !this.isMethod) {
+          // Check if function uses special JavaScript contexts
+          usesThis = false;
+          usesArguments = false;
+          usesSuper = false;
+          usesNewTarget = false;
+          this.body.traverseChildren(false, (node) => {
+            var ref6, ref7;
+            if (node instanceof ThisLiteral) {
+              usesThis = true;
+            }
+            if (node instanceof IdentifierLiteral && node.value === 'arguments') {
+              usesArguments = true;
+            }
+            if (node instanceof SuperCall || node instanceof Super) {
+              usesSuper = true;
+            }
+            // Check for new.target usage (MetaProperty node)
+            if (node instanceof MetaProperty) {
+              if (node.meta.value === 'new' && ((ref6 = node.property) != null ? (ref7 = ref6.name) != null ? ref7.value : void 0 : void 0) === 'target') {
+                return usesNewTarget = true;
+              }
+            }
+          });
+          // Arrow functions can't use these special contexts (except 'this' which they inherit lexically)
+          // Methods that use 'this' need dynamic binding, so they stay as regular functions
+          if (usesThis) {
+            canUseArrow = false; // Conservative: methods need dynamic 'this'
+          } else {
+            canUseArrow = !(usesArguments || usesSuper || usesNewTarget);
+            shouldUseArrow = canUseArrow;
+          }
         }
         // Assemble the output
         modifiers = [];
@@ -5879,7 +5928,11 @@
         if (this.isAsync) {
           modifiers.push('async');
         }
-        if (!(this.isMethod || this.bound)) {
+        // Only add 'function' keyword if not using arrow syntax
+        if (shouldUseArrow && canUseArrow) {
+
+        // Arrow functions don't use 'function' keyword
+        } else if (!(this.isMethod || this.bound)) {
           modifiers.push(`function${this.isGenerator ? '*' : ''}`);
         } else if (this.isGenerator) {
           modifiers.push('*');
@@ -5918,8 +5971,33 @@
           }
           this.compileCommentFragments(o, this.funcGlyph, signature);
         }
+        // Determine if we'll use arrow syntax
+        isArrow = shouldUseArrow && canUseArrow;
+        // Check if we can use single-expression arrow syntax (no braces)
+        // This is safe for IMPLICIT returns only
+        isSingleExpression = false;
+        if (isArrow && !this.body.isEmpty() && this.body.expressions.length === 1 && !hasExplicitReturn) {
+          expr = this.body.expressions[0];
+          // After makeReturn(), this will be a Return node, but we know it was implicit
+          // We can safely use single expression syntax
+          if (expr instanceof Return && expr.expression && !(typeof (base1 = expr.expression).isStatement === "function" ? base1.isStatement() : void 0)) {
+            // Check if it's a simple expression we can unwrap
+            if (!(expr.expression instanceof If || expr.expression instanceof Switch || expr.expression instanceof Try)) {
+              isSingleExpression = true;
+            }
+          }
+        }
+        // Compile body
+        body = null;
         if (!this.body.isEmpty()) {
-          body = this.body.compileWithDeclarations(o);
+          if (isArrow && isSingleExpression) {
+            // Single expression arrow - don't use compileWithDeclarations
+            // Compile the expression directly
+            body = null;
+          } else {
+            // Multi-statement or needs braces - use full compilation
+            body = this.body.compileWithDeclarations(o);
+          }
         }
         // We need to compile the body before method names to ensure `super`
         // references are handled.
@@ -5946,15 +6024,47 @@
         if (name) {
           answer.push(...name);
         }
+        if (this.isAsync && isArrow) {
+          // Add space between async and signature for arrow functions
+          answer.push(this.makeCode(' '));
+        }
         answer.push(...signature);
-        if (this.bound && !this.isMethod) {
+        // Generate arrow or regular function syntax
+        if (isArrow) {
           answer.push(this.makeCode(' =>'));
+          if (isSingleExpression) {
+            // Compact single-expression arrow
+            answer.push(this.makeCode(' '));
+            // Unwrap the Return node to get the actual expression
+            returnNode = this.body.expressions[0];
+            actualExpr = returnNode instanceof Return ? returnNode.expression : returnNode;
+            // For Obj, wrap in parens to distinguish from block: () => ({a: 1})
+            if (actualExpr instanceof Obj) {
+              answer.push(this.makeCode('('));
+              answer.push(...actualExpr.compileToFragments(o, LEVEL_PAREN));
+              answer.push(this.makeCode(')'));
+            } else {
+              answer.push(...actualExpr.compileToFragments(o, LEVEL_PAREN));
+            }
+          } else {
+            // Arrow with braces
+            answer.push(this.makeCode(' {'));
+            if (body != null ? body.length : void 0) {
+              answer.push(this.makeCode('\n'), ...body, this.makeCode(`\n${this.tab}`));
+            }
+            answer.push(this.makeCode('}'));
+          }
+        } else {
+          if (this.bound && !this.isMethod) {
+            // Regular function or bound method
+            answer.push(this.makeCode(' =>'));
+          }
+          answer.push(this.makeCode(' {'));
+          if (body != null ? body.length : void 0) {
+            answer.push(this.makeCode('\n'), ...body, this.makeCode(`\n${this.tab}`));
+          }
+          answer.push(this.makeCode('}'));
         }
-        answer.push(this.makeCode(' {'));
-        if (body != null ? body.length : void 0) {
-          answer.push(this.makeCode('\n'), ...body, this.makeCode(`\n${this.tab}`));
-        }
-        answer.push(this.makeCode('}'));
         if (this.isMethod) {
           return indentInitial(answer, this);
         }

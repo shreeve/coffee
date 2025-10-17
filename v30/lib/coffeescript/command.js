@@ -21,17 +21,11 @@ useWinPathSep = path.sep === '\\';
 
 helpers.extend(CoffeeScript, new EventEmitter());
 
-printLine = function(line) {
-  return process.stdout.write(line + '\n');
-};
+printLine = (line) => process.stdout.write(line + '\n');
 
-printWarn = function(line) {
-  return process.stderr.write(line + '\n');
-};
+printWarn = (line) => process.stderr.write(line + '\n');
 
-hidden = function(file) {
-  return /^\.|~$/.test(file);
-};
+hidden = (file) => /^\.|~$/.test(file);
 
 BANNER = `Usage: coffee [options] path/to/script.coffee [args]
 
@@ -51,11 +45,9 @@ watchedDirs = {};
 
 optionParser = null;
 
-export let buildCSOptionParser = function() {
-  return new optparse.OptionParser(SWITCHES, BANNER);
-};
+export let buildCSOptionParser = () => new optparse.OptionParser(SWITCHES, BANNER);
 
-export let run = function() {
+export let run = () => {
   let err, i, len, literals, outputBasename, ref, results, source;
   optionParser = buildCSOptionParser();
   try {
@@ -130,7 +122,7 @@ with...
   return results;
 };
 
-compilePath = function(source, topLevel, base) {
+compilePath = (source, topLevel, base) => {
   let code, err, file, files, i, len, results, stats;
   if (indexOf.call(sources, source) >= 0 || watchedDirs[source] || !topLevel && (notSources[source] || hidden(source))) {
     return;
@@ -196,7 +188,7 @@ compilePath = function(source, topLevel, base) {
   }
 };
 
-findDirectoryIndex = function(source) {
+findDirectoryIndex = (source) => {
   let err, ext, i, index, len, ref;
   ref = CoffeeScript.FILE_EXTENSIONS;
   for (i = 0, len = ref.length; i < len; i++) {
@@ -217,7 +209,7 @@ findDirectoryIndex = function(source) {
   return process.exit(1);
 };
 
-compileScript = function(file, input, base = null) {
+compileScript = (file, input, base = null) => {
   let compiled, err, message, options, saveTo, task;
   options = compileOptions(file, base);
   try {
@@ -266,7 +258,7 @@ compileScript = function(file, input, base = null) {
   }
 };
 
-compileStdio = function() {
+compileStdio = () => {
   let buffers, stdin;
   if (opts.map) {
     console.error('--stdio and --map cannot be used together');
@@ -274,38 +266,32 @@ compileStdio = function() {
   }
   buffers = [];
   stdin = process.openStdin();
-  stdin.on('data', function(buffer) {
+  stdin.on('data', (buffer) => {
     if (buffer) {
       return buffers.push(buffer);
     }
   });
-  return stdin.on('end', function() {
-    return compileScript(null, Buffer.concat(buffers).toString());
-  });
+  return stdin.on('end', () => compileScript(null, Buffer.concat(buffers).toString()));
 };
 
 joinTimeout = null;
 
-compileJoin = function() {
+compileJoin = () => {
   if (!opts.join) {
     return;
   }
-  if (!sourceCode.some(function(code) {
-    return code === null;
-  })) {
+  if (!sourceCode.some((code) => code === null)) {
     clearTimeout(joinTimeout);
-    return joinTimeout = wait(100, function() {
-      return compileScript(opts.join, sourceCode.join('\n'), opts.join);
-    });
+    return joinTimeout = wait(100, () => compileScript(opts.join, sourceCode.join('\n'), opts.join));
   }
 };
 
-watch = function(source, base) {
+watch = (source, base) => {
   let compile, compileTimeout, err, prevStats, rewatch, startWatcher, watchErr, watcher;
   watcher = null;
   prevStats = null;
   compileTimeout = null;
-  watchErr = function(err) {
+  watchErr = (err) => {
     if (err.code !== 'ENOENT') {
       throw err;
     }
@@ -320,10 +306,9 @@ watch = function(source, base) {
       return compileJoin();
     }
   };
-  compile = function() {
+  compile = () => {
     clearTimeout(compileTimeout);
-    return compileTimeout = wait(25, function() {
-      return fs.stat(source, function(err, stats) {
+    return compileTimeout = wait(25, () => fs.stat(source, (err, stats) => {
         if (err) {
           return watchErr(err);
         }
@@ -331,25 +316,22 @@ watch = function(source, base) {
           return rewatch();
         }
         prevStats = stats;
-        return fs.readFile(source, function(err, code) {
+        return fs.readFile(source, (err, code) => {
           if (err) {
             return watchErr(err);
           }
           compileScript(source, code.toString(), base);
           return rewatch();
         });
-      });
-    });
+      }));
   };
-  startWatcher = function() {
-    return watcher = fs.watch(source).on('change', compile).on('error', function(err) {
+  startWatcher = () => watcher = fs.watch(source).on('change', compile).on('error', (err) => {
       if (err.code !== 'EPERM') {
         throw err;
       }
       return removeSource(source, base);
     });
-  };
-  rewatch = function() {
+  rewatch = () => {
     if (watcher != null) {
       watcher.close();
     }
@@ -363,19 +345,18 @@ watch = function(source, base) {
   }
 };
 
-watchDir = function(source, base) {
+watchDir = (source, base) => {
   let err, readdirTimeout, startWatcher, stopWatcher, watcher;
   watcher = null;
   readdirTimeout = null;
-  startWatcher = function() {
-    return watcher = fs.watch(source).on('error', function(err) {
+  startWatcher = () => watcher = fs.watch(source).on('error', (err) => {
       if (err.code !== 'EPERM') {
         throw err;
       }
       return stopWatcher();
-    }).on('change', function() {
+    }).on('change', () => {
       clearTimeout(readdirTimeout);
-      return readdirTimeout = wait(25, function() {
+      return readdirTimeout = wait(25, () => {
         let err, file, files, i, len, results;
         try {
           files = fs.readdirSync(source);
@@ -394,8 +375,7 @@ watchDir = function(source, base) {
         return results;
       });
     });
-  };
-  stopWatcher = function() {
+  stopWatcher = () => {
     watcher.close();
     return removeSourceDir(source, base);
   };
@@ -410,7 +390,7 @@ watchDir = function(source, base) {
   }
 };
 
-removeSourceDir = function(source, base) {
+removeSourceDir = (source, base) => {
   let file, i, len, sourcesChanged;
   delete watchedDirs[source];
   sourcesChanged = false;
@@ -427,7 +407,7 @@ removeSourceDir = function(source, base) {
   }
 };
 
-removeSource = function(source, base) {
+removeSource = (source, base) => {
   let index;
   index = sources.indexOf(source);
   sources.splice(index, 1);
@@ -439,7 +419,7 @@ removeSource = function(source, base) {
   }
 };
 
-silentUnlink = function(path) {
+silentUnlink = (path) => {
   let err, ref;
   try {
     return fs.unlinkSync(path);
@@ -451,7 +431,7 @@ silentUnlink = function(path) {
   }
 };
 
-outputPath = function(source, base, extension = ".js") {
+outputPath = (source, base, extension = ".js") => {
   let basename, dir, srcDir;
   basename = helpers.baseFileName(source, true, useWinPathSep);
   srcDir = path.dirname(source);
@@ -459,32 +439,28 @@ outputPath = function(source, base, extension = ".js") {
   return path.join(dir, basename + extension);
 };
 
-mkdirp = function(dir, fn) {
+mkdirp = (dir, fn) => {
   let mkdirs, mode;
   mode = 0o777 & ~process.umask();
-  return (mkdirs = function(p, fn) {
-    return fs.exists(p, function(exists) {
+  return (mkdirs = (p, fn) => fs.exists(p, (exists) => {
       if (exists) {
         return fn();
       } else {
-        return mkdirs(path.dirname(p), function() {
-          return fs.mkdir(p, mode, function(err) {
+        return mkdirs(path.dirname(p), () => fs.mkdir(p, mode, (err) => {
             if (err) {
               return fn(err);
             }
             return fn();
-          });
-        });
+          }));
       }
-    });
-  })(dir, fn);
+    }))(dir, fn);
 };
 
-writeJs = function(base, sourcePath, js, jsPath, generatedSourceMap = null) {
+writeJs = (base, sourcePath, js, jsPath, generatedSourceMap = null) => {
   let compile, jsDir, sourceMapPath;
   sourceMapPath = `${jsPath}.map`;
   jsDir = path.dirname(jsPath);
-  compile = function() {
+  compile = () => {
     if (opts.compile) {
       if (js.length <= 0) {
         js = ' ';
@@ -492,7 +468,7 @@ writeJs = function(base, sourcePath, js, jsPath, generatedSourceMap = null) {
       if (generatedSourceMap) {
         js = `${js}\n//# sourceMappingURL=${helpers.baseFileName(sourceMapPath, false, useWinPathSep)}\n`;
       }
-      fs.writeFile(jsPath, js, function(err) {
+      fs.writeFile(jsPath, js, (err) => {
         if (err) {
           printLine(err.message);
           return process.exit(1);
@@ -502,7 +478,7 @@ writeJs = function(base, sourcePath, js, jsPath, generatedSourceMap = null) {
       });
     }
     if (generatedSourceMap) {
-      return fs.writeFile(sourceMapPath, generatedSourceMap, function(err) {
+      return fs.writeFile(sourceMapPath, generatedSourceMap, (err) => {
         if (err) {
           printLine(`Could not write source map: ${err.message}`);
           return process.exit(1);
@@ -510,7 +486,7 @@ writeJs = function(base, sourcePath, js, jsPath, generatedSourceMap = null) {
       });
     }
   };
-  return fs.exists(jsDir, function(itExists) {
+  return fs.exists(jsDir, (itExists) => {
     if (itExists) {
       return compile();
     } else {
@@ -519,17 +495,13 @@ writeJs = function(base, sourcePath, js, jsPath, generatedSourceMap = null) {
   });
 };
 
-wait = function(milliseconds, func) {
-  return setTimeout(func, milliseconds);
-};
+wait = (milliseconds, func) => setTimeout(func, milliseconds);
 
-timeLog = function(message) {
-  return console.log(`${(new Date()).toLocaleTimeString()} - ${message}`);
-};
+timeLog = (message) => console.log(`${(new Date()).toLocaleTimeString()} - ${message}`);
 
-printTokens = function(tokens) {
+printTokens = (tokens) => {
   let strings, tag, token, value;
-  strings = (function() {
+  strings = (() => {
     let i, len, results;
     results = [];
     for (i = 0, len = tokens.length; i < len; i++) {
@@ -543,7 +515,7 @@ printTokens = function(tokens) {
   return printLine(strings.join(' '));
 };
 
-parseOptions = function() {
+parseOptions = () => {
   let o;
   o = opts = optionParser.parse(process.argv.slice(2));
   o.compile || (o.compile = !!o.output);
@@ -551,7 +523,7 @@ parseOptions = function() {
   return o.print = !!(o.print || (o.eval || o.stdio && o.compile));
 };
 
-compileOptions = function(filename, base) {
+compileOptions = (filename, base) => {
   let answer, cwd, jsDir, jsPath;
   answer = {
     filename: filename,
@@ -583,7 +555,7 @@ compileOptions = function(filename, base) {
   return answer;
 };
 
-forkNode = function() {
+forkNode = () => {
   let args, i, len, nodeArgs, p, ref, signal;
   nodeArgs = opts.nodejs.split(/\s+/);
   args = process.argv.slice(1);
@@ -596,21 +568,11 @@ forkNode = function() {
   ref = ['SIGINT', 'SIGTERM'];
   for (i = 0, len = ref.length; i < len; i++) {
     signal = ref[i];
-    process.on(signal, (function(signal) {
-      return function() {
-        return p.kill(signal);
-      };
-    })(signal));
+    process.on(signal, ((signal) => () => p.kill(signal))(signal));
   }
-  return p.on('exit', function(code) {
-    return process.exit(code);
-  });
+  return p.on('exit', (code) => process.exit(code));
 };
 
-usage = function() {
-  return printLine(optionParser.help());
-};
+usage = () => printLine(optionParser.help());
 
-version = function() {
-  return printLine(`CoffeeScript version ${CoffeeScript.VERSION}`);
-};
+version = () => printLine(`CoffeeScript version ${CoffeeScript.VERSION}`);

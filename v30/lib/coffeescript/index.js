@@ -8,7 +8,7 @@ import vm from 'vm';
 
 export let compile = CoffeeScript.compile;
 
-export let run = function(code, options = {}) {
+export let run = (code, options = {}) => {
   let compiled;
   compiled = CoffeeScript.compile(code, {
     bare: true,
@@ -17,7 +17,7 @@ export let run = function(code, options = {}) {
   return vm.runInThisContext(compiled.js ?? compiled);
 };
 
-export let evalCode = function(code, options = {}) {
+export let evalCode = (code, options = {}) => {
   let compiled, sandbox;
   if (!(code = code.trim())) {
     return;
@@ -34,13 +34,13 @@ export let evalCode = function(code, options = {}) {
   }
 };
 
-export let compileFile = function(filename, options = {}) {
+export let compileFile = (filename, options = {}) => {
   let source;
   source = fs.readFileSync(filename, 'utf8');
   return CoffeeScript.compile(source, {filename, ...options});
 };
 
-export let runFile = function(filename, options = {}) {
+export let runFile = (filename, options = {}) => {
   let compiled;
   compiled = compileFile(filename, options);
   return vm.runInThisContext(compiled.js ?? compiled);

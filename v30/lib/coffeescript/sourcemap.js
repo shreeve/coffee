@@ -134,7 +134,7 @@ export default (function() {
     }
 
     encodeBase64(value) {
-      return BASE64_CHARS[value] || (function() {
+      return BASE64_CHARS[value] || (() => {
         throw new Error(`Cannot Base64 encode value: ${value}`);
       })();
     }

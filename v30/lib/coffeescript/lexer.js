@@ -197,7 +197,7 @@ export let Lexer = class Lexer {
         id = COFFEE_ALIAS_MAP[id];
         tokenData.original = alias;
       }
-      tag = (function() {
+      tag = (() => {
         switch (id) {
           case '!':
             return 'UNARY';
@@ -284,7 +284,7 @@ export let Lexer = class Lexer {
     if (prev && this.value() === 'from' && (this.seenImport || this.seenExport)) {
       prev[0] = 'FROM';
     }
-    regex = (function() {
+    regex = (() => {
       switch (quote) {
         case "'":
           return STRING_SINGLE;
@@ -303,7 +303,7 @@ export let Lexer = class Lexer {
     heredoc = quote.length === 3;
     if (heredoc) {
       indent = null;
-      doc = ((function() {
+      doc = ((() => {
         let j, len, results;
         results = [];
         for (i = j = 0, len = tokens.length; j < len; i = ++j) {
@@ -326,11 +326,9 @@ export let Lexer = class Lexer {
       quote,
       indent,
       endOffset: end
-    }, (value) => {
-      return this.validateUnicodeCodePointEscapes(value, {
+    }, (value) => this.validateUnicodeCodePointEscapes(value, {
         delimiter: quote
-      });
-    });
+      }));
     return end;
   }
 
@@ -363,20 +361,20 @@ export let Lexer = class Lexer {
       ];
     } else {
       leadingNewlines = '';
-      content = lineComment.replace(/^(\n*)/, function(leading) {
+      content = lineComment.replace(/^(\n*)/, (leading) => {
         leadingNewlines = leading;
         return '';
       });
       precedingNonCommentLines = '';
       hasSeenFirstCommentLine = false;
-      contents = content.split('\n').map(function(line, index) {
+      contents = content.split('\n').map((line, index) => {
         let comment, leadingWhitespace;
         if (!(line.indexOf('#') > -1)) {
           precedingNonCommentLines += `\n${line}`;
           return;
         }
         leadingWhitespace = '';
-        content = line.replace(/^([ |\t]*)#/, function(_, whitespace) {
+        content = line.replace(/^([ |\t]*)#/, (_, whitespace) => {
           leadingWhitespace = whitespace;
           return '';
         });
@@ -389,11 +387,9 @@ export let Lexer = class Lexer {
         hasSeenFirstCommentLine = true;
         precedingNonCommentLines = '';
         return comment;
-      }).filter(function(comment) {
-        return comment;
-      });
+      }).filter((comment) => comment);
     }
-    getIndentSize = function({leadingWhitespace, nonInitial}) {
+    getIndentSize = ({leadingWhitespace, nonInitial}) => {
       let lastNewlineIndex;
       lastNewlineIndex = leadingWhitespace.lastIndexOf('\n');
       if ((hereComment != null) || !nonInitial) {
@@ -575,9 +571,7 @@ export let Lexer = class Lexer {
           heregex: {flags},
           endOffset: end - flags.length,
           quote: '///'
-        }, (str) => {
-          return this.validateUnicodeCodePointEscapes(str, {delimiter});
-        });
+        }, (str) => this.validateUnicodeCodePointEscapes(str, {delimiter}));
         if (flags) {
           this.token(',', ',', {
             offset: index - 1,
@@ -1294,7 +1288,7 @@ export let Lexer = class Lexer {
 
 };
 
-export let isUnassignable = function(name, displayName = name) {
+export let isUnassignable = (name, displayName = name) => {
   switch (false) {
     case indexOf.call([...JS_KEYWORDS, ...COFFEE_KEYWORDS], name) < 0:
       return `keyword '${displayName}' can't be assigned`;
@@ -1307,7 +1301,7 @@ export let isUnassignable = function(name, displayName = name) {
   }
 };
 
-isForFrom = function(prev) {
+isForFrom = (prev) => {
   let ref;
   if (prev[0] === 'IDENTIFIER') {
     return true;
@@ -1320,9 +1314,7 @@ isForFrom = function(prev) {
   }
 };
 
-addTokenData = function(token, data) {
-  return Object.assign((token.data != null ? token.data : token.data = {}), data);
-};
+addTokenData = (token, data) => Object.assign((token.data != null ? token.data : token.data = {}), data);
 
 JS_KEYWORDS = ['true', 'false', 'null', 'this', 'new', 'delete', 'typeof', 'in', 'instanceof', 'return', 'throw', 'break', 'continue', 'debugger', 'yield', 'await', 'if', 'else', 'switch', 'for', 'while', 'do', 'try', 'catch', 'finally', 'class', 'extends', 'super', 'import', 'export', 'default'];
 
@@ -1340,7 +1332,7 @@ COFFEE_ALIAS_MAP = {
   off: 'false'
 };
 
-COFFEE_ALIASES = (function() {
+COFFEE_ALIASES = (() => {
   let results;
   results = [];
   for (key in COFFEE_ALIAS_MAP) {

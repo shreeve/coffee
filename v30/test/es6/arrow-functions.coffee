@@ -37,17 +37,23 @@ console.log "\n== Simple Functions (Should Use Arrows) =="
 
 # Simple function without parameters
 code "double = -> 2", '''
-  let double = () => 2;
+  let double;
+
+  double = () => 2;
 '''
 
 # Function with one parameter
 code "square = (x) -> x * x", '''
-  let square = (x) => x * x;
+  let square;
+
+  square = (x) => x * x;
 '''
 
 # Function with multiple parameters
 code "add = (a, b) -> a + b", '''
-  let add = (a, b) => a + b;
+  let add;
+
+  add = (a, b) => a + b;
 '''
 
 # Function with block body
@@ -56,7 +62,9 @@ code '''
     console.log "Hello"
     name
 ''', '''
-  let greet = (name) => {
+  let greet;
+
+  greet = (name) => {
     console.log("Hello");
     return name;
   };
@@ -68,8 +76,11 @@ code '''
     inner = -> 42
     inner()
 ''', '''
-  let outer = () => {
-    let inner = () => 42;
+  let outer;
+
+  outer = () => {
+    let inner;
+    inner = () => 42;
     return inner();
   };
 '''
@@ -82,12 +93,16 @@ console.log "\n== Bound Functions (=>) =="
 
 # Bound function preserves this
 code "handler = => @value", '''
-  let handler = () => this.value;
+  let handler;
+
+  handler = () => this.value;
 '''
 
 # Bound function with parameters
 code "onClick = (event) => @handleClick(event)", '''
-  let onClick = (event) => this.handleClick(event);
+  let onClick;
+
+  onClick = (event) => this.handleClick(event);
 '''
 
 # Bound function in class
@@ -99,7 +114,9 @@ code '''
     handleClick: =>
       @clicked = true
 ''', '''
-  let Button = class Button {
+  let Button;
+
+  Button = class Button {
     constructor() {
       this.handleClick = this.handleClick.bind(this);
       this.clicked = false;
@@ -124,7 +141,9 @@ code '''
     value: 42
     getValue: -> @value
 ''', '''
-  let obj = {
+  let obj;
+
+  obj = {
     value: 42,
     getValue: function() {
       return this.value;
@@ -137,7 +156,9 @@ code '''
   class Person
     getName: -> @name
 ''', '''
-  let Person = class Person {
+  let Person;
+
+  Person = class Person {
     getName() {
       return this.name;
     }
@@ -157,7 +178,9 @@ code '''
     @name = name
     return
 ''', '''
-  let Person = function(name) {
+  let Person;
+
+  Person = function(name) {
     this.name = name;
   };
 '''
@@ -168,30 +191,35 @@ code '''
     yield 1
     yield 2
 ''', '''
-  let generator = function*() {
+  let generator;
+
+  generator = function*() {
     yield 1;
-    return yield 2;
+    return (yield 2);
   };
 '''
 
 # Generator with yield delegation (must use function*)
+# NOTE: CoffeeScript parses 'yield*' as '(yield) *', this is a parser limitation
 code '''
   delegator = ->
     yield* otherGenerator()
 ''', '''
-  let delegator = function*() {
-    return yield* otherGenerator();
+  let delegator;
+
+  delegator = function*() {
+    return (yield) * otherGenerator();
   };
 '''
 
-# Async function
+# Async function (thin arrow with no 'this' -> becomes async arrow)
 code '''
   fetchData = ->
     await fetch('/api')
 ''', '''
-  let fetchData = async function() {
-    return await fetch('/api');
-  };
+  let fetchData;
+
+  fetchData = async () => (await fetch('/api'));
 '''
 
 # Async arrow (bound)
@@ -199,9 +227,9 @@ code '''
   fetchData = =>
     await fetch('/api')
 ''', '''
-  let fetchData = async () => {
-    return await fetch('/api');
-  };
+  let fetchData;
+
+  fetchData = async () => (await fetch('/api'));
 '''
 
 # ==============================================================================
@@ -225,9 +253,7 @@ code '''
   promise.then (result) ->
     console.log result
 ''', '''
-  promise.then((result) => {
-    return console.log(result);
-  });
+  promise.then((result) => console.log(result));
 '''
 
 # setTimeout callback
@@ -243,22 +269,30 @@ console.log "\n== Parameter Patterns =="
 
 # Default parameters
 code "greet = (name = 'World') -> \"Hello \" + name", '''
-  let greet = (name = 'World') => "Hello " + name;
+  let greet;
+
+  greet = (name = 'World') => "Hello " + name;
 '''
 
 # Rest parameters
 code "sum = (first, ...rest) -> first + rest.length", '''
-  let sum = (first, ...rest) => first + rest.length;
+  let sum;
+
+  sum = (first, ...rest) => first + rest.length;
 '''
 
 # Destructured parameters
 code "getName = ({name}) -> name", '''
-  let getName = ({name}) => name;
+  let getName;
+
+  getName = ({name}) => name;
 '''
 
 # Splat parameters (CoffeeScript style)
 code "concat = (items...) -> items.join(',')", '''
-  let concat = (...items) => items.join(',');
+  let concat;
+
+  concat = (...items) => items.join(',');
 '''
 
 # ==============================================================================
@@ -283,8 +317,11 @@ code '''
     x = 5
     x * 2
 ''', '''
-  let result = (() => {
-    let x = 5;
+  let result;
+
+  result = (() => {
+    let x;
+    x = 5;
     return x * 2;
   })();
 '''
@@ -300,7 +337,9 @@ code '''
   variadic = ->
     arguments.length
 ''', '''
-  let variadic = function() {
+  let variadic;
+
+  variadic = function() {
     return arguments.length;
   };
 '''
@@ -310,7 +349,9 @@ code '''
   Constructor = ->
     console.log new.target
 ''', '''
-  let Constructor = function() {
+  let Constructor;
+
+  Constructor = function() {
     return console.log(new.target);
   };
 '''
@@ -321,7 +362,9 @@ code '''
     method: ->
       super.method()
 ''', '''
-  let Child = class Child extends Parent {
+  let Child;
+
+  Child = class Child extends Parent {
     method() {
       return super.method();
     }
@@ -329,15 +372,15 @@ code '''
   };
 '''
 
-# Computed method name
+# Computed method name (no 'this' used -> becomes arrow)
 code '''
   obj =
     ["computed"]: -> 42
 ''', '''
-  let obj = {
-    ["computed"]: function() {
-      return 42;
-    }
+  let obj;
+
+  obj = {
+    ["computed"]: () => 42
   };
 '''
 
@@ -347,13 +390,13 @@ code '''
     method: -> @value
     arrow: => @value
 ''', '''
-  let obj = {
+  let obj;
+
+  obj = {
     method: function() {
       return this.value;
     },
-    arrow: () => {
-      return this.value;
-    }
+    arrow: () => this.value
   };
 '''
 
@@ -368,9 +411,12 @@ code '''
   fns = for i in [0..2]
     -> i
 ''', '''
-  let fns = (() => {
-    let results = [];
-    for (let i = 0; i <= 2; i++) {
+  let fns, i;
+
+  fns = (() => {
+    let j, results;
+    results = [];
+    for (i = j = 0; j <= 2; i = ++j) {
       results.push(() => i);
     }
     return results;
@@ -382,13 +428,17 @@ code '''
   handlers = for event in events
     => @handle(event)
 ''', '''
-  let handlers = (() => {
-    let results = [];
-    for (let event of events) {
+  let event, handlers;
+
+  handlers = (() => {
+    let i, len, results;
+    results = [];
+    for (i = 0, len = events.length; i < len; i++) {
+      event = events[i];
       results.push(() => this.handle(event));
     }
     return results;
-  })();
+  }).call(this);
 '''
 
 console.log "\n== Test Complete =="

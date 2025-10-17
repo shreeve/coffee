@@ -64,9 +64,9 @@ MULTI_FLAG = /^-(\w{2,})/;
 
 OPTIONAL = /\[(\w+(\*?))\]/;
 
-buildRules = function(ruleDeclarations) {
+buildRules = (ruleDeclarations) => {
   let flag, flagDict, i, j, len, len1, ref, rule, ruleList, tuple;
-  ruleList = (function() {
+  ruleList = (() => {
     let i, len, results;
     results = [];
     for (i = 0, len = ruleDeclarations.length; i < len; i++) {
@@ -96,7 +96,7 @@ buildRules = function(ruleDeclarations) {
   return {ruleList, flagDict};
 };
 
-buildRule = function(shortFlag, longFlag, description) {
+buildRule = (shortFlag, longFlag, description) => {
   let match;
   match = longFlag.match(OPTIONAL);
   shortFlag = shortFlag != null ? shortFlag.match(SHORT_FLAG)[1] : void 0;
@@ -111,7 +111,7 @@ buildRule = function(shortFlag, longFlag, description) {
   };
 };
 
-normalizeArguments = function(args, flagDict) {
+normalizeArguments = (args, flagDict) => {
   let arg, argIndex, flag, i, innerOpts, j, lastOpt, len, len1, multiFlags, multiOpts, needsArgOpt, positional, ref, rule, rules, singleRule, withArg;
   rules = [];
   positional = [];
@@ -126,11 +126,9 @@ normalizeArguments = function(args, flagDict) {
       needsArgOpt = null;
       continue;
     }
-    multiFlags = (ref = arg.match(MULTI_FLAG)) != null ? ref[1].split('').map(function(flagName) {
-      return `-${flagName}`;
-    }) : void 0;
+    multiFlags = (ref = arg.match(MULTI_FLAG)) != null ? ref[1].split('').map((flagName) => `-${flagName}`) : void 0;
     if (multiFlags != null) {
-      multiOpts = multiFlags.map(function(flag) {
+      multiOpts = multiFlags.map((flag) => {
         let rule;
         rule = flagDict[flag];
         if (rule == null) {
@@ -151,9 +149,7 @@ normalizeArguments = function(args, flagDict) {
       } else {
         rules.push(lastOpt.rule);
       }
-    } else if ([LONG_FLAG, SHORT_FLAG].some(function(pat) {
-      return arg.match(pat) != null;
-    })) {
+    } else if ([LONG_FLAG, SHORT_FLAG].some((pat) => arg.match(pat) != null)) {
       singleRule = flagDict[arg];
       if (singleRule == null) {
         throw new Error(`unrecognized option ${arg}`);

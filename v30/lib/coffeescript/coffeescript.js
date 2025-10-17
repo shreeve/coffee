@@ -26,7 +26,7 @@ export { helpers };
 
 export { registerCompiled };
 
-base64encode = function(src) {
+base64encode = (src) => {
   if (typeof Buffer === 'function') {
     return Buffer.from(src).toString('base64');
   } else {
@@ -34,8 +34,7 @@ base64encode = function(src) {
   }
 };
 
-withPrettyErrors = function(fn) {
-  return function(code, options = {}) {
+withPrettyErrors = (fn) => function(code, options = {}) {
     let err;
     try {
       return fn.call(this, code, options);
@@ -47,9 +46,8 @@ withPrettyErrors = function(fn) {
       throw helpers.updateSyntaxError(err, code, options.filename);
     }
   };
-};
 
-export let compile = withPrettyErrors(function(code, options = {}) {
+export let compile = withPrettyErrors((code, options = {}) => {
   let ast, currentColumn, currentLine, encoded, filename, fragment, fragments, generateSourceMap, header, j, js, k, len, len1, map, newLines, nodes, range, ref, sourceCodeLastLine, sourceCodeNumberOfLines, sourceMapDataURI, sourceURL, token, tokens, v3SourceMap;
   options = Object.assign({}, options);
   generateSourceMap = options.sourceMap || options.inlineMap || (options.filename == null);
@@ -59,7 +57,7 @@ export let compile = withPrettyErrors(function(code, options = {}) {
     map = new SourceMap();
   }
   tokens = lexer.tokenize(code, options);
-  options.referencedVars = (function() {
+  options.referencedVars = (() => {
     let j, len, results;
     results = [];
     for (j = 0, len = tokens.length; j < len; j++) {
@@ -152,11 +150,9 @@ export let compile = withPrettyErrors(function(code, options = {}) {
   }
 });
 
-export let tokens = withPrettyErrors(function(code, options) {
-  return lexer.tokenize(code, options);
-});
+export let tokens = withPrettyErrors((code, options) => lexer.tokenize(code, options));
 
-export let nodes = withPrettyErrors(function(source, options) {
+export let nodes = withPrettyErrors((source, options) => {
   if (typeof source === 'string') {
     source = lexer.tokenize(source, options);
   }
@@ -189,21 +185,19 @@ parser.lexer = {
     parser.tokens = tokens;
     return this.pos = 0;
   },
-  upcomingInput: function() {
-    return '';
-  }
+  upcomingInput: () => ''
 };
 
 parser.yy = {...nodesModule};
 
-parser.yy.parseError = function(message, {token}) {
+parser.yy.parseError = (message, {token}) => {
   let errorLoc, errorTag, errorText, errorToken, parserTokens;
   ({
     errorToken,
     tokens: parserTokens
   } = parser);
   [errorTag, errorText, errorLoc] = errorToken;
-  errorText = (function() {
+  errorText = (() => {
     switch (false) {
       case errorToken !== parserTokens[parserTokens.length - 1]:
         return 'end of input';
@@ -218,9 +212,9 @@ parser.yy.parseError = function(message, {token}) {
   return helpers.throwSyntaxError(`unexpected ${errorText}`, errorLoc);
 };
 
-export let patchStackTrace = function() {
+export let patchStackTrace = () => {
   let formatSourcePosition, getSourceMapping;
-  formatSourcePosition = function(frame, getSourceMapping) {
+  formatSourcePosition = (frame, getSourceMapping) => {
     let as, column, fileLocation, filename, functionName, isConstructor, isMethodCall, line, methodName, source, tp, typeName;
     filename = void 0;
     fileLocation = '';
@@ -267,7 +261,7 @@ export let patchStackTrace = function() {
       return fileLocation;
     }
   };
-  getSourceMapping = function(filename, line, column) {
+  getSourceMapping = (filename, line, column) => {
     let answer, sourceMap;
     sourceMap = getSourceMap(filename, line, column);
     if (sourceMap != null) {
@@ -279,9 +273,9 @@ export let patchStackTrace = function() {
       return null;
     }
   };
-  return Error.prepareStackTrace = function(err, stack) {
+  return Error.prepareStackTrace = (err, stack) => {
     let frame, frames, i;
-    frames = (function() {
+    frames = (() => {
       let j, len, results;
       results = [];
       for (i = j = 0, len = stack.length; j < len; i = ++j) {
@@ -297,13 +291,11 @@ export let patchStackTrace = function() {
   };
 };
 
-checkShebangLine = function(file, input) {
+checkShebangLine = (file, input) => {
   let args, firstLine, ref, rest;
   firstLine = input.split(/$/m, 1)[0];
   rest = firstLine != null ? firstLine.match(/^#!\s*([^\s]+\s*)(.*)/) : void 0;
-  args = rest != null ? (ref = rest[2]) != null ? ref.split(/\s/).filter(function(s) {
-    return s !== '';
-  }) : void 0 : void 0;
+  args = rest != null ? (ref = rest[2]) != null ? ref.split(/\s/).filter((s) => s !== '') : void 0 : void 0;
   if ((args != null ? args.length : void 0) > 1) {
     console.error(`The script to be run begins with a shebang line with more than one
 argument. This script will fail on platforms such as Linux which only

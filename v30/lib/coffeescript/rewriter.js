@@ -6,7 +6,7 @@ let BALANCED_PAIRS, CALL_CLOSERS, CONTROL_IN_IMPLICIT, DISCARDED, EXPRESSION_CLO
 
 import { throwSyntaxError, extractAllCommentTokens } from './helpers.js';
 
-moveComments = function(fromToken, toToken) {
+moveComments = (fromToken, toToken) => {
   let comment, k, len, ref, unshiftedComments;
   if (!fromToken.comments) {
     return;
@@ -29,7 +29,7 @@ moveComments = function(fromToken, toToken) {
   return delete fromToken.comments;
 };
 
-generate = function(tag, value, origin, commentsToken) {
+generate = (tag, value, origin, commentsToken) => {
   let token;
   token = [tag, value];
   token.generated = true;
@@ -146,13 +146,8 @@ export let Rewriter = (function() {
 
     closeOpenCalls() {
       let action, condition;
-      condition = function(token, i) {
-        let ref;
-        return (ref = token[0]) === ')' || ref === 'CALL_END';
-      };
-      action = function(token, i) {
-        return token[0] = 'CALL_END';
-      };
+      condition = (token, i) => (ref = token[0]) === ')' || ref === 'CALL_END';
+      action = (token, i) => token[0] = 'CALL_END';
       return this.scanTokens(function(token, i) {
         if (token[0] === 'CALL_START') {
           this.detectEnd(i + 1, condition, action);
@@ -164,10 +159,7 @@ export let Rewriter = (function() {
     closeOpenIndexes() {
       let action, condition, startToken;
       startToken = null;
-      condition = function(token, i) {
-        let ref;
-        return (ref = token[0]) === ']' || ref === 'INDEX_END';
-      };
+      condition = (token, i) => (ref = token[0]) === ']' || ref === 'INDEX_END';
       action = function(token, i) {
         if (this.tokens.length >= i && this.tokens[i + 1][0] === ':') {
           startToken[0] = '[';
@@ -210,12 +202,7 @@ export let Rewriter = (function() {
       index = this.indexOfTag(j, EXPRESSION_START);
       if (index !== -1) {
         end = null;
-        this.detectEnd(index + 1, (function(token) {
-          let ref;
-          return ref = token[0], indexOf.call(EXPRESSION_END, ref) >= 0;
-        }), (function(token, i) {
-          return end = i;
-        }));
+        this.detectEnd(index + 1, ((token) => ref = token[0], indexOf.call(EXPRESSION_END, ref) >= 0), ((token, i) => end = i));
         if (this.tag(end + 1) === ':') {
           return true;
         }
@@ -247,37 +234,17 @@ export let Rewriter = (function() {
         [tag] = token;
         [prevTag] = prevToken = i > 0 ? tokens[i - 1] : [];
         [nextTag] = nextToken = i < tokens.length - 1 ? tokens[i + 1] : [];
-        stackTop = function() {
-          return stack[stack.length - 1];
-        };
+        stackTop = () => stack[stack.length - 1];
         startIdx = i;
-        forward = function(n) {
-          return i - startIdx + n;
-        };
-        isImplicit = function(stackItem) {
-          let ref;
-          return stackItem != null ? (ref = stackItem[2]) != null ? ref.ours : void 0 : void 0;
-        };
-        isImplicitObject = function(stackItem) {
-          return isImplicit(stackItem) && (stackItem != null ? stackItem[0] : void 0) === '{';
-        };
-        isImplicitCall = function(stackItem) {
-          return isImplicit(stackItem) && (stackItem != null ? stackItem[0] : void 0) === '(';
-        };
-        inImplicit = function() {
-          return isImplicit(stackTop());
-        };
-        inImplicitCall = function() {
-          return isImplicitCall(stackTop());
-        };
-        inImplicitObject = function() {
-          return isImplicitObject(stackTop());
-        };
-        inImplicitControl = function() {
-          let ref;
-          return inImplicit() && ((ref = stackTop()) != null ? ref[0] : void 0) === 'CONTROL';
-        };
-        startImplicitCall = function(idx) {
+        forward = (n) => i - startIdx + n;
+        isImplicit = (stackItem) => stackItem != null ? (ref = stackItem[2]) != null ? ref.ours : void 0 : void 0;
+        isImplicitObject = (stackItem) => isImplicit(stackItem) && (stackItem != null ? stackItem[0] : void 0) === '{';
+        isImplicitCall = (stackItem) => isImplicit(stackItem) && (stackItem != null ? stackItem[0] : void 0) === '(';
+        inImplicit = () => isImplicit(stackTop());
+        inImplicitCall = () => isImplicitCall(stackTop());
+        inImplicitObject = () => isImplicitObject(stackTop());
+        inImplicitControl = () => inImplicit() && ((ref = stackTop()) != null ? ref[0] : void 0) === 'CONTROL';
+        startImplicitCall = (idx) => {
           stack.push([
             '(',
             idx,
@@ -287,12 +254,12 @@ export let Rewriter = (function() {
           ]);
           return tokens.splice(idx, 0, generate('CALL_START', '(', ['', 'implicit function call', token[2]], prevToken));
         };
-        endImplicitCall = function() {
+        endImplicitCall = () => {
           stack.pop();
           tokens.splice(i, 0, generate('CALL_END', ')', ['', 'end of input', token[2]], prevToken));
           return i += 1;
         };
-        startImplicitObject = function(idx, {startsLine = true, continuationLineIndent} = {}) {
+        startImplicitObject = (idx, {startsLine = true, continuationLineIndent} = {}) => {
           let val;
           stack.push([
             '{',
@@ -308,7 +275,7 @@ export let Rewriter = (function() {
           val.generated = true;
           return tokens.splice(idx, 0, generate('{', val, token, prevToken));
         };
-        endImplicitObject = function(j) {
+        endImplicitObject = (j) => {
           j = j ?? i;
           stack.pop();
           tokens.splice(j, 0, generate('}', '}', token, prevToken));
@@ -317,11 +284,7 @@ export let Rewriter = (function() {
         implicitObjectContinues = (j) => {
           let nextTerminatorIdx;
           nextTerminatorIdx = null;
-          this.detectEnd(j, function(token) {
-            return token[0] === 'TERMINATOR';
-          }, function(token, i) {
-            return nextTerminatorIdx = i;
-          }, {
+          this.detectEnd(j, (token) => token[0] === 'TERMINATOR', (token, i) => nextTerminatorIdx = i, {
             returnOnNegativeLevel: true
           });
           if (nextTerminatorIdx == null) {
@@ -380,10 +343,7 @@ export let Rewriter = (function() {
           }
           isFunc = false;
           tagCurrentLine = token[2].first_line;
-          this.detectEnd(i, function(token, i) {
-            let ref;
-            return ref = token[0], indexOf.call(LINEBREAKS, ref) >= 0;
-          }, function(token, i) {
+          this.detectEnd(i, (token, i) => ref = token[0], indexOf.call(LINEBREAKS, ref) >= 0, (token, i) => {
             let first_line;
             [prevTag, , {first_line}] = tokens[i - 1] || [];
             return isFunc = tagCurrentLine === first_line && (prevTag === '->' || prevTag === '=>');
@@ -483,13 +443,13 @@ export let Rewriter = (function() {
 
     rescueStowawayComments() {
       let dontShiftForward, insertPlaceholder, shiftCommentsBackward, shiftCommentsForward;
-      insertPlaceholder = function(token, j, tokens, method) {
+      insertPlaceholder = (token, j, tokens, method) => {
         if (tokens[j][0] !== 'TERMINATOR') {
           tokens[method](generate('TERMINATOR', '\n', tokens[j]));
         }
         return tokens[method](generate('JS', '', tokens[j], token));
       };
-      dontShiftForward = function(i, tokens) {
+      dontShiftForward = (i, tokens) => {
         let j, ref;
         j = i + 1;
         while (j !== tokens.length && (ref = tokens[j][0], indexOf.call(DISCARDED, ref) >= 0)) {
@@ -500,7 +460,7 @@ export let Rewriter = (function() {
         }
         return false;
       };
-      shiftCommentsForward = function(token, i, tokens) {
+      shiftCommentsForward = (token, i, tokens) => {
         let comment, j, k, len, ref, ref1, ref2;
         j = i;
         while (j !== tokens.length && (ref = tokens[j][0], indexOf.call(DISCARDED, ref) >= 0)) {
@@ -520,7 +480,7 @@ export let Rewriter = (function() {
           return 1;
         }
       };
-      shiftCommentsBackward = function(token, i, tokens) {
+      shiftCommentsBackward = (token, i, tokens) => {
         let j, ref, ref1;
         j = i;
         while (j !== -1 && (ref = tokens[j][0], indexOf.call(DISCARDED, ref) >= 0)) {
@@ -534,7 +494,7 @@ export let Rewriter = (function() {
           return 3;
         }
       };
-      return this.scanTokens(function(token, i, tokens) {
+      return this.scanTokens((token, i, tokens) => {
         let dummyToken, j, ref, ref1, ret;
         if (!token.comments) {
           return 1;
@@ -582,7 +542,7 @@ export let Rewriter = (function() {
     }
 
     addLocationDataToGeneratedTokens() {
-      return this.scanTokens(function(token, i, tokens) {
+      return this.scanTokens((token, i, tokens) => {
         let column, line, nextLocation, prevLocation, rangeIndex, ref, ref1;
         if (token[2]) {
           return 1;
@@ -632,7 +592,7 @@ export let Rewriter = (function() {
       findPrecedingComment = (token, {afterPosition, indentSize, first, indented}) => {
         let comment, k, l, lastMatching, matches, ref, ref1, tokenStart;
         tokenStart = token[2].range[0];
-        matches = function(comment) {
+        matches = (comment) => {
           if (comment.outdented) {
             if (!((indentSize != null) && comment.indentSize > indentSize)) {
               return false;
@@ -671,7 +631,7 @@ export let Rewriter = (function() {
         }
         return null;
       };
-      return this.scanTokens(function(token, i, tokens) {
+      return this.scanTokens((token, i, tokens) => {
         let isIndent, nextToken, nextTokenIndex, precedingComment, prevLocationData, prevToken, ref, ref1, useNextToken;
         if (!(((ref = token[0]) === 'INDENT' || ref === 'OUTDENT') || (token.generated && token[0] === 'CALL_END' && !((ref1 = token.data) != null ? ref1.closingTagNameToken : void 0)) || (token.generated && token[0] === '}'))) {
           return 1;
@@ -745,10 +705,7 @@ export let Rewriter = (function() {
         tokens.splice(i, 0, outdentElse);
         outdentElse[1] = 2;
         tokens.splice(i + 1, 0, outdentElse);
-        this.detectEnd(i + 2, function(token, i) {
-          let ref;
-          return (ref = token[0]) === 'OUTDENT' || ref === 'TERMINATOR';
-        }, function(token, i) {
+        this.detectEnd(i + 2, (token, i) => (ref = token[0]) === 'OUTDENT' || ref === 'TERMINATOR', function(token, i) {
           if (this.tag(i) === 'OUTDENT' && this.tag(i + 1) === 'OUTDENT') {
             return tokens.splice(i, 2);
           }
@@ -823,7 +780,7 @@ export let Rewriter = (function() {
         [prevTag] = this.tokens[i - 1];
         return tag === 'TERMINATOR' || (tag === 'INDENT' && indexOf.call(SINGLE_LINERS, prevTag) < 0);
       };
-      action = function(token, i) {
+      action = (token, i) => {
         if (token[0] !== 'INDENT' || (token.generated && !token.fromThen)) {
           return original[0] = 'POST_' + original[0];
         }
@@ -839,7 +796,7 @@ export let Rewriter = (function() {
     }
 
     exposeTokenDataToGrammar() {
-      return this.scanTokens(function(token, i) {
+      return this.scanTokens((token, i) => {
         let key, ref, val;
         if (token.generated || (token.data && Object.keys(token.data).length !== 0)) {
           token[1] = new String(token[1]);

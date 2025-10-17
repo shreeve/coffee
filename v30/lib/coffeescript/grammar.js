@@ -2,7 +2,7 @@
 
 let grammar, o, operators;
 
-o = function(pattern, action, options) {
+o = (pattern, action, options) => {
   pattern = pattern.trim().replace(/\s{2,}/g, ' ');
   return [
     pattern,
@@ -2930,8 +2930,6 @@ right       YIELD
 right       = : COMPOUND_ASSIGN RETURN THROW EXTENDS
 right       FORIN FOROF FORFROM BY WHEN
 right       IF ELSE FOR WHILE UNTIL LOOP SUPER CLASS IMPORT EXPORT DYNAMIC_IMPORT
-left        POST_IF`.trim().split('\n').reverse().map(function(line) {
-  return line.trim().split(/\s+/);
-});
+left        POST_IF`.trim().split('\n').reverse().map((line) => line.trim().split(/\s+/));
 
 export { grammar, operators };
