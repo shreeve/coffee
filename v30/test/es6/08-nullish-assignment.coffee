@@ -187,31 +187,18 @@ code '''
 
 console.log "\n== Runtime Tests =="
 
-test "nullish assignment with null", ->
-  x = null
-  x ?= 5
-  throw new Error("Expected 5, got #{x}") unless x is 5
+test "nullish assignment with null", 'x = null; x ?= 5; x', 5
 
-test "nullish assignment with undefined", ->
-  y = undefined
-  y ?= "default"
-  throw new Error("Expected 'default', got #{y}") unless y is "default"
+test "nullish assignment with undefined", 'y = undefined; y ?= "default"; y', "default"
 
-test "preserves existing values", ->
-  z = "exists"
-  z ?= "nope"
-  throw new Error("Expected 'exists', got #{z}") unless z is "exists"
+test "preserves existing values", 'z = "exists"; z ?= "nope"; z', "exists"
 
-test "works with object properties", ->
-  obj = { prop: null }
-  obj.prop ?= "filled"
-  throw new Error("Expected 'filled', got #{obj.prop}") unless obj.prop is "filled"
+test "works with object properties", 'obj = { prop: null }; obj.prop ?= "filled"; obj.prop', "filled"
 
-test "works with falsy non-nullish values", ->
-  values = [0, false, ""]
-  for val in values
-    x = val
-    x ?= "changed"
-    throw new Error("#{val} should not be changed") unless x is val
+test "works with falsy non-nullish values", 'x = 0; x ?= "changed"; x', 0
+
+test "falsy false preserved", 'x = false; x ?= "changed"; x', false
+
+test "falsy empty string preserved", 'x = ""; x ?= "changed"; x', ""
 
 console.log "\nAll nullish assignment tests complete!"
