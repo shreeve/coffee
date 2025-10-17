@@ -3938,7 +3938,6 @@ exports.Code = class Code extends Base
     if @isMethod and @bound and not @isStatic and @classVariable
       boundMethodCheck = new Value new Literal utility 'boundMethodCheck', o
       @body.expressions.unshift new Call(boundMethodCheck, [new Value(new ThisLiteral), @classVariable])
-    @body.makeReturn() unless wasEmpty or @noReturn
 
     # JavaScript doesn't allow bound (`=>`) functions to also be generators.
     # This is usually caught via `Op::compileContinuation`, but double-check:
@@ -3946,11 +3945,58 @@ exports.Code = class Code extends Base
       yieldNode = @body.contains (node) -> node instanceof Op and node.operator is 'yield'
       (yieldNode or @).error 'yield cannot occur inside bound (fat arrow) functions'
 
+    # Determine if we can use arrow function syntax
+    canUseArrow = no
+    shouldUseArrow = no
+
+    # Check if the last expression is already a Return node (explicit return)
+    # vs will be wrapped by makeReturn (implicit return)
+    hasExplicitReturn = no
+    if not wasEmpty and not @noReturn and @body.expressions.length > 0
+      lastExpr = @body.expressions[@body.expressions.length - 1]
+      hasExplicitReturn = lastExpr instanceof Return
+
+    # Call makeReturn after we've checked for explicit returns
+    @body.makeReturn() unless wasEmpty or @noReturn
+
+    # Bound functions (=>) always become arrows (unless they're methods or generators)
+    if @bound and not @isGenerator and not @isMethod
+      canUseArrow = yes
+      shouldUseArrow = yes
+    # Regular functions (->) can become arrows if they don't use special contexts
+    else if not @isGenerator and not @ctor and not @isMethod
+      # Check if function uses special JavaScript contexts
+      usesThis = no
+      usesArguments = no
+      usesSuper = no
+      usesNewTarget = no
+
+      @body.traverseChildren no, (node) =>
+        usesThis = yes if node instanceof ThisLiteral
+        usesArguments = yes if node instanceof IdentifierLiteral and node.value is 'arguments'
+        usesSuper = yes if node instanceof SuperCall or node instanceof Super
+        # Check for new.target usage (MetaProperty node)
+        if node instanceof MetaProperty
+          if node.meta.value is 'new' and node.property?.name?.value is 'target'
+            usesNewTarget = yes
+
+      # Arrow functions can't use these special contexts (except 'this' which they inherit lexically)
+      # Methods that use 'this' need dynamic binding, so they stay as regular functions
+      if usesThis
+        canUseArrow = no  # Conservative: methods need dynamic 'this'
+      else
+        canUseArrow = not (usesArguments or usesSuper or usesNewTarget)
+        shouldUseArrow = canUseArrow
+
     # Assemble the output
     modifiers = []
     modifiers.push 'static' if @isMethod and @isStatic
     modifiers.push 'async'  if @isAsync
-    unless @isMethod or @bound
+
+    # Only add 'function' keyword if not using arrow syntax
+    if shouldUseArrow and canUseArrow
+      # Arrow functions don't use 'function' keyword
+    else unless @isMethod or @bound
       modifiers.push "function#{if @isGenerator then '*' else ''}"
     else if @isGenerator
       modifiers.push '*'
@@ -3977,7 +4023,31 @@ exports.Code = class Code extends Base
       comment.unshift = no for comment in @funcGlyph.comments
       @compileCommentFragments o, @funcGlyph, signature
 
-    body = @body.compileWithDeclarations o unless @body.isEmpty()
+    # Determine if we'll use arrow syntax
+    isArrow = shouldUseArrow and canUseArrow
+
+    # Check if we can use single-expression arrow syntax (no braces)
+    # This is safe for IMPLICIT returns only
+    isSingleExpression = no
+    if isArrow and not @body.isEmpty() and @body.expressions.length is 1 and not hasExplicitReturn
+      expr = @body.expressions[0]
+      # After makeReturn(), this will be a Return node, but we know it was implicit
+      # We can safely use single expression syntax
+      if expr instanceof Return and expr.expression and not expr.expression.isStatement?()
+        # Check if it's a simple expression we can unwrap
+        unless expr.expression instanceof If or expr.expression instanceof Switch or expr.expression instanceof Try
+          isSingleExpression = yes
+
+    # Compile body
+    body = null
+    unless @body.isEmpty()
+      if isArrow and isSingleExpression
+        # Single expression arrow - don't use compileWithDeclarations
+        # Compile the expression directly
+        body = null
+      else
+        # Multi-statement or needs braces - use full compilation
+        body = @body.compileWithDeclarations o
 
     # We need to compile the body before method names to ensure `super`
     # references are handled.
@@ -3990,11 +4060,37 @@ exports.Code = class Code extends Base
     answer = @joinFragmentArrays (@makeCode m for m in modifiers), ' '
     answer.push @makeCode ' ' if modifiers.length and name
     answer.push name... if name
+    # Add space between async and signature for arrow functions
+    answer.push @makeCode ' ' if @isAsync and isArrow
     answer.push signature...
-    answer.push @makeCode ' =>' if @bound and not @isMethod
-    answer.push @makeCode ' {'
-    answer.push @makeCode('\n'), body..., @makeCode("\n#{@tab}") if body?.length
-    answer.push @makeCode '}'
+
+    # Generate arrow or regular function syntax
+    if isArrow
+      answer.push @makeCode ' =>'
+      if isSingleExpression
+        # Compact single-expression arrow
+        answer.push @makeCode ' '
+        # Unwrap the Return node to get the actual expression
+        returnNode = @body.expressions[0]
+        actualExpr = if returnNode instanceof Return then returnNode.expression else returnNode
+        # For Obj, wrap in parens to distinguish from block: () => ({a: 1})
+        if actualExpr instanceof Obj
+          answer.push @makeCode '('
+          answer.push actualExpr.compileToFragments(o, LEVEL_PAREN)...
+          answer.push @makeCode ')'
+        else
+          answer.push actualExpr.compileToFragments(o, LEVEL_PAREN)...
+      else
+        # Arrow with braces
+        answer.push @makeCode ' {'
+        answer.push @makeCode('\n'), body..., @makeCode("\n#{@tab}") if body?.length
+        answer.push @makeCode '}'
+    else
+      # Regular function or bound method
+      answer.push @makeCode ' =>' if @bound and not @isMethod
+      answer.push @makeCode ' {'
+      answer.push @makeCode('\n'), body..., @makeCode("\n#{@tab}") if body?.length
+      answer.push @makeCode '}'
 
     return indentInitial answer, @ if @isMethod
     if @front or (o.level >= LEVEL_ACCESS) then @wrapInParentheses answer else answer
