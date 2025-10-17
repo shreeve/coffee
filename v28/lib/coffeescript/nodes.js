@@ -5037,7 +5037,8 @@
       }
 
       isStatement(o) {
-        return (o != null ? o.level : void 0) === LEVEL_TOP && (this.context != null) && (this.moduleDeclaration || indexOf.call(this.context, "?") >= 0);
+        // Don't treat ?= as a statement in ES6 mode since it generates ??= which needs semicolons and indentation
+        return (o != null ? o.level : void 0) === LEVEL_TOP && (this.context != null) && (this.moduleDeclaration || (indexOf.call(this.context, "?") >= 0 && !process.env.ES6));
       }
 
       checkNameAssignability(o, varBase) {
@@ -5116,7 +5117,7 @@
       // we've been assigned to, for correct internal references. If the variable
       // has not been seen yet within the current scope, declare it.
       compileNode(o) {
-        var answer, compiledName, isValue, name, properties, prototype, ref1, ref2, ref3, ref4, val;
+        var answer, compiledName, isValue, name, operator, properties, prototype, ref1, ref2, ref3, ref4, val;
         isValue = this.variable instanceof Value;
         if (isValue) {
           // If `@variable` is an array or an object, we're destructuring;
@@ -5135,7 +5136,8 @@
           if (this.variable.isSplice()) {
             return this.compileSplice(o);
           }
-          if (this.isConditional()) {
+          if (this.isConditional() && !(this.context === '?=' && process.env.ES6)) {
+            // Skip compileConditional for ?= in ES6 mode to use ??= operator
             return this.compileConditional(o);
           }
           if ((ref1 = this.context) === '//=' || ref1 === '%%=') {
@@ -5162,7 +5164,9 @@
           }
           return compiledName.concat(this.makeCode(': '), val);
         }
-        answer = compiledName.concat(this.makeCode(` ${this.context || '='} `), val);
+        // Use ??= for existential assignment in ES6
+        operator = this.context === '?=' && process.env.ES6 ? '??=' : this.context || '=';
+        answer = compiledName.concat(this.makeCode(` ${operator} `), val);
         // Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
         // if we're destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
         // The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)

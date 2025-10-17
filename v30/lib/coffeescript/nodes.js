@@ -282,7 +282,7 @@ export let Base = (function() {
     }
 
     compileCommentFragments(o, node, fragments) {
-      let base1, base2, comment, commentFragment, j, len1, ref1, unshiftCommentFragment;
+      let comment, commentFragment, j, len1, ref1, unshiftCommentFragment;
       if (!node.comments) {
         return fragments;
       }
@@ -319,14 +319,10 @@ export let Base = (function() {
             fragments.push(this.makeCode(''));
           }
           if (commentFragment.unshift) {
-            if ((base1 = fragments[0]).precedingComments == null) {
-              base1.precedingComments = [];
-            }
+            fragments[0].precedingComments ??= [];
             fragments[0].precedingComments.push(commentFragment);
           } else {
-            if ((base2 = fragments[fragments.length - 1]).followingComments == null) {
-              base2.followingComments = [];
-            }
+            fragments[fragments.length - 1].followingComments ??= [];
             fragments[fragments.length - 1].followingComments.push(commentFragment);
           }
         }
@@ -711,24 +707,22 @@ export let Root = (function() {
 
     commentsAst() {
       let comment, commentToken, j, len1, ref1, results1;
-      if (this.allComments == null) {
-        this.allComments = (function() {
-          let j, len1, ref1, results1;
-          ref1 = this.allCommentTokens ?? [];
-          results1 = [];
-          for (j = 0, len1 = ref1.length; j < len1; j++) {
-            commentToken = ref1[j];
-            if (!commentToken.heregex) {
-              if (commentToken.here) {
-                results1.push(new HereComment(commentToken));
-              } else {
-                results1.push(new LineComment(commentToken));
-              }
+      this.allComments ??= (function() {
+        let j, len1, ref1, results1;
+        ref1 = this.allCommentTokens ?? [];
+        results1 = [];
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          commentToken = ref1[j];
+          if (!commentToken.heregex) {
+            if (commentToken.here) {
+              results1.push(new HereComment(commentToken));
+            } else {
+              results1.push(new LineComment(commentToken));
             }
           }
-          return results1;
-        }).call(this);
-      }
+        }
+        return results1;
+      }).call(this);
       ref1 = this.allComments;
       results1 = [];
       for (j = 0, len1 = ref1.length; j < len1; j++) {
@@ -1344,9 +1338,7 @@ export let StringLiteral = class StringLiteral extends Literal {
       this.quote = null;
     }
     this.fromSourceString = this.quote != null;
-    if (this.quote == null) {
-      this.quote = '"';
-    }
+    this.quote ??= '"';
     heredoc = this.isFromHeredoc();
     val = this.originalValue;
     if (this.heregex) {
@@ -1664,9 +1656,7 @@ export let BooleanLiteral = class BooleanLiteral extends Literal {
   constructor(value, {originalValue} = {}) {
     super(value);
     this.originalValue = originalValue;
-    if (this.originalValue == null) {
-      this.originalValue = this.value;
-    }
+    this.originalValue ??= this.value;
   }
 
   astProperties() {
@@ -2000,7 +1990,7 @@ export let Value = (function() {
     }
 
     unfoldSoak(o) {
-      return this.unfoldedSoak != null ? this.unfoldedSoak : this.unfoldedSoak = (() => {
+      return this.unfoldedSoak ??= (() => {
         let fst, i, ifn, j, len1, prop, ref, ref1, snd;
         ifn = this.base.unfoldSoak(o);
         if (ifn) {
@@ -3421,9 +3411,7 @@ export let Class = (function() {
         node = new Parens(node);
       }
       if (this.boundMethods.length && this.parent) {
-        if (this.variable == null) {
-          this.variable = new IdentifierLiteral(o.scope.freeVariable('_class'));
-        }
+        this.variable ??= new IdentifierLiteral(o.scope.freeVariable('_class'));
         if (this.variableRef == null) {
           [this.variable, this.variableRef] = this.variable.cache(o);
         }
@@ -3444,9 +3432,7 @@ export let Class = (function() {
     compileClassDeclaration(o) {
       let ref1, ref2, result;
       if (this.externalCtor || this.boundMethods.length) {
-        if (this.ctor == null) {
-          this.ctor = this.makeDefaultConstructor();
-        }
+        this.ctor ??= this.makeDefaultConstructor();
       }
       if ((ref1 = this.ctor) != null) {
         ref1.noReturn = true;
@@ -4466,7 +4452,7 @@ export let Assign = (function() {
     }
 
     isStatement(o) {
-      return (o != null ? o.level : void 0) === LEVEL_TOP && (this.context != null) && (this.moduleDeclaration || indexOf.call(this.context, "?") >= 0);
+      return (o != null ? o.level : void 0) === LEVEL_TOP && (this.context != null) && this.moduleDeclaration;
     }
 
     checkNameAssignability(o, varBase) {
@@ -4514,9 +4500,7 @@ export let Assign = (function() {
           return o.scope.add(name.value, this.param === 'alwaysDeclare' ? 'var' : 'param');
         } else {
           alreadyDeclared = o.scope.find(name.value);
-          if (name.isDeclaration == null) {
-            name.isDeclaration = !alreadyDeclared;
-          }
+          name.isDeclaration ??= !alreadyDeclared;
           if (name.comments && !o.scope.comments[name.value] && !(this.value instanceof Class) && name.comments.every((comment) => comment.here && !comment.multiline)) {
             commentsNode = new IdentifierLiteral(name.value);
             commentsNode.comments = name.comments;
@@ -4529,7 +4513,7 @@ export let Assign = (function() {
     }
 
     compileNode(o) {
-      let answer, compiledName, isValue, name, properties, prototype, ref1, ref2, ref3, ref4, val;
+      let answer, compiledName, isValue, name, operator, properties, prototype, ref1, ref2, ref3, ref4, val;
       isValue = this.variable instanceof Value;
       if (isValue) {
         if (this.variable.isArray() || this.variable.isObject()) {
@@ -4544,7 +4528,7 @@ export let Assign = (function() {
         if (this.variable.isSplice()) {
           return this.compileSplice(o);
         }
-        if (this.isConditional()) {
+        if (this.isConditional() && this.context !== '?=') {
           return this.compileConditional(o);
         }
         if ((ref1 = this.context) === '//=' || ref1 === '%%=') {
@@ -4571,7 +4555,8 @@ export let Assign = (function() {
         }
         return compiledName.concat(this.makeCode(': '), val);
       }
-      answer = compiledName.concat(this.makeCode(` ${this.context || '='} `), val);
+      operator = this.context === '?=' ? '??=' : this.context || '=';
+      answer = compiledName.concat(this.makeCode(` ${operator} `), val);
       if (o.level > LEVEL_LIST || isValue && this.variable.base instanceof Obj && !this.nestedLhs && !(this.param === true)) {
         return this.wrapInParentheses(answer);
       } else {
@@ -5971,7 +5956,7 @@ export let While = (function() {
     }
 
     processedCondition() {
-      return this.processedConditionCache != null ? this.processedConditionCache : this.processedConditionCache = this.inverted ? this.condition.invert() : this.condition;
+      return this.processedConditionCache ??= this.inverted ? this.condition.invert() : this.condition;
     }
 
     astType() {
@@ -6839,7 +6824,7 @@ export let StringWithInterpolations = (function() {
               commentPlaceholder = new StringLiteral('').withLocationDataFrom(node);
               commentPlaceholder.comments = unwrapped.comments;
               if (node.comments) {
-                (commentPlaceholder.comments != null ? commentPlaceholder.comments : commentPlaceholder.comments = []).push(...node.comments);
+                (commentPlaceholder.comments ??= []).push(...node.comments);
               }
               elements.push(new Value(commentPlaceholder));
             } else {
@@ -6849,7 +6834,7 @@ export let StringWithInterpolations = (function() {
             }
           } else if (node.expression || includeInterpolationWrappers) {
             if (node.comments) {
-              ((ref2 = node.expression) != null ? ref2.comments != null ? ref2.comments : ref2.comments = [] : void 0).push(...node.comments);
+              ((ref2 = node.expression) != null ? ref2.comments ??= [] : void 0).push(...node.comments);
             }
             elements.push(includeInterpolationWrappers ? node : node.expression);
           }
@@ -6875,9 +6860,7 @@ export let StringWithInterpolations = (function() {
 
     compileNode(o) {
       let code, element, elements, fragments, j, len1, ref1, unquotedElementValue;
-      if (this.comments == null) {
-        this.comments = (ref1 = this.startQuote) != null ? ref1.comments : void 0;
-      }
+      this.comments ??= (ref1 = this.startQuote) != null ? ref1.comments : void 0;
       elements = this.extractElements(o);
       fragments = [];
       fragments.push(this.makeCode('`'));
@@ -6992,13 +6975,11 @@ export let For = (function() {
     }
 
     addBody(body) {
-      let base1, expressions;
+      let expressions;
       this.body = Block.wrap([body]);
       ({expressions} = this.body);
       if (expressions.length) {
-        if ((base1 = this.body).locationData == null) {
-          base1.locationData = mergeLocationData(expressions[0].locationData, expressions[expressions.length - 1].locationData);
-        }
+        this.body.locationData ??= mergeLocationData(expressions[0].locationData, expressions[expressions.length - 1].locationData);
       }
       return this;
     }
@@ -7585,7 +7566,7 @@ export let If = (function() {
     }
 
     processedCondition() {
-      return this.processedConditionCache != null ? this.processedConditionCache : this.processedConditionCache = this.type === 'unless' ? this.condition.invert() : this.condition;
+      return this.processedConditionCache ??= this.type === 'unless' ? this.condition.invert() : this.condition;
     }
 
     isStatementAst(o) {

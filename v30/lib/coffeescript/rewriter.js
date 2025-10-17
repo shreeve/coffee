@@ -586,9 +586,7 @@ export let Rewriter = (function() {
 
     fixIndentationLocationData() {
       let findPrecedingComment;
-      if (this.allComments == null) {
-        this.allComments = extractAllCommentTokens(this.tokens);
-      }
+      this.allComments ??= extractAllCommentTokens(this.tokens);
       findPrecedingComment = (token, {afterPosition, indentSize, first, indented}) => {
         let comment, k, l, lastMatching, matches, ref, ref1, tokenStart;
         tokenStart = token[2].range[0];

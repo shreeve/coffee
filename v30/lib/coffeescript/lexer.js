@@ -60,7 +60,7 @@ export let Lexer = class Lexer {
   }
 
   clean(code) {
-    let base, thusFar;
+    let thusFar;
     thusFar = 0;
     if (code.charCodeAt(0) === BOM) {
       code = code.slice(1);
@@ -70,9 +70,7 @@ export let Lexer = class Lexer {
     if (WHITESPACE.test(code)) {
       code = `\n${code}`;
       this.chunkLine--;
-      if ((base = this.locationDataCompensations)[0] == null) {
-        base[0] = 0;
-      }
+      this.locationDataCompensations[0] ??= 0;
       this.locationDataCompensations[0] -= 1;
     }
     code = code.replace(/\r/g, (match, offset) => {
@@ -397,9 +395,7 @@ export let Lexer = class Lexer {
           return null;
         }
       } else {
-        if (lastNewlineIndex == null) {
-          lastNewlineIndex = -1;
-        }
+        lastNewlineIndex ??= -1;
       }
       return leadingWhitespace.length - 1 - lastNewlineIndex;
     };
@@ -542,9 +538,7 @@ export let Lexer = class Lexer {
         break;
       case !(regex || tokens.length === 1):
         delimiter = body ? '/' : '///';
-        if (body == null) {
-          body = tokens[0][1];
-        }
+        body ??= tokens[0][1];
         this.validateUnicodeCodePointEscapes(body, {delimiter});
         this.token('REGEX', `/${body}/${flags}`, {
           length: end,
@@ -1035,9 +1029,7 @@ export let Lexer = class Lexer {
               if (!val.comments) {
                 continue;
               }
-              if (placeholderToken.comments == null) {
-                placeholderToken.comments = [];
-              }
+              placeholderToken.comments ??= [];
               placeholderToken.comments.push(...val.comments);
             }
             value.splice(1, 0, placeholderToken);
@@ -1314,7 +1306,7 @@ isForFrom = (prev) => {
   }
 };
 
-addTokenData = (token, data) => Object.assign((token.data != null ? token.data : token.data = {}), data);
+addTokenData = (token, data) => Object.assign((token.data ??= {}), data);
 
 JS_KEYWORDS = ['true', 'false', 'null', 'this', 'new', 'delete', 'typeof', 'in', 'instanceof', 'return', 'throw', 'break', 'continue', 'debugger', 'yield', 'await', 'if', 'else', 'switch', 'for', 'while', 'do', 'try', 'catch', 'finally', 'class', 'extends', 'super', 'import', 'export', 'default'];
 

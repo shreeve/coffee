@@ -18,9 +18,7 @@ export let OptionParser = class OptionParser {
       ({hasArgument, argument, isList, name} = rules[i]);
       if (hasArgument) {
         if (isList) {
-          if (options[name] == null) {
-            options[name] = [];
-          }
+          options[name] ??= [];
           options[name].push(argument);
         } else {
           options[name] = argument;

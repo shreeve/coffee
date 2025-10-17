@@ -122,7 +122,7 @@ export let extractAllCommentTokens = (tokens) => {
 buildLocationHash = (loc) => `${loc.range[0]}-${loc.range[1]}`;
 
 export let buildTokenDataDictionary = (tokens) => {
-  let base1, i, len1, token, tokenData, tokenHash;
+  let i, len1, token, tokenData, tokenHash;
   tokenData = {};
   for (i = 0, len1 = tokens.length; i < len1; i++) {
     token = tokens[i];
@@ -130,11 +130,9 @@ export let buildTokenDataDictionary = (tokens) => {
       continue;
     }
     tokenHash = buildLocationHash(token[2]);
-    if (tokenData[tokenHash] == null) {
-      tokenData[tokenHash] = {};
-    }
+    tokenData[tokenHash] ??= {};
     if (token.comments) {
-      ((base1 = tokenData[tokenHash]).comments != null ? base1.comments : base1.comments = []).push(...token.comments);
+      (tokenData[tokenHash].comments ??= []).push(...token.comments);
     }
   }
   return tokenData;
@@ -148,9 +146,7 @@ export let addDataToNode = (parserState, firstLocationData, firstValue, lastLoca
     } else {
       obj.locationData = locationData;
     }
-    if (parserState.tokenData == null) {
-      parserState.tokenData = buildTokenDataDictionary(parserState.parser.tokens);
-    }
+    parserState.tokenData ??= buildTokenDataDictionary(parserState.parser.tokens);
     if (obj.locationData != null) {
       objHash = buildLocationHash(obj.locationData);
       if (((ref = parserState.tokenData[objHash]) != null ? ref.comments : void 0) != null) {
@@ -164,9 +160,7 @@ export let attachCommentsToNode = (comments, node) => {
   if ((comments == null) || comments.length === 0) {
     return;
   }
-  if (node.comments == null) {
-    node.comments = [];
-  }
+  node.comments ??= [];
   return node.comments.push(...comments);
 };
 
@@ -232,12 +226,8 @@ syntaxErrorToString = function() {
     return Error.prototype.toString.call(this);
   }
   ({first_line, first_column, last_line, last_column} = this.location);
-  if (last_line == null) {
-    last_line = first_line;
-  }
-  if (last_column == null) {
-    last_column = first_column;
-  }
+  last_line ??= first_line;
+  last_column ??= first_column;
   if ((ref = this.filename) != null ? ref.startsWith('<anonymous') : void 0) {
     filename = '[stdin]';
   } else {
