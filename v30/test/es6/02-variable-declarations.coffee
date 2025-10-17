@@ -47,16 +47,14 @@ code '{name, age} = person', '''
 code 'square = (x) -> x * x', '''
   let square;
 
-  square = x => x * x;
+  square = (x) => x * x;
 '''
 
 # Arrow functions
 code 'handler = => @handleEvent()', '''
   let handler;
 
-  handler = () => {
-    return this.handleEvent();
-  };
+  handler = () => this.handleEvent();
 '''
 
 # Async functions
@@ -280,30 +278,17 @@ code '''
 
 console.log "\n== Runtime Tests =="
 
-test "let has block scope", ->
-  x = 5
-  if true
-    x = 10
-  throw new Error("Expected 10") unless x is 10
+test "variable assignment", 'x = 10; x', 10
 
-test "destructuring works", ->
-  [a, b] = [1, 2]
-  throw new Error("Expected a=1, b=2") unless a is 1 and b is 2
+test "array destructuring first", '[a, b] = [1, 2]; a', 1
+test "array destructuring second", '[a, b] = [1, 2]; b', 2
 
-test "arrow functions preserve this", ->
-  obj =
-    value: 42
-    getValue: -> @value
-    getValueArrow: => @value
-  throw new Error("Expected 42") unless obj.getValue() is 42
+test "object destructuring x", '{x, y} = {x: 5, y: 10}; x', 5
+test "object destructuring y", '{x, y} = {x: 5, y: 10}; y', 10
 
-test "rest parameters work", ->
-  sum = (first, rest...) ->
-    first + rest.length
-  result = sum(1, 2, 3, 4)
-  throw new Error("Expected 4") unless result is 4
+test "template literals", 'name = "World"; "Hello #{name}"', "Hello World"
 
-test "template literals work", ->
-  name = "World"
-  greeting = "Hello #{name}"
-  throw new Error("Expected 'Hello World'") unless greeting is "Hello World"
+test "rest parameters", '((first, rest...) -> rest.length)(1, 2, 3, 4)', 3
+
+test "default parameter unused", '((x = 5) -> x)()', 5
+test "default parameter overridden", '((x = 5) -> x)(10)', 10

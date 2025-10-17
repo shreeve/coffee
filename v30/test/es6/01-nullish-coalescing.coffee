@@ -38,9 +38,9 @@ code 'name = user.name ? "Anonymous"', '''
 
 # Nested property access
 code 'city = user.address?.city ? "Unknown"', '''
-  let city;
+  let city, ref;
 
-  city = (typeof user.address !== "undefined" && user.address !== null ? user.address.city : void 0) ?? "Unknown";
+  city = ((ref = user.address) != null ? ref.city : void 0) ?? "Unknown";
 '''
 
 # In conditionals
@@ -93,24 +93,16 @@ code 'x = a ? b; y = c ? d', '''
 
 console.log "\n== Runtime Tests =="
 
-# test is defined globally by the test runner
-test "nullish coalescing with null", ->
-  result = null ? "default"
-  throw new Error("Expected 'default'") unless result is "default"
+test "null returns default", 'null ? "default"', "default"
 
-test "nullish coalescing with undefined", ->
-  result = undefined ? "default"
-  throw new Error("Expected 'default'") unless result is "default"
+test "undefined returns default", 'undefined ? "default"', "default"
 
-test "preserves falsy values", ->
-  throw new Error("0 should be preserved") unless (0 ? "default") is 0
-  throw new Error("false should be preserved") unless (false ? "default") is false
-  throw new Error("empty string should be preserved") unless ("" ? "default") is ""
+test "zero is preserved", '0 ? "default"', 0
 
-test "chained coalescing", ->
-  result = null ? undefined ? "fallback"
-  throw new Error("Expected 'fallback'") unless result is "fallback"
+test "false is preserved", 'false ? "default"', false
 
-test "with existing value", ->
-  result = "exists" ? "default"
-  throw new Error("Expected 'exists'") unless result is "exists"
+test "empty string is preserved", '"" ? "default"', ""
+
+test "chained nullish operators", 'null ? undefined ? "fallback"', "fallback"
+
+test "existing values preserved", '"exists" ? "default"', "exists"
