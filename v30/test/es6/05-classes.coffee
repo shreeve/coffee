@@ -1,15 +1,4 @@
-###
-Phase 5: ES6 Classes - Verification Test Suite
-===============================================
-
-This test suite verifies that CoffeeScript ALREADY generates proper ES6 classes.
-No enhancements needed - it's already modern ES6!
-
-Run with: ES6=1 ../v28/bin/coffee test/runner.coffee test/es6/classes.coffee
-###
-
-console.log "Phase 5: ES6 Classes - Already Working!"
-console.log "=" .repeat 50
+# ES6 Classes
 
 # ==============================================================================
 # ES6 CLASS SYNTAX
@@ -393,14 +382,3 @@ test '''
 # ==============================================================================
 # SUMMARY
 # ==============================================================================
-
-console.log "\n" + "=" .repeat 50
-console.log "✅ CoffeeScript ALREADY generates ES6 classes!"
-console.log "✅ Uses 'class' keyword (not old prototypes)"
-console.log "✅ Uses 'extends' for inheritance"
-console.log "✅ Uses 'static' for static methods"
-console.log "✅ Uses 'async' for async methods"
-console.log "✅ Uses '*' for generators"
-console.log "✅ Clean method syntax without 'function'"
-console.log "\n🎉 Phase 5 is ALREADY COMPLETE!"
-console.log "No 'enhancements' needed - it's already modern ES6!"

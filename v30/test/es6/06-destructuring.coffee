@@ -1,15 +1,4 @@
-###
-Phase 6: Destructuring - Comprehensive Test Suite
-==================================================
-
-This test suite proves that CoffeeScript already generates proper ES6 destructuring syntax.
-All destructuring patterns are already supported and working!
-
-Run with: ES6=1 ../v28/bin/coffee test/runner.coffee test/es6/destructuring.coffee
-###
-
-console.log "Phase 6: Destructuring Test Suite"
-console.log "=" .repeat 50
+# Destructuring
 
 # ==============================================================================
 # OBJECT DESTRUCTURING
@@ -327,8 +316,3 @@ let a, b;
 # ==============================================================================
 # SUMMARY
 # ==============================================================================
-
-console.log "\n" + "=" .repeat 50
-console.log "✨ Phase 6 (Destructuring) is FULLY FUNCTIONAL!"
-console.log "All ES6 destructuring patterns are already supported."
-console.log "No implementation needed - it's already complete!"

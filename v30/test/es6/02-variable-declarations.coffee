@@ -1,18 +1,4 @@
-###
-Variable Declaration Tests for ES6 Output
-==========================================
-
-This test suite defines the expected ES6 output for all variable declaration scenarios.
-We test var → let transformations following the SIMPLE philosophy:
-- ALL variables use `let` (no `const` anywhere!)
-- Functions and classes use `let` (they're just values!)
-- Maintain CoffeeScript's hoisting behavior
-
-This is CoffeeScript 3.0 - we use `let` everywhere ON PURPOSE!
-No const complexity. Just simple, consistent `let`.
-
-Run with: cd v30 && ES6=1 coffee test/runner.coffee test/es6/variable-declarations.coffee
-###
+# Variable Declarations - Pure `let` (no `const`)
 
 # ==============================================================================
 # BASIC VARIABLE DECLARATIONS

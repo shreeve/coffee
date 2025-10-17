@@ -1,15 +1,4 @@
-###
-Phase 7: Additional ES6 Features - Test Suite
-==============================================
-
-This test suite verifies which additional ES6 features CoffeeScript already supports
-and which ones might need implementation.
-
-Run with: ES6=1 ../v28/bin/coffee test/runner.coffee test/es6/additional-features.coffee
-###
-
-console.log "Phase 7: Additional ES6 Features"
-console.log "=" .repeat 50
+# Additional ES6 Features
 
 # ==============================================================================
 # OPTIONAL CHAINING (?.) - CoffeeScript's SUPERIOR Implementation
@@ -400,28 +389,3 @@ test '''
 # ==============================================================================
 # SUMMARY STATUS
 # ==============================================================================
-
-console.log "\n" + "=" .repeat 50
-console.log "Phase 7: Additional ES6 Features Status"
-console.log "\n✅ ALREADY WORKING (And Often BETTER Than Native!):"
-console.log "  • Optional chaining (?.) - MORE defensive than native JS (no ReferenceErrors!)"
-console.log "  • Spread operator (...) - Full ES6 support in arrays and functions"
-console.log "  • Default parameters - Native ES6 syntax"
-console.log "  • Rest parameters - Including CoffeeScript's unique middle splats"
-console.log "  • Computed property names - In objects and classes"
-console.log "  • Template literals - All string interpolation uses them"
-console.log "  • Shorthand properties - Clean ES6 object literal syntax"
-console.log "  • Symbols - Full support as computed properties"
-
-console.log "\n💪 COFFEESCRIPT ADVANTAGES:"
-console.log "  • Optional chaining works in ALL environments (not just ES2020+)"
-console.log "  • Had these features 10+ YEARS before JavaScript"
-console.log "  • No polyfills or transpilation needed"
-console.log "  • More defensive error handling"
-
-console.log "\n🎯 BY DESIGN (Pragmatic Choices):"
-console.log "  • for...in loops → traditional for loops (faster, more compatible)"
-console.log "  • ?. → defensive typeof checks (works everywhere, prevents errors)"
-
-console.log "\n🎉 Phase 7 is ALREADY COMPLETE!"
-console.log "CoffeeScript doesn't need to 'catch up' - it was already there!"

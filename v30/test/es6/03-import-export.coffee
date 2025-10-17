@@ -1,16 +1,4 @@
-###
-Import/Export Tests for ES6 Output
-===================================
-
-This test suite defines the expected ES6 output for import/export statements.
-We test the following transformations:
-- Auto-add .js extension to relative imports (not packages)
-- Add 'with { type: "json" }' for JSON imports
-- Use 'let' for all exports (consistent with pure let philosophy)
-- Static imports must be at top of file (ES6 requirement)
-
-Run with: cd v30 && ES6=1 coffee test/runner.coffee test/es6/import-export.coffee
-###
+# ES6 Module Import/Export
 
 # ==============================================================================
 # BASIC IMPORTS

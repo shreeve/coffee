@@ -1,12 +1,6 @@
-# Test nullish coalescing operator (??) generation
-# These tests verify that CoffeeScript's existential operator (?) compiles to ES6's nullish coalescing operator (??)
+# Nullish Coalescing Operator (??)
 
-console.log "Testing Nullish Coalescing Operator (??)"
-console.log "========================================="
-
-# ==============================================================================
-# RUNTIME TESTS (from nullish-coalescing_simple.coffee)
-# ==============================================================================
+# Runtime Tests
 
 # Test 1: Basic existential operator
 test '''
@@ -57,11 +51,7 @@ test '''
   method isnt null
 ''', true
 
-# ==============================================================================
-# COMPILATION TESTS (original nullish-coalescing.coffee)
-# ==============================================================================
-
-console.log "\n== Compilation Tests =="
+# Compilation Tests
 
 # Basic cases
 code 'x = y ? "default"', '''
@@ -204,6 +194,3 @@ let val;
 
 val = isEnabled ?? true;
 '''
-
-console.log "\n✨ Phase 1 Complete: Nullish Coalescing is working!"
-console.log "From ~30 lines of complex caching code to simple ?? operator"
