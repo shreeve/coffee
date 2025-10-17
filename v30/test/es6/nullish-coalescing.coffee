@@ -9,47 +9,53 @@ console.log "========================================="
 # ==============================================================================
 
 # Test 1: Basic existential operator
-ok 'x = y ? "default"', do ->
+test '''
   y = null
   x = y ? "default"
-  x is "default"
+  x
+''', "default"
 
-ok 'x = y ? "default" (with value)', do ->
+test '''
   y = "hello"
   x = y ? "default"
-  x is "hello"
+  x
+''', "hello"
 
 # Test 2: Chained existential operators
-ok 'a ? b ? c', do ->
+test '''
   a = null
   b = null
   c = "fallback"
-  result = a ? b ? c
-  result is "fallback"
+  a ? b ? c
+''', "fallback"
 
 # Test 3: With method calls
-ok 'getData() ? {}', do ->
+test '''
   getData = -> null
   data = getData() ? {}
-  typeof data is 'object'
+  typeof data
+''', "object"
 
 # Test 4: With property access
-ok 'obj.prop ? 0', do ->
+test '''
   obj = {}
   val = obj.prop ? 0
-  val is 0
+  val
+''', 0
 
 # Test 5: Inside expressions
-ok '(a ? 0) + (b ? 0)', do ->
+test '''
   a = null
   b = 5
   sum = (a ? 0) + (b ? 0)
-  sum is 5
+  sum
+''', 5
 
 # Test 6: Array prototype check
-ok 'Array::find ? null', do ->
+test '''
   method = Array::find ? null
   method isnt null
+''', true
 
 # ==============================================================================
 # COMPILATION TESTS (original nullish-coalescing.coffee)
