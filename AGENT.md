@@ -10,11 +10,11 @@
 - **Phase 6**: Destructuring (already supported!)
 
 ### Not Implemented ❌
-- **Phase 5**: Modern Loops (by design - prioritizing compiler speed)
+- **Phase 8**: Modern Loops (by design - prioritizing compiler speed)
 
 ### Future Phases
-- **Phase 7**: Class Enhancements
-- **Phase 8**: Additional ES6 Features
+- **Phase 5**: Class Enhancements
+- **Phase 7**: Additional ES6 Features
 
 ## Goal
 Transform CoffeeScript to generate pure ES6 JavaScript output while maintaining backward compatibility through a careful bootstrap process.
@@ -169,7 +169,7 @@ users
   .forEach(name => console.log(name));
 ```
 
-### Phase 5: Modern Loops ❌ NOT IMPLEMENTED (By Design)
+### Phase 8: Modern Loops ❌ NOT IMPLEMENTED (By Design)
 Use ES6 `for...of` and array methods for cleaner iteration.
 
 **Philosophy**: CoffeeScript comprehensions already map naturally to functional array methods. Preserve direct translation for loops, but comprehensions can use `.map()`, `.filter()`, etc.
@@ -238,9 +238,9 @@ Solution: Keep as `for...of` or traditional loop.
 | `for x in [1..10] by 2` | Traditional | Complex stepping |
 
 **Implementation Priority**:
-1. **Phase 5a**: Comprehensions → array methods (`.map`, `.filter`)
-2. **Phase 5b**: Simple loops → `for...of` (with post-variable detection)
-3. **Phase 5c**: Keep traditional for complex cases
+1. **Phase 8a**: Comprehensions → array methods (`.map`, `.filter`)
+2. **Phase 8b**: Simple loops → `for...of` (with post-variable detection)
+3. **Phase 8c**: Keep traditional for complex cases
 
 **Test Coverage** (`v30/test/es6/modern-loops.coffee`):
 - 34 comprehensive tests covering all loop patterns
@@ -261,11 +261,11 @@ Solution: Keep as `for...of` or traditional loop.
 11. Edge Cases (4 tests) - Destructuring, standalone comprehensions
 
 **Expected Outcomes After Implementation**:
-- Phase 5a (comprehensions): ~20-25 tests passing
-- Phase 5b (simple loops): ~28-30 tests passing
-- Phase 5c complete: ~32-34 tests passing (some complex cases stay traditional)
+- Phase 8a (comprehensions): ~20-25 tests passing
+- Phase 8b (simple loops): ~28-30 tests passing
+- Phase 8c complete: ~32-34 tests passing (some complex cases stay traditional)
 
-**Phase 5 - NOT IMPLEMENTED (By Design)**
+**Phase 8 - NOT IMPLEMENTED (By Design)**
 
 After extensive exploration, we decided NOT to implement "modern" loop transformations. Here's why:
 
@@ -323,7 +323,7 @@ CoffeeScript already generates ES6 destructuring syntax!
 - Nested destructuring: `{user: {name}} = data` → `{user: {name}} = data`
 - Destructuring with defaults: `{x = 10} = obj` → `{x = 10} = obj`
 
-### Phase 7: Class Enhancements
+### Phase 5: Class Enhancements
 Modernize class syntax.
 
 **Features**:
@@ -331,7 +331,7 @@ Modernize class syntax.
 - Static methods with `static` keyword
 - Private fields (where applicable)
 
-### Phase 8: Additional ES6 Features
+### Phase 7: Additional ES6 Features
 Complete the transformation with:
 - Optional chaining (`?.`)
 - Spread operator (`...`)
