@@ -249,6 +249,62 @@ Solution: Keep as `for...of` or traditional loop.
 - Phase 5b (simple loops): ~28-30 tests passing
 - Phase 5c complete: ~32-34 tests passing (some complex cases stay traditional)
 
+**Phase 5a Exploration Results**:
+
+**What Was Attempted:**
+
+A two-phase approach to transform comprehensions:
+1. Generate `.map()/.filter()` calls in `For.compileNode` (~35 lines)
+2. Unwrap IIFE wrappers via regex post-processing in `coffeescript.coffee`
+
+**Code That Worked Well:**
+```coffeescript
+# In For.compileNode - this part was solid ✅
+if @returns and not @step and not @own and not @from and not @object and not @range and not @pattern and not @index
+  if body.expressions.length is 1
+    bodyExpr = body.expressions[0]
+    # Detect map/filter patterns
+    # Return array method calls
+    return [@makeCode "#{svar}.map((#{nameVar}) => #{bodyCode})"]
+```
+
+**Why It Failed:**
+- Regex post-processing broke v30 self-compilation
+- Pattern `(() => { let results; array.map(...) })()`  matched compiler's own IIFEs
+- Each regex refinement created new edge cases
+- Self-hosting compilers can't use text-based post-processing on their own output
+
+**Key Learning:**
+The detection logic in nodes.coffee is **solid and reusable**. The problem is purely the IIFE unwrapping strategy.
+
+**Recommended Approaches for Future Implementation:**
+
+**Option A - Modify compileClosure** (Most architectural):
+- Add flag to nodes that "can skip IIFE wrapping"
+- Check flag in `Base.compileClosure` before wrapping
+- Clean but requires understanding closure compilation
+
+**Option B - AST Rewriting** (Most correct):
+- In `For.compileNode`, return actual AST nodes (Call, Value) not code fragments
+- Let normal compilation handle them
+- Most aligned with compiler architecture
+
+**Option C - Compiler Pass** (Most flexible):
+- Add optional post-compilation AST pass
+- Transform IIFE patterns to direct calls
+- Works at AST level, not string level
+
+**Option D - Accept Overhead Initially** (Most pragmatic):
+- Ship with IIFE wrappers for now: `(() => arr.map(...))()`
+- Add Phase 5a2 later to optimize
+- Comprehensions still work, just with slight overhead
+
+**What's Ready to Use:**
+- ✅ 34-test comprehensive suite
+- ✅ Clear detection conditions
+- ✅ Working `.map()/.filter()` generation logic
+- ✅ Understanding of compilation flow
+
 ### Phase 6: Destructuring
 Enable destructuring in parameters and assignments.
 
@@ -354,10 +410,10 @@ node lib/index.js     # Runs successfully
   - 📊 **33/33 tests passing (100%)**
 
 ### 🚧 In Progress
-- None (ready for Phase 5)
+- None (Phase 4 complete, Phase 5 awaiting architectural decision)
 
 ### 📋 Upcoming
-- Phase 5: Modern Loops
+- Phase 5: Modern Loops (see exploration results above - need AST-level approach)
 - Phase 6: Destructuring
 - Phase 7: Class Enhancements
 - Phase 8: Additional ES6 Features
