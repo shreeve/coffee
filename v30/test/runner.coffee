@@ -39,7 +39,16 @@ global.fail = (code) ->
   return
 
 # Test that code compiles to specific JavaScript
-global.code = (coffeeCode, expectedJs) ->
+global.code = (args...) ->
+  # Handle both 2 and 3 argument forms
+  if args.length == 3
+    [description, coffeeCode, expectedJs] = args
+  else if args.length == 2
+    [coffeeCode, expectedJs] = args
+    description = coffeeCode  # Use code as description if not provided
+  else
+    throw new Error("code() requires 2 or 3 arguments")
+
   try
     # Compile the CoffeeScript code
     compiled = CoffeeScript.compile coffeeCode, bare: true
@@ -49,23 +58,33 @@ global.code = (coffeeCode, expectedJs) ->
 
     if actualJs == expectedJs
       passed++
-      displayCode = coffeeCode.replace(/\n/g, '\n  ')
-      console.log "#{green}✓#{reset} #{displayCode} → #{expectedJs}"
+      displayCode = description.replace(/\n/g, '\n  ')
+      console.log "#{green}✓#{reset} #{displayCode}"
     else
       failed++
-      displayCode = coffeeCode.replace(/\n/g, '\n  ')
+      displayCode = description.replace(/\n/g, '\n  ')
       console.log "#{red}✗#{reset} #{displayCode}"
       console.log "    Expected JS: #{expectedJs}"
       console.log "    Got JS:      #{actualJs}"
   catch e
     failed++
-    displayCode = coffeeCode.replace(/\n/g, '\n  ')
+    displayCode = description.replace(/\n/g, '\n  ')
     console.log "#{red}✗#{reset} #{displayCode}"
     console.log "    Compilation Error: #{e.message}"
   return
 
 # Simple test function: test "code", expected_value
-global.test = (code, expected) ->
+# Or with description: test "description", "code", expected_value
+global.test = (args...) ->
+  # Handle both 2 and 3 argument forms
+  if args.length == 3
+    [description, code, expected] = args
+  else if args.length == 2
+    [code, expected] = args
+    description = code  # Use code as description if not provided
+  else
+    throw new Error("test() requires 2 or 3 arguments")
+
   try
     # Use CoffeeScript.eval with a fresh sandbox for isolation
     # This prevents variable pollution between tests
@@ -117,12 +136,12 @@ global.test = (code, expected) ->
     if testPassed
       passed++
       # Indent continuation lines for multi-line code display
-      displayCode = code.replace(/\n/g, '\n  ')
+      displayCode = description.replace(/\n/g, '\n  ')
       console.log "#{green}✓#{reset} #{displayCode}"
     else
       failed++
       # Indent continuation lines for multi-line code display
-      displayCode = code.replace(/\n/g, '\n  ')
+      displayCode = description.replace(/\n/g, '\n  ')
       console.log "#{red}✗#{reset} #{displayCode}"
       if typeof expected != 'function'
         console.log "    Expected: #{expectedStr}"
