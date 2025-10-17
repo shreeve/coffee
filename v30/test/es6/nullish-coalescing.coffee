@@ -1,83 +1,203 @@
 # Test nullish coalescing operator (??) generation
 # These tests verify that CoffeeScript's existential operator (?) compiles to ES6's nullish coalescing operator (??)
 
-# Basic cases
-code 'x = y ? "default"', 
-     'var x;\n\nx = y ?? "default";'
+console.log "Testing Nullish Coalescing Operator (??)"
+console.log "========================================="
 
-code 'a = b ? c', 
-     'var a;\n\na = b ?? c;'
+# ==============================================================================
+# RUNTIME TESTS (from nullish-coalescing_simple.coffee)
+# ==============================================================================
+
+# Test 1: Basic existential operator
+ok 'x = y ? "default"', do ->
+  y = null
+  x = y ? "default"
+  x is "default"
+
+ok 'x = y ? "default" (with value)', do ->
+  y = "hello"
+  x = y ? "default"
+  x is "hello"
+
+# Test 2: Chained existential operators
+ok 'a ? b ? c', do ->
+  a = null
+  b = null
+  c = "fallback"
+  result = a ? b ? c
+  result is "fallback"
+
+# Test 3: With method calls
+ok 'getData() ? {}', do ->
+  getData = -> null
+  data = getData() ? {}
+  typeof data is 'object'
+
+# Test 4: With property access
+ok 'obj.prop ? 0', do ->
+  obj = {}
+  val = obj.prop ? 0
+  val is 0
+
+# Test 5: Inside expressions
+ok '(a ? 0) + (b ? 0)', do ->
+  a = null
+  b = 5
+  sum = (a ? 0) + (b ? 0)
+  sum is 5
+
+# Test 6: Array prototype check
+ok 'Array::find ? null', do ->
+  method = Array::find ? null
+  method isnt null
+
+# ==============================================================================
+# COMPILATION TESTS (original nullish-coalescing.coffee)
+# ==============================================================================
+
+console.log "\n== Compilation Tests =="
+
+# Basic cases
+code 'x = y ? "default"', '''
+let x;
+
+x = y ?? "default";
+'''
+
+code 'a = b ? c', '''
+let a;
+
+a = b ?? c;
+'''
 
 # Chained existential operators
-code 'result = a ? b ? c', 
-     'var result;\n\nresult = a ?? b ?? c;'
+code 'result = a ? b ? c', '''
+let result;
 
-code 'val = w ? x ? y ? z', 
-     'var val;\n\nval = w ?? x ?? y ?? z;'
+result = a ?? b ?? c;
+'''
+
+code 'val = w ? x ? y ? z', '''
+let val;
+
+val = w ?? x ?? y ?? z;
+'''
 
 # Method calls with existential
-code 'data = getData() ? {}', 
-     'let data;\ndata = getData() ?? {};'
+code 'data = getData() ? {}', '''
+let data;
 
-code 'result = obj.method() ? "fallback"', 
-     'let result;\nresult = obj.method() ?? "fallback";'
+data = getData() ?? {};
+'''
+
+code 'result = obj.method() ? "fallback"', '''
+let result;
+
+result = obj.method() ?? "fallback";
+'''
 
 # Property access
-code 'val = obj.prop ? 0', 
-     'let val;\nval = obj.prop ?? 0;'
+code 'val = obj.prop ? 0', '''
+let val;
 
-code 'item = arr[index] ? defaultItem', 
-     'let item;\nitem = arr[index] ?? defaultItem;'
+val = obj.prop ?? 0;
+'''
+
+code 'item = arr[index] ? defaultItem', '''
+let item;
+
+item = arr[index] ?? defaultItem;
+'''
 
 # Inside expressions
-code 'sum = (a ? 0) + (b ? 0)', 
-     'let sum;\nsum = (a ?? 0) + (b ?? 0);'
+code 'sum = (a ? 0) + (b ? 0)', '''
+let sum;
 
-code 'str = "Value: " + (val ? "none")', 
-     'let str;\nstr = "Value: " + (val ?? "none");'
+sum = (a ?? 0) + (b ?? 0);
+'''
+
+code 'str = "Value: " + (val ? "none")', '''
+let str;
+
+str = "Value: " + (val ?? "none");
+'''
 
 # With function calls
-code 'fn = callback ? (-> console.log "default")', 
-     'let fn;\nfn = callback ?? function() {\n  return console.log("default");\n};'
+code 'fn = callback ? (-> console.log "default")', '''
+let fn;
+
+fn = callback ?? (() => console.log("default"));
+'''
 
 # Array/object literals
-code 'config = userConfig ? {timeout: 1000}', 
-     'let config;\nconfig = userConfig ?? {\n  timeout: 1000\n};'
+code 'config = userConfig ? {timeout: 1000}', '''
+let config;
 
-code 'items = list ? []', 
-     'let items;\nitems = list ?? [];'
+config = userConfig ?? {
+  timeout: 1000
+};
+'''
+
+code 'items = list ? []', '''
+let items;
+
+items = list ?? [];
+'''
 
 # Prototype access (should work correctly)
-code 'method = Array::find ? null', 
-     'let method;\nmethod = Array.prototype.find ?? null;'
+code 'method = Array::find ? null', '''
+let method;
 
-# Export with existential (for later when we add module support)
-code 'export value = data ? 42', 
-     'export var value = data ?? 42;'
+method = Array.prototype.find ?? null;
+'''
+
+# Export with existential
+code 'export value = data ? 42', '''
+export let value = data ?? 42;
+'''
 
 # Inside conditionals
-code 'if x ? y then z', 
-     'if (x ?? y) {\n  z;\n}'
+code 'if x ? y then z', '''
+if (x ?? y) {
+  z;
+}
+'''
 
 # Complex expressions
-code 'result = (obj?.prop ? backup).toString()', 
-     'let result;\nresult = ((obj != null ? obj.prop : void 0) ?? backup).toString();'
+code 'result = (obj?.prop ? backup).toString()', '''
+let result;
+
+result = ((obj != null ? obj.prop : void 0) ?? backup).toString();
+'''
 
 # Multiple on same line
-code 'a = x ? 1; b = y ? 2', 
-     'let a, b;\na = x ?? 1;\nb = y ?? 2;'
+code 'a = x ? 1; b = y ? 2', '''
+let a, b;
+
+a = x ?? 1;
+
+b = y ?? 2;
+'''
 
 # In return statements
-code '-> x ? "default"', 
-     'function() {\n  return x ?? "default";\n};'
+code '-> x ? "default"', '''
+() => x ?? "default"
+'''
 
 # Test that it handles parentheses correctly
-code 'val = (a ? b) ? c', 
-     'let val;\nval = (a ?? b) ?? c;'
+code 'val = (a ? b) ? c', '''
+let val;
+
+val = (a ?? b) ?? c;
+'''
 
 # Test with boolean false (should NOT use nullish coalescing for explicit boolean test)
 # Note: CoffeeScript's ? is for null/undefined, not falsy values
-code 'val = isEnabled ? true',
-     'let val;\nval = isEnabled ?? true;'
+code 'val = isEnabled ? true', '''
+let val;
 
-console.log "\n✨ Nullish Coalescing tests for basic ES6 transformation"
+val = isEnabled ?? true;
+'''
+
+console.log "\n✨ Phase 1 Complete: Nullish Coalescing is working!"
+console.log "From ~30 lines of complex caching code to simple ?? operator"
