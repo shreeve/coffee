@@ -492,16 +492,11 @@ export let Lexer = class Lexer {
           });
         }
         commentTokens = flatten((function() {
-          let j, len, results;
-          results = [];
-          for (j = 0, len = comments.length; j < len; j++) {
-            commentOpts = comments[j];
-            results.push(this.commentToken(commentOpts.comment, Object.assign(commentOpts, {
-              heregex: true,
-              returnCommentTokens: true
-            })));
-          }
-          return results;
+          let results;
+comments.map((commentOpts) => this.commentToken(commentOpts.comment, Object.assign(commentOpts, {
+            heregex: true,
+            returnCommentTokens: true
+          })))
         }).call(this));
         break;
       case !(match = REGEX.exec(this.chunk)):

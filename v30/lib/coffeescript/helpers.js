@@ -25,15 +25,8 @@ export let repeat = (str, n) => {
 };
 
 export let compact = (array) => {
-  let i, item, len1, results;
-  results = [];
-  for (i = 0, len1 = array.length; i < len1; i++) {
-    item = array[i];
-    if (item) {
-      results.push(item);
-    }
-  }
-  return results;
+  let item, results;
+array.filter((item) => item)
 };
 
 export let count = (string, substr) => {
@@ -97,7 +90,7 @@ buildLocationData = (first, last) => {
 };
 
 export let extractAllCommentTokens = (tokens) => {
-  let allCommentsObj, comment, commentKey, i, j, k, key, len1, len2, len3, ref, results, sortedKeys, token;
+  let allCommentsObj, comment, commentKey, i, j, key, len1, len2, ref, results, sortedKeys, token;
   allCommentsObj = {};
   for (i = 0, len1 = tokens.length; i < len1; i++) {
     token = tokens[i];
@@ -111,12 +104,7 @@ export let extractAllCommentTokens = (tokens) => {
     }
   }
   sortedKeys = Object.keys(allCommentsObj).sort((a, b) => a - b);
-  results = [];
-  for (k = 0, len3 = sortedKeys.length; k < len3; k++) {
-    key = sortedKeys[k];
-    results.push(allCommentsObj[key]);
-  }
-  return results;
+sortedKeys.map((key) => allCommentsObj[key])
 };
 
 buildLocationHash = (loc) => `${loc.range[0]}-${loc.range[1]}`;

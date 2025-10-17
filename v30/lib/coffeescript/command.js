@@ -123,7 +123,7 @@ with...
 };
 
 compilePath = (source, topLevel, base) => {
-  let code, err, file, files, i, len, results, stats;
+  let code, err, file, files, results, stats;
   if (indexOf.call(sources, source) >= 0 || watchedDirs[source] || !topLevel && (notSources[source] || hidden(source))) {
     return;
   }
@@ -159,12 +159,7 @@ compilePath = (source, topLevel, base) => {
         throw err;
       }
     }
-    results = [];
-    for (i = 0, len = files.length; i < len; i++) {
-      file = files[i];
-      results.push(compilePath(path.join(source, file), false, base));
-    }
-    return results;
+files.map((file) => compilePath(path.join(source, file), false, base))
   } else if (topLevel || helpers.isCoffee(source)) {
     sources.push(source);
     sourceCode.push(null);
@@ -357,7 +352,7 @@ watchDir = (source, base) => {
     }).on('change', () => {
       clearTimeout(readdirTimeout);
       return readdirTimeout = wait(25, () => {
-        let err, file, files, i, len, results;
+        let err, file, files, results;
         try {
           files = fs.readdirSync(source);
         } catch (error) {
@@ -367,12 +362,7 @@ watchDir = (source, base) => {
           }
           return stopWatcher();
         }
-        results = [];
-        for (i = 0, len = files.length; i < len; i++) {
-          file = files[i];
-          results.push(compilePath(path.join(source, file), false, base));
-        }
-        return results;
+files.map((file) => compilePath(path.join(source, file), false, base))
       });
     });
   stopWatcher = () => {

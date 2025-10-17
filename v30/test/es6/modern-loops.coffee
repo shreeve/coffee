@@ -37,7 +37,7 @@ console.log "\n== Comprehensions → Array Methods =="
 code '''
   doubles = (x * 2 for x in numbers)
 ''', '''
-  let doubles;
+  let doubles, x;
 
   doubles = numbers.map((x) => x * 2);
 '''
@@ -46,7 +46,7 @@ code '''
 code '''
   evens = (x for x in numbers when x % 2 is 0)
 ''', '''
-  let evens;
+  let evens, x;
 
   evens = numbers.filter((x) => x % 2 === 0);
 '''
@@ -55,7 +55,7 @@ code '''
 code '''
   result = (x * 2 for x in numbers when x > 5)
 ''', '''
-  let result;
+  let result, x;
 
   result = numbers.filter((x) => x > 5).map((x) => x * 2);
 '''
@@ -64,7 +64,7 @@ code '''
 code '''
   names = (user.name.toUpperCase() for user in users)
 ''', '''
-  let names;
+  let names, user;
 
   names = users.map((user) => user.name.toUpperCase());
 '''
@@ -73,7 +73,7 @@ code '''
 code '''
   active = (u for u in users when u.active and u.verified)
 ''', '''
-  let active;
+  let active, u;
 
   active = users.filter((u) => u.active && u.verified);
 '''

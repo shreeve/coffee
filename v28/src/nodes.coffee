@@ -5341,6 +5341,40 @@ exports.For = class For extends While
     scope.find(name)  if name and not @pattern
     scope.find(index) if index and @index not instanceof Value
     rvar        = scope.freeVariable 'results' if @returns
+
+    # Phase 5a: Transform simple comprehensions to array methods
+    # Generate array methods even if they'll be wrapped in IIFE initially
+    # (Post-processing will unwrap simple IIFEs)
+    if @returns and not @step and not @own and not @from and not @object and not @range and not @pattern and not @index
+      # Simple body with one expression
+      if body.expressions.length is 1
+        bodyExpr = body.expressions[0]
+
+        # Check if it's just returning the loop variable (filter pattern)
+        isFilterOnly = no
+        if bodyExpr instanceof Value and bodyExpr.base instanceof IdentifierLiteral
+          if bodyExpr.base.value is name
+            isFilterOnly = yes
+
+        svar = @source.compile o, LEVEL_LIST
+        nameVar = name
+
+        # Build the callback function
+        if @guard
+          # Has guard - could be filter, or filter + map
+          guardCode = @guard.compile o, LEVEL_PAREN
+          if isFilterOnly
+            # Pure filter: (x for x in arr when cond)
+            return [@makeCode "#{svar}.filter((#{nameVar}) => #{guardCode})"]
+          else
+            # Filter + map: (transform for x in arr when cond)
+            bodyCode = bodyExpr.compile o, LEVEL_PAREN
+            return [@makeCode "#{svar}.filter((#{nameVar}) => #{guardCode}).map((#{nameVar}) => #{bodyCode})"]
+        else
+          # No guard - pure map
+          if not isFilterOnly
+            bodyCode = bodyExpr.compile o, LEVEL_PAREN
+            return [@makeCode "#{svar}.map((#{nameVar}) => #{bodyCode})"]
     if @from
       ivar = scope.freeVariable 'x', single: true if @pattern
     else
