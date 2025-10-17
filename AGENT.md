@@ -1,5 +1,21 @@
 # CoffeeScript ES6 Migration Roadmap
 
+## Current Status
+
+### Completed ✅
+- **Phase 1**: Nullish Coalescing (`??`)
+- **Phase 2**: Variable Declarations (pure `let`)
+- **Phase 3**: ES6 Modules (import/export)
+- **Phase 4**: Arrow Functions
+- **Phase 6**: Destructuring (already supported!)
+
+### Not Implemented ❌
+- **Phase 5**: Modern Loops (by design - prioritizing compiler speed)
+
+### Future Phases
+- **Phase 7**: Class Enhancements
+- **Phase 8**: Additional ES6 Features
+
 ## Goal
 Transform CoffeeScript to generate pure ES6 JavaScript output while maintaining backward compatibility through a careful bootstrap process.
 
@@ -17,7 +33,7 @@ Transform CoffeeScript to generate pure ES6 JavaScript output while maintaining 
 
 ## Implementation Phases
 
-### Phase 1: Nullish Coalescing Operator
+### Phase 1: Nullish Coalescing Operator ✅ COMPLETE
 Replace CoffeeScript's existential operator (`?`) with ES6's nullish coalescing (`??`).
 
 **Implementation**: Modify `Op.compileExistence` in nodes.coffee
@@ -31,7 +47,7 @@ compileExistence: (o, checkOnlyUndefined) ->
 
 **Impact**: Replaces ~30 lines of complex caching logic with 5 lines using native ES6 operator.
 
-### Phase 2: Variable Declarations
+### Phase 2: Variable Declarations ✅ COMPLETE
 Replace `var` with `let` exclusively throughout all generated code.
 
 **Approach**: Pure `let` philosophy aligned with CoffeeScript's core principle that everything is reassignable:
@@ -46,7 +62,7 @@ Replace `var` with `let` exclusively throughout all generated code.
 
 **Rationale**: CoffeeScript treats all values as reassignable. Using `let` everywhere maintains perfect semantic compatibility while modernizing the output. See `CONST_LET_PHILOSOPHY.md` for detailed reasoning.
 
-### Phase 3: Module System (Import/Export)
+### Phase 3: Module System (Import/Export) ✅ COMPLETE
 Support native ES6 import/export syntax in CoffeeScript.
 
 **Approach**: Direct compilation of ES6 module syntax with minimal enhancements:
@@ -87,7 +103,7 @@ export let myFunction = function() { return console.log('hello'); };
 
 **Note**: No CommonJS transformation - users write modern ES6 import/export syntax directly.
 
-### Phase 4: Arrow Functions
+### Phase 4: Arrow Functions ✅ COMPLETE
 Generate idiomatic ES6 arrow functions with intelligent optimization.
 
 **Value**: 30-50% smaller output for functional code, matches hand-written ES6, lint-friendly.
@@ -120,7 +136,7 @@ handler = => @value         # => always arrow
 api = {fetch: -> @endpoint} # Method stays function
 ```
 ```javascript
-let double = x => x * 2;    // Single param: no parens!
+let double = (x) => x * 2;
 let handler = () => this.value;
 let api = { fetch: function() { return this.endpoint; } };
 ```
@@ -153,7 +169,7 @@ users
   .forEach(name => console.log(name));
 ```
 
-### Phase 5: Modern Loops
+### Phase 5: Modern Loops ❌ NOT IMPLEMENTED (By Design)
 Use ES6 `for...of` and array methods for cleaner iteration.
 
 **Philosophy**: CoffeeScript comprehensions already map naturally to functional array methods. Preserve direct translation for loops, but comprehensions can use `.map()`, `.filter()`, etc.
@@ -297,13 +313,15 @@ We use ES6 features that provide **real benefits**:
 
 But NOT for cosmetic changes that make compilation slower without clear user benefit.
 
-### Phase 6: Destructuring
-Enable destructuring in parameters and assignments.
+### Phase 6: Destructuring ✅ ALREADY COMPLETE
+CoffeeScript already generates ES6 destructuring syntax!
 
-**Targets**:
-- Function parameters: `({x, y}) => ...`
-- Array destructuring: `[first, ...rest] = array`
-- Object destructuring: `{name, age} = person`
+**Already Working**:
+- Function parameters: `({x, y}) -> ...` → `function({x, y}) { ... }`
+- Array destructuring: `[first, ...rest] = array` → `[first, ...rest] = array`
+- Object destructuring: `{name, age} = person` → `{name, age} = person`
+- Nested destructuring: `{user: {name}} = data` → `{user: {name}} = data`
+- Destructuring with defaults: `{x = 10} = obj` → `{x = 10} = obj`
 
 ### Phase 7: Class Enhancements
 Modernize class syntax.
