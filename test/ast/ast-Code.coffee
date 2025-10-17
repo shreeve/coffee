@@ -16,14 +16,14 @@ test "(-> [1, 2, 3])()", [1, 2, 3]
 test "((s) -> s.toUpperCase())('hello')", "HELLO"
 test "(-> Math.PI)()", Math.PI
 
-# Compilation output tests - verify arrow vs regular functions
-# These tests catch bugs where funcGlyph isn't passed to Code constructor
-code "->", "(function() {});"
+# Compilation output tests - verify arrow functions
+# In ES6 mode, simple -> functions become arrows when they don't use special contexts
+code "->", "(() => {});"
 code "=>", "(() => {});"
-code "(x) -> x", "(function(x) {\n  return x;\n});"
-code "(x) => x", "((x) => {\n  return x;\n});"
-code "(a, b) -> a + b", "(function(a, b) {\n  return a + b;\n});"
-code "(a, b) => a + b", "((a, b) => {\n  return a + b;\n});"
+code "(x) -> x", "((x) => x);"
+code "(x) => x", "((x) => x);"
+code "(a, b) -> a + b", "((a, b) => a + b);"
+code "(a, b) => a + b", "((a, b) => a + b);"
 
 # Runtime tests - verify this binding behavior
 test """

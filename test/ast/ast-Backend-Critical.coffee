@@ -8,13 +8,13 @@
 
 # Test 1: Arrow function compilation output
 code "=>", "(() => {});"
-code "(x) => x * 2", "((x) => {\n  return x * 2;\n});"
-code "() => 42", "(() => {\n  return 42;\n});"
+code "(x) => x * 2", "((x) => x * 2);"
+code "() => 42", "(() => 42);"
 
-# Test 2: Regular function compilation output (for comparison)
-code "->", "(function() {});"
-code "(x) -> x * 2", "(function(x) {\n  return x * 2;\n});"
-code "() -> 42", "(function() {\n  return 42;\n});"
+# Test 2: Regular function compilation output (optimized to arrows in ES6 when safe)
+code "->", "(() => {});"
+code "(x) -> x * 2", "((x) => x * 2);"
+code "() -> 42", "(() => 42);"
 
 # Test 3: Arrow function 'this' binding in classes
 test """
