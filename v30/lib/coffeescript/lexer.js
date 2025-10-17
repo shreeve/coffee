@@ -103,13 +103,13 @@ export let Lexer = class Lexer {
         prev = this.prev();
         [prev[0], prev[1]] = ['IDENTIFIER', this.value(true)];
       }
-      if ((ref1 = this.tag()) === 'DEFAULT' || ref1 === 'IMPORT_ALL' || ref1 === 'IDENTIFIER') {
+      if ((() => { let ref1; return (ref1 = this.tag()) === 'DEFAULT' || ref1 === 'IMPORT_ALL' || ref1 === 'IDENTIFIER'; })()) {
         this.token('AS', id);
         return id.length;
       }
     }
     if (id === 'as' && this.seenExport) {
-      if ((ref2 = this.tag()) === 'IDENTIFIER' || ref2 === 'DEFAULT') {
+      if ((() => { let ref2; return (ref2 = this.tag()) === 'IDENTIFIER' || ref2 === 'DEFAULT'; })()) {
         this.token('AS', id);
         return id.length;
       }
@@ -120,7 +120,7 @@ export let Lexer = class Lexer {
         return id.length;
       }
     }
-    if (id === 'default' && this.seenExport && ((ref4 = this.tag()) === 'EXPORT' || ref4 === 'AS')) {
+    if (id === 'default' && this.seenExport && (() => { let ref4; return (ref4 = this.tag()) === 'EXPORT' || ref4 === 'AS'; })()) {
       this.token('DEFAULT', id);
       return id.length;
     }
@@ -136,7 +136,7 @@ export let Lexer = class Lexer {
       return sup.length + 3;
     }
     prev = this.prev();
-    tag = colon || (prev != null) && (((ref5 = prev[0]) === '.' || ref5 === '?.' || ref5 === '::' || ref5 === '?::') || !prev.spaced && prev[0] === '@') ? 'PROPERTY' : 'IDENTIFIER';
+    tag = colon || (prev != null) && ((() => { let ref5; return (ref5 = prev[0]) === '.' || ref5 === '?.' || ref5 === '::' || ref5 === '?::'; })() || !prev.spaced && prev[0] === '@') ? 'PROPERTY' : 'IDENTIFIER';
     tokenData = {};
     if (tag === 'IDENTIFIER' && (indexOf.call(JS_KEYWORDS, id) >= 0 || indexOf.call(COFFEE_KEYWORDS, id) >= 0) && !(this.exportSpecifierList && indexOf.call(COFFEE_KEYWORDS, id) >= 0)) {
       tag = id.toUpperCase();
@@ -170,7 +170,7 @@ export let Lexer = class Lexer {
       tag = 'FORFROM';
       this.seenFor = false;
     } else if (tag === 'PROPERTY' && prev) {
-      if (prev.spaced && (ref8 = prev[0], indexOf.call(CALLABLE, ref8) >= 0) && /^[gs]et$/.test(prev[1]) && this.tokens.length > 1 && ((ref9 = this.tokens[this.tokens.length - 2][0]) !== '.' && ref9 !== '?.' && ref9 !== '@')) {
+      if (prev.spaced && (ref8 = prev[0], indexOf.call(CALLABLE, ref8) >= 0) && /^[gs]et$/.test(prev[1]) && this.tokens.length > 1 && (() => { let ref9; return (ref9 = this.tokens[this.tokens.length - 2][0]) !== '.' && ref9 !== '?.' && ref9 !== '@'; })()) {
         this.error(`'${prev[1]}' cannot be used as a keyword, or as a function call without parentheses`, prev[2]);
       } else if (prev[0] === '.' && this.tokens.length > 1 && (prevprev = this.tokens[this.tokens.length - 2])[0] === 'UNARY' && prevprev[1] === 'new') {
         prevprev[0] = 'NEW_TARGET';
@@ -179,7 +179,7 @@ export let Lexer = class Lexer {
         prevprev[0] = 'IMPORT_META';
       } else if (this.tokens.length > 2) {
         prevprev = this.tokens[this.tokens.length - 2];
-        if (((ref10 = prev[0]) === '@' || ref10 === 'THIS') && prevprev && prevprev.spaced && /^[gs]et$/.test(prevprev[1]) && ((ref11 = this.tokens[this.tokens.length - 3][0]) !== '.' && ref11 !== '?.' && ref11 !== '@')) {
+        if ((() => { let ref10; return (ref10 = prev[0]) === '@' || ref10 === 'THIS'; })() && prevprev && prevprev.spaced && /^[gs]et$/.test(prevprev[1]) && (() => { let ref11; return (ref11 = this.tokens[this.tokens.length - 3][0]) !== '.' && ref11 !== '?.' && ref11 !== '@'; })()) {
           this.error(`'${prevprev[1]}' cannot be used as a keyword, or as a function call without parentheses`, prevprev[2]);
         }
       }
@@ -782,7 +782,7 @@ export let Lexer = class Lexer {
     prev = this.prev();
     if (prev && indexOf.call(['=', ...COMPOUND_ASSIGN], value) >= 0) {
       skipToken = false;
-      if (value === '=' && ((ref = prev[1]) === '||' || ref === '&&') && !prev.spaced) {
+      if (value === '=' && (() => { let ref; return (ref = prev[1]) === '||' || ref === '&&'; })() && !prev.spaced) {
         prev[0] = 'COMPOUND_ASSIGN';
         prev[1] += '=';
         if ((ref1 = prev.data) != null ? ref1.original : void 0) {
@@ -1299,7 +1299,7 @@ isForFrom = (prev) => {
     return true;
   } else if (prev[0] === 'FOR') {
     return false;
-  } else if ((ref = prev[1]) === '{' || ref === '[' || ref === ',' || ref === ':') {
+  } else if ((() => { let ref; return (ref = prev[1]) === '{' || ref === '[' || ref === ',' || ref === ':'; })()) {
     return false;
   } else {
     return true;

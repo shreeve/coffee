@@ -3281,7 +3281,7 @@ export let Arr = (function() {
           fragment = answer[fragmentIndex];
           if (fragment.isHereComment) {
             fragment.code = `${multident(fragment.code, o.indent, false)}\n${o.indent}`;
-          } else if (fragment.code === ', ' && !(fragment != null ? fragment.isElision : void 0) && ((ref2 = fragment.type) !== 'StringLiteral' && ref2 !== 'StringWithInterpolations')) {
+          } else if (fragment.code === ', ' && !(fragment != null ? fragment.isElision : void 0) && (() => { let ref2; return (ref2 = fragment.type) !== 'StringLiteral' && ref2 !== 'StringWithInterpolations'; })()) {
             fragment.code = `,\n${o.indent}`;
           }
         }
@@ -4531,7 +4531,7 @@ export let Assign = (function() {
         if (this.isConditional() && this.context !== '?=') {
           return this.compileConditional(o);
         }
-        if ((ref1 = this.context) === '//=' || ref1 === '%%=') {
+        if ((() => { let ref1; return (ref1 = this.context) === '//=' || ref1 === '%%='; })()) {
           return this.compileSpecialMath(o);
         }
       }
@@ -4901,7 +4901,7 @@ export let Assign = (function() {
 
     isConditional() {
       let ref1;
-      return (ref1 = this.context) === '||=' || ref1 === '&&=' || ref1 === '?=';
+      return (() => { let ref1; return (ref1 = this.context) === '||=' || ref1 === '&&=' || ref1 === '?='; })();
     }
 
     astNode(o) {
@@ -6010,7 +6010,7 @@ export let Op = (function() {
       this.first = first;
       this.second = second;
       this.flip = !!flip;
-      if ((ref1 = this.operator) === '--' || ref1 === '++') {
+      if ((() => { let ref1; return (ref1 = this.operator) === '--' || ref1 === '++'; })()) {
         message = isUnassignable(this.first.unwrapAll().value);
         if (message) {
           this.first.error(message);
@@ -6021,7 +6021,7 @@ export let Op = (function() {
 
     isNumber() {
       let ref1;
-      return this.isUnary() && ((ref1 = this.operator) === '+' || ref1 === '-') && this.first instanceof Value && this.first.isNumber();
+      return this.isUnary() && (() => { let ref1; return (ref1 = this.operator) === '+' || ref1 === '-'; })() && this.first instanceof Value && this.first.isNumber();
     }
 
     isAwait() {
@@ -6030,7 +6030,7 @@ export let Op = (function() {
 
     isYield() {
       let ref1;
-      return (ref1 = this.operator) === 'yield' || ref1 === 'yield*';
+      return (() => { let ref1; return (ref1 = this.operator) === 'yield' || ref1 === 'yield*'; })();
     }
 
     isUnary() {
@@ -6043,7 +6043,7 @@ export let Op = (function() {
 
     isChainable() {
       let ref1;
-      return (ref1 = this.operator) === '<' || ref1 === '>' || ref1 === '>=' || ref1 === '<=' || ref1 === '===' || ref1 === '!==';
+      return (() => { let ref1; return (ref1 = this.operator) === '<' || ref1 === '>' || ref1 === '>=' || ref1 === '<=' || ref1 === '===' || ref1 === '!=='; })();
     }
 
     isChain() {
@@ -6081,7 +6081,7 @@ export let Op = (function() {
         return this;
       } else if (this.second) {
         return new Parens(this).invert();
-      } else if (this.operator === '!' && (fst = this.first.unwrap()) instanceof Op && ((ref1 = fst.operator) === '!' || ref1 === 'in' || ref1 === 'instanceof')) {
+      } else if (this.operator === '!' && (fst = this.first.unwrap()) instanceof Op && (() => { let ref1; return (ref1 = fst.operator) === '!' || ref1 === 'in' || ref1 === 'instanceof'; })()) {
         return fst;
       } else {
         return new Op('!', this);
@@ -6090,7 +6090,7 @@ export let Op = (function() {
 
     unfoldSoak(o) {
       let ref1;
-      return ((ref1 = this.operator) === '++' || ref1 === '--' || ref1 === 'delete') && unfoldSoak(o, this, 'first');
+      return (() => { let ref1; return (ref1 = this.operator) === '++' || ref1 === '--' || ref1 === 'delete'; })() && unfoldSoak(o, this, 'first');
     }
 
     generateDo(exp) {

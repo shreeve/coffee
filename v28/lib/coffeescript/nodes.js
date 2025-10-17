@@ -7286,13 +7286,32 @@
       }
 
       compileOrTest(o) {
-        var cmp, cnj, i, item, j, len1, ref, ref1, sub, tests;
+        var cmp, cnj, i, item, j, k, len1, len2, ref, ref1, ref2, sub, tests;
         [sub, ref] = this.object.cache(o, LEVEL_OP);
         [cmp, cnj] = this.negated ? [' !== ', ' && '] : [' === ', ' || '];
         tests = [];
-        ref1 = this.array.base.objects;
-        for (i = j = 0, len1 = ref1.length; j < len1; i = ++j) {
-          item = ref1[i];
+        // In ES6 mode, if we have a cached variable, wrap the whole thing in an IIFE
+        if (process.env.ES6 && sub !== ref) {
+          // sub contains the assignment, ref contains just the variable name
+          // Wrap in IIFE: (() => { let ref; return (ref = expr) === val || ref === val; })()
+          tests.push(this.makeCode("(() => { let "));
+          tests.push(ref[0]);
+          tests.push(this.makeCode("; return "));
+          ref1 = this.array.base.objects;
+          for (i = j = 0, len1 = ref1.length; j < len1; i = ++j) {
+            item = ref1[i];
+            if (i) {
+              tests.push(this.makeCode(cnj));
+            }
+            tests = tests.concat((i ? ref : sub), this.makeCode(cmp), item.compileToFragments(o, LEVEL_ACCESS));
+          }
+          tests.push(this.makeCode("; })()"));
+          return tests;
+        }
+        ref2 = this.array.base.objects;
+        // Non-ES6 mode or no caching needed
+        for (i = k = 0, len2 = ref2.length; k < len2; i = ++k) {
+          item = ref2[i];
           if (i) {
             tests.push(this.makeCode(cnj));
           }
@@ -8083,6 +8102,11 @@
         }
         if (this.returns) {
           resultPart = `${this.tab}${rvar} = [];\n`;
+          // In ES6 mode, declare the loop variable for comprehensions that will be wrapped in IIFE
+          // Only needed when the comprehension is at expression level (not statement level)
+          if (process.env.ES6 && name && !this.pattern && o.level > LEVEL_TOP) {
+            resultPart = `${this.tab}let ${name};\n` + resultPart;
+          }
           returnResult = `\n${this.tab}return ${rvar};`;
           body.makeReturn(rvar);
         }

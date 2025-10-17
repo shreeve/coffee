@@ -425,7 +425,7 @@ silentUnlink = (path) => {
     return fs.unlinkSync(path);
   } catch (error) {
     err = error;
-    if ((ref = err.code) !== 'ENOENT' && ref !== 'EPERM') {
+    if ((() => { let ref; return (ref = err.code) !== 'ENOENT' && ref !== 'EPERM'; })()) {
       throw err;
     }
   }

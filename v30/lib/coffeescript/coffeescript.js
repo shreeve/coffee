@@ -71,7 +71,7 @@ export let compile = withPrettyErrors((code, options = {}) => {
   if (!((options.bare != null) && options.bare === true)) {
     for (j = 0, len = tokens.length; j < len; j++) {
       token = tokens[j];
-      if ((ref = token[0]) === 'IMPORT' || ref === 'EXPORT') {
+      if ((() => { let ref; return (ref = token[0]) === 'IMPORT' || ref === 'EXPORT'; })()) {
         options.bare = true;
         break;
       }

@@ -1,52 +1,31 @@
-# index.coffee - ES6 version
-import * as CoffeeScript from './coffeescript'
-import fs from 'fs'
-import vm from 'vm'
+# index.coffee - Pure ES6 module version for cross-runtime compatibility
+# Works with: Node.js, Bun, Deno, and browsers
 
-# Compile CoffeeScript code to JavaScript
-export compile = CoffeeScript.compile
+import * as CoffeeScriptCore from './coffeescript'
 
-# Compile and run CoffeeScript code
-export run = (code, options = {}) ->
-  compiled = CoffeeScript.compile code, {
-    bare: true
-    ...options
-  }
+# Create an enhanced object that includes both core functionality and Node.js-specific methods
+CoffeeScript = Object.assign {}, CoffeeScriptCore,
+  # Add Node.js-specific methods for CLI compatibility
+  run: (code, options = {}) ->
+    # Simple implementation for Node.js compatibility
+    if typeof process isnt 'undefined' and process.versions?.node
+      vm = await import('vm')
+      compiled = CoffeeScriptCore.compile code, Object.assign({bare: true}, options)
+      return vm.runInThisContext(compiled.js ? compiled)
+    else
+      throw new Error('CoffeeScript.run is only available in Node.js environments')
 
-  vm.runInThisContext compiled.js ? compiled
+  eval: (code, options = {}) ->
+    # Simplified eval for compatibility
+    return unless code = code.trim()
+    compiled = CoffeeScriptCore.compile code, Object.assign({bare: true}, options)
+    
+    # Use eval to execute the compiled code
+    func = eval
+    return func(compiled.js ? compiled)
 
-# Evaluate CoffeeScript in a sandbox context
-export evalCode = (code, options = {}) ->
-  return unless code = code.trim()
-
-  # Create or use provided sandbox
-  sandbox = options.sandbox ? global
-
-  # Compile with bare:true for eval
-  compiled = CoffeeScript.compile code, {
-    bare: true
-    ...options
-  }
-
-  # Run in appropriate context
-  if sandbox is global
-    vm.runInThisContext compiled
-  else
-    vm.runInContext compiled, vm.createContext(sandbox)
-
-# Compile a file
-export compileFile = (filename, options = {}) ->
-  source = fs.readFileSync filename, 'utf8'
-  CoffeeScript.compile source, {
-    filename
-    ...options
-  }
-
-# Run a file
-export runFile = (filename, options = {}) ->
-  compiled = compileFile filename, options
-  vm.runInThisContext compiled.js ? compiled
-
-# Re-export everything else from coffeescript
+# Re-export everything from coffeescript
 export * from './coffeescript'
-export { default } from './coffeescript'
+
+# Export the enhanced CoffeeScript object as default
+export default CoffeeScript

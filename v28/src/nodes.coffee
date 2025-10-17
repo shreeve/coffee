@@ -4885,6 +4885,21 @@ exports.In = class In extends Base
     [sub, ref] = @object.cache o, LEVEL_OP
     [cmp, cnj] = if @negated then [' !== ', ' && '] else [' === ', ' || ']
     tests = []
+
+    # In ES6 mode, if we have a cached variable, wrap the whole thing in an IIFE
+    if process.env.ES6 and sub isnt ref
+      # sub contains the assignment, ref contains just the variable name
+      # Wrap in IIFE: (() => { let ref; return (ref = expr) === val || ref === val; })()
+      tests.push @makeCode("(() => { let ")
+      tests.push ref[0]  # The variable name
+      tests.push @makeCode("; return ")
+      for item, i in @array.base.objects
+        if i then tests.push @makeCode cnj
+        tests = tests.concat (if i then ref else sub), @makeCode(cmp), item.compileToFragments(o, LEVEL_ACCESS)
+      tests.push @makeCode("; })()")
+      return tests
+
+    # Non-ES6 mode or no caching needed
     for item, i in @array.base.objects
       if i then tests.push @makeCode cnj
       tests = tests.concat (if i then ref else sub), @makeCode(cmp), item.compileToFragments(o, LEVEL_ACCESS)
@@ -5391,6 +5406,10 @@ exports.For = class For extends While
         forPartFragments = [@makeCode("#{declare}; #{compare}; #{kvarAssign}#{increment}")]
     if @returns
       resultPart   = "#{@tab}#{rvar} = [];\n"
+      # In ES6 mode, declare the loop variable for comprehensions that will be wrapped in IIFE
+      # Only needed when the comprehension is at expression level (not statement level)
+      if process.env.ES6 and name and not @pattern and o.level > LEVEL_TOP
+        resultPart = "#{@tab}let #{name};\n" + resultPart
       returnResult = "\n#{@tab}return #{rvar};"
       body.makeReturn rvar
     if @guard
