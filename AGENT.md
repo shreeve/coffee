@@ -10,15 +10,14 @@
 - **Phase 5**: Class Enhancements - Already ES6! No changes needed
 - **Phase 6**: Destructuring - Already supported! Works perfectly
 - **Phase 7**: Additional ES6 Features - Already complete, often BETTER than native!
-
-### Not Implemented ❌
-- **Phase 8**: Modern Loops - By design (compiler speed > output style)
+- **Phase 8**: Nullish Coalescing Assignment (`??=`) - Beautiful minimal solution!
 
 ### Key Insights 🎯
 1. **CoffeeScript was ahead, not behind** - Had most "ES6" features years before ES6
 2. **Simpler is better** - Pure `let`, traditional loops, defensive checks
 3. **Compatibility > Bleeding edge** - Works everywhere, no polyfills needed
 4. **Many phases were already complete** - We discovered 5, 6, 7 needed no work!
+5. **Minimal changes can have big impact** - Phase 8 (`??=`) took just ~6 lines!
 
 ## Goal
 Transform CoffeeScript to generate pure ES6 JavaScript output while maintaining backward compatibility through a careful bootstrap process.
@@ -173,61 +172,37 @@ users
   .forEach(name => console.log(name));
 ```
 
-### Phase 8: Modern Loops ❌ NOT IMPLEMENTED (By Design)
-Use ES6 `for...of` and array methods for cleaner iteration.
+### Phase 8: Nullish Coalescing Assignment ✅ COMPLETE
+Use ES2021's `??=` operator for existential assignments.
 
-**Philosophy**: CoffeeScript comprehensions already map naturally to functional array methods. Preserve direct translation for loops, but comprehensions can use `.map()`, `.filter()`, etc.
+**Implementation**: CoffeeScript's `?=` operator now compiles to JavaScript's native `??=`:
 
-**Transformation Strategy**:
-
-**1. Comprehensions → Array Methods** (Natural fit):
 ```coffeescript
-# CoffeeScript comprehensions are functional
-doubles = (x * 2 for x in numbers)
-evens = (x for x in numbers when x % 2 is 0)
-combined = (x * 2 for x in numbers when x > 5)
+# CoffeeScript
+x ?= "default"
+obj.prop ?= 42
 
-# ES6 equivalents
-let doubles = numbers.map(x => x * 2);
-let evens = numbers.filter(x => x % 2 === 0);
-let combined = numbers.filter(x => x > 5).map(x => x * 2);
-```
+# ES6+ Output (NEW)
+x ??= "default";
+obj.prop ??= 42;
 
-**2. Simple Loops → `for...of`** (When safe):
-```coffeescript
-# Simple iteration (no post-loop variable access)
-for item in array
-  console.log item
-
-# ES6
-for (let item of array) {
-  console.log(item);
+# ES5 Output (fallback)
+if (x == null) {
+  x = "default";
 }
 ```
 
-**3. Keep Traditional When** ❌:
-- Post-loop variable access needed
-- Loops with `break` or `continue`
-- Loops with `by` steps
-- Complex ranges or owned properties check
-- Performance-critical code
+**Why this is excellent**:
+- **Semantically identical** - Both check for `null` or `undefined`
+- **Native performance** - Browser-optimized operator
+- **Clean output** - One line instead of three
+- **Modern standard** - ES2021 feature
 
-**Critical Edge Cases**:
-
-**Post-Loop Variables**:
-```coffeescript
-for item in list
-  lastItem = item
-console.log lastItem  # Must work!
-```
-Solution: Declare `let lastItem` at function scope, not loop scope.
-
-**Break/Continue**:
-```coffeescript
-for item in items
-  break if item.done  # Can't use .forEach()!
-```
-Solution: Keep as `for...of` or traditional loop.
+**Technical Details**:
+- Minimal implementation (~6 lines changed)
+- Proper indentation and semicolons
+- Automatic fallback to `if` statement in ES5 mode
+- Works with all assignment contexts (objects, arrays, classes)
 
 **Decision Matrix**:
 
