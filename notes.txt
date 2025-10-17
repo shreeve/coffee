@@ -9,6 +9,42 @@
 
 ==
 
+You're right to question this! Let me check if CoffeeScript already has getter/setter support that we're missing:
+
+[1 tool called]
+
+Let me look more specifically for getter/setter handling:
+
+[1 tool called]
+
+Let me look for actual get/set method handling:
+
+[1 tool called]
+
+Let me check if there's any special handling for getters and setters in method compilation:
+
+[1 tool called]
+
+So CoffeeScript explicitly rejects `get` and `set` as keywords! Let me look at that error:
+
+[1 tool called]
+
+So CoffeeScript v2.8 explicitly **rejects** `get` and `set` as keywords! It throws an error when you try to use them. This is intentional - CoffeeScript doesn't support ES6 getter/setter syntax.
+
+The error message even says it: `'get' cannot be used as a keyword`.
+
+So to answer your question: **No, CoffeeScript 2.7/2.8 does NOT have support for get/set**. They explicitly reject these keywords to avoid confusion.
+
+This means we're stuck with the IIFE wrapper when using `Object.defineProperty` in class bodies. The only ways to avoid it would be:
+
+1. **Don't use getters/setters** - use regular methods instead
+2. **Accept the IIFE** as a necessary limitation
+3. **Modify the grammar** (which we can't do in this project)
+
+So for clean ES6 output, the best practice is to avoid `Object.defineProperty` in class bodies and use regular methods instead of getters/setters.
+
+==
+
 I have a copy of CoffeeScript 2.7.0 at @v27/ and an upgraded version at @v28/ which swaps out Jison for Solar (a JSON-directive based parser for AST node creation and code emission). I also have an ES6 version of CoffeeScript at @v29/ where we are using a hand tuned parser in v29/lib/coffeescript/parser.js (which we don't need to modify) and upgraded CoffeeScript source files in v29/src/*.coffee. In order to rebuild the v29/lib/coffeescript/*.js files we can do this as follows:
 
 cd /Users/shreeve/Data/Code/coffee/v28
