@@ -6,7 +6,7 @@ console.log "\n== Arrow Functions =="
 code 'square = (x) -> x * x', '''
   let square;
 
-  square = x => x * x;
+  square = (x) => x * x;
 '''
 
 code 'add = (a, b) -> a + b', '''
@@ -30,7 +30,7 @@ code '''
 ''', '''
   let process;
 
-  process = x => {
+  process = (x) => {
     let y;
     y = x * 2;
     return y + 1;
@@ -48,9 +48,7 @@ code '''
 
   Button = class Button {
     constructor() {
-      this.handleClick = () => {
-        return console.log(this);
-      };
+      this.handleClick = () => console.log(this);
     }
 
   };
@@ -90,7 +88,7 @@ code '''
 code 'fetchData = (url) -> await fetch(url)', '''
   let fetchData;
 
-  fetchData = async url => (await fetch(url));
+  fetchData = async (url) => (await fetch(url));
 '''
 
 # IIFE with arrow functions
@@ -112,13 +110,13 @@ code '''
 code 'doubled = numbers.map (x) -> x * 2', '''
   let doubled;
 
-  doubled = numbers.map(x => x * 2);
+  doubled = numbers.map((x) => x * 2);
 '''
 
 code 'evens = numbers.filter (x) -> x % 2 == 0', '''
   let evens;
 
-  evens = numbers.filter(x => x % 2 === 0);
+  evens = numbers.filter((x) => x % 2 === 0);
 '''
 
 # Nested arrow functions
@@ -130,9 +128,9 @@ code '''
 ''', '''
   let outer;
 
-  outer = x => {
+  outer = (x) => {
     let inner;
-    inner = y => x + y;
+    inner = (y) => x + y;
     return inner;
   };
 '''
@@ -160,28 +158,14 @@ code 'getName = ({name}) -> name', '''
 
 console.log "\n== Runtime Tests =="
 
-test "arrow functions work", ->
-  square = (x) -> x * x
-  throw new Error("Expected 9") unless square(3) is 9
+test "arrow functions work", 'square = ((x) -> x * x); square(3)', 9
 
-test "single parameter without parens", ->
-  double = (x) -> x * 2
-  throw new Error("Expected 10") unless double(5) is 10
+test "single parameter", 'double = ((x) -> x * 2); double(5)', 10
 
-test "arrow functions preserve lexical this", ->
-  obj =
-    value: 42
-    getValueArrow: => @value
-  # In Node.js global context, this might be undefined
-  # So we just verify the function exists
-  throw new Error("Arrow function should exist") unless obj.getValueArrow?
+test "arrow functions preserve lexical this", 'obj = { value: 42, getValueArrow: => @value }; typeof obj.getValueArrow', "function"
 
-test "default parameters work", ->
-  greet = (name = "World") -> "Hello #{name}"
-  throw new Error("Expected 'Hello World'") unless greet() is "Hello World"
-  throw new Error("Expected 'Hello Alice'") unless greet("Alice") is "Hello Alice"
+test "default parameters work", 'greet = ((name = "World") -> "Hello #{name}"); greet()', "Hello World"
 
-test "rest parameters work", ->
-  sum = (first, rest...) -> 
-    first + rest.reduce(((a, b) -> a + b), 0)
-  throw new Error("Expected 10") unless sum(1, 2, 3, 4) is 10
+test "default parameters with value", 'greet = ((name = "World") -> "Hello #{name}"); greet("Alice")', "Hello Alice"
+
+test "rest parameters work", 'sum = ((first, rest...) -> first + rest.reduce ((a, b) -> a + b), 0); sum(1, 2, 3, 4)', 10
