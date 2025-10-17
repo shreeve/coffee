@@ -154,26 +154,100 @@ users
 ```
 
 ### Phase 5: Modern Loops
-Use `for...of` for array iteration.
+Use ES6 `for...of` and array methods for cleaner iteration.
 
-**Implementation**:
-- Convert indexed loops to `for...of` when index isn't needed
-- Maintain traditional loops when index is used
-- Handle object iteration separately
+**Philosophy**: CoffeeScript comprehensions already map naturally to functional array methods. Preserve direct translation for loops, but comprehensions can use `.map()`, `.filter()`, etc.
 
-**Example**:
-```javascript
-// Before
-for (let i = 0, len = items.length; i < len; i++) {
-  let item = items[i];
-  process(item);
-}
+**Transformation Strategy**:
 
-// After
-for (let item of items) {
-  process(item);
+**1. Comprehensions → Array Methods** (Natural fit):
+```coffeescript
+# CoffeeScript comprehensions are functional
+doubles = (x * 2 for x in numbers)
+evens = (x for x in numbers when x % 2 is 0)
+combined = (x * 2 for x in numbers when x > 5)
+
+# ES6 equivalents
+let doubles = numbers.map(x => x * 2);
+let evens = numbers.filter(x => x % 2 === 0);
+let combined = numbers.filter(x => x > 5).map(x => x * 2);
+```
+
+**2. Simple Loops → `for...of`** (When safe):
+```coffeescript
+# Simple iteration (no post-loop variable access)
+for item in array
+  console.log item
+
+# ES6
+for (let item of array) {
+  console.log(item);
 }
 ```
+
+**3. Keep Traditional When** ❌:
+- Post-loop variable access needed
+- Loops with `break` or `continue`
+- Loops with `by` steps
+- Complex ranges or owned properties check
+- Performance-critical code
+
+**Critical Edge Cases**:
+
+**Post-Loop Variables**:
+```coffeescript
+for item in list
+  lastItem = item
+console.log lastItem  # Must work!
+```
+Solution: Declare `let lastItem` at function scope, not loop scope.
+
+**Break/Continue**:
+```coffeescript
+for item in items
+  break if item.done  # Can't use .forEach()!
+```
+Solution: Keep as `for...of` or traditional loop.
+
+**Decision Matrix**:
+
+| CoffeeScript Pattern | ES6 Output | Notes |
+|---------------------|------------|-------|
+| `(transform for x in arr)` | `.map()` | Comprehension → method |
+| `(x for x in arr when cond)` | `.filter()` | With guard → filter |
+| `for x in arr` (simple) | `for...of` | No post-access |
+| `for x in arr` (break/continue) | `for...of` | Can't use methods |
+| `for x, i in arr` | `.forEach()` or `.entries()` | Index access |
+| `for k, v of obj` | `for...in` or `Object.entries()` | Object iteration |
+| `for x in [1..10] by 2` | Traditional | Complex stepping |
+
+**Implementation Priority**:
+1. **Phase 5a**: Comprehensions → array methods (`.map`, `.filter`)
+2. **Phase 5b**: Simple loops → `for...of` (with post-variable detection)
+3. **Phase 5c**: Keep traditional for complex cases
+
+**Test Coverage** (`v30/test/es6/modern-loops.coffee`):
+- 34 comprehensive tests covering all loop patterns
+- Baseline: 6/34 passing (traditional loops that should stay traditional)
+- Target optimizations: 28 tests for modern ES6 patterns
+
+**Test Categories**:
+1. Comprehensions → Array Methods (6 tests) - `.map()`, `.filter()`, chaining
+2. Simple Loops → `for...of` (4 tests) - Basic iteration patterns
+3. Post-Loop Variable Access (2 tests) - Critical scoping edge case
+4. Break/Continue (3 tests) - Must use loops, not methods
+5. Traditional Loops (3 tests) - `by` steps, `own` properties, reverse ranges
+6. Array Method Equivalents (3 tests) - `.some()`, `.find()` patterns
+7. Object Iteration (3 tests) - `for...in`, `Object.entries()`
+8. Range Loops (2 tests) - Ascending/descending, inclusive/exclusive
+9. While/Until (2 tests) - Stay mostly unchanged
+10. Async Iteration (2 tests) - `for...of` with `await`
+11. Edge Cases (4 tests) - Destructuring, standalone comprehensions
+
+**Expected Outcomes After Implementation**:
+- Phase 5a (comprehensions): ~20-25 tests passing
+- Phase 5b (simple loops): ~28-30 tests passing
+- Phase 5c complete: ~32-34 tests passing (some complex cases stay traditional)
 
 ### Phase 6: Destructuring
 Enable destructuring in parameters and assignments.
