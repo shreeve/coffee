@@ -257,6 +257,7 @@ code '''
     console.log key
 ''', '''
   let key;
+
   for (key in object) {
     console.log(key);
   }
@@ -355,7 +356,7 @@ code '''
 
   x = 5;
 
-  (function() {
+  (() => {
     x = 10;
     return console.log(x);
   })();
@@ -374,7 +375,7 @@ code '''
 
   x = "outer";
 
-  fn = function() {
+  fn = () => {
     x = "inner";
     return x;
   };
@@ -420,17 +421,19 @@ code '''
   x = false
   x ||= true
   y = null
-  y ??= "default"
+  y ?= "default"
 ''', '''
   let x, y;
 
   x = false;
 
-  x ||= true;
+  x || (x = true);
 
   y = null;
 
-  y ??= "default";
+  if (y == null) {
+    y = "default";
+  }
 '''
 
 # ==============================================================================
@@ -463,9 +466,7 @@ code '''
 code '''
   exports.process = (data) -> data * 2
 ''', '''
-  exports.process = function(data) {
-    return data * 2;
-  };
+  exports.process = (data) => data * 2;
 '''
 
 # ==============================================================================
@@ -483,12 +484,14 @@ code '''
   console.log result
 ''', '''
   let error, result;
+
   try {
     result = riskyOperation();
   } catch (error1) {
     error = error1;
     result = "failed";
   }
+
   console.log(result);
 '''
 
@@ -510,6 +513,7 @@ code '''
   console.log result
 ''', '''
   let result;
+
   switch (value) {
     case 1:
       result = "one";
@@ -520,6 +524,7 @@ code '''
     default:
       result = "other";
   }
+
   console.log(result);
 '''
 
@@ -533,7 +538,7 @@ console.log "\n== Comprehensions =="
 code 'doubled = (x * 2 for x in numbers)', '''
   let doubled, x;
 
-  doubled = (function() {
+  doubled = (() => {
     let i, len, results;
     results = [];
     for (i = 0, len = numbers.length; i < len; i++) {
@@ -548,7 +553,7 @@ code 'doubled = (x * 2 for x in numbers)', '''
 code 'evens = (x for x in numbers when x % 2 is 0)', '''
   let evens, x;
 
-  evens = (function() {
+  evens = (() => {
     let i, len, results;
     results = [];
     for (i = 0, len = numbers.length; i < len; i++) {
@@ -576,7 +581,7 @@ code '''
 ''', '''
   let result;
 
-  result = (function() {
+  result = (() => {
     let temp;
     temp = 5;
     return temp * 2;
@@ -594,9 +599,7 @@ code '''
   let obj;
 
   obj = {
-    method: function() {
-      return "result";
-    },
+    method: () => "result",
     value: 5
   };
 '''
@@ -616,13 +619,11 @@ code '''
 # Rest parameters in functions
 code '''
   sum = (first, rest...) ->
-    first + rest.reduce((a, b) -> a + b, 0)
+    first + rest.reduce ((a, b) -> a + b), 0
 ''', '''
-  const sum = function(first, ...rest) {
-    return first + rest.reduce(function(a, b) {
-      return a + b;
-    }, 0);
-  };
+  let sum;
+
+  sum = (first, ...rest) => first + rest.reduce(((a, b) => a + b), 0);
 '''
 
 # Splat in array assignment
@@ -632,17 +633,33 @@ let head, tail;
 [head, ...tail] = list;
 '''
 
-# Existential assignment (should use nullish coalescing from Phase 1)
-code 'x ?= 5', 'x ??= 5;'
-code 'obj.prop ?= "default"', 'obj.prop ??= "default";'
+# Existential assignment
+code '''
+  x = undefined
+  x ?= 5
+''', '''
+  let x;
+
+  x = void 0;
+
+  if (x == null) {
+    x = 5;
+  }
+'''
+
+code '''
+  obj.prop ?= "default"
+''', '''
+  if (obj.prop == null) {
+    obj.prop = "default";
+  }
+'''
 
 # Do expressions with parameters
 code 'result = do (x = 5) -> x * 2', '''
   let result;
 
-  result = (function(x) {
-    return x * 2;
-  })(5);
+  result = ((x) => x * 2)(5);
 '''
 
 # Class with static methods
