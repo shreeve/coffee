@@ -125,77 +125,32 @@ let handler = () => this.value;
 let api = { fetch: function() { return this.endpoint; } };
 ```
 
-### Phase 5: Modern Loops
-   - Generator/async detection works perfectly
-   - Methods in objects/classes correctly stay as regular functions
-   - `arguments` detection properly prevents arrow usage
-   - Simple expressions like `() => 42` work great
-   - Implicit returns with objects work: `-> {a: 1}` → `() => ({a: 1})`
+**Real-World Impact Example**:
 
-6. **Suggested Fix Approaches:**
-   - **Option A**: Modify `Return.compileToFragments` to not unwrap when inside an arrow function
-   - **Option B**: In `Code.compileNode`, detect Return+Obj and force braces with proper return
-   - **Option C**: Add a flag to Return nodes when they're explicit (not implicit) and preserve them
+```coffeescript
+# Typical CoffeeScript functional code
+users
+  .filter (u) -> u.active
+  .map (u) -> u.name
+  .forEach (name) -> console.log name
+```
 
-7. **Test Coverage**:
-   - Comprehensive test at `v30/test/es6/arrow-functions.coffee` (33 tests)
-   - Most failures are due to CoffeeScript's hoisting (cosmetic, not bugs)
-   - The return + object bug causes ~5 real failures
-   - Once fixed, expect ~25-28 tests to pass immediately
+**Current output (85 chars, verbose):**
 
-8. **Current State**:
-   - All arrow function code has been reverted from `v28/src/nodes.coffee` and `v30/src/nodes.coffee`
-   - The test file `v30/test/es6/arrow-functions.coffee` is ready to use
-   - Next AI should start fresh with the knowledge documented above
-   - Estimated effort: 2-3 hours with this documentation (vs 8+ hours without)
-
-9. **Real-World Impact Example**:
-   ```coffeescript
-   # Typical CoffeeScript functional code
-   users
-     .filter (u) -> u.active
-     .map (u) -> u.name
-     .forEach (name) -> console.log name
-   ```
-
-   **Current output (85 chars, verbose):**
-   ```javascript
-   users
-     .filter(function(u) { return u.active; })
-     .map(function(u) { return u.name; })
-     .forEach(function(name) { return console.log(name); });
-   ```
-
-   **Our ES6 output (55 chars, 35% smaller):**
-   ```javascript
-   users
-     .filter((u) => u.active)
-     .map((u) => u.name)
-     .forEach((name) => console.log(name));
-   ```
-
-   This isn't cosmetic - it's making CoffeeScript competitive with modern JavaScript tooling.
-
-**Success Metrics**:
-- ✅ All `=>` become arrow functions
-- ✅ Safe `->` cases use arrows (smaller output)
-- ✅ No broken `this` contexts
-- ✅ Special cases handled (generators, async, constructors)
-- ❌ **MUST FIX**: Explicit `return` with object literals
-
-**Example**:
 ```javascript
-// CoffeeScript => always becomes arrow
-let handler = () => this.handleEvent();
+users
+  .filter(function(u) { return u.active; })
+  .map(function(u) { return u.name; })
+  .forEach(function(name) { return console.log(name); });
+```
 
-// CoffeeScript -> becomes arrow when safe
-let double = (x) => x * 2;
+**Our ES6 output (55 chars, 35% smaller):**
 
-// CoffeeScript -> stays function when needed
-let method = function() { return this.data; };
-
-// The tricky case that needs fixing:
-let getConfig = () => { return {host: 'localhost'}; };  // NOT () => { host: 'localhost' }
+```javascript
+users
+  .filter((u) => u.active)
+  .map((u) => u.name)
+  .forEach((name) => console.log(name));
 ```
 
 ### Phase 5: Modern Loops
