@@ -187,14 +187,6 @@ code '''
 
 console.log "\n== Runtime Tests =="
 
-# Test runtime behavior
-test = (desc, fn) ->
-  try
-    fn()
-    console.log "✓ #{desc}"
-  catch e
-    console.log "✗ #{desc}: #{e.message}"
-
 test "nullish assignment with null", ->
   x = null
   x ?= 5

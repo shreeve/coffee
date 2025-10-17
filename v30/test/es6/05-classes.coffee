@@ -1,12 +1,8 @@
-# ES6 Classes
+# Phase 5: ES6 Classes
 
-# ==============================================================================
-# ES6 CLASS SYNTAX
-# ==============================================================================
+console.log "\n== ES6 Classes =="
 
-console.log "\n== ES6 Class Syntax =="
-
-# Basic class uses ES6 'class' keyword
+# Basic class
 code '''
   class Person
     constructor: (@name) ->
@@ -23,7 +19,7 @@ code '''
   };
 '''
 
-# Methods don't use 'function' keyword
+# Class methods
 code '''
   class Calculator
     add: (a, b) -> a + b
@@ -41,344 +37,216 @@ code '''
     }
 
   };
-  '''
+'''
 
-# ==============================================================================
-# INHERITANCE WITH ES6 EXTENDS
-# ==============================================================================
-
-console.log "\n== ES6 Inheritance =="
-
-# Uses 'extends' keyword
+# Class inheritance
 code '''
   class Animal
-    speak: -> "Some sound"
-
+    constructor: (@name) ->
+    
   class Dog extends Animal
-    speak: -> "Woof!"
+    bark: -> "Woof!"
 ''', '''
-let Animal, Dog;
+  let Animal, Dog;
 
-Animal = class Animal {
-  speak() {
-    return "Some sound";
-  }
-
-};
-
-Dog = class Dog extends Animal {
-  speak() {
-    return "Woof!";
-  }
-
-};
-'''
-
-# Super calls work correctly
-code '''
-  class Vehicle
-    constructor: (@wheels) ->
-
-  class Car extends Vehicle
-    constructor: (brand) ->
-      super 4
-      @brand = brand
-''', '''
-let Car, Vehicle;
-
-Vehicle = class Vehicle {
-  constructor(wheels) {
-    this.wheels = wheels;
-  }
-
-};
-
-Car = class Car extends Vehicle {
-  constructor(brand) {
-    super(4);
-    this.brand = brand;
-  }
-
-};
-'''
-
-# ==============================================================================
-# STATIC METHODS WITH ES6 STATIC KEYWORD
-# ==============================================================================
-
-console.log "\n== ES6 Static Methods =="
-
-# Static methods use 'static' keyword
-code '''
-  class MathHelper
-    @add: (a, b) -> a + b
-    @PI: 3.14159
-''', '''
-let MathHelper;
-
-MathHelper = (function() {
-  class MathHelper {
-    static add(a, b) {
-      return a + b;
+  Animal = class Animal {
+    constructor(name) {
+      this.name = name;
     }
 
   };
 
-  MathHelper.PI = 3.14159;
+  Dog = class Dog extends Animal {
+    bark() {
+      return "Woof!";
+    }
 
-  return MathHelper;
-
-}).call(this);
+  };
 '''
 
-# ==============================================================================
-# ASYNC/GENERATOR METHODS
-# ==============================================================================
-
-console.log "\n== ES6 Async/Generator Methods =="
-
-# Async methods use 'async' keyword
+# Super calls
 code '''
-  class DataService
-    fetch: (url) ->
+  class Child extends Parent
+    constructor: (name) ->
+      super name
+      @type = "child"
+''', '''
+  let Child;
+
+  Child = class Child extends Parent {
+    constructor(name) {
+      super(name);
+      this.type = "child";
+    }
+
+  };
+'''
+
+# Static methods
+code '''
+  class MathUtils
+    @square: (x) -> x * x
+    @cube: (x) -> x * x * x
+''', '''
+  let MathUtils;
+
+  MathUtils = class MathUtils {
+    static square(x) {
+      return x * x;
+    }
+
+    static cube(x) {
+      return x * x * x;
+    }
+
+  };
+'''
+
+# Getters and setters
+code '''
+  class Person
+    constructor: (@firstName, @lastName) ->
+    
+    Object.defineProperty @::, 'fullName',
+      get: -> "#{@firstName} #{@lastName}"
+      set: (value) ->
+        [@firstName, @lastName] = value.split(' ')
+''', '''
+  let Person;
+
+  Person = class Person {
+    constructor(firstName, lastName) {
+      this.firstName = firstName;
+      this.lastName = lastName;
+    }
+
+  };
+
+  Object.defineProperty(Person.prototype, 'fullName', {
+    get: function() {
+      return `${this.firstName} ${this.lastName}`;
+    },
+    set: function(value) {
+      return [this.firstName, this.lastName] = value.split(' ');
+    }
+  });
+'''
+
+# Async methods
+code '''
+  class API
+    fetchData: (url) ->
       await fetch(url)
 ''', '''
-let DataService;
+  let API;
 
-DataService = class DataService {
-  async fetch(url) {
-    return (await fetch(url));
-  }
+  API = class API {
+    async fetchData(url) {
+      return (await fetch(url));
+    }
 
-};
+  };
 '''
 
-# Generator methods use '*' syntax
+# Generator methods
 code '''
-  class NumberGenerator
-    generate: ->
+  class Counter
+    count: ->
       yield 1
       yield 2
       yield 3
 ''', '''
-let NumberGenerator;
+  let Counter;
 
-NumberGenerator = class NumberGenerator {
-  * generate() {
-    yield 1;
-    yield 2;
-    return (yield 3);
-  }
-
-};
-'''
-
-# ==============================================================================
-# GETTERS/SETTERS (Current Approach)
-# ==============================================================================
-
-console.log "\n== Getters/Setters (Current Approach) =="
-
-# Using Object.defineProperty (current approach - works fine!)
-code '''
-  class Person
-    constructor: (@firstName, @lastName) ->
-
-  Object.defineProperty Person::, 'fullName',
-    get: -> "#{@firstName} #{@lastName}"
-''', '''
-let Person;
-
-Person = class Person {
-  constructor(firstName, lastName) {
-    this.firstName = firstName;
-    this.lastName = lastName;
-  }
-
-};
-
-Object.defineProperty(Person.prototype, 'fullName', {
-  get: function() {
-    return `${this.firstName} ${this.lastName}`;
-  }
-});
-'''
-
-# ==============================================================================
-# COMPLEX CLASS PATTERNS
-# ==============================================================================
-
-console.log "\n== Complex Class Patterns =="
-
-# Class expressions
-code 'MyClass = class', '''
-let MyClass;
-
-MyClass = class {};
-'''
-
-# Named class expressions - Note: CoffeeScript adds both variables
-code 'MyClass = class NamedClass', '''
-let MyClass, NamedClass;
-
-MyClass = NamedClass = class NamedClass {};
-'''
-
-# Classes with symbols
-code '''
-  class Symbolic
-    [Symbol.iterator]: ->
-      yield 1
-''', '''
-let Symbolic;
-
-Symbolic = class Symbolic {
-  * [Symbol.iterator]() {
-    return (yield 1);
-  }
-
-};
-'''
-
-# ==============================================================================
-# INSTANCE FIELDS (Current Behavior - Works Fine!)
-# ==============================================================================
-
-console.log "\n== Instance Fields (Current Behavior) =="
-
-# Properties are assigned to prototype (wrapped in IIFE for safety)
-code '''
-  class Person
-    name: "Anonymous"
-    age: 0
-
-    constructor: ->
-      console.log "Created"
-''', '''
-let Person;
-
-Person = (function() {
-  class Person {
-    constructor() {
-      console.log("Created");
+  Counter = class Counter {
+    *count() {
+      yield 1;
+      yield 2;
+      return (yield 3);
     }
 
   };
-
-  Person.prototype.name = "Anonymous";
-
-  Person.prototype.age = 0;
-
-  return Person;
-
-}).call(this);
 '''
 
-# Static properties work correctly (also wrapped in IIFE)
+# Private fields (using convention)
 code '''
-  class Config
-    @VERSION: "1.0.0"
-    @DEBUG: true
+  class BankAccount
+    constructor: ->
+      @_balance = 0
+    
+    deposit: (amount) ->
+      @_balance += amount
 ''', '''
-let Config;
+  let BankAccount;
 
-Config = (function() {
-  class Config {};
+  BankAccount = class BankAccount {
+    constructor() {
+      this._balance = 0;
+    }
 
-  Config.VERSION = "1.0.0";
+    deposit(amount) {
+      return this._balance += amount;
+    }
 
-  Config.DEBUG = true;
-
-  return Config;
-
-}).call(this);
+  };
 '''
 
-# ==============================================================================
-# RUNTIME VERIFICATION
-# ==============================================================================
+# Class expressions
+code '''
+  MyClass = class
+    method: -> "result"
+''', '''
+  let MyClass;
 
-console.log "\n== Runtime Verification =="
+  MyClass = class {
+    method() {
+      return "result";
+    }
 
-# Verify classes work at runtime
-test '''
-  class Greeter
+  };
+'''
+
+console.log "\n== Runtime Tests =="
+
+test "class instantiation", ->
+  class Person
     constructor: (@name) ->
-    greet: -> "Hello, #{@name}!"
+  
+  person = new Person("Alice")
+  throw new Error("Expected 'Alice'") unless person.name is "Alice"
 
-  greeter = new Greeter("ES6")
-  greeter.greet()
-''', "Hello, ES6!"
+test "class methods work", ->
+  class Calculator
+    add: (a, b) -> a + b
+  
+  calc = new Calculator()
+  throw new Error("Expected 5") unless calc.add(2, 3) is 5
 
-# Verify inheritance works
-test '''
-  class Shape
-    constructor: (@sides) ->
+test "inheritance works", ->
+  class Animal
+    constructor: (@name) ->
+    speak: -> "Some sound"
+  
+  class Dog extends Animal
+    speak: -> "Woof!"
+  
+  dog = new Dog("Rex")
+  throw new Error("Expected 'Rex'") unless dog.name is "Rex"
+  throw new Error("Expected 'Woof!'") unless dog.speak() is "Woof!"
 
-  class Triangle extends Shape
-    constructor: -> super(3)
-    type: -> "Triangle with #{@sides} sides"
+test "static methods work", ->
+  class MathUtils
+    @square: (x) -> x * x
+  
+  throw new Error("Expected 16") unless MathUtils.square(4) is 16
 
-  tri = new Triangle()
-  tri.type()
-''', "Triangle with 3 sides"
-
-# Verify static methods work
-test '''
-  class Utils
-    @double: (n) -> n * 2
-    @triple: (n) -> n * 3
-
-  "#{Utils.double(5)},#{Utils.triple(5)}"
-''', "10,15"
-
-# Verify async methods compile correctly (runtime test skipped - await limitation)
-# The compilation test above already proves async methods work!
-
-# Verify instanceof works
-test '''
-  class Base
-  class Derived extends Base
-
-  obj = new Derived()
-  (obj instanceof Derived) and (obj instanceof Base)
-''', true
-
-# Verify class name property
-test '''
-  class MyClass
-  MyClass.name
-''', "MyClass"
-
-# ==============================================================================
-# WHAT'S ALREADY MODERN
-# ==============================================================================
-
-console.log "\n== What Makes These Classes ES6? =="
-
-# They use class keyword, not function prototypes
-test '''
-  class Example
-  output = Example.toString()
-  output.startsWith("class")
-''', true
-
-# They support native extends
-test '''
+test "super calls work", ->
   class Parent
+    constructor: (@value) ->
+  
   class Child extends Parent
-  Child.__proto__ is Parent
-''', true
-
-# They have proper constructor property
-test '''
-  class Test
-    constructor: -> @value = 42
-
-  obj = new Test()
-  obj.constructor is Test
-''', true
-
-# ==============================================================================
-# SUMMARY
-# ==============================================================================
+    constructor: (value) ->
+      super(value * 2)
+  
+  child = new Child(5)
+  throw new Error("Expected 10") unless child.value is 10

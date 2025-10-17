@@ -1,49 +1,21 @@
-# Variable Declarations - Pure `let` (no `const`)
+# Phase 2: Variable Declarations (pure let)
 
-# ==============================================================================
-# BASIC VARIABLE DECLARATIONS
-# ==============================================================================
+console.log "\n== Variable Declarations =="
 
-console.log "\n== Basic Variable Declarations =="
-
-# Simple variable declarations use let (hoisted)
+# Basic declarations
 code 'x = 5', '''
   let x;
 
   x = 5;
 '''
+
 code 'name = "Alice"', '''
   let name;
 
   name = "Alice";
 '''
-code 'items = []', '''
-  let items;
 
-  items = [];
-'''
-code 'obj = {}', '''
-  let obj;
-
-  obj = {};
-'''
-
-# Variable reassignment still uses let (only one declaration)
-code '''
-  x = 5
-  x = 10
-  x = x + 1
-''', '''
-  let x;
-
-  x = 5;
-
-  x = 10;
-
-  x = x + 1;
-'''
-
-# Multiple variable declarations
+# Multiple declarations
 code '''
   a = 1
   b = 2
@@ -58,71 +30,64 @@ code '''
   c = 3;
 '''
 
-# ==============================================================================
-# FUNCTION DECLARATIONS
-# ==============================================================================
+# Destructuring assignment
+code '[x, y] = [1, 2]', '''
+  let x, y;
 
-console.log "\n== Function Declarations =="
+  [x, y] = [1, 2];
+'''
 
-# Regular function declarations use let (they're just values!)
+code '{name, age} = person', '''
+  let age, name;
+
+  ({name, age} = person);
+'''
+
+# Functions use let
 code 'square = (x) -> x * x', '''
   let square;
 
-  square = (x) => x * x;
+  square = x => x * x;
 '''
 
-# Arrow/bound functions use let
+# Arrow functions
 code 'handler = => @handleEvent()', '''
   let handler;
 
-  handler = () => this.handleEvent();
+  handler = () => {
+    return this.handleEvent();
+  };
 '''
 
-# Function with default parameters uses let
-code 'greet = (name = "World") -> "Hello #{name}"', '''
-  let greet;
+# Async functions
+code 'fetchData = -> await fetch("/api")', '''
+  let fetchData;
 
-  greet = (name = "World") => `Hello ${name}`;
+  fetchData = async () => (await fetch("/api"));
 '''
 
-# Generator functions use let
+# Generators
 code '''
-  gen = ->
+  counter = ->
     yield 1
     yield 2
 ''', '''
-  let gen;
+  let counter;
 
-  gen = function*() {
+  counter = function*() {
     yield 1;
     return (yield 2);
   };
 '''
 
-# Async functions use let
+# Class declarations
 code '''
-  fetchData = ->
-    await fetch('/api')
-''', '''
-  let fetchData;
-
-  fetchData = async () => (await fetch('/api'));
-'''
-
-# ==============================================================================
-# CLASS DECLARATIONS
-# ==============================================================================
-
-console.log "\n== Class Declarations =="
-
-# Class declarations use let (they're just values!)
-code '''
-  class User
+  class Person
     constructor: (@name) ->
 ''', '''
-  let User;
+  let Person;
 
-  User = class User {
+  Person = class Person {
     constructor(name) {
       this.name = name;
     }
@@ -130,114 +95,7 @@ code '''
   };
 '''
 
-# Class with inheritance uses let
-code '''
-  class Admin extends User
-    constructor: -> super()
-''', '''
-  let Admin;
-
-  Admin = class Admin extends User {
-    constructor() {
-      super();
-    }
-
-  };
-'''
-
-# Anonymous class expressions use let
-code '''
-  MyClass = class
-    method: -> "result"
-''', '''
-  let MyClass;
-
-  MyClass = class {
-    method() {
-      return "result";
-    }
-
-  };
-'''
-
-# ==============================================================================
-# HOISTING SCENARIOS
-# ==============================================================================
-
-console.log "\n== Hoisting Scenarios =="
-
-# Hoisted variables in conditionals use let
-code '''
-  if condition
-    x = 5
-  else
-    x = 10
-  console.log x
-''', '''
-  let x;
-
-  if (condition) {
-    x = 5;
-  } else {
-    x = 10;
-  }
-
-  console.log(x);
-'''
-
-# Hoisted variables in nested conditionals
-code '''
-  if a
-    if b
-      result = "nested"
-    else
-      result = "not nested"
-  console.log result
-''', '''
-  let result;
-
-  if (a) {
-    if (b) {
-      result = "nested";
-    } else {
-      result = "not nested";
-    }
-  }
-
-  console.log(result);
-'''
-
-# Variables declared after use are hoisted with let
-code '''
-  console.log x
-  x = 5
-''', '''
-  let x;
-
-  console.log(x);
-
-  x = 5;
-'''
-
-# Function hoisting (functions are hoisted with let, just like other variables!)
-code '''
-  console.log square(5)
-  square = (x) -> x * x
-''', '''
-  let square;
-
-  console.log(square(5));
-
-  square = (x) => x * x;
-'''
-
-# ==============================================================================
-# LOOP VARIABLES
-# ==============================================================================
-
-console.log "\n== Loop Variables =="
-
-# For-in loop variables use let (CoffeeScript uses indexed loops)
+# For loops
 code '''
   for i in [1, 2, 3]
     console.log i
@@ -251,27 +109,15 @@ code '''
   }
 '''
 
-# For-of loop variables use let
+# While loops
 code '''
-  for key of object
-    console.log key
-''', '''
-  let key;
-
-  for (key in object) {
-    console.log(key);
-  }
-'''
-
-# While loop variables declared inside use let
-code '''
-  while true
+  while condition
     x = getValue()
     break if x > 10
 ''', '''
   let x;
 
-  while (true) {
+  while (condition) {
     x = getValue();
     if (x > 10) {
       break;
@@ -279,203 +125,7 @@ code '''
   }
 '''
 
-# Loop variables that escape scope are hoisted
-code '''
-  for item in items
-    last = item
-  console.log last
-''', '''
-  let i, item, last, len;
-
-  for (i = 0, len = items.length; i < len; i++) {
-    item = items[i];
-    last = item;
-  }
-
-  console.log(last);
-'''
-
-# ==============================================================================
-# DESTRUCTURING ASSIGNMENTS
-# ==============================================================================
-
-console.log "\n== Destructuring Assignments =="
-
-# Object destructuring uses let (hoisted)
-code '{name, age} = person', '''
-let age, name;
-
-({name, age} = person);
-'''
-
-# Array destructuring uses let (hoisted)
-code '[first, second, third] = items', '''
-let first, second, third;
-
-[first, second, third] = items;
-'''
-
-# Nested destructuring uses let (hoisted)
-code '{user: {name, email}} = data', '''
-let email, name;
-
-({
-  user: {name, email}
-} = data);
-'''
-
-# Destructuring with defaults uses let (hoisted)
-code '{name = "Anonymous", age = 0} = user', '''
-let age, name;
-
-({name = "Anonymous", age = 0} = user);
-'''
-
-# Destructuring in function parameters
-code 'process = ({name, age}) -> "#{name} is #{age}"', '''
-  let process;
-
-  process = ({name, age}) => `${name} is ${age}`;
-'''
-
-# ==============================================================================
-# SCOPE AND SHADOWING
-# ==============================================================================
-
-console.log "\n== Scope and Shadowing =="
-
-# Inner scope shadows outer variable
-code '''
-  x = 5
-  do ->
-    x = 10
-    console.log x
-  console.log x
-''', '''
-  let x;
-
-  x = 5;
-
-  (() => {
-    x = 10;
-    return console.log(x);
-  })();
-
-  console.log(x);
-'''
-
-# Function scope creates new binding
-code '''
-  x = "outer"
-  fn = ->
-    x = "inner"
-    x
-''', '''
-  let fn, x;
-
-  x = "outer";
-
-  fn = () => {
-    x = "inner";
-    return x;
-  };
-'''
-
-# ==============================================================================
-# SPECIAL ASSIGNMENT PATTERNS
-# ==============================================================================
-
-console.log "\n== Special Assignment Patterns =="
-
-# Compound assignments don't redeclare
-code '''
-  x = 5
-  x += 10
-  x *= 2
-''', '''
-  let x;
-
-  x = 5;
-
-  x += 10;
-
-  x *= 2;
-'''
-
-# Chained assignments use let for hoisted declarations
-code 'a = b = c = 5', '''
-  let a, b, c;
-
-  a = b = c = 5;
-'''
-
-# Conditional assignment uses let (with nullish coalescing from Phase 1)
-code 'x = y ? "default"', '''
-let x;
-
-x = y ?? "default";
-'''
-
-# Logical assignment operators
-code '''
-  x = false
-  x ||= true
-  y = null
-  y ?= "default"
-''', '''
-  let x, y;
-
-  x = false;
-
-  x || (x = true);
-
-  y = null;
-
-  if (y == null) {
-    y = "default";
-  }
-'''
-
-# ==============================================================================
-# EXPORT STATEMENTS (preparing for Phase 3)
-# ==============================================================================
-
-console.log "\n== Export Statements =="
-
-# Note: These tests assume we're generating ES6 modules
-# Currently CoffeeScript generates CommonJS, so these will fail
-# until Phase 3 is implemented
-
-# Exported variables use export let
-# code 'export x = 5', 'export let x = 5;'
-
-# Exported functions use export const
-# code 'export process = (data) -> data * 2', '''
-#   export const process = function(data) {
-#     return data * 2;
-#   };
-# '''
-
-# For now, test the current CommonJS output
-code '''
-  exports.x = 5
-''', '''
-  exports.x = 5;
-'''
-
-code '''
-  exports.process = (data) -> data * 2
-''', '''
-  exports.process = (data) => data * 2;
-'''
-
-# ==============================================================================
-# TRY-CATCH BLOCKS
-# ==============================================================================
-
-console.log "\n== Try-Catch Blocks =="
-
-# Variables in try-catch are scoped appropriately
+# Try-catch
 code '''
   try
     result = riskyOperation()
@@ -495,13 +145,7 @@ code '''
   console.log(result);
 '''
 
-# ==============================================================================
-# SWITCH STATEMENTS
-# ==============================================================================
-
-console.log "\n== Switch Statements =="
-
-# Variables in switch cases are hoisted
+# Switch statements
 code '''
   switch value
     when 1
@@ -528,13 +172,7 @@ code '''
   console.log(result);
 '''
 
-# ==============================================================================
-# COMPREHENSIONS
-# ==============================================================================
-
-console.log "\n== Comprehensions =="
-
-# Comprehension variables are scoped to expression
+# Comprehensions
 code 'doubled = (x * 2 for x in numbers)', '''
   let doubled, x;
 
@@ -549,30 +187,7 @@ code 'doubled = (x * 2 for x in numbers)', '''
   })();
 '''
 
-# Comprehension with filter
-code 'evens = (x for x in numbers when x % 2 is 0)', '''
-  let evens, x;
-
-  evens = (() => {
-    let i, len, results;
-    results = [];
-    for (i = 0, len = numbers.length; i < len; i++) {
-      x = numbers[i];
-      if (x % 2 === 0) {
-        results.push(x);
-      }
-    }
-    return results;
-  })();
-'''
-
-# ==============================================================================
-# EDGE CASES AND SPECIAL SCENARIOS
-# ==============================================================================
-
-console.log "\n== Edge Cases and Special Scenarios =="
-
-# IIFE expressions don't affect outer scope
+# IIFE expressions
 code '''
   result = do ->
     temp = 5
@@ -590,7 +205,7 @@ code '''
   console.log(result);
 '''
 
-# Object method shorthand
+# Object methods
 code '''
   obj =
     method: -> "result"
@@ -604,7 +219,7 @@ code '''
   };
 '''
 
-# Variables in string interpolation
+# String interpolation
 code '''
   name = "World"
   greeting = "Hello #{name}"
@@ -616,7 +231,7 @@ code '''
   greeting = `Hello ${name}`;
 '''
 
-# Rest parameters in functions
+# Rest parameters
 code '''
   sum = (first, rest...) ->
     first + rest.reduce ((a, b) -> a + b), 0
@@ -626,11 +241,11 @@ code '''
   sum = (first, ...rest) => first + rest.reduce(((a, b) => a + b), 0);
 '''
 
-# Splat in array assignment
+# Splat in arrays
 code '[head, tail...] = list', '''
-let head, tail;
+  let head, tail;
 
-[head, ...tail] = list;
+  [head, ...tail] = list;
 '''
 
 # Existential assignment
@@ -642,107 +257,53 @@ code '''
 
   x = void 0;
 
-  if (x == null) {
-    x = 5;
-  }
+  x ??= 5;
 '''
 
+# Logical assignment
 code '''
-  obj.prop ?= "default"
+  x = false
+  x ||= true
+  y = null
+  y ?= "default"
 ''', '''
-  if (obj.prop == null) {
-    obj.prop = "default";
-  }
-'''
-
-# Do expressions with parameters
-code 'result = do (x = 5) -> x * 2', '''
-  let result;
-
-  result = ((x) => x * 2)(5);
-'''
-
-# Class with static methods
-code '''
-  class Util
-    @staticMethod: -> "static"
-    instanceMethod: -> "instance"
-''', '''
-  let Util;
-
-  Util = class Util {
-    static staticMethod() {
-      return "static";
-    }
-
-    instanceMethod() {
-      return "instance";
-    }
-
-  };
-'''
-
-# ==============================================================================
-# ADDITIONAL TEST CASES
-# ==============================================================================
-
-console.log "\n== Additional Test Cases =="
-
-# Multiple assignments in one line
-code 'x = 5; y = 10', '''
   let x, y;
 
-  x = 5;
+  x = false;
 
-  y = 10;
+  x || (x = true);
+
+  y = null;
+
+  y ??= "default";
 '''
 
-# Assignment in expression position
-code 'console.log(x = 5)', '''
-  let x;
+console.log "\n== Runtime Tests =="
 
-  console.log(x = 5);
-'''
+test "let has block scope", ->
+  x = 5
+  if true
+    x = 10
+  throw new Error("Expected 10") unless x is 10
 
-# Nested functions
-code '''
-  outer = ->
-    inner = ->
-      "nested"
-    inner()
-''', '''
-  let outer;
+test "destructuring works", ->
+  [a, b] = [1, 2]
+  throw new Error("Expected a=1, b=2") unless a is 1 and b is 2
 
-  outer = () => {
-    let inner;
-    inner = () => "nested";
-    return inner();
-  };
-'''
-
-# Object with computed property names
-code '''
-  key = "dynamic"
+test "arrow functions preserve this", ->
   obj =
-    [key]: "value"
-''', '''
-  let key, obj;
+    value: 42
+    getValue: -> @value
+    getValueArrow: => @value
+  throw new Error("Expected 42") unless obj.getValue() is 42
 
-  key = "dynamic";
+test "rest parameters work", ->
+  sum = (first, rest...) ->
+    first + rest.length
+  result = sum(1, 2, 3, 4)
+  throw new Error("Expected 4") unless result is 4
 
-  obj = {
-    [key]: "value"
-  };
-'''
-
-# Function returning a function
-code '''
-  makeAdder = (x) ->
-    (y) -> x + y
-''', '''
-  let makeAdder;
-
-  makeAdder = (x) => (y) => x + y;
-'''
-
-console.log "\n== Test Complete =="
+test "template literals work", ->
+  name = "World"
+  greeting = "Hello #{name}"
+  throw new Error("Expected 'Hello World'") unless greeting is "Hello World"

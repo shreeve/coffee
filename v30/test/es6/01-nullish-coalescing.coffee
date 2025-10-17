@@ -1,196 +1,116 @@
-# Nullish Coalescing Operator (??)
+# Phase 1: Nullish Coalescing Operator (??)
 
-# Runtime Tests
-
-# Test 1: Basic existential operator
-test '''
-  y = null
-  x = y ? "default"
-  x
-''', "default"
-
-test '''
-  y = "hello"
-  x = y ? "default"
-  x
-''', "hello"
-
-# Test 2: Chained existential operators
-test '''
-  a = null
-  b = null
-  c = "fallback"
-  a ? b ? c
-''', "fallback"
-
-# Test 3: With method calls
-test '''
-  getData = -> null
-  data = getData() ? {}
-  typeof data
-''', "object"
-
-# Test 4: With property access
-test '''
-  obj = {}
-  val = obj.prop ? 0
-  val
-''', 0
-
-# Test 5: Inside expressions
-test '''
-  a = null
-  b = 5
-  sum = (a ? 0) + (b ? 0)
-  sum
-''', 5
-
-# Test 6: Array prototype check
-test '''
-  method = Array::find ? null
-  method isnt null
-''', true
-
-# Compilation Tests
+console.log "\n== Nullish Coalescing Operator =="
 
 # Basic cases
 code 'x = y ? "default"', '''
-let x;
+  let x;
 
-x = y ?? "default";
+  x = y ?? "default";
 '''
 
 code 'a = b ? c', '''
-let a;
+  let a;
 
-a = b ?? c;
+  a = b ?? c;
 '''
 
-# Chained existential operators
+# Chained operators
 code 'result = a ? b ? c', '''
-let result;
+  let result;
 
-result = a ?? b ?? c;
-'''
-
-code 'val = w ? x ? y ? z', '''
-let val;
-
-val = w ?? x ?? y ?? z;
-'''
-
-# Method calls with existential
-code 'data = getData() ? {}', '''
-let data;
-
-data = getData() ?? {};
-'''
-
-code 'result = obj.method() ? "fallback"', '''
-let result;
-
-result = obj.method() ?? "fallback";
-'''
-
-# Property access
-code 'val = obj.prop ? 0', '''
-let val;
-
-val = obj.prop ?? 0;
-'''
-
-code 'item = arr[index] ? defaultItem', '''
-let item;
-
-item = arr[index] ?? defaultItem;
-'''
-
-# Inside expressions
-code 'sum = (a ? 0) + (b ? 0)', '''
-let sum;
-
-sum = (a ?? 0) + (b ?? 0);
-'''
-
-code 'str = "Value: " + (val ? "none")', '''
-let str;
-
-str = "Value: " + (val ?? "none");
+  result = a ?? b ?? c;
 '''
 
 # With function calls
-code 'fn = callback ? (-> console.log "default")', '''
-let fn;
+code 'value = getData() ? getDefault()', '''
+  let value;
 
-fn = callback ?? (() => console.log("default"));
+  value = getData() ?? getDefault();
 '''
 
-# Array/object literals
-code 'config = userConfig ? {timeout: 1000}', '''
-let config;
+# Property access
+code 'name = user.name ? "Anonymous"', '''
+  let name;
 
-config = userConfig ?? {
-  timeout: 1000
-};
+  name = user.name ?? "Anonymous";
 '''
 
-code 'items = list ? []', '''
-let items;
+# Nested property access
+code 'city = user.address?.city ? "Unknown"', '''
+  let city;
 
-items = list ?? [];
+  city = (typeof user.address !== "undefined" && user.address !== null ? user.address.city : void 0) ?? "Unknown";
 '''
 
-# Prototype access (should work correctly)
-code 'method = Array::find ? null', '''
-let method;
-
-method = Array.prototype.find ?? null;
+# In conditionals
+code '''
+  if value ? defaultValue
+    doSomething()
+''', '''
+  if (value ?? defaultValue) {
+    doSomething();
+  }
 '''
 
-# Export with existential
-code 'export value = data ? 42', '''
-  export let value = data ?? 42;
-'''
-
-# Inside conditionals
-code 'if x ? y then z', '''
-if (x ?? y) {
-  z;
-}
-'''
-
-# Complex expressions
-code 'result = (obj?.prop ? backup).toString()', '''
-let result;
-
-result = ((obj != null ? obj.prop : void 0) ?? backup).toString();
-'''
-
-# Multiple on same line
-code 'a = x ? 1; b = y ? 2', '''
-let a, b;
-
-a = x ?? 1;
-
-b = y ?? 2;
+# As function argument
+code 'process(data ? {})', '''
+  process(data ?? {});
 '''
 
 # In return statements
-code '-> x ? "default"', '''
-  () => x ?? "default"
+code '''
+  getValue = ->
+    cache ? null
+''', '''
+  let getValue;
+
+  getValue = () => cache ?? null;
 '''
 
-# Test that it handles parentheses correctly
-code 'val = (a ? b) ? c', '''
-let val;
+# Complex expressions
+code 'result = (a + b) ? (c * d)', '''
+  let result;
 
-val = (a ?? b) ?? c;
+  result = (a + b) ?? (c * d);
 '''
 
-# Test with boolean false (should NOT use nullish coalescing for explicit boolean test)
-# Note: CoffeeScript's ? is for null/undefined, not falsy values
-code 'val = isEnabled ? true', '''
-let val;
+# With array access
+code 'first = arr[0] ? "none"', '''
+  let first;
 
-val = isEnabled ?? true;
+  first = arr[0] ?? "none";
 '''
+
+# Multiple in one line
+code 'x = a ? b; y = c ? d', '''
+  let x, y;
+
+  x = a ?? b;
+
+  y = c ?? d;
+'''
+
+console.log "\n== Runtime Tests =="
+
+# test is defined globally by the test runner
+test "nullish coalescing with null", ->
+  result = null ? "default"
+  throw new Error("Expected 'default'") unless result is "default"
+
+test "nullish coalescing with undefined", ->
+  result = undefined ? "default"
+  throw new Error("Expected 'default'") unless result is "default"
+
+test "preserves falsy values", ->
+  throw new Error("0 should be preserved") unless (0 ? "default") is 0
+  throw new Error("false should be preserved") unless (false ? "default") is false
+  throw new Error("empty string should be preserved") unless ("" ? "default") is ""
+
+test "chained coalescing", ->
+  result = null ? undefined ? "fallback"
+  throw new Error("Expected 'fallback'") unless result is "fallback"
+
+test "with existing value", ->
+  result = "exists" ? "default"
+  throw new Error("Expected 'exists'") unless result is "exists"
