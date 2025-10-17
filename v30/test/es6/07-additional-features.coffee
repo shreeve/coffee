@@ -47,10 +47,7 @@ code 'fn(...args)', '''
 code 'merged = {...obj1, ...obj2}', '''
   let merged;
 
-  merged = {
-    ...obj1,
-    ...obj2
-  };
+  merged = {...obj1, ...obj2};
 '''
 
 code 'updated = {...user, name: "New Name"}', '''
@@ -116,9 +113,9 @@ code 'sum = (first, rest...) -> first + rest.length', '''
 
 # Optional chaining (defensive)
 code 'value = obj?.prop?.nested', '''
-  let value;
+  let ref, value;
 
-  value = typeof obj !== "undefined" && obj !== null && (obj.prop != null ? obj.prop.nested : void 0);
+  value = typeof obj !== "undefined" && obj !== null ? (ref = obj.prop) != null ? ref.nested : void 0 : void 0;
 '''
 
 code 'result = fn?()', '''
@@ -168,38 +165,20 @@ code 'cubed = base ** 3', '''
 
 console.log "\n== Runtime Tests =="
 
-test "template literals", ->
-  name = "World"
-  greeting = "Hello #{name}!"
-  throw new Error("Expected 'Hello World!'") unless greeting is "Hello World!"
+test "template literals", 'name = "World"; greeting = "Hello #{name}!"; greeting', "Hello World!"
 
-test "spread in arrays", ->
-  arr1 = [1, 2]
-  arr2 = [3, 4]
-  combined = [...arr1, ...arr2]
-  throw new Error("Expected [1,2,3,4]") unless combined.length is 4
+test "spread in arrays", 'arr1 = [1, 2]; arr2 = [3, 4]; combined = [...arr1, ...arr2]; combined.length', 4
 
-test "object spread", ->
-  obj1 = {a: 1}
-  obj2 = {b: 2}
-  merged = {...obj1, ...obj2}
-  throw new Error("Expected {a:1, b:2}") unless merged.a is 1 and merged.b is 2
+test "object spread", 'obj1 = {a: 1}; obj2 = {b: 2}; merged = {...obj1, ...obj2}; merged.a', 1
 
-test "default parameters", ->
-  greet = (name = "World") -> "Hello #{name}"
-  throw new Error("Expected 'Hello World'") unless greet() is "Hello World"
+test "object spread b", 'obj1 = {a: 1}; obj2 = {b: 2}; merged = {...obj1, ...obj2}; merged.b', 2
 
-test "rest parameters", ->
-  collectArgs = (first, rest...) -> rest
-  args = collectArgs(1, 2, 3, 4)
-  throw new Error("Expected [2,3,4]") unless args.length is 3
+test "default parameters", 'greet = ((name = "World") -> "Hello #{name}"); greet()', "Hello World"
 
-test "shorthand properties", ->
-  x = 1
-  y = 2
-  point = {x, y}
-  throw new Error("Expected {x:1, y:2}") unless point.x is 1 and point.y is 2
+test "rest parameters", 'collectArgs = ((first, rest...) -> rest); args = collectArgs(1, 2, 3, 4); args.length', 3
 
-test "exponentiation", ->
-  result = 2 ** 3
-  throw new Error("Expected 8") unless result is 8
+test "shorthand properties", 'x = 1; y = 2; point = {x, y}; point.x', 1
+
+test "shorthand properties y", 'x = 1; y = 2; point = {x, y}; point.y', 2
+
+test "exponentiation", '2 ** 3', 8
