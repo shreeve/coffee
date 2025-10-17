@@ -3354,7 +3354,8 @@ export class Assign extends Base
   isAssignable: YES
 
   isStatement: (o) ->
-    o?.level is LEVEL_TOP and @context? and (@moduleDeclaration or "?" in @context)
+    # Don't treat ?= as a statement since it generates ??= which needs semicolons and indentation
+    o?.level is LEVEL_TOP and @context? and @moduleDeclaration
 
   checkNameAssignability: (o, varBase) ->
     if o.scope.type(varBase.value) is 'import'
@@ -3440,7 +3441,8 @@ export class Assign extends Base
             return @compileDestructuring o
 
       return @compileSplice       o if @variable.isSplice()
-      return @compileConditional  o if @isConditional()
+      # Skip compileConditional for ?= in ES6 mode to use ??= operator
+      return @compileConditional  o if @isConditional() and @context isnt '?='
       return @compileSpecialMath  o if @context in ['//=', '%%=']
 
     @addScopeVariables o
@@ -3460,7 +3462,9 @@ export class Assign extends Base
         compiledName.push @makeCode ']'
       return compiledName.concat @makeCode(': '), val
 
-    answer = compiledName.concat @makeCode(" #{ @context or '=' } "), val
+    # Use ??= for existential assignment in ES6
+    operator = if @context is '?=' then '??=' else (@context or '=')
+    answer = compiledName.concat @makeCode(" #{operator} "), val
     # Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Assignment_without_declaration,
     # if we're destructuring without declaring, the destructuring assignment must be wrapped in parentheses.
     # The assignment is wrapped in parentheses if 'o.level' has lower precedence than LEVEL_LIST (3)
