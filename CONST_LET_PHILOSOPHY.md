@@ -104,7 +104,7 @@ Consider maintaining this compiler in 5 years:
 - Cross-scope mutation tracking
 
 **Simple approach**:
-> "Replace `var` with `let`, unless it's a function/class, then use `const`"
+> "Replace `var` with `let` everywhere. That's it."
 
 Which codebase would you rather inherit?
 
@@ -124,10 +124,10 @@ The theoretical performance benefit of `const` is a myth in practice.
 let name = "John";
 let age = 30;
 let items = [];
-const processData = (x) => x * 2;
+let processData = (x) => x * 2;
 ```
 
-We're not generating legacy code. We're generating clean, modern JavaScript that happens to prefer `let` for variables.
+We're not generating legacy code. We're generating clean, modern JavaScript that uses `let` exclusively.
 
 ### 9. The Test Suite Tells the Story
 
@@ -217,9 +217,7 @@ The simple approach continues this tradition. The complex approach betrays it.
 # In Block.compileWithDeclarations:
 declarator = 'let'  # was 'var'
 
-# In Assign.compileNode:
-if @value instanceof Code or @value instanceof Class
-  fragments.unshift @makeCode "const "
+# That's it! No special cases for functions or classes
 ```
 
 ## Decision Framework
@@ -271,7 +269,7 @@ A: Yes, if `prefer-const` is enabled. But this is a stylistic preference, not a 
 A: No real safety is lost. `const` only prevents reassignment of the binding, not mutation of the value. Since most variables are objects/arrays (mutable regardless), the safety benefit is illusory. Plus, CoffeeScript's philosophy is that everything should be reassignable.
 
 **Q: What about functions and classes - shouldn't they at least be `const`?**
-A: No. In CoffeeScript, functions and classes are just values assigned to variables. They can be reassigned like any other value. Making them `const` would break legitimate CoffeeScript patterns and add unnecessary special cases.
+A: No. In CoffeeScript, functions and classes are just values assigned to variables. They can be reassigned like any other value. Making them `const` would break legitimate CoffeeScript patterns and add unnecessary special cases. We use pure `let` for everything - no exceptions.
 
 **Q: What about other compilers that do smart `const`/`let`?**
 A: They're solving different problems. TypeScript prioritizes type safety. Babel prioritizes spec compliance. CoffeeScript prioritizes simplicity and developer experience.
@@ -314,15 +312,15 @@ let name = "Alice";
 let count = 0;
 let items = [];
 
-const process = function(x) {
+let process = function(x) {
   return x * 2;
 };
 
-const handler = () => {
+let handler = () => {
   return this.handleEvent();
 };
 
-const User = class User {
+let User = class User {
   constructor(name) {
     this.name = name;
   }
