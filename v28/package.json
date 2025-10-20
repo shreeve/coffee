@@ -11,7 +11,7 @@
   "license": "MIT",
   "type": "commonjs",
   "engines": {
-    "node": ">=14"
+    "node": ">=18"
   },
   "directories": {
     "lib": "./lib/coffeescript"
